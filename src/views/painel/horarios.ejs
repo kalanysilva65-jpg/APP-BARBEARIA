@@ -1,0 +1,99 @@
+<div class="cabecalho-pagina">
+  <h1>Horários & Bloqueios</h1>
+  <p class="texto-secundario">Ajuste a jornada semanal e bloqueie horários por barbeiro.</p>
+</div>
+
+<% if (!barbeiro) { %>
+  <div class="card"><p class="texto-secundario">Nenhum barbeiro ativo.</p></div>
+<% } else { %>
+
+  <form method="GET" action="/painel/horarios" class="mb-16">
+    <label for="barbeiro">Barbeiro</label>
+    <select id="barbeiro" name="barbeiro" onchange="this.form.submit()">
+      <% barbeiros.forEach(function (b) { %>
+        <option value="<%= b.id %>" <%= b.id === barbeiro.id ? 'selected' : '' %>><%= b.nome %></option>
+      <% }) %>
+    </select>
+  </form>
+
+  <!-- Jornada semanal -->
+  <div class="card mb-16">
+    <h2>Jornada semanal</h2>
+    <p class="texto-secundario mb-16">Desmarque um dia para fechar (folga).</p>
+    <form method="POST" action="/painel/horarios/jornada">
+      <input type="hidden" name="barbeiroId" value="<%= barbeiro.id %>" />
+      <table class="tabela tabela-jornada">
+        <tbody>
+          <% jornada.forEach(function (j) { %>
+            <tr>
+              <td>
+                <label class="check">
+                  <input type="checkbox" name="trabalha_<%= j.diaSemana %>" <%= j.trabalha ? 'checked' : '' %> />
+                  <%= DIAS_SEMANA[j.diaSemana] %>
+                </label>
+              </td>
+              <td><input type="time" name="inicio_<%= j.diaSemana %>" value="<%= j.horaInicio %>" /></td>
+              <td><input type="time" name="fim_<%= j.diaSemana %>" value="<%= j.horaFim %>" /></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <button class="btn btn-primario btn-sm mt-16">Salvar jornada</button>
+    </form>
+  </div>
+
+  <!-- Bloqueios -->
+  <div class="card">
+    <h2>Bloqueios</h2>
+    <p class="texto-secundario mb-16">Marque um intervalo como indisponível numa data específica.</p>
+
+    <form method="POST" action="/painel/horarios/bloqueios" class="form">
+      <input type="hidden" name="barbeiroId" value="<%= barbeiro.id %>" />
+      <div class="campo">
+        <label for="data">Data</label>
+        <input id="data" type="date" name="data" required />
+      </div>
+      <div class="grid-2">
+        <div class="campo">
+          <label for="horaInicio">Início</label>
+          <input id="horaInicio" type="time" name="horaInicio" required />
+        </div>
+        <div class="campo">
+          <label for="horaFim">Fim</label>
+          <input id="horaFim" type="time" name="horaFim" required />
+        </div>
+      </div>
+      <div class="campo">
+        <label for="motivo">Motivo (opcional)</label>
+        <input id="motivo" name="motivo" placeholder="Almoço, compromisso…" />
+      </div>
+      <button class="btn btn-primario btn-sm">Adicionar bloqueio</button>
+    </form>
+
+    <% if (bloqueios.length === 0) { %>
+      <p class="texto-secundario mt-24">Nenhum bloqueio futuro.</p>
+    <% } else { %>
+      <table class="tabela mt-24">
+        <thead>
+          <tr><th>Data</th><th>Horário</th><th>Motivo</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% bloqueios.forEach(function (b) { %>
+            <tr>
+              <td><%= fmtData(b.data) %></td>
+              <td><%= b.horaInicio %>–<%= b.horaFim %></td>
+              <td><%= b.motivo || '—' %></td>
+              <td class="col-acao">
+                <form method="POST" action="/painel/horarios/bloqueios/<%= b.id %>/remover" class="inline">
+                  <input type="hidden" name="barbeiroId" value="<%= barbeiro.id %>" />
+                  <button class="btn-x" title="Remover bloqueio">×</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+
+<% } %>

@@ -42,6 +42,11 @@ app.use((req, res, next) => {
   // Formata centavos -> "R$ 40,00"
   res.locals.fmtBRL = (centavos) =>
     ((centavos || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  // Formata Date -> "dd/mm/aaaa"
+  res.locals.fmtData = (d) => {
+    const x = new Date(d);
+    return `${String(x.getDate()).padStart(2, '0')}/${String(x.getMonth() + 1).padStart(2, '0')}/${x.getFullYear()}`;
+  };
   next();
 });
 

@@ -760,3 +760,189 @@ textarea:focus {
   justify-content: center;
   margin: 0 auto 16px;
 }
+
+/* =========================================================================
+   AGENDA INTERNA (equipe)
+   ========================================================================= */
+.agenda-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.agenda-filtros {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.agenda-filtros input[type='date'],
+.agenda-filtros select {
+  width: auto;
+  font-size: 14px;
+  padding: 8px 10px;
+}
+
+.agenda-filtros .btn-sm {
+  padding: 8px 12px;
+}
+
+.lista-agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.agendamento {
+  padding: 20px;
+}
+
+.agendamento-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.agendamento-hora {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.agendamento-cliente {
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+.itens {
+  list-style: none;
+  border-top: 1px solid var(--borda);
+  margin-bottom: 12px;
+}
+
+.itens li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borda);
+  font-size: 14px;
+}
+
+.itens-direita {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-x {
+  border: none;
+  background: transparent;
+  color: var(--texto-sutil);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.btn-x:hover {
+  color: var(--erro);
+  background: var(--secao-alt);
+}
+
+.agendamento-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0 14px;
+}
+
+.form-add-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border-top: 1px solid var(--borda);
+  padding-top: 14px;
+}
+
+.form-add-item select {
+  flex: 1;
+  font-size: 14px;
+  padding: 10px 12px;
+}
+
+.input-qtd {
+  width: 64px;
+  flex: 0 0 auto;
+  text-align: center;
+  font-size: 14px;
+  padding: 10px 8px;
+}
+
+.agendamento-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.inline {
+  display: inline;
+}
+
+/* =========================================================================
+   HORÁRIOS & BLOQUEIOS
+   ========================================================================= */
+.tabela-jornada td {
+  vertical-align: middle;
+  padding: 8px 8px 8px 0;
+  border-bottom: none;
+}
+
+.tabela-jornada input[type='time'] {
+  width: auto;
+  font-size: 14px;
+  padding: 8px 10px;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--texto);
+  margin: 0;
+  white-space: nowrap;
+}
+
+.check input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--acao);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.col-acao {
+  text-align: right;
+  width: 1%;
+}
+
+/* Inputs de horário/data não esticam em telas maiores nos formulários gerais */
+.form input[type='time'],
+.form input[type='date'] {
+  width: 100%;
+}

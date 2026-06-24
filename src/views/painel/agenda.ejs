@@ -1,0 +1,109 @@
+<div class="cabecalho-pagina agenda-cabecalho">
+  <div>
+    <h1>Agenda</h1>
+    <p class="texto-secundario"><%= dataExtenso %></p>
+  </div>
+
+  <form method="GET" action="/painel/agenda" class="agenda-filtros">
+    <a class="btn btn-secundario btn-sm" title="Dia anterior"
+       href="/painel/agenda?data=<%= dataPrev %><%= ehAdmin ? '&barbeiro=' + barbeiroSelecionado : '' %>">←</a>
+    <input type="date" name="data" value="<%= dataStr %>" onchange="this.form.submit()" />
+    <a class="btn btn-secundario btn-sm" title="Próximo dia"
+       href="/painel/agenda?data=<%= dataNext %><%= ehAdmin ? '&barbeiro=' + barbeiroSelecionado : '' %>">→</a>
+    <% if (ehAdmin) { %>
+      <select name="barbeiro" onchange="this.form.submit()">
+        <option value="todos" <%= barbeiroSelecionado === 'todos' ? 'selected' : '' %>>Todos os barbeiros</option>
+        <% barbeiros.forEach(function (b) { %>
+          <option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
+        <% }) %>
+      </select>
+    <% } %>
+  </form>
+</div>
+
+<% if (agendamentos.length === 0) { %>
+  <div class="card"><p class="texto-secundario">Nenhum agendamento para esta data.</p></div>
+<% } else { %>
+  <div class="lista-agenda">
+    <% agendamentos.forEach(function (ag) { %>
+      <div class="card agendamento">
+        <div class="agendamento-topo">
+          <span class="agendamento-hora"><%= ag.horaInicio %></span>
+          <span class="status status-<%= ag.status %>"><%= ag.status %></span>
+        </div>
+
+        <div class="agendamento-cliente">
+          <strong><%= ag.clienteNome %></strong>
+          <% if (mostrarBarbeiroNoCard) { %><span class="texto-sutil"> · <%= ag.usuario.nome %></span><% } %>
+          <div class="texto-sutil"><%= ag.clienteEmail %> · <%= ag.clienteTelefone %></div>
+        </div>
+
+        <ul class="itens">
+          <% ag.itens.forEach(function (it) { %>
+            <li>
+              <span><%= it.servico.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %></span>
+              <span class="itens-direita">
+                <span><%= fmtBRL(it.valorUnitario * it.quantidade) %></span>
+                <form method="POST" action="/painel/agenda/itens/<%= it.id %>/remover" class="inline">
+                  <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+                  <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+                  <button class="btn-x" title="Remover item">×</button>
+                </form>
+              </span>
+            </li>
+          <% }) %>
+          <% if (ag.itens.length === 0) { %>
+            <li><span class="texto-sutil">Sem itens.</span></li>
+          <% } %>
+        </ul>
+
+        <div class="agendamento-total">
+          <span class="texto-sutil">Total</span>
+          <strong><%= fmtBRL(ag.valorTotal) %></strong>
+        </div>
+
+        <!-- Adicionar item -->
+        <form method="POST" action="/painel/agenda/<%= ag.id %>/itens" class="form-add-item">
+          <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+          <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+          <select name="servicoId" required>
+            <option value="">Adicionar corte/produto…</option>
+            <% servicos.forEach(function (s) { %>
+              <option value="<%= s.id %>"><%= s.nome %> — <%= fmtBRL(s.valor) %></option>
+            <% }) %>
+          </select>
+          <input type="number" name="quantidade" value="1" min="1" class="input-qtd" title="Quantidade" />
+          <button class="btn btn-secundario btn-sm">Adicionar</button>
+        </form>
+
+        <!-- Ações de status -->
+        <div class="agendamento-acoes">
+          <% if (ag.status !== 'concluido') { %>
+            <form method="POST" action="/painel/agenda/<%= ag.id %>/status" class="inline">
+              <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+              <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+              <input type="hidden" name="status" value="concluido" />
+              <button class="btn btn-secundario btn-sm">Concluir</button>
+            </form>
+          <% } %>
+          <% if (ag.status !== 'cancelado') { %>
+            <form method="POST" action="/painel/agenda/<%= ag.id %>/status" class="inline">
+              <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+              <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+              <input type="hidden" name="status" value="cancelado" />
+              <button class="btn btn-perigo btn-sm">Cancelar</button>
+            </form>
+          <% } %>
+          <% if (ag.status !== 'agendado') { %>
+            <form method="POST" action="/painel/agenda/<%= ag.id %>/status" class="inline">
+              <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+              <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+              <input type="hidden" name="status" value="agendado" />
+              <button class="btn btn-secundario btn-sm">Reabrir</button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
