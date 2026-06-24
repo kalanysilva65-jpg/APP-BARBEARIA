@@ -1,0 +1,31 @@
+{
+  "name": "barbearia",
+  "version": "1.0.0",
+  "description": "App de gestão para barbearia (agendamento, agenda, estoque e caixa)",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "seed": "node prisma/seed.js",
+    "migrate": "prisma migrate dev",
+    "setup": "prisma migrate dev --name init && node prisma/seed.js"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^6.2.1",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-ejs-layouts": "^2.5.1",
+    "express-session": "^1.18.1",
+    "method-override": "^3.0.0",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "prisma": "^6.2.1"
+  }
+}

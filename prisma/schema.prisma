@@ -1,0 +1,176 @@
+// Modelo de dados da barbearia.
+// Os nomes das tabelas/colunas no banco ficam em português (snake_case) via @map.
+// Valores monetários são guardados como INTEIROS em centavos (ex.: 4000 = R$ 40,00)
+// para evitar erros de arredondamento de ponto flutuante; a formatação acontece na view.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Equipe / barbeiros (admin + funcionários). Todos são agendáveis pelo cliente.
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  email     String   @unique
+  senhaHash String   @map("senha_hash")
+  papel     String // "admin" ou "funcionario"
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  horariosTrabalho HorarioTrabalho[]
+  bloqueios        Bloqueio[]
+  agendamentos     Agendamento[]
+
+  @@map("usuarios")
+}
+
+/// Jornada de trabalho de cada barbeiro (um registro por dia da semana).
+model HorarioTrabalho {
+  id         Int     @id @default(autoincrement())
+  usuarioId  Int     @map("usuario_id")
+  diaSemana  Int     @map("dia_semana") // 0=domingo ... 6=sábado
+  horaInicio String  @map("hora_inicio") // ex.: "09:00"
+  horaFim    String  @map("hora_fim") // ex.: "20:00"
+  trabalha   Boolean @default(true) // false = folga nesse dia
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("horarios_trabalho")
+}
+
+/// Bloqueios manuais de horário (almoço, compromisso, dia fechado etc.).
+model Bloqueio {
+  id         Int      @id @default(autoincrement())
+  usuarioId  Int      @map("usuario_id")
+  data       DateTime // dia do bloqueio (00:00)
+  horaInicio String   @map("hora_inicio")
+  horaFim    String   @map("hora_fim")
+  motivo     String? // opcional
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("bloqueios")
+}
+
+/// Categorias dos serviços/produtos do catálogo (configuráveis manualmente).
+model CategoriaServico {
+  id       Int       @id @default(autoincrement())
+  nome     String
+  servicos Servico[]
+
+  @@map("categorias_servico")
+}
+
+/// Serviços e produtos que o cliente agenda / a equipe adiciona ao atendimento.
+model Servico {
+  id          Int     @id @default(autoincrement())
+  nome        String
+  categoriaId Int?    @map("categoria_id")
+  valor       Int // centavos
+  duracaoMin  Int     @map("duracao_min") // usado para calcular os horários
+  fotoUrl     String? @map("foto_url") // caminho da imagem em /uploads
+  ativo       Boolean @default(true)
+
+  categoria CategoriaServico? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  itens     AgendamentoItem[]
+
+  @@map("servicos")
+}
+
+/// Agendamentos do cliente, vinculados a um barbeiro específico (obrigatório).
+model Agendamento {
+  id              Int      @id @default(autoincrement())
+  usuarioId       Int      @map("usuario_id") // barbeiro escolhido
+  clienteNome     String   @map("cliente_nome")
+  clienteEmail    String   @map("cliente_email")
+  clienteTelefone String   @map("cliente_telefone")
+  data            DateTime // dia do agendamento (00:00)
+  horaInicio      String   @map("hora_inicio")
+  status          String   @default("agendado") // agendado | concluido | cancelado
+  valorTotal      Int      @default(0) @map("valor_total") // centavos, recalculado pelos itens
+  criadoEm        DateTime @default(now()) @map("criado_em")
+
+  usuario Usuario           @relation(fields: [usuarioId], references: [id])
+  itens   AgendamentoItem[]
+  caixa   Caixa[]
+
+  @@map("agendamentos")
+}
+
+/// Itens (serviços/produtos) de cada agendamento. A equipe adiciona/remove aqui.
+model AgendamentoItem {
+  id            Int @id @default(autoincrement())
+  agendamentoId Int @map("agendamento_id")
+  servicoId     Int @map("servico_id")
+  valorUnitario Int @map("valor_unitario") // "congela" o preço no momento do agendamento (centavos)
+  quantidade    Int @default(1)
+
+  agendamento Agendamento @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
+  servico     Servico     @relation(fields: [servicoId], references: [id])
+
+  @@map("agendamento_itens")
+}
+
+/// Categorias dos itens de estoque (configuráveis manualmente).
+model CategoriaEstoque {
+  id    Int       @id @default(autoincrement())
+  nome  String
+  itens Estoque[]
+
+  @@map("categorias_estoque")
+}
+
+/// Itens de estoque (insumos internos). Alerta quando quantidade <= quantidadeMinima.
+model Estoque {
+  id               Int      @id @default(autoincrement())
+  nome             String
+  categoriaId      Int?     @map("categoria_id")
+  quantidade       Int      @default(0)
+  quantidadeMinima Int      @default(0) @map("quantidade_minima") // dispara o alerta
+  valorGasto       Int      @default(0) @map("valor_gasto") // custo da compra (centavos)
+  atualizadoEm     DateTime @default(now()) @updatedAt @map("atualizado_em")
+
+  categoria CategoriaEstoque? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+
+  @@map("estoque")
+}
+
+/// Categorias das movimentações de caixa (configuráveis manualmente).
+model CategoriaCaixa {
+  id          Int     @id @default(autoincrement())
+  nome        String
+  tipo        String // entrada | saida
+  lancamentos Caixa[]
+
+  @@map("categorias_caixa")
+}
+
+/// Movimentações de caixa (entradas e saídas).
+model Caixa {
+  id            Int      @id @default(autoincrement())
+  categoriaId   Int?     @map("categoria_id")
+  descricao     String
+  valor         Int // centavos
+  tipo          String // entrada | saida
+  data          DateTime @default(now())
+  agendamentoId Int?     @map("agendamento_id") // preenchido se veio de um agendamento concluído
+
+  categoria   CategoriaCaixa? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  agendamento Agendamento?    @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
+
+  @@map("caixa")
+}
+
+/// Configurações gerais do app (chave/valor). Ex.: caixa_automatico = "false".
+model Configuracao {
+  id    Int    @id @default(autoincrement())
+  chave String @unique
+  valor String
+
+  @@map("configuracoes")
+}

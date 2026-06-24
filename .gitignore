@@ -1,0 +1,17 @@
+# Dependências
+node_modules/
+
+# Variáveis de ambiente (use o .env.example como base)
+.env
+
+# Banco de dados SQLite (gerado por migrations/seed)
+prisma/dev.db
+prisma/dev.db-journal
+
+# Uploads de imagens (mantém a pasta, ignora o conteúdo)
+uploads/*
+!uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*

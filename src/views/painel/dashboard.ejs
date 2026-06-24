@@ -1,0 +1,39 @@
+<div class="cabecalho-pagina">
+  <h1>Olá, <%= usuario.nome %></h1>
+  <p class="texto-secundario">Bem-vindo ao painel da barbearia.</p>
+</div>
+
+<% if (usuario.papel === 'admin' && estoqueBaixo && estoqueBaixo.length > 0) { %>
+  <div class="alerta alerta-aviso">
+    <strong>Estoque baixo:</strong>
+    <%= estoqueBaixo.map(function (i) { return i.nome + ' (' + i.quantidade + ')'; }).join(', ') %>.
+  </div>
+<% } %>
+
+<div class="grade-cards">
+  <a href="/painel/agenda" class="card card-link">
+    <h2 class="card-titulo">Agenda</h2>
+    <p class="texto-secundario">
+      <%= usuario.papel === 'admin' ? 'Veja a agenda de todos os barbeiros.' : 'Veja e gerencie a sua agenda.' %>
+    </p>
+  </a>
+
+  <% if (usuario.papel === 'admin') { %>
+    <a href="/painel/servicos" class="card card-link">
+      <h2 class="card-titulo">Serviços & Produtos</h2>
+      <p class="texto-secundario">Cadastre cortes, produtos e categorias.</p>
+    </a>
+    <a href="/painel/estoque" class="card card-link">
+      <h2 class="card-titulo">Estoque</h2>
+      <p class="texto-secundario">Controle insumos e alertas de reposição.</p>
+    </a>
+    <a href="/painel/caixa" class="card card-link">
+      <h2 class="card-titulo">Caixa</h2>
+      <p class="texto-secundario">Entradas, saídas e saldo do dia e do mês.</p>
+    </a>
+    <a href="/painel/horarios" class="card card-link">
+      <h2 class="card-titulo">Horários</h2>
+      <p class="texto-secundario">Jornadas e bloqueios de cada barbeiro.</p>
+    </a>
+  <% } %>
+</div>
