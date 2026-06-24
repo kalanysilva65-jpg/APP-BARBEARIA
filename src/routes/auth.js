@@ -3,8 +3,8 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 
-// Raiz: manda para o painel (se logado) ou para o login.
-router.get('/', (req, res) => res.redirect(req.session.usuario ? '/painel' : '/login'));
+// Raiz: equipe logada vai para o painel; visitante (cliente) vai para o agendamento.
+router.get('/', (req, res) => res.redirect(req.session.usuario ? '/painel' : '/agendar'));
 
 router.get('/login', authController.mostrarLogin);
 router.post('/login', authController.fazerLogin);

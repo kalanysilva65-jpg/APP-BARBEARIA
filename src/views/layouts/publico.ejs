@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %>Barbearia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="tela-publica">
+    <header class="topo-publico">
+      <div class="container-estreito">
+        <a href="/agendar" class="marca">Barbearia<span>.</span></a>
+      </div>
+    </header>
+
+    <main class="container-estreito conteudo-publico">
+      <% if (typeof passo !== 'undefined' && passo >= 1 && passo <= 4) { %>
+        <%- include('../partials/passos', { passo: passo }) %>
+      <% } %>
+      <%- include('../partials/flash') %>
+      <%- body %>
+    </main>
+
+    <footer class="rodape-publico">
+      <div class="container-estreito">
+        <a href="/login" class="texto-sutil">Acesso da equipe →</a>
+      </div>
+    </footer>
+  </body>
+</html>

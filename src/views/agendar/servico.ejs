@@ -1,0 +1,23 @@
+<div class="cabecalho-pagina">
+  <h1>Escolha o serviço</h1>
+  <p class="texto-secundario">Selecione o que você deseja agendar.</p>
+</div>
+
+<div class="lista-opcoes">
+  <% servicos.forEach(function (s) { %>
+    <a class="opcao-selecionavel opcao-servico" href="/agendar/barbeiro?servicoId=<%= s.id %>">
+      <span class="opcao-info">
+        <span class="opcao-nome"><%= s.nome %></span>
+        <% if (s.categoria) { %><span class="texto-sutil"><%= s.categoria.nome %></span><% } %>
+      </span>
+      <span class="opcao-meta">
+        <span class="opcao-valor"><%= fmtBRL(s.valor) %></span>
+        <% if (s.duracaoMin > 0) { %><span class="texto-sutil"><%= s.duracaoMin %> min</span><% } %>
+      </span>
+    </a>
+  <% }) %>
+</div>
+
+<% if (servicos.length === 0) { %>
+  <div class="card"><p class="texto-secundario">Nenhum serviço disponível no momento.</p></div>
+<% } %>

@@ -1,0 +1,16 @@
+<a href="/agendar" class="link-voltar">← Voltar</a>
+
+<div class="cabecalho-pagina">
+  <h1>Escolha o barbeiro</h1>
+  <p class="texto-secundario"><%= servico.nome %> · <%= fmtBRL(servico.valor) %></p>
+</div>
+
+<div class="lista-opcoes">
+  <% barbeiros.forEach(function (b) { %>
+    <a class="opcao-selecionavel opcao-barbeiro"
+       href="/agendar/horario?servicoId=<%= servico.id %>&barbeiroId=<%= b.id %>">
+      <span class="avatar"><%= b.nome.charAt(0).toUpperCase() %></span>
+      <span class="opcao-nome"><%= b.nome %></span>
+    </a>
+  <% }) %>
+</div>

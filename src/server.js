@@ -47,6 +47,7 @@ app.use((req, res, next) => {
 
 // --- Rotas ----------------------------------------------------------------
 app.use('/', require('./routes/auth'));
+app.use('/agendar', require('./routes/agendar')); // área pública do cliente
 app.use('/painel', require('./routes/painel'));
 
 // --- 404 ------------------------------------------------------------------

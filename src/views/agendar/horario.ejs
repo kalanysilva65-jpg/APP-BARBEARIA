@@ -1,0 +1,36 @@
+<a href="/agendar/barbeiro?servicoId=<%= servico.id %>" class="link-voltar">← Voltar</a>
+
+<div class="cabecalho-pagina">
+  <h1>Escolha o horário</h1>
+  <p class="texto-secundario">Com <strong><%= barbeiro.nome %></strong> · <%= servico.nome %></p>
+</div>
+
+<% if (datas.length === 0) { %>
+  <div class="card">
+    <p class="texto-secundario">Este barbeiro ainda não tem dias de atendimento configurados.</p>
+  </div>
+<% } else { %>
+  <label>Data</label>
+  <div class="lista-datas">
+    <% datas.forEach(function (d) { %>
+      <a class="chip-data <%= d.iso === dataSel ? 'selecionado' : '' %>"
+         href="/agendar/horario?servicoId=<%= servico.id %>&barbeiroId=<%= barbeiro.id %>&data=<%= d.iso %>">
+        <%= d.rotulo %>
+      </a>
+    <% }) %>
+  </div>
+
+  <label class="mt-24">Horários disponíveis</label>
+  <% if (horarios.length === 0) { %>
+    <p class="texto-secundario">Sem horários livres nesta data. Tente outra.</p>
+  <% } else { %>
+    <div class="grade-horarios">
+      <% horarios.forEach(function (h) { %>
+        <a class="opcao-horario"
+           href="/agendar/dados?servicoId=<%= servico.id %>&barbeiroId=<%= barbeiro.id %>&data=<%= dataSel %>&hora=<%= h %>">
+          <%= h %>
+        </a>
+      <% }) %>
+    </div>
+  <% } %>
+<% } %>

@@ -1,0 +1,21 @@
+<div class="sucesso-topo">
+  <div class="sucesso-icone">✓</div>
+  <h1>Agendamento confirmado!</h1>
+  <p class="texto-secundario">Anote os detalhes abaixo. Te esperamos!</p>
+</div>
+
+<div class="card resumo">
+  <div class="resumo-linha"><span class="texto-sutil">Cliente</span><span><%= agendamento.clienteNome %></span></div>
+  <div class="resumo-linha"><span class="texto-sutil">Barbeiro</span><span><%= agendamento.usuario.nome %></span></div>
+  <div class="resumo-linha"><span class="texto-sutil">Data</span><span><%= dataExtenso %></span></div>
+  <div class="resumo-linha"><span class="texto-sutil">Horário</span><span><%= agendamento.horaInicio %></span></div>
+  <% agendamento.itens.forEach(function (it) { %>
+    <div class="resumo-linha">
+      <span class="texto-sutil"><%= it.servico.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %></span>
+      <span><%= fmtBRL(it.valorUnitario * it.quantidade) %></span>
+    </div>
+  <% }) %>
+  <div class="resumo-linha total"><span>Total</span><span><%= fmtBRL(agendamento.valorTotal) %></span></div>
+</div>
+
+<a href="/agendar" class="btn btn-secundario btn-bloco mt-24">Fazer outro agendamento</a>

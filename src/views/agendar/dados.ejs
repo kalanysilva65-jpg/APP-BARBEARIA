@@ -1,0 +1,37 @@
+<a href="/agendar/horario?servicoId=<%= servico.id %>&barbeiroId=<%= barbeiro.id %>&data=<%= data %>"
+   class="link-voltar">← Voltar</a>
+
+<div class="cabecalho-pagina">
+  <h1>Seus dados</h1>
+  <p class="texto-secundario">Estamos quase lá. Confira o resumo e preencha seus dados.</p>
+</div>
+
+<div class="card resumo">
+  <div class="resumo-linha"><span class="texto-sutil">Serviço</span><span><%= servico.nome %></span></div>
+  <div class="resumo-linha"><span class="texto-sutil">Barbeiro</span><span><%= barbeiro.nome %></span></div>
+  <div class="resumo-linha"><span class="texto-sutil">Data</span><span><%= dataExtenso %></span></div>
+  <div class="resumo-linha"><span class="texto-sutil">Horário</span><span><%= hora %></span></div>
+  <div class="resumo-linha total"><span>Total</span><span><%= fmtBRL(servico.valor) %></span></div>
+</div>
+
+<form method="POST" action="/agendar/confirmar" class="form mt-24">
+  <input type="hidden" name="servicoId" value="<%= servico.id %>" />
+  <input type="hidden" name="barbeiroId" value="<%= barbeiro.id %>" />
+  <input type="hidden" name="data" value="<%= data %>" />
+  <input type="hidden" name="hora" value="<%= hora %>" />
+
+  <div class="campo">
+    <label for="cliente_nome">Nome completo</label>
+    <input id="cliente_nome" name="cliente_nome" placeholder="Seu nome" required autofocus />
+  </div>
+  <div class="campo">
+    <label for="cliente_email">E-mail</label>
+    <input id="cliente_email" type="email" name="cliente_email" placeholder="seu@email.com" required />
+  </div>
+  <div class="campo">
+    <label for="cliente_telefone">Telefone</label>
+    <input id="cliente_telefone" name="cliente_telefone" placeholder="(00) 00000-0000" required />
+  </div>
+
+  <button class="btn btn-primario btn-bloco" type="submit">Confirmar agendamento</button>
+</form>

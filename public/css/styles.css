@@ -496,3 +496,267 @@ textarea:focus {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* =========================================================================
+   ÁREA PÚBLICA (agendamento do cliente) — foco em 1 passo por tela
+   ========================================================================= */
+.tela-publica {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.container-estreito {
+  width: 100%;
+  max-width: 480px; /* simula a largura de um celular mesmo em telas grandes */
+  margin: 0 auto;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.topo-publico {
+  border-bottom: 1px solid var(--borda);
+  background: var(--superficie);
+}
+
+.topo-publico .container-estreito {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.conteudo-publico {
+  flex: 1;
+  padding-top: 24px;
+  padding-bottom: 40px;
+}
+
+.rodape-publico {
+  padding: 24px 0;
+  text-align: center;
+}
+
+.rodape-publico a:hover {
+  color: var(--texto-secundario);
+}
+
+/* ----- Indicador de passos ------------------------------------------------ */
+.passos {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 28px;
+}
+
+.passos li {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--texto-sutil);
+  position: relative;
+}
+
+.passos li::before {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: -50%;
+  width: 100%;
+  height: 1px;
+  background: var(--borda);
+  z-index: 0;
+}
+
+.passos li:first-child::before {
+  display: none;
+}
+
+.passo-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--borda);
+  background: var(--superficie);
+  color: var(--texto-sutil);
+  font-size: 13px;
+  position: relative;
+  z-index: 1;
+}
+
+.passos li.atual .passo-num,
+.passos li.feito .passo-num {
+  background: var(--acao);
+  border-color: var(--acao);
+  color: #fff;
+}
+
+.passos li.atual,
+.passos li.feito {
+  color: var(--texto);
+}
+
+/* ----- Listas de opções (serviço / barbeiro) ----------------------------- */
+.lista-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.opcao-servico {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.opcao-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.opcao-nome {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.opcao-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.opcao-valor {
+  font-weight: 600;
+}
+
+.opcao-barbeiro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--secao-alt);
+  color: var(--texto);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* ----- Seletor de datas (rolagem horizontal) ----------------------------- */
+.lista-datas {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+  margin-top: 8px;
+}
+
+.chip-data {
+  flex: 0 0 auto;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-btn);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--superficie);
+}
+
+.chip-data.selecionado {
+  background: var(--acao);
+  color: #fff;
+  border-color: var(--acao);
+}
+
+/* ----- Grade de horários -------------------------------------------------- */
+.grade-horarios {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+
+@media (min-width: 420px) {
+  .grade-horarios {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ----- Link voltar -------------------------------------------------------- */
+.link-voltar {
+  display: inline-block;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--texto-secundario);
+}
+
+.link-voltar:hover {
+  color: var(--texto);
+}
+
+/* ----- Resumo / confirmação ---------------------------------------------- */
+.resumo {
+  padding: 20px 24px;
+}
+
+.resumo-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borda);
+  font-size: 15px;
+}
+
+.resumo-linha:last-child {
+  border-bottom: none;
+}
+
+.resumo-linha.total {
+  font-weight: 700;
+  font-size: 17px;
+  padding-top: 14px;
+}
+
+/* ----- Tela de sucesso ---------------------------------------------------- */
+.sucesso-topo {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.sucesso-icone {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--acao);
+  color: #fff;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
