@@ -1,0 +1,77 @@
+<div class="cabecalho-pagina agenda-cabecalho">
+  <div>
+    <h1>Serviços & Produtos</h1>
+    <p class="texto-secundario">Catálogo que aparece no agendamento e na agenda.</p>
+  </div>
+  <a href="/painel/servicos/novo" class="btn btn-primario btn-sm">+ Novo</a>
+</div>
+
+<div class="lista-servicos">
+  <% servicos.forEach(function (s) { %>
+    <div class="card servico-item <%= s.ativo ? '' : 'inativo' %>">
+      <div class="servico-foto">
+        <% if (s.fotoUrl) { %>
+          <img src="<%= s.fotoUrl %>" alt="<%= s.nome %>" />
+        <% } else { %>
+          <span class="sem-foto">sem foto</span>
+        <% } %>
+      </div>
+      <div class="servico-info">
+        <div class="servico-nome">
+          <%= s.nome %>
+          <% if (!s.ativo) { %><span class="status status-cancelado">inativo</span><% } %>
+        </div>
+        <div class="texto-sutil">
+          <%= s.categoria ? s.categoria.nome : 'Sem categoria' %><%= s.duracaoMin > 0 ? ' · ' + s.duracaoMin + ' min' : ' · produto' %>
+        </div>
+      </div>
+      <div class="servico-valor"><%= fmtBRL(s.valor) %></div>
+      <div class="servico-acoes">
+        <a href="/painel/servicos/<%= s.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
+        <form method="POST" action="/painel/servicos/<%= s.id %>/toggle" class="inline">
+          <button class="btn btn-secundario btn-sm"><%= s.ativo ? 'Desativar' : 'Ativar' %></button>
+        </form>
+        <form method="POST" action="/painel/servicos/<%= s.id %>/remover" class="inline"
+              onsubmit="return confirm('Excluir este item?')">
+          <button class="btn-x" title="Excluir">×</button>
+        </form>
+      </div>
+    </div>
+  <% }) %>
+
+  <% if (servicos.length === 0) { %>
+    <div class="card"><p class="texto-secundario">Nenhum serviço cadastrado ainda.</p></div>
+  <% } %>
+</div>
+
+<!-- Categorias -->
+<div class="card mt-24">
+  <h2>Categorias</h2>
+  <p class="texto-secundario mb-16">
+    Remover uma categoria não apaga os serviços — eles ficam "sem categoria".
+  </p>
+
+  <form method="POST" action="/painel/servicos/categorias" class="form-inline-cat">
+    <input name="nome" placeholder="Nova categoria" required />
+    <button class="btn btn-secundario btn-sm">Adicionar</button>
+  </form>
+
+  <ul class="lista-categorias mt-16">
+    <% categorias.forEach(function (c) { %>
+      <li>
+        <form method="POST" action="/painel/servicos/categorias/<%= c.id %>" class="form-inline-cat">
+          <input name="nome" value="<%= c.nome %>" />
+          <span class="texto-sutil"><%= c._count.servicos %> item(ns)</span>
+          <button class="btn btn-secundario btn-sm">Salvar</button>
+        </form>
+        <form method="POST" action="/painel/servicos/categorias/<%= c.id %>/remover" class="inline"
+              onsubmit="return confirm('Remover esta categoria?')">
+          <button class="btn-x" title="Remover categoria">×</button>
+        </form>
+      </li>
+    <% }) %>
+    <% if (categorias.length === 0) { %>
+      <li class="texto-secundario">Nenhuma categoria.</li>
+    <% } %>
+  </ul>
+</div>

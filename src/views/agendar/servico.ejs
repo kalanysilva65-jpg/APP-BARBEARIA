@@ -6,9 +6,12 @@
 <div class="lista-opcoes">
   <% servicos.forEach(function (s) { %>
     <a class="opcao-selecionavel opcao-servico" href="/agendar/barbeiro?servicoId=<%= s.id %>">
-      <span class="opcao-info">
-        <span class="opcao-nome"><%= s.nome %></span>
-        <% if (s.categoria) { %><span class="texto-sutil"><%= s.categoria.nome %></span><% } %>
+      <span class="opcao-esquerda">
+        <% if (s.fotoUrl) { %><img class="opcao-thumb" src="<%= s.fotoUrl %>" alt="" /><% } %>
+        <span class="opcao-info">
+          <span class="opcao-nome"><%= s.nome %></span>
+          <% if (s.categoria) { %><span class="texto-sutil"><%= s.categoria.nome %></span><% } %>
+        </span>
       </span>
       <span class="opcao-meta">
         <span class="opcao-valor"><%= fmtBRL(s.valor) %></span>

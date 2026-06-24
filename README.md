@@ -105,8 +105,8 @@ barbearia/
 ## 📈 Status de desenvolvimento
 
 - [x] **Fase 1** — Base: banco, autenticação e design system
-- [ ] **Fase 2** — Agendamento (lado do cliente)
-- [ ] **Fase 3** — Agenda da equipe + horários/bloqueios
-- [ ] **Fase 4** — Serviços & produtos (com upload)
+- [x] **Fase 2** — Agendamento (lado do cliente)
+- [x] **Fase 3** — Agenda da equipe + horários/bloqueios
+- [x] **Fase 4** — Serviços & produtos (com upload de foto)
 - [ ] **Fase 5** — Controle de estoque
 - [ ] **Fase 6** — Controle de caixa

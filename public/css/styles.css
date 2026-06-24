@@ -620,6 +620,13 @@ textarea:focus {
   gap: 16px;
 }
 
+.opcao-esquerda {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
 .opcao-info {
   display: flex;
   flex-direction: column;
@@ -945,4 +952,146 @@ textarea:focus {
 .form input[type='time'],
 .form input[type='date'] {
   width: 100%;
+}
+
+/* =========================================================================
+   CATÁLOGO (serviços & produtos)
+   ========================================================================= */
+.lista-servicos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.servico-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+
+.servico-item.inativo {
+  opacity: 0.55;
+}
+
+.servico-foto {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--raio-input);
+  overflow: hidden;
+  background: var(--secao-alt);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.servico-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sem-foto {
+  font-size: 11px;
+  color: var(--texto-sutil);
+  text-align: center;
+}
+
+.servico-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.servico-nome {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.servico-valor {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.servico-acoes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+@media (min-width: 640px) {
+  .servico-acoes {
+    width: auto;
+  }
+}
+
+.preview-foto {
+  width: 100px;
+  height: 100px;
+  border-radius: var(--raio-input);
+  overflow: hidden;
+  background: var(--secao-alt);
+  margin-bottom: 10px;
+}
+
+.preview-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+input[type='file'] {
+  padding: 8px;
+  font-size: 14px;
+}
+
+/* Categorias */
+.form-inline-cat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.form-inline-cat input {
+  width: auto;
+  flex: 1;
+  min-width: 140px;
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+.lista-categorias {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lista-categorias li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.lista-categorias li:last-child {
+  border-bottom: none;
+}
+
+/* Miniatura opcional no agendamento do cliente */
+.opcao-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--raio-input);
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--secao-alt);
 }
