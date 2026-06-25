@@ -1,0 +1,48 @@
+<a href="/painel/estoque" class="link-voltar">← Voltar</a>
+
+<div class="cabecalho-pagina">
+  <h1><%= item ? 'Editar item' : 'Novo item de estoque' %></h1>
+</div>
+
+<div class="card">
+  <form method="POST" class="form"
+        action="<%= item ? '/painel/estoque/' + item.id : '/painel/estoque' %>">
+
+    <div class="campo">
+      <label for="nome">Nome</label>
+      <input id="nome" name="nome" value="<%= item ? item.nome : '' %>" required autofocus />
+    </div>
+
+    <div class="campo">
+      <label for="categoriaId">Categoria</label>
+      <select id="categoriaId" name="categoriaId">
+        <option value="">Sem categoria</option>
+        <% categorias.forEach(function (c) { %>
+          <option value="<%= c.id %>" <%= item && item.categoriaId === c.id ? 'selected' : '' %>><%= c.nome %></option>
+        <% }) %>
+      </select>
+    </div>
+
+    <div class="grid-2">
+      <div class="campo">
+        <label for="quantidade">Quantidade atual</label>
+        <input id="quantidade" name="quantidade" type="number" min="0" value="<%= item ? item.quantidade : 0 %>" />
+      </div>
+      <div class="campo">
+        <label for="quantidadeMinima">Mínimo (alerta)</label>
+        <input id="quantidadeMinima" name="quantidadeMinima" type="number" min="0"
+               value="<%= item ? item.quantidadeMinima : 0 %>" />
+      </div>
+    </div>
+
+    <div class="campo">
+      <label for="valorGasto">Valor gasto na compra (R$)</label>
+      <input id="valorGasto" name="valorGasto" type="number" step="0.01" min="0"
+             value="<%= item ? (item.valorGasto / 100).toFixed(2) : '' %>" />
+    </div>
+
+    <button class="btn btn-primario btn-bloco" type="submit">
+      <%= item ? 'Salvar alterações' : 'Adicionar ao estoque' %>
+    </button>
+  </form>
+</div>

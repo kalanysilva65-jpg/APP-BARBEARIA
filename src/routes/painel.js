@@ -6,6 +6,7 @@ const prisma = require('../config/db');
 const agendaController = require('../controllers/agendaController');
 const horarioController = require('../controllers/horarioController');
 const servicoController = require('../controllers/servicoController');
+const estoqueController = require('../controllers/estoqueController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -60,11 +61,23 @@ router.post('/servicos/:id/toggle', exigeAdmin, servicoController.alternarAtivo)
 router.post('/servicos/:id/remover', exigeAdmin, servicoController.remover);
 router.post('/servicos/:id', exigeAdmin, uploadFoto, servicoController.atualizar);
 
+// --- Estoque (somente admin) ----------------------------------------------
+// Específicas (/novo, /categorias) antes das paramétricas (/:id).
+router.get('/estoque', exigeAdmin, estoqueController.listar);
+router.get('/estoque/novo', exigeAdmin, estoqueController.formNovo);
+router.post('/estoque', exigeAdmin, estoqueController.criar);
+router.post('/estoque/categorias', exigeAdmin, estoqueController.criarCategoria);
+router.post('/estoque/categorias/:id/remover', exigeAdmin, estoqueController.removerCategoria);
+router.post('/estoque/categorias/:id', exigeAdmin, estoqueController.renomearCategoria);
+router.get('/estoque/:id/editar', exigeAdmin, estoqueController.formEditar);
+router.post('/estoque/:id/ajuste', exigeAdmin, estoqueController.ajustar);
+router.post('/estoque/:id/remover', exigeAdmin, estoqueController.remover);
+router.post('/estoque/:id', exigeAdmin, estoqueController.atualizar);
+
 // --- Stubs das próximas fases ---------------------------------------------
 function emBreve(titulo, fase) {
   return (req, res) => res.render('painel/em-breve', { titulo, fase });
 }
-router.get('/estoque', exigeAdmin, emBreve('Estoque', 'Fase 5'));
 router.get('/caixa', exigeAdmin, emBreve('Caixa', 'Fase 6'));
 
 module.exports = router;

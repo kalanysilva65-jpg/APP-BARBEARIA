@@ -1,0 +1,87 @@
+<div class="cabecalho-pagina agenda-cabecalho">
+  <div>
+    <h1>Estoque</h1>
+    <p class="texto-secundario">Insumos da barbearia e alertas de reposição.</p>
+  </div>
+  <a href="/painel/estoque/novo" class="btn btn-primario btn-sm">+ Novo</a>
+</div>
+
+<% if (baixoEstoque.length > 0) { %>
+  <div class="alerta alerta-aviso">
+    <strong>Reposição:</strong> <%= baixoEstoque.length %> item(ns) no mínimo ou abaixo —
+    <%= baixoEstoque.map(function (i) { return i.nome + ' (' + i.quantidade + ')'; }).join(', ') %>.
+  </div>
+<% } %>
+
+<div class="lista-servicos">
+  <% itens.forEach(function (i) { var baixo = i.quantidade <= i.quantidadeMinima; %>
+    <div class="card estoque-item <%= baixo ? 'baixo' : '' %>">
+      <div class="estoque-info">
+        <div class="servico-nome">
+          <%= i.nome %>
+          <% if (baixo) { %><span class="status status-aviso">repor</span><% } %>
+        </div>
+        <div class="texto-sutil">
+          <%= i.categoria ? i.categoria.nome : 'Sem categoria' %> · custo <%= fmtBRL(i.valorGasto) %>
+        </div>
+      </div>
+
+      <div class="estoque-qtd">
+        <form method="POST" action="/painel/estoque/<%= i.id %>/ajuste" class="inline">
+          <input type="hidden" name="delta" value="-1" />
+          <button class="btn-qtd" title="Tirar 1">−</button>
+        </form>
+        <span class="qtd-num"><%= i.quantidade %></span>
+        <form method="POST" action="/painel/estoque/<%= i.id %>/ajuste" class="inline">
+          <input type="hidden" name="delta" value="1" />
+          <button class="btn-qtd" title="Adicionar 1">+</button>
+        </form>
+        <span class="texto-sutil qtd-min">mín. <%= i.quantidadeMinima %></span>
+      </div>
+
+      <div class="servico-acoes">
+        <a href="/painel/estoque/<%= i.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
+        <form method="POST" action="/painel/estoque/<%= i.id %>/remover" class="inline"
+              onsubmit="return confirm('Excluir este item?')">
+          <button class="btn-x" title="Excluir">×</button>
+        </form>
+      </div>
+    </div>
+  <% }) %>
+
+  <% if (itens.length === 0) { %>
+    <div class="card"><p class="texto-secundario">Nenhum item no estoque ainda.</p></div>
+  <% } %>
+</div>
+
+<!-- Categorias -->
+<div class="card mt-24">
+  <h2>Categorias de estoque</h2>
+  <p class="texto-secundario mb-16">
+    Remover uma categoria não apaga os itens — eles ficam "sem categoria".
+  </p>
+
+  <form method="POST" action="/painel/estoque/categorias" class="form-inline-cat">
+    <input name="nome" placeholder="Nova categoria" required />
+    <button class="btn btn-secundario btn-sm">Adicionar</button>
+  </form>
+
+  <ul class="lista-categorias mt-16">
+    <% categorias.forEach(function (c) { %>
+      <li>
+        <form method="POST" action="/painel/estoque/categorias/<%= c.id %>" class="form-inline-cat">
+          <input name="nome" value="<%= c.nome %>" />
+          <span class="texto-sutil"><%= c._count.itens %> item(ns)</span>
+          <button class="btn btn-secundario btn-sm">Salvar</button>
+        </form>
+        <form method="POST" action="/painel/estoque/categorias/<%= c.id %>/remover" class="inline"
+              onsubmit="return confirm('Remover esta categoria?')">
+          <button class="btn-x" title="Remover categoria">×</button>
+        </form>
+      </li>
+    <% }) %>
+    <% if (categorias.length === 0) { %>
+      <li class="texto-secundario">Nenhuma categoria.</li>
+    <% } %>
+  </ul>
+</div>

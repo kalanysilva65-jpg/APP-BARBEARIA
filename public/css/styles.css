@@ -1095,3 +1095,65 @@ input[type='file'] {
   flex-shrink: 0;
   background: var(--secao-alt);
 }
+
+/* =========================================================================
+   ESTOQUE
+   ========================================================================= */
+.estoque-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px;
+}
+
+/* Item em reposição: borda âmbar (cor só para comunicar estado) */
+.estoque-item.baixo {
+  border-color: var(--aviso);
+}
+
+.estoque-info {
+  flex: 1;
+  min-width: 160px;
+}
+
+.estoque-qtd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-qtd {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.btn-qtd:hover {
+  border-color: var(--texto-sutil);
+}
+
+.qtd-num {
+  min-width: 32px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.qtd-min {
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+/* Badge de status âmbar (reposição) */
+.status-aviso {
+  color: var(--aviso);
+  border-color: var(--aviso);
+}
