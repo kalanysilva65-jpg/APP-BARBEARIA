@@ -109,4 +109,4 @@ barbearia/
 - [x] **Fase 3** — Agenda da equipe + horários/bloqueios
 - [x] **Fase 4** — Serviços & produtos (com upload de foto)
 - [x] **Fase 5** — Controle de estoque (com alerta de mínimo)
-- [ ] **Fase 6** — Controle de caixa
+- [x] **Fase 6** — Controle de caixa (entradas/saídas, saldo dia/mês, entrada automática opcional)

@@ -7,6 +7,7 @@ const agendaController = require('../controllers/agendaController');
 const horarioController = require('../controllers/horarioController');
 const servicoController = require('../controllers/servicoController');
 const estoqueController = require('../controllers/estoqueController');
+const caixaController = require('../controllers/caixaController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -74,10 +75,14 @@ router.post('/estoque/:id/ajuste', exigeAdmin, estoqueController.ajustar);
 router.post('/estoque/:id/remover', exigeAdmin, estoqueController.remover);
 router.post('/estoque/:id', exigeAdmin, estoqueController.atualizar);
 
-// --- Stubs das próximas fases ---------------------------------------------
-function emBreve(titulo, fase) {
-  return (req, res) => res.render('painel/em-breve', { titulo, fase });
-}
-router.get('/caixa', exigeAdmin, emBreve('Caixa', 'Fase 6'));
+// --- Caixa (somente admin) ------------------------------------------------
+// Específicas (/config, /categorias) antes das paramétricas (/:id).
+router.get('/caixa', exigeAdmin, caixaController.ver);
+router.post('/caixa', exigeAdmin, caixaController.criar);
+router.post('/caixa/config', exigeAdmin, caixaController.alternarAutomatico);
+router.post('/caixa/categorias', exigeAdmin, caixaController.criarCategoria);
+router.post('/caixa/categorias/:id/remover', exigeAdmin, caixaController.removerCategoria);
+router.post('/caixa/categorias/:id', exigeAdmin, caixaController.atualizarCategoria);
+router.post('/caixa/:id/remover', exigeAdmin, caixaController.remover);
 
 module.exports = router;

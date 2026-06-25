@@ -5,6 +5,7 @@
 const prisma = require('../config/db');
 const { dataLocal } = require('../services/disponibilidade');
 const { DIAS_SEMANA } = require('../config/constantes');
+const caixaServ = require('../services/caixa');
 
 // Date -> "YYYY-MM-DD"
 function iso(data) {
@@ -154,8 +155,18 @@ async function mudarStatus(req, res) {
   const novo = req.body.status;
   if (['agendado', 'concluido', 'cancelado'].includes(novo)) {
     await prisma.agendamento.update({ where: { id: agendamento.id }, data: { status: novo } });
-    // (Fase 6) Se "concluido" e a opção de caixa automático estiver ligada,
-    // aqui será criada a entrada no caixa.
+
+    // Integração com o caixa (toggle "caixa automático"):
+    if (novo === 'concluido') {
+      // Gera a entrada no caixa, se o toggle estiver ligado (usa o total atualizado).
+      if (await caixaServ.caixaAutomaticoLigado()) {
+        const atual = await prisma.agendamento.findUnique({ where: { id: agendamento.id } });
+        await caixaServ.registrarEntradaAgendamento(atual);
+      }
+    } else {
+      // Reabrir (agendado) ou cancelar: remove eventual entrada automática.
+      await caixaServ.removerEntradaAgendamento(agendamento.id);
+    }
   }
   res.redirect(urlRetorno(req));
 }

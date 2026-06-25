@@ -1157,3 +1157,74 @@ input[type='file'] {
   color: var(--aviso);
   border-color: var(--aviso);
 }
+
+/* =========================================================================
+   CAIXA
+   ========================================================================= */
+.grade-resumo {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .grade-resumo {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.resumo-caixa {
+  padding: 20px 24px;
+}
+
+.resumo-titulo {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-secundario);
+  margin-bottom: 8px;
+}
+
+/* Sinais de valor: cor só para comunicar entrada/saída */
+.valor-entrada {
+  color: var(--sucesso);
+  font-weight: 600;
+}
+
+.valor-saida {
+  color: var(--erro);
+  font-weight: 600;
+}
+
+.col-valor {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Permite rolagem horizontal da tabela em telas estreitas */
+.tabela-rolagem {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.form-cat-caixa {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.form-cat-caixa input {
+  width: auto;
+  flex: 1;
+  min-width: 140px;
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+.form-cat-caixa select {
+  width: auto;
+  font-size: 14px;
+  padding: 8px 10px;
+}
