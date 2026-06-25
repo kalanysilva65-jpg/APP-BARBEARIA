@@ -1,0 +1,65 @@
+<div class="cabecalho-pagina">
+  <h1>Clientes</h1>
+  <p class="texto-secundario">Cadastro com telefone único. Agendamentos novos entram aqui automaticamente.</p>
+</div>
+
+<!-- Formulário (cria ou edita conforme o modo) -->
+<div class="card mb-16">
+  <h2><%= editando ? 'Editar cliente' : 'Novo cliente' %></h2>
+  <form method="POST" class="form mt-16"
+        action="<%= editando ? '/painel/clientes/' + editando.id : '/painel/clientes' %>">
+    <div class="grid-2">
+      <div class="campo">
+        <label for="nome">Nome</label>
+        <input id="nome" name="nome" value="<%= editando ? editando.nome : '' %>" required autofocus />
+      </div>
+      <div class="campo">
+        <label for="telefone">Telefone</label>
+        <input id="telefone" name="telefone" inputmode="tel" placeholder="(51) 99999-9999"
+               value="<%= editando ? fmtTelefone(editando.telefone) : '' %>" required />
+      </div>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-primario btn-sm" type="submit">
+        <%= editando ? 'Salvar' : 'Cadastrar' %>
+      </button>
+      <% if (editando) { %>
+        <a href="/painel/clientes" class="btn btn-secundario btn-sm">Cancelar</a>
+      <% } %>
+    </div>
+  </form>
+</div>
+
+<!-- Lista -->
+<div class="card">
+  <h2>Cadastrados (<%= clientes.length %>)</h2>
+  <% if (clientes.length === 0) { %>
+    <p class="texto-secundario mt-16">Nenhum cliente cadastrado ainda.</p>
+  <% } else { %>
+    <div class="tabela-rolagem">
+      <table class="tabela mt-16">
+        <thead>
+          <tr><th>Nome</th><th>Telefone</th><th class="col-valor">Agend.</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% clientes.forEach(function (c) { %>
+            <tr>
+              <td><%= c.nome %></td>
+              <td><%= fmtTelefone(c.telefone) %></td>
+              <td class="col-valor"><%= c._count.agendamentos %></td>
+              <td class="col-acao">
+                <div class="flex gap-8" style="justify-content: flex-end">
+                  <a href="/painel/clientes/<%= c.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
+                  <form method="POST" action="/painel/clientes/<%= c.id %>/remover" class="inline"
+                        onsubmit="return confirm('Remover este cliente?')">
+                    <button class="btn-x" title="Remover">×</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>

@@ -4,6 +4,7 @@
 const prisma = require('../config/db');
 const { horariosDisponiveis, dataLocal } = require('../services/disponibilidade');
 const { DIAS_SEMANA } = require('../config/constantes');
+const { normalizarTelefone } = require('../utils/telefone');
 
 // Date -> "YYYY-MM-DD"
 function iso(data) {
@@ -159,10 +160,21 @@ async function confirmar(req, res) {
     return res.redirect('/agendar/dados?' + qs);
   }
 
+  // Alimenta o cadastro de clientes: cria pelo telefone normalizado se ainda não
+  // existir; se já existir, apenas reaproveita (vincula). Não sobrescreve o nome.
+  const telefoneNorm = normalizarTelefone(telefone);
+  let clienteId = null;
+  if (telefoneNorm) {
+    let cliente = await prisma.cliente.findUnique({ where: { telefone: telefoneNorm } });
+    if (!cliente) cliente = await prisma.cliente.create({ data: { nome, telefone: telefoneNorm } });
+    clienteId = cliente.id;
+  }
+
   // Cria o agendamento já com o item do serviço escolhido (preço congelado)
   const agendamento = await prisma.agendamento.create({
     data: {
       usuarioId: barbeiroId,
+      clienteId,
       clienteNome: nome,
       clienteEmail: email,
       clienteTelefone: telefone,

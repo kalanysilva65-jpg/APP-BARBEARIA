@@ -93,13 +93,27 @@ model Agendamento {
   horaInicio      String   @map("hora_inicio")
   status          String   @default("agendado") // agendado | concluido | cancelado
   valorTotal      Int      @default(0) @map("valor_total") // centavos, recalculado pelos itens
+  clienteId       Int?     @map("cliente_id") // vínculo opcional ao cadastro de clientes
   criadoEm        DateTime @default(now()) @map("criado_em")
 
   usuario Usuario           @relation(fields: [usuarioId], references: [id])
+  cliente Cliente?          @relation(fields: [clienteId], references: [id], onDelete: SetNull)
   itens   AgendamentoItem[]
   caixa   Caixa[]
 
   @@map("agendamentos")
+}
+
+/// Cadastro de clientes. Telefone guardado normalizado (só dígitos) e único.
+model Cliente {
+  id       Int      @id @default(autoincrement())
+  nome     String
+  telefone String   @unique // normalizado: apenas dígitos
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  agendamentos Agendamento[]
+
+  @@map("clientes")
 }
 
 /// Itens (serviços/produtos) de cada agendamento. A equipe adiciona/remove aqui.

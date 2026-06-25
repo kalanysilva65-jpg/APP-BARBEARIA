@@ -9,6 +9,7 @@ const servicoController = require('../controllers/servicoController');
 const estoqueController = require('../controllers/estoqueController');
 const caixaController = require('../controllers/caixaController');
 const comissaoController = require('../controllers/comissaoController');
+const clienteController = require('../controllers/clienteController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -42,6 +43,14 @@ router.post('/agenda/:id/itens', agendaController.adicionarItem);
 router.post('/agenda/itens/:id/remover', agendaController.removerItem);
 router.post('/agenda/:id/status', agendaController.mudarStatus);
 router.post('/agenda/:id/excluir', agendaController.excluir);
+
+// --- Clientes (admin + funcionários) --------------------------------------
+// Específicas (/:id/editar, /:id/remover) antes da paramétrica de update (/:id).
+router.get('/clientes', clienteController.listar);
+router.get('/clientes/:id/editar', clienteController.formEditar);
+router.post('/clientes', clienteController.criar);
+router.post('/clientes/:id/remover', clienteController.remover);
+router.post('/clientes/:id', clienteController.atualizar);
 
 // --- Comissões (somente admin) --------------------------------------------
 router.get('/comissoes', exigeAdmin, comissaoController.ver);

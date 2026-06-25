@@ -41,6 +41,10 @@ Acesse: **http://localhost:3000**
 > Atalho: depois do `npm install`, você pode rodar `npm run setup` (faz a
 > migration e o seed de uma vez) e então `npm run dev`.
 
+> **Windows (uso diário):** depois de instalado, é só dar **duplo-clique em
+> `iniciar.bat`** na pasta do projeto — ele sobe o app e mostra o endereço para
+> abrir no PC e no celular (mesma Wi-Fi). Deixe a janela aberta enquanto usar.
+
 ---
 
 ## 🔑 Logins de teste
@@ -110,3 +114,9 @@ barbearia/
 - [x] **Fase 4** — Serviços & produtos (com upload de foto)
 - [x] **Fase 5** — Controle de estoque (com alerta de mínimo)
 - [x] **Fase 6** — Controle de caixa (entradas/saídas, saldo dia/mês, entrada automática opcional)
+
+### Funcionalidades adicionais
+
+- [x] **Comissões por barbeiro** — relatório (admin) de 50% sobre **serviços concluídos**, com seletor de período (Hoje/Semana/Mês + faixa) e seletor de barbeiro
+- [x] **Cadastro de clientes** — nome + **telefone único** (comparado de forma normalizada, só dígitos); novos agendamentos alimentam a lista automaticamente. Acesso de admin e funcionários
+- [x] **Excluir agendamento** na agenda (qualquer status), com confirmação

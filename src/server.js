@@ -47,6 +47,8 @@ app.use((req, res, next) => {
     const x = new Date(d);
     return `${String(x.getDate()).padStart(2, '0')}/${String(x.getMonth() + 1).padStart(2, '0')}/${x.getFullYear()}`;
   };
+  // Formata telefone normalizado -> "(51) 99999-9999"
+  res.locals.fmtTelefone = require('./utils/telefone').formatarTelefone;
   next();
 });
 
