@@ -102,6 +102,13 @@
               <button class="btn btn-secundario btn-sm">Reabrir</button>
             </form>
           <% } %>
+
+          <form method="POST" action="/painel/agenda/<%= ag.id %>/excluir" class="inline"
+                onsubmit="return confirm('Excluir este agendamento? Esta ação não pode ser desfeita.')">
+            <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+            <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+            <button class="btn btn-perigo btn-sm">Excluir</button>
+          </form>
         </div>
       </div>
     <% }) %>

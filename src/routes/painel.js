@@ -8,6 +8,7 @@ const horarioController = require('../controllers/horarioController');
 const servicoController = require('../controllers/servicoController');
 const estoqueController = require('../controllers/estoqueController');
 const caixaController = require('../controllers/caixaController');
+const comissaoController = require('../controllers/comissaoController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -40,6 +41,10 @@ router.get('/agenda', agendaController.verAgenda);
 router.post('/agenda/:id/itens', agendaController.adicionarItem);
 router.post('/agenda/itens/:id/remover', agendaController.removerItem);
 router.post('/agenda/:id/status', agendaController.mudarStatus);
+router.post('/agenda/:id/excluir', agendaController.excluir);
+
+// --- Comissões (somente admin) --------------------------------------------
+router.get('/comissoes', exigeAdmin, comissaoController.ver);
 
 // --- Horários & bloqueios (somente admin) ---------------------------------
 router.get('/horarios', exigeAdmin, horarioController.ver);

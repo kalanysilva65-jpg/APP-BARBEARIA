@@ -171,4 +171,19 @@ async function mudarStatus(req, res) {
   res.redirect(urlRetorno(req));
 }
 
-module.exports = { verAgenda, adicionarItem, removerItem, mudarStatus };
+// POST /painel/agenda/:id/excluir — exclui o agendamento (qualquer status)
+async function excluir(req, res) {
+  const agendamento = await prisma.agendamento.findUnique({ where: { id: Number(req.params.id) } });
+  if (!agendamento) return res.redirect('/painel/agenda');
+  if (!podeAlterar(req.session.usuario, agendamento)) return negarAcesso(res);
+
+  // Remove eventual entrada automática no caixa vinculada a este agendamento.
+  await caixaServ.removerEntradaAgendamento(agendamento.id);
+  // Exclui o agendamento (os itens caem em cascata pelo schema).
+  await prisma.agendamento.delete({ where: { id: agendamento.id } });
+
+  req.session.flash = { tipo: 'sucesso', texto: 'Agendamento excluído.' };
+  res.redirect(urlRetorno(req));
+}
+
+module.exports = { verAgenda, adicionarItem, removerItem, mudarStatus, excluir };

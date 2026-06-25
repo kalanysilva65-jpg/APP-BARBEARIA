@@ -1,0 +1,95 @@
+<div class="cabecalho-pagina">
+  <h1>Comissões</h1>
+  <p class="texto-secundario">50% sobre os <strong>serviços concluídos</strong> no período (produtos não entram).</p>
+</div>
+
+<!-- Seletor de período -->
+<div class="card mb-16">
+  <div class="comissao-presets">
+    <a class="btn btn-secundario btn-sm" href="/painel/comissoes?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>&barbeiro=<%= barbeiroSelecionado %>">Hoje</a>
+    <a class="btn btn-secundario btn-sm" href="/painel/comissoes?inicio=<%= presetSemana.inicio %>&fim=<%= presetSemana.fim %>&barbeiro=<%= barbeiroSelecionado %>">Semana</a>
+    <a class="btn btn-secundario btn-sm" href="/painel/comissoes?inicio=<%= presetMes.inicio %>&fim=<%= presetMes.fim %>&barbeiro=<%= barbeiroSelecionado %>">Mês</a>
+  </div>
+  <form method="GET" action="/painel/comissoes" class="form-periodo mt-16">
+    <div class="campo">
+      <label for="barbeiro">Barbeiro</label>
+      <select id="barbeiro" name="barbeiro" onchange="this.form.submit()">
+        <option value="todos" <%= barbeiroSelecionado === 'todos' ? 'selected' : '' %>>Todos os barbeiros</option>
+        <% barbeiros.forEach(function (b) { %>
+          <option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="campo">
+      <label for="inicio">De</label>
+      <input id="inicio" type="date" name="inicio" value="<%= inicioStr %>" />
+    </div>
+    <div class="campo">
+      <label for="fim">Até</label>
+      <input id="fim" type="date" name="fim" value="<%= fimStr %>" />
+    </div>
+    <button class="btn btn-primario btn-sm">Aplicar</button>
+  </form>
+</div>
+
+<!-- Totais gerais -->
+<div class="grade-resumo mb-16">
+  <div class="card resumo-caixa">
+    <div class="resumo-titulo">Faturado em serviços</div>
+    <div class="resumo-valor-grande"><%= fmtBRL(totalGeralServicos) %></div>
+  </div>
+  <div class="card resumo-caixa">
+    <div class="resumo-titulo">Comissão total (50%)</div>
+    <div class="resumo-valor-grande valor-entrada"><%= fmtBRL(totalGeralComissao) %></div>
+  </div>
+</div>
+
+<!-- Por barbeiro -->
+<% grupos.forEach(function (g) { %>
+  <div class="card mb-16">
+    <div class="comissao-cabecalho">
+      <div>
+        <h2><%= g.barbeiro.nome %></h2>
+        <span class="texto-sutil"><%= g.qtd %> atendimento(s) concluído(s)</span>
+      </div>
+      <div class="comissao-numeros">
+        <div class="comissao-num">
+          <span class="texto-sutil">Faturado</span>
+          <strong><%= fmtBRL(g.totalServicos) %></strong>
+        </div>
+        <div class="comissao-num">
+          <span class="texto-sutil">Comissão</span>
+          <strong class="valor-entrada"><%= fmtBRL(g.comissao) %></strong>
+        </div>
+      </div>
+    </div>
+
+    <% if (g.atendimentos.length === 0) { %>
+      <p class="texto-secundario mt-16">Nenhum atendimento concluído neste período.</p>
+    <% } else { %>
+      <div class="tabela-rolagem">
+        <table class="tabela mt-16">
+          <thead>
+            <tr><th>Data</th><th>Cliente</th><th>Itens</th><th class="col-valor">Serviços</th></tr>
+          </thead>
+          <tbody>
+            <% g.atendimentos.forEach(function (a) { %>
+              <tr>
+                <td><%= fmtData(a.ag.data) %></td>
+                <td><%= a.ag.clienteNome %></td>
+                <td>
+                  <% a.itens.forEach(function (it) { %>
+                    <span class="<%= it.ehServico ? '' : 'item-produto' %>">
+                      <%= it.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %><%= it.ehServico ? '' : ' (produto)' %>
+                    </span><br />
+                  <% }) %>
+                </td>
+                <td class="col-valor"><%= fmtBRL(a.subtotal) %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+<% }) %>
