@@ -1,9 +1,11 @@
 <div class="cabecalho-pagina">
   <h1>Comissões</h1>
-  <p class="texto-secundario">50% sobre os <strong>serviços concluídos</strong> no período (produtos não entram).</p>
+  <p class="texto-secundario">
+    Serviços pela % de cada barbeiro · produtos a <%= comissaoProdutoPct %>% · só atendimentos concluídos.
+  </p>
 </div>
 
-<!-- Seletor de período -->
+<!-- Seletor de período e de barbeiro -->
 <div class="card mb-16">
   <div class="comissao-presets">
     <a class="btn btn-secundario btn-sm" href="/painel/comissoes?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>&barbeiro=<%= barbeiroSelecionado %>">Hoje</a>
@@ -35,11 +37,11 @@
 <!-- Totais gerais -->
 <div class="grade-resumo mb-16">
   <div class="card resumo-caixa">
-    <div class="resumo-titulo">Faturado em serviços</div>
-    <div class="resumo-valor-grande"><%= fmtBRL(totalGeralServicos) %></div>
+    <div class="resumo-titulo">Faturado (serviços + produtos)</div>
+    <div class="resumo-valor-grande"><%= fmtBRL(totalServicos + totalProdutos) %></div>
   </div>
   <div class="card resumo-caixa">
-    <div class="resumo-titulo">Comissão total<% if (barbeiroSelecionado !== 'todos' && grupos[0]) { %> (<%= grupos[0].barbeiro.comissaoPercentual %>%)<% } %></div>
+    <div class="resumo-titulo">Comissão total</div>
     <div class="resumo-valor-grande valor-entrada"><%= fmtBRL(totalGeralComissao) %></div>
   </div>
 </div>
@@ -54,11 +56,15 @@
       </div>
       <div class="comissao-numeros">
         <div class="comissao-num">
-          <span class="texto-sutil">Faturado</span>
-          <strong><%= fmtBRL(g.totalServicos) %></strong>
+          <span class="texto-sutil">Serviços</span>
+          <strong><%= fmtBRL(g.servicosTotal) %></strong>
         </div>
         <div class="comissao-num">
-          <span class="texto-sutil">Comissão (<%= g.barbeiro.comissaoPercentual %>%)</span>
+          <span class="texto-sutil">Produtos</span>
+          <strong><%= fmtBRL(g.produtosTotal) %></strong>
+        </div>
+        <div class="comissao-num">
+          <span class="texto-sutil">Comissão</span>
           <strong class="valor-entrada"><%= fmtBRL(g.comissao) %></strong>
         </div>
       </div>
@@ -68,10 +74,11 @@
       <input type="hidden" name="inicio" value="<%= inicioStr %>" />
       <input type="hidden" name="fim" value="<%= fimStr %>" />
       <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
-      <label for="perc-<%= g.barbeiro.id %>">Comissão (%)</label>
+      <label for="perc-<%= g.barbeiro.id %>">Comissão serviços (%)</label>
       <input id="perc-<%= g.barbeiro.id %>" type="number" name="percentual" step="0.5" min="0" max="100"
              value="<%= g.barbeiro.comissaoPercentual %>" />
       <button class="btn btn-secundario btn-sm">Salvar %</button>
+      <span class="texto-sutil">Produtos: <%= comissaoProdutoPct %>% (fixo)</span>
     </form>
 
     <% if (g.atendimentos.length === 0) { %>
@@ -80,7 +87,10 @@
       <div class="tabela-rolagem">
         <table class="tabela mt-16">
           <thead>
-            <tr><th>Data</th><th>Cliente</th><th>Itens</th><th class="col-valor">Serviços</th></tr>
+            <tr>
+              <th>Data</th><th>Cliente</th><th>Itens</th>
+              <th class="col-valor">Serviços</th><th class="col-valor">Produtos</th>
+            </tr>
           </thead>
           <tbody>
             <% g.atendimentos.forEach(function (a) { %>
@@ -89,12 +99,13 @@
                 <td><%= a.ag.clienteNome %></td>
                 <td>
                   <% a.itens.forEach(function (it) { %>
-                    <span class="<%= it.ehServico ? '' : 'item-produto' %>">
-                      <%= it.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %><%= it.ehServico ? '' : ' (produto)' %>
+                    <span class="<%= it.ehProduto ? 'item-produto' : '' %>">
+                      <%= it.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %><%= it.ehProduto ? ' (produto)' : '' %>
                     </span><br />
                   <% }) %>
                 </td>
-                <td class="col-valor"><%= fmtBRL(a.subtotal) %></td>
+                <td class="col-valor"><%= a.servicosSub > 0 ? fmtBRL(a.servicosSub) : '—' %></td>
+                <td class="col-valor"><%= a.produtosSub > 0 ? fmtBRL(a.produtosSub) : '—' %></td>
               </tr>
             <% }) %>
           </tbody>

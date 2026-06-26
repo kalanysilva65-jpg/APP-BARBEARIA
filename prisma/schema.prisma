@@ -76,6 +76,7 @@ model Servico {
   duracaoMin  Int     @map("duracao_min") // usado para calcular os horários
   fotoUrl     String? @map("foto_url") // caminho da imagem em /uploads
   ativo       Boolean @default(true)
+  ehProduto   Boolean @default(false) @map("eh_produto") // produto (comissão fixa) x serviço (% do barbeiro)
 
   categoria CategoriaServico? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
   itens     AgendamentoItem[]

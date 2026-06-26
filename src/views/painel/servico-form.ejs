@@ -25,9 +25,16 @@
                value="<%= servico ? servico.duracaoMin : 0 %>" />
       </div>
     </div>
-    <p class="texto-sutil" style="margin-top: -8px; margin-bottom: 16px">
-      Use duração <strong>0</strong> para produtos (não ocupam horário na agenda).
-    </p>
+    <div class="campo">
+      <label class="check">
+        <input type="checkbox" name="ehProduto" <%= servico && servico.ehProduto ? 'checked' : '' %> />
+        É um produto
+      </label>
+      <span class="texto-sutil">
+        Produto: comissão fixa de 10% e não ocupa horário (deixe a duração em 0).
+        Serviço: usa a % de comissão do barbeiro.
+      </span>
+    </div>
 
     <div class="campo">
       <label for="categoriaId">Categoria</label>

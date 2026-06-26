@@ -1,13 +1,9 @@
 // Controlador do painel de comissões por barbeiro (somente admin).
-// Relatório sobre dados existentes: soma os itens de SERVIÇO (não produtos) dos
-// agendamentos CONCLUÍDOS no período, usando o valorUnitario congelado de cada item.
-// Comissão = 50% do total de serviços de cada barbeiro.
+// Serviços: comissão pela % de cada barbeiro. Produtos: comissão fixa (COMISSAO_PRODUTO_PERCENTUAL).
+// Relatório sobre dados existentes, usando o valorUnitario congelado e só
+// agendamentos CONCLUÍDOS no período.
 const prisma = require('../config/db');
-
-// Convenção do catálogo: item com duração > 0 é serviço; duração 0 é produto.
-function ehServico(servico) {
-  return servico.duracaoMin > 0;
-}
+const { COMISSAO_PRODUTO_PERCENTUAL } = require('../config/constantes');
 
 // Date -> "YYYY-MM-DD"
 function iso(d) {
@@ -52,34 +48,39 @@ async function ver(req, res) {
     orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
   });
 
-  // Agrupa por barbeiro
+  // Agrupa por barbeiro, separando serviços de produtos
   const mapa = new Map();
   for (const b of barbeiros) {
-    mapa.set(b.id, { barbeiro: b, atendimentos: [], totalServicos: 0, qtd: 0 });
+    mapa.set(b.id, { barbeiro: b, atendimentos: [], servicosTotal: 0, produtosTotal: 0, qtd: 0 });
   }
 
   for (const ag of agendamentos) {
     const grupo = mapa.get(ag.usuarioId);
     if (!grupo) continue; // agendamento de barbeiro inativo: fora do relatório
 
-    let subtotal = 0;
+    let servicosSub = 0;
+    let produtosSub = 0;
     const itens = ag.itens.map((it) => {
-      const servico = ehServico(it.servico);
+      const produto = it.servico.ehProduto;
       const valor = it.valorUnitario * it.quantidade;
-      if (servico) subtotal += valor; // só serviços entram na comissão
-      return { nome: it.servico.nome, quantidade: it.quantidade, valor, ehServico: servico };
+      if (produto) produtosSub += valor;
+      else servicosSub += valor;
+      return { nome: it.servico.nome, quantidade: it.quantidade, valor, ehProduto: produto };
     });
 
-    grupo.atendimentos.push({ ag, itens, subtotal });
-    grupo.totalServicos += subtotal;
+    grupo.atendimentos.push({ ag, itens, servicosSub, produtosSub });
+    grupo.servicosTotal += servicosSub;
+    grupo.produtosTotal += produtosSub;
     grupo.qtd += 1;
   }
 
-  const todosGrupos = Array.from(mapa.values()).map((g) => ({
-    ...g,
-    // Comissão = total de serviços × (% do barbeiro). Padrão 50% se não definido.
-    comissao: Math.round(g.totalServicos * ((g.barbeiro.comissaoPercentual ?? 50) / 100)),
-  }));
+  // Comissão = serviços × (% do barbeiro) + produtos × (% fixo de produto)
+  const todosGrupos = Array.from(mapa.values()).map((g) => {
+    const pct = g.barbeiro.comissaoPercentual ?? 50;
+    const comissaoServicos = Math.round(g.servicosTotal * (pct / 100));
+    const comissaoProdutos = Math.round(g.produtosTotal * (COMISSAO_PRODUTO_PERCENTUAL / 100));
+    return { ...g, comissaoServicos, comissaoProdutos, comissao: comissaoServicos + comissaoProdutos };
+  });
 
   // Filtro de barbeiro: 'todos' (padrão) ou um id específico.
   const barbeiroSelecionado =
@@ -90,8 +91,9 @@ async function ver(req, res) {
       ? todosGrupos
       : todosGrupos.filter((g) => String(g.barbeiro.id) === barbeiroSelecionado);
 
-  // Totais refletem a seleção (um barbeiro ou todos).
-  const totalGeralServicos = grupos.reduce((s, g) => s + g.totalServicos, 0);
+  // Totais refletem a seleção
+  const totalServicos = grupos.reduce((s, g) => s + g.servicosTotal, 0);
+  const totalProdutos = grupos.reduce((s, g) => s + g.produtosTotal, 0);
   const totalGeralComissao = grupos.reduce((s, g) => s + g.comissao, 0);
 
   // Atalhos de período
@@ -109,15 +111,17 @@ async function ver(req, res) {
     barbeiroSelecionado,
     inicioStr,
     fimStr,
-    totalGeralServicos,
+    totalServicos,
+    totalProdutos,
     totalGeralComissao,
+    comissaoProdutoPct: COMISSAO_PRODUTO_PERCENTUAL,
     presetHoje: { inicio: iso(hoje), fim: iso(hoje) },
     presetSemana: { inicio: iso(seg), fim: iso(dom) },
     presetMes: periodoMesAtual(),
   });
 }
 
-// POST /painel/comissoes/percentual/:id — ajusta a % de comissão de um barbeiro
+// POST /painel/comissoes/percentual/:id — ajusta a % de comissão (serviços) de um barbeiro
 async function salvarPercentual(req, res) {
   const id = Number(req.params.id);
   let p = parseFloat(String(req.body.percentual || '').replace(',', '.'));

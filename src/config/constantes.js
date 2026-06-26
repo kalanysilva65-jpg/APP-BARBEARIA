@@ -10,4 +10,7 @@ module.exports = {
 
   // Nomes dos dias da semana (índice 0 = domingo), para exibição.
   DIAS_SEMANA: ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'],
+
+  // Comissão fixa dos produtos (em %). Serviços usam a % de cada barbeiro.
+  COMISSAO_PRODUTO_PERCENTUAL: 10,
 };

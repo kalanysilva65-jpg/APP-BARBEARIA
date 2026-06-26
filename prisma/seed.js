@@ -62,8 +62,8 @@ async function main() {
         { nome: 'Corte + Barba', categoriaId: catCortes.id, valor: 6000, duracaoMin: 60 },
         { nome: 'Barba', categoriaId: catBarba.id, valor: 3000, duracaoMin: 30 },
         { nome: 'Pigmentação', categoriaId: catCortes.id, valor: 7000, duracaoMin: 60 },
-        { nome: 'Pomada Modeladora', categoriaId: catPomadas.id, valor: 3500, duracaoMin: 0 },
-        { nome: 'Creme Hidratante', categoriaId: catCremes.id, valor: 2500, duracaoMin: 0 },
+        { nome: 'Pomada Modeladora', categoriaId: catPomadas.id, valor: 3500, duracaoMin: 0, ehProduto: true },
+        { nome: 'Creme Hidratante', categoriaId: catCremes.id, valor: 2500, duracaoMin: 0, ehProduto: true },
       ],
     });
   }

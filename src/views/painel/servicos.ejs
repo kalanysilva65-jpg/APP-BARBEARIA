@@ -22,7 +22,7 @@
           <% if (!s.ativo) { %><span class="status status-cancelado">inativo</span><% } %>
         </div>
         <div class="texto-sutil">
-          <%= s.categoria ? s.categoria.nome : 'Sem categoria' %><%= s.duracaoMin > 0 ? ' · ' + s.duracaoMin + ' min' : ' · produto' %>
+          <%= s.categoria ? s.categoria.nome : 'Sem categoria' %><%= s.ehProduto ? ' · produto' : (s.duracaoMin > 0 ? ' · ' + s.duracaoMin + ' min' : '') %>
         </div>
       </div>
       <div class="servico-valor"><%= fmtBRL(s.valor) %></div>
