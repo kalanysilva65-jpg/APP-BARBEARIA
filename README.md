@@ -117,6 +117,8 @@ barbearia/
 
 ### Funcionalidades adicionais
 
-- [x] **Comissões por barbeiro** — relatório (admin) de 50% sobre **serviços concluídos**, com seletor de período (Hoje/Semana/Mês + faixa) e seletor de barbeiro
-- [x] **Cadastro de clientes** — nome + **telefone único** (comparado de forma normalizada, só dígitos); novos agendamentos alimentam a lista automaticamente. Acesso de admin e funcionários
+- [x] **Comissões por barbeiro** — relatório (admin) com **% configurável por barbeiro** sobre serviços, **produtos a 10%**, **ticket médio** e **taxa de ocupação**; seletor de período e de barbeiro
+- [x] **Cadastro de clientes** — nome + **telefone único** (comparado de forma normalizada, só dígitos); novos agendamentos alimentam a lista automaticamente; histórico do cliente. Acesso de admin e funcionários
+- [x] **Agendamento manual** pela equipe, com autocomplete de clientes e bloqueio de conflito
 - [x] **Excluir agendamento** na agenda (qualquer status), com confirmação
+- [x] **Planos (assinaturas)** — modelos limitado/ilimitado (admin) com **serviço incluso**; atribuição ao cliente com **entrada no caixa na compra**; uso no agendamento do site (telefone → ilimitado só **seg–qui**, **R$ 0**, consome 1 uso); comissão pelo **valor do plano**, uma vez por assinatura

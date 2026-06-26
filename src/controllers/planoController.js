@@ -17,18 +17,27 @@ function lerForm(body) {
   const usos = tipo === 'limitado' ? Math.max(1, parseInt(body.usos, 10) || 1) : null;
   const validadeDias = Math.max(1, parseInt(body.validadeDias, 10) || 30);
   const valor = reaisParaCentavos(body.valor);
-  return { nome, tipo, usos, validadeDias, valor };
+  const servicoId = body.servicoId ? Number(body.servicoId) : null; // null = qualquer serviço
+  return { nome, tipo, usos, validadeDias, valor, servicoId };
+}
+
+// Serviços ativos para o select do formulário.
+function listarServicos() {
+  return prisma.servico.findMany({ where: { ativo: true }, orderBy: { nome: 'asc' } });
 }
 
 // GET /painel/planos
 async function listar(req, res) {
-  const planos = await prisma.plano.findMany({ orderBy: [{ ativo: 'desc' }, { nome: 'asc' }] });
+  const planos = await prisma.plano.findMany({
+    include: { servico: true },
+    orderBy: [{ ativo: 'desc' }, { nome: 'asc' }],
+  });
   res.render('painel/planos', { titulo: 'Planos', planos });
 }
 
 // GET /painel/planos/novo
 async function formNovo(req, res) {
-  res.render('painel/plano-form', { titulo: 'Novo plano', plano: null });
+  res.render('painel/plano-form', { titulo: 'Novo plano', plano: null, servicos: await listarServicos() });
 }
 
 // POST /painel/planos
@@ -47,7 +56,7 @@ async function criar(req, res) {
 async function formEditar(req, res) {
   const plano = await prisma.plano.findUnique({ where: { id: Number(req.params.id) } });
   if (!plano) return res.redirect('/painel/planos');
-  res.render('painel/plano-form', { titulo: 'Editar plano', plano });
+  res.render('painel/plano-form', { titulo: 'Editar plano', plano, servicos: await listarServicos() });
 }
 
 // POST /painel/planos/:id

@@ -15,6 +15,9 @@
       <span><%= fmtBRL(it.valorUnitario * it.quantidade) %></span>
     </div>
   <% }) %>
+  <% if (usouPlano) { %>
+    <div class="resumo-linha"><span class="texto-sutil">Pagamento</span><span>Via plano</span></div>
+  <% } %>
   <div class="resumo-linha total"><span>Total</span><span><%= fmtBRL(agendamento.valorTotal) %></span></div>
 </div>
 

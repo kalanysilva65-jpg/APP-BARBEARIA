@@ -7,6 +7,7 @@ const { dataLocal, paraMinutos, duracaoEfetiva } = require('../services/disponib
 const { DIAS_SEMANA, INTERVALO_SLOT_MIN } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const caixaServ = require('../services/caixa');
+const planoServ = require('../services/plano');
 
 // Date -> "YYYY-MM-DD"
 function iso(data) {
@@ -168,6 +169,14 @@ async function mudarStatus(req, res) {
       // Reabrir (agendado) ou cancelar: remove eventual entrada automática.
       await caixaServ.removerEntradaAgendamento(agendamento.id);
     }
+
+    // Ajuste de uso do plano (cancelar devolve 1 uso; reabrir volta a consumir).
+    if (agendamento.clientePlanoId) {
+      const eraAtivo = agendamento.status !== 'cancelado';
+      const ficaAtivo = novo !== 'cancelado';
+      if (eraAtivo && !ficaAtivo) await planoServ.ajustarUso(agendamento.clientePlanoId, +1);
+      else if (!eraAtivo && ficaAtivo) await planoServ.ajustarUso(agendamento.clientePlanoId, -1);
+    }
   }
   res.redirect(urlRetorno(req));
 }
@@ -180,6 +189,10 @@ async function excluir(req, res) {
 
   // Remove eventual entrada automática no caixa vinculada a este agendamento.
   await caixaServ.removerEntradaAgendamento(agendamento.id);
+  // Devolve o uso do plano se o agendamento ainda estava ativo (não cancelado).
+  if (agendamento.clientePlanoId && agendamento.status !== 'cancelado') {
+    await planoServ.ajustarUso(agendamento.clientePlanoId, +1);
+  }
   // Exclui o agendamento (os itens caem em cascata pelo schema).
   await prisma.agendamento.delete({ where: { id: agendamento.id } });
 

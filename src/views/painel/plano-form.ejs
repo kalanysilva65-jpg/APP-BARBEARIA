@@ -19,6 +19,17 @@
       </select>
     </div>
 
+    <div class="campo">
+      <label for="servicoId">Serviço incluso</label>
+      <select id="servicoId" name="servicoId">
+        <option value="">Qualquer serviço</option>
+        <% servicos.forEach(function (s) { %>
+          <option value="<%= s.id %>" <%= plano && plano.servicoId === s.id ? 'selected' : '' %>><%= s.nome %></option>
+        <% }) %>
+      </select>
+      <span class="texto-sutil">É o serviço que o cliente agenda usando o plano.</span>
+    </div>
+
     <div class="grid-2">
       <div class="campo" id="campo-usos">
         <label for="usos">Nº de usos</label>

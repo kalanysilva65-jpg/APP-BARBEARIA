@@ -1,3 +1,12 @@
+<% if (assinatura) { %>
+  <div class="alerta alerta-sucesso">
+    Usando o plano <strong><%= assinatura.plano.nome %></strong><%= assinatura.usosRestantes !== null ? ' · ' + assinatura.usosRestantes + ' uso(s) restante(s)' : ' · ilimitado (seg–qui)' %>.
+    <a href="/agendar">Agendar sem plano</a>
+  </div>
+<% } else { %>
+  <div class="alerta"><a href="/agendar/plano">Tem um plano? Use seu telefone →</a></div>
+<% } %>
+
 <div class="cabecalho-pagina">
   <h1>Escolha o serviço</h1>
   <p class="texto-secundario">Selecione o que você deseja agendar.</p>
@@ -5,7 +14,8 @@
 
 <div class="lista-opcoes">
   <% servicos.forEach(function (s) { %>
-    <a class="opcao-selecionavel opcao-servico" href="/agendar/barbeiro?servicoId=<%= s.id %>">
+    <a class="opcao-selecionavel opcao-servico"
+       href="/agendar/barbeiro?servicoId=<%= s.id %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
       <span class="opcao-esquerda">
         <% if (s.fotoUrl) { %><img class="opcao-thumb" src="<%= s.fotoUrl %>" alt="" /><% } %>
         <span class="opcao-info">
@@ -14,7 +24,11 @@
         </span>
       </span>
       <span class="opcao-meta">
-        <span class="opcao-valor"><%= fmtBRL(s.valor) %></span>
+        <% if (assinatura) { %>
+          <span class="opcao-valor">Incluso</span>
+        <% } else { %>
+          <span class="opcao-valor"><%= fmtBRL(s.valor) %></span>
+        <% } %>
         <% if (s.duracaoMin > 0) { %><span class="texto-sutil"><%= s.duracaoMin %> min</span><% } %>
       </span>
     </a>

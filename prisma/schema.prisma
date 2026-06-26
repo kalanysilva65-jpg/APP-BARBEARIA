@@ -80,6 +80,7 @@ model Servico {
 
   categoria CategoriaServico? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
   itens     AgendamentoItem[]
+  planos    Plano[]
 
   @@map("servicos")
 }
@@ -96,12 +97,14 @@ model Agendamento {
   status          String   @default("agendado") // agendado | concluido | cancelado
   valorTotal      Int      @default(0) @map("valor_total") // centavos, recalculado pelos itens
   clienteId       Int?     @map("cliente_id") // vínculo opcional ao cadastro de clientes
+  clientePlanoId  Int?     @map("cliente_plano_id") // assinatura usada (agendamento via plano)
   criadoEm        DateTime @default(now()) @map("criado_em")
 
-  usuario Usuario           @relation(fields: [usuarioId], references: [id])
-  cliente Cliente?          @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  itens   AgendamentoItem[]
-  caixa   Caixa[]
+  usuario      Usuario           @relation(fields: [usuarioId], references: [id])
+  cliente      Cliente?          @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  clientePlano ClientePlano?     @relation(fields: [clientePlanoId], references: [id], onDelete: SetNull)
+  itens        AgendamentoItem[]
+  caixa        Caixa[]
 
   @@map("agendamentos")
 }
@@ -129,8 +132,10 @@ model Plano {
   validadeDias Int      @default(30) @map("validade_dias") // validade em dias a partir da aquisição
   valor        Int      @default(0) // centavos; entra no caixa quando o cliente adquire
   ativo        Boolean  @default(true)
+  servicoId    Int?     @map("servico_id") // serviço coberto pelo plano (null = qualquer)
   criadoEm     DateTime @default(now()) @map("criado_em")
 
+  servico     Servico?       @relation(fields: [servicoId], references: [id], onDelete: SetNull)
   assinaturas ClientePlano[]
 
   @@map("planos")
@@ -147,8 +152,9 @@ model ClientePlano {
   ativo         Boolean  @default(true)
   criadoEm      DateTime @default(now()) @map("criado_em")
 
-  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  plano   Plano   @relation(fields: [planoId], references: [id])
+  cliente      Cliente       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  plano        Plano         @relation(fields: [planoId], references: [id])
+  agendamentos Agendamento[]
 
   @@map("cliente_planos")
 }

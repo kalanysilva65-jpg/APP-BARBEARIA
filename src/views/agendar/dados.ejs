@@ -1,4 +1,4 @@
-<a href="/agendar/horario?servicoId=<%= servico.id %>&barbeiroId=<%= barbeiro.id %>&data=<%= data %>"
+<a href="/agendar/horario?servicoId=<%= servico.id %>&barbeiroId=<%= barbeiro.id %>&data=<%= data %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>"
    class="link-voltar">← Voltar</a>
 
 <div class="cabecalho-pagina">
@@ -11,7 +11,12 @@
   <div class="resumo-linha"><span class="texto-sutil">Barbeiro</span><span><%= barbeiro.nome %></span></div>
   <div class="resumo-linha"><span class="texto-sutil">Data</span><span><%= dataExtenso %></span></div>
   <div class="resumo-linha"><span class="texto-sutil">Horário</span><span><%= hora %></span></div>
-  <div class="resumo-linha total"><span>Total</span><span><%= fmtBRL(servico.valor) %></span></div>
+  <% if (assinatura) { %>
+    <div class="resumo-linha"><span class="texto-sutil">Plano</span><span><%= assinatura.plano.nome %></span></div>
+    <div class="resumo-linha total"><span>Total</span><span>Incluso no plano (<%= fmtBRL(0) %>)</span></div>
+  <% } else { %>
+    <div class="resumo-linha total"><span>Total</span><span><%= fmtBRL(servico.valor) %></span></div>
+  <% } %>
 </div>
 
 <form method="POST" action="/agendar/confirmar" class="form mt-24">
@@ -19,18 +24,21 @@
   <input type="hidden" name="barbeiroId" value="<%= barbeiro.id %>" />
   <input type="hidden" name="data" value="<%= data %>" />
   <input type="hidden" name="hora" value="<%= hora %>" />
+  <% if (assinatura) { %><input type="hidden" name="assinatura" value="<%= assinatura.id %>" /><% } %>
 
   <div class="campo">
     <label for="cliente_nome">Nome completo</label>
-    <input id="cliente_nome" name="cliente_nome" placeholder="Seu nome" required autofocus />
-  </div>
-  <div class="campo">
-    <label for="cliente_email">E-mail</label>
-    <input id="cliente_email" type="email" name="cliente_email" placeholder="seu@email.com" required />
+    <input id="cliente_nome" name="cliente_nome" placeholder="Seu nome" required
+           value="<%= assinatura ? assinatura.cliente.nome : '' %>" <%= assinatura ? 'readonly' : 'autofocus' %> />
   </div>
   <div class="campo">
     <label for="cliente_telefone">Telefone</label>
-    <input id="cliente_telefone" name="cliente_telefone" placeholder="(00) 00000-0000" required />
+    <input id="cliente_telefone" name="cliente_telefone" placeholder="(00) 00000-0000" required
+           value="<%= assinatura ? fmtTelefone(assinatura.cliente.telefone) : '' %>" <%= assinatura ? 'readonly' : '' %> />
+  </div>
+  <div class="campo">
+    <label for="cliente_email">E-mail<%= assinatura ? ' (opcional)' : '' %></label>
+    <input id="cliente_email" type="email" name="cliente_email" placeholder="seu@email.com" <%= assinatura ? '' : 'required' %> />
   </div>
 
   <button class="btn btn-primario btn-bloco" type="submit">Confirmar agendamento</button>

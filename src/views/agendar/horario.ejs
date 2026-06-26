@@ -1,20 +1,25 @@
-<a href="/agendar/barbeiro?servicoId=<%= servico.id %>" class="link-voltar">← Voltar</a>
+<a href="/agendar/barbeiro?servicoId=<%= servico.id %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>"
+   class="link-voltar">← Voltar</a>
 
 <div class="cabecalho-pagina">
   <h1>Escolha o horário</h1>
   <p class="texto-secundario">Com <strong><%= barbeiro.nome %></strong> · <%= servico.nome %></p>
 </div>
 
+<% if (ilimitado) { %>
+  <div class="alerta alerta-aviso">Plano ilimitado: agendamento só de <strong>segunda a quinta</strong>.</div>
+<% } %>
+
 <% if (datas.length === 0) { %>
   <div class="card">
-    <p class="texto-secundario">Este barbeiro ainda não tem dias de atendimento configurados.</p>
+    <p class="texto-secundario">Sem datas disponíveis para este barbeiro<%= ilimitado ? ' de seg a qui' : '' %>.</p>
   </div>
 <% } else { %>
   <label>Data</label>
   <div class="lista-datas">
     <% datas.forEach(function (d) { %>
       <a class="chip-data <%= d.iso === dataSel ? 'selecionado' : '' %>"
-         href="/agendar/horario?servicoId=<%= servico.id %>&barbeiroId=<%= barbeiro.id %>&data=<%= d.iso %>">
+         href="/agendar/horario?servicoId=<%= servico.id %>&barbeiroId=<%= barbeiro.id %>&data=<%= d.iso %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
         <%= d.rotulo %>
       </a>
     <% }) %>
@@ -27,7 +32,7 @@
     <div class="grade-horarios">
       <% horarios.forEach(function (h) { %>
         <a class="opcao-horario"
-           href="/agendar/dados?servicoId=<%= servico.id %>&barbeiroId=<%= barbeiro.id %>&data=<%= dataSel %>&hora=<%= h %>">
+           href="/agendar/dados?servicoId=<%= servico.id %>&barbeiroId=<%= barbeiro.id %>&data=<%= dataSel %>&hora=<%= h %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
           <%= h %>
         </a>
       <% }) %>

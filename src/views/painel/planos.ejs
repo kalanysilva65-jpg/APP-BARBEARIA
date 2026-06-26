@@ -18,7 +18,7 @@
           <% if (!p.ativo) { %><span class="status status-cancelado">inativo</span><% } %>
         </div>
         <div class="texto-sutil">
-          <%= p.tipo === 'limitado' ? p.usos + ' uso(s)' : 'ilimitado · só seg–qui' %> · validade <%= p.validadeDias %> dias
+          <%= p.tipo === 'limitado' ? p.usos + ' uso(s)' : 'ilimitado · só seg–qui' %> · validade <%= p.validadeDias %> dias · <%= p.servico ? p.servico.nome : 'qualquer serviço' %>
         </div>
       </div>
       <div class="servico-valor"><%= fmtBRL(p.valor) %></div>

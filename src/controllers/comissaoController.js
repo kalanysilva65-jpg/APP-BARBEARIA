@@ -45,7 +45,11 @@ async function ver(req, res) {
 
   const agendamentos = await prisma.agendamento.findMany({
     where: { status: 'concluido', data: { gte: inicio, lt: fimExcl } },
-    include: { usuario: true, itens: { include: { servico: true } } },
+    include: {
+      usuario: true,
+      itens: { include: { servico: true } },
+      clientePlano: { include: { plano: true } },
+    },
     orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
   });
 
@@ -55,6 +59,8 @@ async function ver(req, res) {
     mapa.set(b.id, { barbeiro: b, atendimentos: [], servicosTotal: 0, produtosTotal: 0, ocupadoMin: 0, qtd: 0 });
   }
 
+  // O valor do plano conta UMA ÚNICA VEZ por assinatura (não por atendimento).
+  const planosCreditados = new Set();
   for (const ag of agendamentos) {
     const grupo = mapa.get(ag.usuarioId);
     if (!grupo) continue; // agendamento de barbeiro inativo: fora do relatório
@@ -62,16 +68,35 @@ async function ver(req, res) {
     let servicosSub = 0;
     let produtosSub = 0;
     let duracaoApt = 0;
+    const viaPlano = !!ag.clientePlanoId;
+
+    // Itens (para exibição) e tempo ocupado.
     const itens = ag.itens.map((it) => {
-      const produto = it.servico.ehProduto;
-      const valor = it.valorUnitario * it.quantidade;
-      if (produto) produtosSub += valor;
-      else servicosSub += valor;
-      duracaoApt += (it.servico.duracaoMin || 0) * it.quantidade; // tempo ocupado
-      return { nome: it.servico.nome, quantidade: it.quantidade, valor, ehProduto: produto };
+      duracaoApt += (it.servico.duracaoMin || 0) * it.quantidade;
+      return {
+        nome: it.servico.nome,
+        quantidade: it.quantidade,
+        valor: it.valorUnitario * it.quantidade,
+        ehProduto: it.servico.ehProduto,
+      };
     });
 
-    grupo.atendimentos.push({ ag, itens, servicosSub, produtosSub });
+    if (viaPlano && ag.clientePlano && ag.clientePlano.plano) {
+      // Cliente paga R$ 0. A comissão usa o VALOR DO PLANO, contado uma única vez
+      // por assinatura no período (no 1º atendimento concluído); os demais usos contam 0.
+      if (!planosCreditados.has(ag.clientePlanoId)) {
+        servicosSub = ag.clientePlano.plano.valor;
+        planosCreditados.add(ag.clientePlanoId);
+      }
+    } else {
+      for (const it of ag.itens) {
+        const valor = it.valorUnitario * it.quantidade;
+        if (it.servico.ehProduto) produtosSub += valor;
+        else servicosSub += valor;
+      }
+    }
+
+    grupo.atendimentos.push({ ag, itens, servicosSub, produtosSub, viaPlano });
     grupo.servicosTotal += servicosSub;
     grupo.produtosTotal += produtosSub;
     grupo.ocupadoMin += duracaoApt;

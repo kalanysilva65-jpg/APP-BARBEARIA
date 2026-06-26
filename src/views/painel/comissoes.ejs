@@ -104,7 +104,7 @@
             <% g.atendimentos.forEach(function (a) { %>
               <tr>
                 <td><%= fmtData(a.ag.data) %></td>
-                <td><%= a.ag.clienteNome %></td>
+                <td><%= a.ag.clienteNome %><% if (a.viaPlano) { %> <span class="status">plano</span><% } %></td>
                 <td>
                   <% a.itens.forEach(function (it) { %>
                     <span class="<%= it.ehProduto ? 'item-produto' : '' %>">
