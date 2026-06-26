@@ -1338,3 +1338,58 @@ input[type='file'] {
 .link-cliente:hover {
   border-bottom-color: var(--texto);
 }
+
+/* =========================================================================
+   AUTOCOMPLETE DE CLIENTE (agendamento manual)
+   ========================================================================= */
+.autocomplete {
+  position: relative;
+}
+
+.sugestoes {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-input);
+  box-shadow: var(--sombra);
+  z-index: 20;
+  overflow: hidden;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.sugestao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--borda);
+  padding: 10px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--texto);
+}
+
+.sugestao:last-child {
+  border-bottom: none;
+}
+
+.sugestao:hover {
+  background: var(--secao-alt);
+}
+
+.sugestao span {
+  color: var(--texto-sutil);
+  font-size: 13px;
+  white-space: nowrap;
+}

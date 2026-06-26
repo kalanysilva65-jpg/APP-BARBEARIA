@@ -39,6 +39,8 @@ router.get('/', async (req, res) => {
 
 // --- Agenda (todos: funcionário vê a sua, admin vê todas) -----------------
 router.get('/agenda', agendaController.verAgenda);
+router.get('/agenda/novo', agendaController.formNovo); // agendamento manual
+router.post('/agenda/novo', agendaController.criarManual);
 router.post('/agenda/:id/itens', agendaController.adicionarItem);
 router.post('/agenda/itens/:id/remover', agendaController.removerItem);
 router.post('/agenda/:id/status', agendaController.mudarStatus);

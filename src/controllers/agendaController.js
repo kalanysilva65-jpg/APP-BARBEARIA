@@ -3,8 +3,9 @@
 //  - Funcionário vê e altera SOMENTE a própria agenda.
 //  - Admin vê a agenda de todos e pode alterar qualquer agendamento.
 const prisma = require('../config/db');
-const { dataLocal } = require('../services/disponibilidade');
-const { DIAS_SEMANA } = require('../config/constantes');
+const { dataLocal, paraMinutos, duracaoEfetiva } = require('../services/disponibilidade');
+const { DIAS_SEMANA, INTERVALO_SLOT_MIN } = require('../config/constantes');
+const { normalizarTelefone } = require('../utils/telefone');
 const caixaServ = require('../services/caixa');
 
 // Date -> "YYYY-MM-DD"
@@ -186,4 +187,111 @@ async function excluir(req, res) {
   res.redirect(urlRetorno(req));
 }
 
-module.exports = { verAgenda, adicionarItem, removerItem, mudarStatus, excluir };
+// Carrega os dados auxiliares do formulário de agendamento manual.
+async function dadosForm(usuario) {
+  const ehAdmin = usuario.papel === 'admin';
+  const barbeiros = ehAdmin
+    ? await prisma.usuario.findMany({ where: { ativo: true }, orderBy: { id: 'asc' } })
+    : [];
+  const servicos = await prisma.servico.findMany({ where: { ativo: true }, orderBy: { nome: 'asc' } });
+  const clientes = await prisma.cliente.findMany({
+    select: { id: true, nome: true, telefone: true },
+    orderBy: { nome: 'asc' },
+  });
+  return { ehAdmin, barbeiros, servicos, clientes };
+}
+
+// GET /painel/agenda/novo — formulário de agendamento manual
+async function formNovo(req, res) {
+  const dados = await dadosForm(req.session.usuario);
+  res.render('painel/agenda-novo', {
+    titulo: 'Novo agendamento',
+    ...dados,
+    valores: null,
+    erro: null,
+    hojeIso: iso(new Date()),
+  });
+}
+
+// POST /painel/agenda/novo — cria o agendamento manual (com bloqueio de conflito)
+async function criarManual(req, res) {
+  const usuario = req.session.usuario;
+  const ehAdmin = usuario.papel === 'admin';
+
+  // Barbeiro: admin escolhe; funcionário agenda sempre para si.
+  const usuarioId = ehAdmin ? Number(req.body.barbeiroId) : usuario.id;
+  const servicoId = Number(req.body.servicoId);
+  const data = req.body.data;
+  const hora = req.body.hora;
+  const nome = (req.body.cliente_nome || '').trim();
+  const email = (req.body.cliente_email || '').trim();
+  const telefone = (req.body.cliente_telefone || '').trim();
+
+  const barbeiro = await prisma.usuario.findFirst({ where: { id: usuarioId, ativo: true } });
+  const servico = await prisma.servico.findFirst({ where: { id: servicoId, ativo: true } });
+
+  const erros = [];
+  if (!barbeiro) erros.push('Selecione um barbeiro.');
+  if (!servico) erros.push('Selecione um serviço.');
+  if (!data || !hora) erros.push('Informe data e horário.');
+  if (!nome) erros.push('Informe o nome do cliente.');
+  if (!telefone) erros.push('Informe o telefone do cliente.');
+
+  // Bloqueio de conflito: o novo horário não pode sobrepor outro atendimento do barbeiro.
+  if (barbeiro && servico && data && hora) {
+    const iniNovo = paraMinutos(hora);
+    const fimNovo = iniNovo + duracaoEfetiva(servico.duracaoMin);
+    const existentes = await prisma.agendamento.findMany({
+      where: { usuarioId, data: dataLocal(data), status: { not: 'cancelado' } },
+      include: { itens: { include: { servico: true } } },
+    });
+    const conflita = existentes.some((ag) => {
+      const ini = paraMinutos(ag.horaInicio);
+      const dur =
+        ag.itens.reduce((s, it) => s + duracaoEfetiva(it.servico.duracaoMin) * it.quantidade, 0) ||
+        INTERVALO_SLOT_MIN;
+      return iniNovo < ini + dur && ini < fimNovo;
+    });
+    if (conflita) erros.push('Esse horário conflita com outro atendimento desse barbeiro. Escolha outro.');
+  }
+
+  if (erros.length) {
+    const dados = await dadosForm(usuario);
+    return res.render('painel/agenda-novo', {
+      titulo: 'Novo agendamento',
+      ...dados,
+      valores: req.body,
+      erro: erros.join(' '),
+      hojeIso: iso(new Date()),
+    });
+  }
+
+  // Alimenta/vincula o cliente pelo telefone normalizado (igual ao agendamento do site).
+  const telNorm = normalizarTelefone(telefone);
+  let clienteId = null;
+  if (telNorm) {
+    let cliente = await prisma.cliente.findUnique({ where: { telefone: telNorm } });
+    if (!cliente) cliente = await prisma.cliente.create({ data: { nome, telefone: telNorm } });
+    clienteId = cliente.id;
+  }
+
+  await prisma.agendamento.create({
+    data: {
+      usuarioId,
+      clienteId,
+      clienteNome: nome,
+      clienteEmail: email,
+      clienteTelefone: telefone,
+      data: dataLocal(data),
+      horaInicio: hora,
+      status: 'agendado',
+      valorTotal: servico.valor,
+      itens: { create: [{ servicoId: servico.id, valorUnitario: servico.valor, quantidade: 1 }] },
+    },
+  });
+
+  req.session.flash = { tipo: 'sucesso', texto: 'Agendamento criado.' };
+  res.redirect('/painel/agenda?data=' + data + (ehAdmin ? '&barbeiro=' + usuarioId : ''));
+}
+
+module.exports = { verAgenda, adicionarItem, removerItem, mudarStatus, excluir, formNovo, criarManual };
