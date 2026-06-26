@@ -72,7 +72,13 @@ async function atualizar(req, res) {
   res.redirect('/painel/clientes');
 }
 
-// GET /painel/clientes/:id — detalhe do cliente com o histórico de agendamentos
+// "YYYY-MM-DD" do dia atual (meia-noite local)
+function isoHoje() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// GET /painel/clientes/:id — detalhe do cliente (histórico + planos)
 async function detalhe(req, res) {
   const cliente = await prisma.cliente.findUnique({ where: { id: Number(req.params.id) } });
   if (!cliente) return res.redirect('/painel/clientes');
@@ -83,7 +89,76 @@ async function detalhe(req, res) {
     orderBy: [{ data: 'desc' }, { horaInicio: 'desc' }],
   });
 
-  res.render('painel/cliente-detalhe', { titulo: cliente.nome, cliente, agendamentos });
+  // Planos do cliente (assinaturas) + planos disponíveis para adicionar
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const assinaturasRaw = await prisma.clientePlano.findMany({
+    where: { clienteId: cliente.id },
+    include: { plano: true },
+    orderBy: { criadoEm: 'desc' },
+  });
+  const assinaturas = assinaturasRaw.map((a) => ({
+    ...a,
+    // Vigente = ativo, dentro da validade e (se limitado) com usos restantes.
+    vigente: a.ativo && new Date(a.dataFim) >= hoje && (a.usosRestantes === null || a.usosRestantes > 0),
+  }));
+  const planosDisponiveis = await prisma.plano.findMany({ where: { ativo: true }, orderBy: { nome: 'asc' } });
+
+  res.render('painel/cliente-detalhe', {
+    titulo: cliente.nome,
+    cliente,
+    agendamentos,
+    assinaturas,
+    planosDisponiveis,
+    hojeIso: isoHoje(),
+  });
+}
+
+// POST /painel/clientes/:id/planos — atribui um plano ao cliente (entrada no caixa na compra)
+async function adicionarPlano(req, res) {
+  const clienteId = Number(req.params.id);
+  const cliente = await prisma.cliente.findUnique({ where: { id: clienteId } });
+  if (!cliente) return res.redirect('/painel/clientes');
+
+  const plano = await prisma.plano.findFirst({ where: { id: Number(req.body.planoId), ativo: true } });
+  if (!plano) {
+    req.session.flash = { tipo: 'erro', texto: 'Selecione um plano válido.' };
+    return res.redirect('/painel/clientes/' + clienteId);
+  }
+
+  const dataInicio = req.body.dataInicio ? new Date(req.body.dataInicio + 'T12:00:00') : new Date();
+  const dataFim = new Date(dataInicio);
+  dataFim.setDate(dataFim.getDate() + plano.validadeDias);
+  const usosRestantes = plano.tipo === 'limitado' ? plano.usos : null;
+
+  await prisma.clientePlano.create({
+    data: { clienteId, planoId: plano.id, dataInicio, dataFim, usosRestantes, ativo: true },
+  });
+
+  // Valor do plano entra no caixa na compra (entrada), se houver valor.
+  if (plano.valor > 0) {
+    await prisma.caixa.create({
+      data: {
+        descricao: 'Plano: ' + plano.nome + ' — ' + cliente.nome,
+        valor: plano.valor,
+        tipo: 'entrada',
+        data: new Date(),
+        categoriaId: null,
+      },
+    });
+  }
+
+  req.session.flash = { tipo: 'sucesso', texto: 'Plano adicionado ao cliente.' };
+  res.redirect('/painel/clientes/' + clienteId);
+}
+
+// POST /painel/clientes/planos/:id/remover — remove uma assinatura do cliente
+async function removerPlano(req, res) {
+  const assinatura = await prisma.clientePlano.findUnique({ where: { id: Number(req.params.id) } });
+  await prisma.clientePlano.delete({ where: { id: Number(req.params.id) } }).catch(() => {});
+  // Observação: não removemos a entrada do caixa (o valor já foi recebido na compra).
+  req.session.flash = { tipo: 'sucesso', texto: 'Plano removido do cliente.' };
+  res.redirect('/painel/clientes' + (assinatura ? '/' + assinatura.clienteId : ''));
 }
 
 // POST /painel/clientes/:id/remover — exclui o cliente
@@ -94,4 +169,4 @@ async function remover(req, res) {
   res.redirect('/painel/clientes');
 }
 
-module.exports = { listar, criar, formEditar, atualizar, remover, detalhe };
+module.exports = { listar, criar, formEditar, atualizar, remover, detalhe, adicionarPlano, removerPlano };

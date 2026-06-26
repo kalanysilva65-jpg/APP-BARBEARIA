@@ -8,6 +8,62 @@
   <a href="/painel/clientes/<%= cliente.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
 </div>
 
+<div class="card mb-16">
+  <h2>Planos do cliente</h2>
+
+  <% if (planosDisponiveis.length === 0) { %>
+    <p class="texto-secundario mt-16">Nenhum plano ativo cadastrado. Crie em <a href="/painel/planos" class="link-cliente">Planos</a>.</p>
+  <% } else { %>
+    <form method="POST" action="/painel/clientes/<%= cliente.id %>/planos" class="form-periodo mt-16">
+      <div class="campo">
+        <label for="planoId">Plano</label>
+        <select id="planoId" name="planoId" required>
+          <option value="">Selecione…</option>
+          <% planosDisponiveis.forEach(function (p) { %>
+            <option value="<%= p.id %>">
+              <%= p.nome %> — <%= fmtBRL(p.valor) %> (<%= p.tipo === 'limitado' ? p.usos + ' usos' : 'ilimitado' %>, <%= p.validadeDias %> dias)
+            </option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="dataInicio">Início</label>
+        <input id="dataInicio" type="date" name="dataInicio" value="<%= hojeIso %>" />
+      </div>
+      <button class="btn btn-primario btn-sm">Adicionar plano</button>
+    </form>
+  <% } %>
+
+  <% if (assinaturas.length === 0) { %>
+    <p class="texto-secundario mt-24">Este cliente ainda não tem planos.</p>
+  <% } else { %>
+    <div class="tabela-rolagem">
+      <table class="tabela mt-24">
+        <thead>
+          <tr><th>Plano</th><th>Tipo</th><th>Validade</th><th>Usos rest.</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% assinaturas.forEach(function (a) { %>
+            <tr>
+              <td><%= a.plano.nome %></td>
+              <td><%= a.plano.tipo %></td>
+              <td><%= fmtData(a.dataInicio) %> – <%= fmtData(a.dataFim) %></td>
+              <td><%= a.usosRestantes === null ? '∞' : a.usosRestantes %></td>
+              <td><span class="status <%= a.vigente ? 'status-concluido' : 'status-cancelado' %>"><%= a.vigente ? 'ativo' : 'inativo' %></span></td>
+              <td class="col-acao">
+                <form method="POST" action="/painel/clientes/planos/<%= a.id %>/remover" class="inline"
+                      onsubmit="return confirm('Remover este plano do cliente?')">
+                  <button class="btn-x" title="Remover">×</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
 <div class="card">
   <h2>Histórico de agendamentos (<%= agendamentos.length %>)</h2>
 

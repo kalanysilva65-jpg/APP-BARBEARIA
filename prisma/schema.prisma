@@ -114,6 +114,7 @@ model Cliente {
   criadoEm DateTime @default(now()) @map("criado_em")
 
   agendamentos Agendamento[]
+  planos       ClientePlano[]
 
   @@map("clientes")
 }
@@ -130,7 +131,26 @@ model Plano {
   ativo        Boolean  @default(true)
   criadoEm     DateTime @default(now()) @map("criado_em")
 
+  assinaturas ClientePlano[]
+
   @@map("planos")
+}
+
+/// Assinatura: vincula um plano a um cliente, com validade e usos restantes.
+model ClientePlano {
+  id            Int      @id @default(autoincrement())
+  clienteId     Int      @map("cliente_id")
+  planoId       Int      @map("plano_id")
+  dataInicio    DateTime @map("data_inicio")
+  dataFim       DateTime @map("data_fim")
+  usosRestantes Int?     @map("usos_restantes") // null = ilimitado
+  ativo         Boolean  @default(true)
+  criadoEm      DateTime @default(now()) @map("criado_em")
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  plano   Plano   @relation(fields: [planoId], references: [id])
+
+  @@map("cliente_planos")
 }
 
 /// Itens (serviços/produtos) de cada agendamento. A equipe adiciona/remove aqui.

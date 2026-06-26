@@ -52,6 +52,8 @@ router.post('/agenda/:id/excluir', agendaController.excluir);
 router.get('/clientes', clienteController.listar);
 router.get('/clientes/:id/editar', clienteController.formEditar);
 router.get('/clientes/:id', clienteController.detalhe); // histórico do cliente
+router.post('/clientes/planos/:id/remover', clienteController.removerPlano);
+router.post('/clientes/:id/planos', clienteController.adicionarPlano);
 router.post('/clientes', clienteController.criar);
 router.post('/clientes/:id/remover', clienteController.remover);
 router.post('/clientes/:id', clienteController.atualizar);
