@@ -4,6 +4,7 @@
 // agendamentos CONCLUÍDOS no período.
 const prisma = require('../config/db');
 const { COMISSAO_PRODUTO_PERCENTUAL } = require('../config/constantes');
+const { paraMinutos } = require('../services/disponibilidade');
 
 // Date -> "YYYY-MM-DD"
 function iso(d) {
@@ -51,7 +52,7 @@ async function ver(req, res) {
   // Agrupa por barbeiro, separando serviços de produtos
   const mapa = new Map();
   for (const b of barbeiros) {
-    mapa.set(b.id, { barbeiro: b, atendimentos: [], servicosTotal: 0, produtosTotal: 0, qtd: 0 });
+    mapa.set(b.id, { barbeiro: b, atendimentos: [], servicosTotal: 0, produtosTotal: 0, ocupadoMin: 0, qtd: 0 });
   }
 
   for (const ag of agendamentos) {
@@ -60,18 +61,51 @@ async function ver(req, res) {
 
     let servicosSub = 0;
     let produtosSub = 0;
+    let duracaoApt = 0;
     const itens = ag.itens.map((it) => {
       const produto = it.servico.ehProduto;
       const valor = it.valorUnitario * it.quantidade;
       if (produto) produtosSub += valor;
       else servicosSub += valor;
+      duracaoApt += (it.servico.duracaoMin || 0) * it.quantidade; // tempo ocupado
       return { nome: it.servico.nome, quantidade: it.quantidade, valor, ehProduto: produto };
     });
 
     grupo.atendimentos.push({ ag, itens, servicosSub, produtosSub });
     grupo.servicosTotal += servicosSub;
     grupo.produtosTotal += produtosSub;
+    grupo.ocupadoMin += duracaoApt;
     grupo.qtd += 1;
+  }
+
+  // --- Disponibilidade (minutos de jornada) por barbeiro no período --------
+  // Soma a jornada dos dias trabalhados, desconta os bloqueios e NÃO conta dias
+  // futuros (limita ao começo de amanhã), para a ocupação fazer sentido "até hoje".
+  const jornadas = await prisma.horarioTrabalho.findMany();
+  const bloqueios = await prisma.bloqueio.findMany({ where: { data: { gte: inicio, lt: fimExcl } } });
+
+  const amanha = new Date();
+  amanha.setHours(0, 0, 0, 0);
+  amanha.setDate(amanha.getDate() + 1);
+  const limite = new Date(Math.min(fimExcl.getTime(), amanha.getTime()));
+
+  const dispMin = new Map();
+  for (const b of barbeiros) dispMin.set(b.id, 0);
+
+  for (let d = new Date(inicio); d < limite; d.setDate(d.getDate() + 1)) {
+    const dow = d.getDay();
+    for (const b of barbeiros) {
+      const j = jornadas.find((x) => x.usuarioId === b.id && x.diaSemana === dow);
+      if (j && j.trabalha) {
+        dispMin.set(b.id, dispMin.get(b.id) + Math.max(0, paraMinutos(j.horaFim) - paraMinutos(j.horaInicio)));
+      }
+    }
+  }
+  for (const bl of bloqueios) {
+    if (bl.data < limite && dispMin.has(bl.usuarioId)) {
+      const m = Math.max(0, paraMinutos(bl.horaFim) - paraMinutos(bl.horaInicio));
+      dispMin.set(bl.usuarioId, Math.max(0, dispMin.get(bl.usuarioId) - m));
+    }
   }
 
   // Comissão = serviços × (% do barbeiro) + produtos × (% fixo de produto)
@@ -79,7 +113,21 @@ async function ver(req, res) {
     const pct = g.barbeiro.comissaoPercentual ?? 50;
     const comissaoServicos = Math.round(g.servicosTotal * (pct / 100));
     const comissaoProdutos = Math.round(g.produtosTotal * (COMISSAO_PRODUTO_PERCENTUAL / 100));
-    return { ...g, comissaoServicos, comissaoProdutos, comissao: comissaoServicos + comissaoProdutos };
+    const faturadoTotal = g.servicosTotal + g.produtosTotal;
+    // Ticket médio = faturado total ÷ atendimentos concluídos no período.
+    const ticketMedio = g.qtd > 0 ? Math.round(faturadoTotal / g.qtd) : 0;
+    // Ocupação = tempo ocupado ÷ jornada disponível (null se não há jornada no período).
+    const disponivelMin = dispMin.get(g.barbeiro.id) || 0;
+    const ocupacaoPct = disponivelMin > 0 ? Math.round((g.ocupadoMin / disponivelMin) * 100) : null;
+    return {
+      ...g,
+      comissaoServicos,
+      comissaoProdutos,
+      comissao: comissaoServicos + comissaoProdutos,
+      faturadoTotal,
+      ticketMedio,
+      ocupacaoPct,
+    };
   });
 
   // Filtro de barbeiro: 'todos' (padrão) ou um id específico.

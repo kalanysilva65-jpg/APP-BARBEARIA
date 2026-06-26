@@ -194,7 +194,7 @@ label {
 }
 
 .nav-principal {
-  border-top: 1px solid var(--borda);
+  background: var(--acao); /* fundo preto */
   overflow-x: auto; /* rolagem horizontal no mobile */
   -webkit-overflow-scrolling: touch;
 }
@@ -210,17 +210,17 @@ label {
   padding: 14px 14px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--texto-secundario);
+  color: rgba(255, 255, 255, 0.7); /* branco suave */
   border-bottom: 2px solid transparent;
 }
 
 .nav-principal a:hover {
-  color: var(--texto);
+  color: #fff;
 }
 
 .nav-principal a.ativo {
-  color: var(--texto);
-  border-bottom-color: var(--acao);
+  color: #fff;
+  border-bottom-color: #fff;
 }
 
 /* ----- Cards -------------------------------------------------------------- */
@@ -1283,7 +1283,8 @@ input[type='file'] {
 
 .comissao-numeros {
   display: flex;
-  gap: 24px;
+  gap: 16px 24px;
+  flex-wrap: wrap;
 }
 
 .comissao-num {

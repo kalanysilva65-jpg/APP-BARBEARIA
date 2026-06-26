@@ -64,6 +64,14 @@
           <strong><%= fmtBRL(g.produtosTotal) %></strong>
         </div>
         <div class="comissao-num">
+          <span class="texto-sutil">Ticket médio</span>
+          <strong><%= fmtBRL(g.ticketMedio) %></strong>
+        </div>
+        <div class="comissao-num">
+          <span class="texto-sutil">Ocupação</span>
+          <strong><%= g.ocupacaoPct === null ? '—' : g.ocupacaoPct + '%' %></strong>
+        </div>
+        <div class="comissao-num">
           <span class="texto-sutil">Comissão</span>
           <strong class="valor-entrada"><%= fmtBRL(g.comissao) %></strong>
         </div>
