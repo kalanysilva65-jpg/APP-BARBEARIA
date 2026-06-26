@@ -1,0 +1,48 @@
+<div class="cabecalho-pagina agenda-cabecalho">
+  <div>
+    <h1>Planos</h1>
+    <p class="texto-secundario">Modelos de plano da barbearia (limitados e ilimitados).</p>
+  </div>
+  <% if (usuario.papel === 'admin') { %>
+    <a href="/painel/planos/novo" class="btn btn-primario btn-sm">+ Novo</a>
+  <% } %>
+</div>
+
+<div class="lista-servicos">
+  <% planos.forEach(function (p) { %>
+    <div class="card servico-item <%= p.ativo ? '' : 'inativo' %>">
+      <div class="servico-info">
+        <div class="servico-nome">
+          <%= p.nome %>
+          <span class="status"><%= p.tipo %></span>
+          <% if (!p.ativo) { %><span class="status status-cancelado">inativo</span><% } %>
+        </div>
+        <div class="texto-sutil">
+          <%= p.tipo === 'limitado' ? p.usos + ' uso(s)' : 'ilimitado · só seg–qui' %> · validade <%= p.validadeDias %> dias
+        </div>
+      </div>
+      <div class="servico-valor"><%= fmtBRL(p.valor) %></div>
+
+      <% if (usuario.papel === 'admin') { %>
+        <div class="servico-acoes">
+          <a href="/painel/planos/<%= p.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
+          <form method="POST" action="/painel/planos/<%= p.id %>/toggle" class="inline">
+            <button class="btn btn-secundario btn-sm"><%= p.ativo ? 'Desativar' : 'Ativar' %></button>
+          </form>
+          <form method="POST" action="/painel/planos/<%= p.id %>/remover" class="inline"
+                onsubmit="return confirm('Excluir este plano?')">
+            <button class="btn-x" title="Excluir">×</button>
+          </form>
+        </div>
+      <% } %>
+    </div>
+  <% }) %>
+
+  <% if (planos.length === 0) { %>
+    <div class="card">
+      <p class="texto-secundario">
+        Nenhum plano cadastrado<%= usuario.papel === 'admin' ? ' ainda. Clique em + Novo.' : '.' %>
+      </p>
+    </div>
+  <% } %>
+</div>

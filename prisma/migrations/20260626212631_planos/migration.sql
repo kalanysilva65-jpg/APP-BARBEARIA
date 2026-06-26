@@ -1,0 +1,11 @@
+-- CreateTable
+CREATE TABLE "planos" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nome" TEXT NOT NULL,
+    "tipo" TEXT NOT NULL,
+    "usos" INTEGER,
+    "validade_dias" INTEGER NOT NULL DEFAULT 30,
+    "valor" INTEGER NOT NULL DEFAULT 0,
+    "ativo" BOOLEAN NOT NULL DEFAULT true,
+    "criado_em" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

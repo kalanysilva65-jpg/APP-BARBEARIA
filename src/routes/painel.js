@@ -10,6 +10,7 @@ const estoqueController = require('../controllers/estoqueController');
 const caixaController = require('../controllers/caixaController');
 const comissaoController = require('../controllers/comissaoController');
 const clienteController = require('../controllers/clienteController');
+const planoController = require('../controllers/planoController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -54,6 +55,15 @@ router.get('/clientes/:id', clienteController.detalhe); // histórico do cliente
 router.post('/clientes', clienteController.criar);
 router.post('/clientes/:id/remover', clienteController.remover);
 router.post('/clientes/:id', clienteController.atualizar);
+
+// --- Planos: ver para todos; criar/editar só admin ------------------------
+router.get('/planos', planoController.listar);
+router.get('/planos/novo', exigeAdmin, planoController.formNovo);
+router.post('/planos', exigeAdmin, planoController.criar);
+router.get('/planos/:id/editar', exigeAdmin, planoController.formEditar);
+router.post('/planos/:id/toggle', exigeAdmin, planoController.alternarAtivo);
+router.post('/planos/:id/remover', exigeAdmin, planoController.remover);
+router.post('/planos/:id', exigeAdmin, planoController.atualizar);
 
 // --- Comissões (somente admin) --------------------------------------------
 router.get('/comissoes', exigeAdmin, comissaoController.ver);

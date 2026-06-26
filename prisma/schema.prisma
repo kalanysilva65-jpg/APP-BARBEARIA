@@ -118,6 +118,21 @@ model Cliente {
   @@map("clientes")
 }
 
+/// Modelos de plano (assinatura) configurados pelo admin.
+/// limitado = nº de usos; ilimitado = sem limite de usos, mas só seg–qui (regra fixa).
+model Plano {
+  id           Int      @id @default(autoincrement())
+  nome         String
+  tipo         String // "limitado" | "ilimitado"
+  usos         Int? // nº de usos (apenas para o tipo limitado)
+  validadeDias Int      @default(30) @map("validade_dias") // validade em dias a partir da aquisição
+  valor        Int      @default(0) // centavos; entra no caixa quando o cliente adquire
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+
+  @@map("planos")
+}
+
 /// Itens (serviços/produtos) de cada agendamento. A equipe adiciona/remove aqui.
 model AgendamentoItem {
   id            Int @id @default(autoincrement())

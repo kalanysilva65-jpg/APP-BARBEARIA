@@ -15,6 +15,7 @@
       <a href="/painel" class="<%= currentPath === '/painel' ? 'ativo' : '' %>">Painel</a>
       <a href="/painel/agenda" class="<%= currentPath.startsWith('/painel/agenda') ? 'ativo' : '' %>">Agenda</a>
       <a href="/painel/clientes" class="<%= currentPath.startsWith('/painel/clientes') ? 'ativo' : '' %>">Clientes</a>
+      <a href="/painel/planos" class="<%= currentPath.startsWith('/painel/planos') ? 'ativo' : '' %>">Planos</a>
       <% if (usuario.papel === 'admin') { %>
         <a href="/painel/servicos" class="<%= currentPath.startsWith('/painel/servicos') ? 'ativo' : '' %>">Serviços</a>
         <a href="/painel/estoque" class="<%= currentPath.startsWith('/painel/estoque') ? 'ativo' : '' %>">Estoque</a>
