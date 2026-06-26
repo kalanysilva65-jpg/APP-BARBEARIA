@@ -72,6 +72,20 @@ async function atualizar(req, res) {
   res.redirect('/painel/clientes');
 }
 
+// GET /painel/clientes/:id — detalhe do cliente com o histórico de agendamentos
+async function detalhe(req, res) {
+  const cliente = await prisma.cliente.findUnique({ where: { id: Number(req.params.id) } });
+  if (!cliente) return res.redirect('/painel/clientes');
+
+  const agendamentos = await prisma.agendamento.findMany({
+    where: { clienteId: cliente.id },
+    include: { usuario: true, itens: { include: { servico: true } } },
+    orderBy: [{ data: 'desc' }, { horaInicio: 'desc' }],
+  });
+
+  res.render('painel/cliente-detalhe', { titulo: cliente.nome, cliente, agendamentos });
+}
+
 // POST /painel/clientes/:id/remover — exclui o cliente
 async function remover(req, res) {
   // Agendamentos vinculados ficam com clienteId nulo (SetNull no schema).
@@ -80,4 +94,4 @@ async function remover(req, res) {
   res.redirect('/painel/clientes');
 }
 
-module.exports = { listar, criar, formEditar, atualizar, remover };
+module.exports = { listar, criar, formEditar, atualizar, remover, detalhe };

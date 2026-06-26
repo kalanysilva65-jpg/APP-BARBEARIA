@@ -44,7 +44,7 @@
         <tbody>
           <% clientes.forEach(function (c) { %>
             <tr>
-              <td><%= c.nome %></td>
+              <td><a href="/painel/clientes/<%= c.id %>" class="link-cliente"><%= c.nome %></a></td>
               <td><%= fmtTelefone(c.telefone) %></td>
               <td class="col-valor"><%= c._count.agendamentos %></td>
               <td class="col-acao">

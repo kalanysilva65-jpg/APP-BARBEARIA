@@ -156,6 +156,20 @@ label {
   font-size: 28px;
 }
 
+/* Logo (substitui o wordmark de texto) */
+.logo-img {
+  height: 48px;
+  width: auto;
+  display: block;
+}
+
+.logo-img-grande {
+  height: 88px;
+  width: auto;
+  display: block;
+  margin: 0 auto 4px;
+}
+
 .topo-usuario {
   display: flex;
   align-items: center;
@@ -1287,4 +1301,39 @@ input[type='file'] {
 /* Produto listado no detalhe da comissão (não conta) */
 .item-produto {
   color: var(--texto-sutil);
+}
+
+/* Editor de % de comissão por barbeiro */
+.form-percentual {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid var(--borda);
+}
+
+.form-percentual label {
+  margin: 0;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--texto-secundario);
+}
+
+.form-percentual input {
+  width: 90px;
+  font-size: 14px;
+  padding: 8px 10px;
+}
+
+/* Nome do cliente clicável (abre o histórico) */
+.link-cliente {
+  font-weight: 500;
+  border-bottom: 1px solid transparent;
+}
+
+.link-cliente:hover {
+  border-bottom-color: var(--texto);
 }

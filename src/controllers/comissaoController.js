@@ -77,7 +77,8 @@ async function ver(req, res) {
 
   const todosGrupos = Array.from(mapa.values()).map((g) => ({
     ...g,
-    comissao: Math.round(g.totalServicos * 0.5),
+    // Comissão = total de serviços × (% do barbeiro). Padrão 50% se não definido.
+    comissao: Math.round(g.totalServicos * ((g.barbeiro.comissaoPercentual ?? 50) / 100)),
   }));
 
   // Filtro de barbeiro: 'todos' (padrão) ou um id específico.
@@ -116,4 +117,21 @@ async function ver(req, res) {
   });
 }
 
-module.exports = { ver };
+// POST /painel/comissoes/percentual/:id — ajusta a % de comissão de um barbeiro
+async function salvarPercentual(req, res) {
+  const id = Number(req.params.id);
+  let p = parseFloat(String(req.body.percentual || '').replace(',', '.'));
+  if (isNaN(p)) p = 0;
+  p = Math.min(100, Math.max(0, p)); // limita entre 0 e 100
+  await prisma.usuario.update({ where: { id }, data: { comissaoPercentual: p } }).catch(() => {});
+
+  // Redireciona preservando o período e o filtro de barbeiro
+  const qs = new URLSearchParams();
+  if (req.body.inicio) qs.set('inicio', req.body.inicio);
+  if (req.body.fim) qs.set('fim', req.body.fim);
+  if (req.body.barbeiro) qs.set('barbeiro', req.body.barbeiro);
+  const s = qs.toString();
+  res.redirect('/painel/comissoes' + (s ? '?' + s : ''));
+}
+
+module.exports = { ver, salvarPercentual };

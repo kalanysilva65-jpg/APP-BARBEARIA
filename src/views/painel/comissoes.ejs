@@ -39,7 +39,7 @@
     <div class="resumo-valor-grande"><%= fmtBRL(totalGeralServicos) %></div>
   </div>
   <div class="card resumo-caixa">
-    <div class="resumo-titulo">Comissão total (50%)</div>
+    <div class="resumo-titulo">Comissão total<% if (barbeiroSelecionado !== 'todos' && grupos[0]) { %> (<%= grupos[0].barbeiro.comissaoPercentual %>%)<% } %></div>
     <div class="resumo-valor-grande valor-entrada"><%= fmtBRL(totalGeralComissao) %></div>
   </div>
 </div>
@@ -58,11 +58,21 @@
           <strong><%= fmtBRL(g.totalServicos) %></strong>
         </div>
         <div class="comissao-num">
-          <span class="texto-sutil">Comissão</span>
+          <span class="texto-sutil">Comissão (<%= g.barbeiro.comissaoPercentual %>%)</span>
           <strong class="valor-entrada"><%= fmtBRL(g.comissao) %></strong>
         </div>
       </div>
     </div>
+
+    <form method="POST" action="/painel/comissoes/percentual/<%= g.barbeiro.id %>" class="form-percentual mt-16">
+      <input type="hidden" name="inicio" value="<%= inicioStr %>" />
+      <input type="hidden" name="fim" value="<%= fimStr %>" />
+      <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
+      <label for="perc-<%= g.barbeiro.id %>">Comissão (%)</label>
+      <input id="perc-<%= g.barbeiro.id %>" type="number" name="percentual" step="0.5" min="0" max="100"
+             value="<%= g.barbeiro.comissaoPercentual %>" />
+      <button class="btn btn-secundario btn-sm">Salvar %</button>
+    </form>
 
     <% if (g.atendimentos.length === 0) { %>
       <p class="texto-secundario mt-16">Nenhum atendimento concluído neste período.</p>

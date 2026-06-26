@@ -1,0 +1,43 @@
+<a href="/painel/clientes" class="link-voltar">← Voltar para clientes</a>
+
+<div class="cabecalho-pagina agenda-cabecalho">
+  <div>
+    <h1><%= cliente.nome %></h1>
+    <p class="texto-secundario"><%= fmtTelefone(cliente.telefone) %></p>
+  </div>
+  <a href="/painel/clientes/<%= cliente.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
+</div>
+
+<div class="card">
+  <h2>Histórico de agendamentos (<%= agendamentos.length %>)</h2>
+
+  <% if (agendamentos.length === 0) { %>
+    <p class="texto-secundario mt-16">
+      Nenhum agendamento vinculado a este cliente ainda.
+    </p>
+  <% } else { %>
+    <div class="tabela-rolagem">
+      <table class="tabela mt-16">
+        <thead>
+          <tr><th>Data</th><th>Barbeiro</th><th>Itens</th><th>Status</th><th class="col-valor">Valor</th></tr>
+        </thead>
+        <tbody>
+          <% agendamentos.forEach(function (ag) { %>
+            <tr>
+              <td><%= fmtData(ag.data) %> <span class="texto-sutil"><%= ag.horaInicio %></span></td>
+              <td><%= ag.usuario.nome %></td>
+              <td>
+                <% ag.itens.forEach(function (it) { %>
+                  <%= it.servico.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %><br />
+                <% }) %>
+                <% if (ag.itens.length === 0) { %><span class="texto-sutil">—</span><% } %>
+              </td>
+              <td><span class="status status-<%= ag.status %>"><%= ag.status %></span></td>
+              <td class="col-valor"><%= fmtBRL(ag.valorTotal) %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>

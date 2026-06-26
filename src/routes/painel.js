@@ -48,12 +48,14 @@ router.post('/agenda/:id/excluir', agendaController.excluir);
 // Específicas (/:id/editar, /:id/remover) antes da paramétrica de update (/:id).
 router.get('/clientes', clienteController.listar);
 router.get('/clientes/:id/editar', clienteController.formEditar);
+router.get('/clientes/:id', clienteController.detalhe); // histórico do cliente
 router.post('/clientes', clienteController.criar);
 router.post('/clientes/:id/remover', clienteController.remover);
 router.post('/clientes/:id', clienteController.atualizar);
 
 // --- Comissões (somente admin) --------------------------------------------
 router.get('/comissoes', exigeAdmin, comissaoController.ver);
+router.post('/comissoes/percentual/:id', exigeAdmin, comissaoController.salvarPercentual);
 
 // --- Horários & bloqueios (somente admin) ---------------------------------
 router.get('/horarios', exigeAdmin, horarioController.ver);
