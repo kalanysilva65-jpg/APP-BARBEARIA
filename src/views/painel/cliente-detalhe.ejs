@@ -3,7 +3,9 @@
 <div class="cabecalho-pagina agenda-cabecalho">
   <div>
     <h1><%= cliente.nome %></h1>
-    <p class="texto-secundario"><%= fmtTelefone(cliente.telefone) %></p>
+    <p class="texto-secundario">
+      <%= fmtTelefone(cliente.telefone) %><% if (cliente.dataNascimento) { %> · nasc. <%= fmtData(cliente.dataNascimento) %><% } %>
+    </p>
   </div>
   <a href="/painel/clientes/<%= cliente.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
 </div>

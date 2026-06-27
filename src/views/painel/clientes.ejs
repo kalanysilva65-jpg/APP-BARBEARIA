@@ -19,6 +19,13 @@
                value="<%= editando ? fmtTelefone(editando.telefone) : '' %>" required />
       </div>
     </div>
+
+    <div class="campo">
+      <label for="dataNascimento">Data de nascimento (opcional)</label>
+      <input id="dataNascimento" type="date" name="dataNascimento"
+             value="<%= editando && editando.dataNascimento ? new Date(editando.dataNascimento).toISOString().slice(0, 10) : '' %>" />
+    </div>
+
     <div class="flex gap-8">
       <button class="btn btn-primario btn-sm" type="submit">
         <%= editando ? 'Salvar' : 'Cadastrar' %>

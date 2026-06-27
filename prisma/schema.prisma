@@ -111,10 +111,11 @@ model Agendamento {
 
 /// Cadastro de clientes. Telefone guardado normalizado (só dígitos) e único.
 model Cliente {
-  id       Int      @id @default(autoincrement())
-  nome     String
-  telefone String   @unique // normalizado: apenas dígitos
-  criadoEm DateTime @default(now()) @map("criado_em")
+  id             Int       @id @default(autoincrement())
+  nome           String
+  telefone       String    @unique // normalizado: apenas dígitos
+  dataNascimento DateTime? @map("data_nascimento") // opcional
+  criadoEm       DateTime  @default(now()) @map("criado_em")
 
   agendamentos Agendamento[]
   planos       ClientePlano[]
