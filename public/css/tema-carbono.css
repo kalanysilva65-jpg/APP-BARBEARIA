@@ -1,40 +1,44 @@
 /* =========================================================================
-   DESIGN SYSTEM — Barbearia
-   Estilo: minimalista, sofisticado, premium. Preto / branco / cinza.
-   Cor só aparece para comunicar estado (sucesso, alerta, erro).
-   Mobile-first: estilos base para celular; media queries adaptam telas maiores.
+   TEMA CARBONO — flowbarber.
+   Variação dark mode premium. Fundo carbono profundo, superfícies grafite,
+   detalhes em dourado âmbar. Filosofia: "menos é mais, mas o que existe
+   é impecável."
+   Carregado APÓS styles.css — sobrescreve variáveis e seletores necessários.
    ========================================================================= */
 
-/* ----- Variáveis (paleta, tipografia, espaçamento) ----------------------- */
+/* ----- Google Fonts: Playfair Display para títulos + Inter para corpo ----- */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+/* ----- Variáveis do tema carbono ------------------------------------------ */
 :root {
-  /* Cores */
-  --fundo: #fafafa;
-  --superficie: #ffffff;
-  --texto: #1a1a1a;
-  --texto-secundario: #6b6b6b;
-  --texto-sutil: #9e9e9e;
-  --borda: #e5e5e5;
-  --acao: #1a1a1a;
-  --acao-hover: #333333;
-  --secao-alt: #f2f2f2;
+  /* Cores base */
+  --fundo: #0e0e0e;
+  --superficie: #161616;
+  --texto: #ededec;
+  --texto-secundario: #888884;
+  --texto-sutil: #555551;
+  --borda: #252523;
+  --acao: #c9a84c;
+  --acao-hover: #dbbe6a;
+  --secao-alt: #1e1e1c;
 
-  /* Status (uso parcimonioso) */
-  --sucesso: #2e7d32;
-  --aviso: #b26a00;
-  --erro: #c62828;
+  /* Status — mantém semântica, tons ajustados para o escuro */
+  --sucesso: #4caf72;
+  --aviso: #c9a84c;
+  --erro: #e05c5c;
 
-  /* Raios */
-  --raio-card: 8px;
-  --raio-btn: 8px;
-  --raio-input: 6px;
+  /* Raios mais afiados — look de barbearia de luxo */
+  --raio-card: 5px;
+  --raio-btn: 5px;
+  --raio-input: 4px;
 
-  /* Sombra sutil */
-  --sombra: 0 1px 3px rgba(0, 0, 0, 0.06);
+  /* Sombra mais presente no escuro */
+  --sombra: 0 2px 8px rgba(0, 0, 0, 0.45);
 
   /* Tipografia */
   --fonte: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --fonte-editorial: 'Playfair Display', Georgia, serif;
 
-  /* Espaçamento base (múltiplos de 4) */
   --gap: 16px;
 }
 
@@ -72,16 +76,20 @@ img {
 
 /* ----- Tipografia --------------------------------------------------------- */
 h1 {
+  font-family: var(--fonte-editorial);
   font-size: 28px;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.2;
   letter-spacing: -0.01em;
+  color: var(--texto);
 }
 
 h2 {
+  font-family: var(--fonte-editorial);
   font-size: 19px;
   font-weight: 600;
   line-height: 1.3;
+  color: var(--texto);
 }
 
 .texto-secundario {
@@ -93,14 +101,13 @@ h2 {
   color: var(--texto-sutil);
 }
 
-/* Label/auxiliar: maiúsculas, leve espaçamento entre letras */
 label {
   display: block;
   font-size: 12px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--texto-secundario);
+  letter-spacing: 0.06em;
+  color: var(--texto-sutil);
   margin-bottom: 8px;
 }
 
@@ -128,7 +135,7 @@ label {
 
 /* ----- Topo / navegação --------------------------------------------------- */
 .topo {
-  background: var(--superficie);
+  background: #0a0a0a;
   border-bottom: 1px solid var(--borda);
   position: sticky;
   top: 0;
@@ -146,6 +153,7 @@ label {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.02em;
+  color: var(--texto);
 }
 
 .marca span {
@@ -156,7 +164,7 @@ label {
   font-size: 28px;
 }
 
-/* Logo flowbarber. */
+/* Logo flowbarber. — dot em dourado */
 .logo-flowbarber {
   display: inline-flex;
   align-items: baseline;
@@ -165,9 +173,22 @@ label {
   text-decoration: none;
 }
 
-.logo-flowbarber .lf { font-weight: 700; color: var(--texto); letter-spacing: -0.03em; }
-.logo-flowbarber .lb { font-weight: 400; color: var(--texto); letter-spacing: -0.02em; }
-.logo-flowbarber .ld { color: #c1622e; font-weight: 700; }
+.logo-flowbarber .lf {
+  font-weight: 700;
+  color: var(--texto);
+  letter-spacing: -0.03em;
+}
+
+.logo-flowbarber .lb {
+  font-weight: 400;
+  color: var(--texto-secundario);
+  letter-spacing: -0.02em;
+}
+
+.logo-flowbarber .ld {
+  color: var(--acao); /* dourado âmbar */
+  font-weight: 700;
+}
 
 .logo-flowbarber--sm { font-size: 22px; }
 .logo-flowbarber--lg { font-size: 36px; }
@@ -181,23 +202,26 @@ label {
 .usuario-nome {
   font-size: 14px;
   font-weight: 500;
-  display: none; /* escondido no mobile para economizar espaço */
+  color: var(--texto-secundario);
+  display: none;
 }
 
 .badge-papel {
   font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--texto-secundario);
+  letter-spacing: 0.06em;
+  color: var(--texto-sutil);
   border: 1px solid var(--borda);
   border-radius: 100px;
   padding: 3px 10px;
 }
 
+/* Nav com fundo mais escuro que o topo — destaque âmbar */
 .nav-principal {
-  background: var(--acao); /* fundo preto */
-  overflow-x: auto; /* rolagem horizontal no mobile */
+  background: #0a0a0a;
+  border-bottom: 1px solid var(--borda);
+  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -212,17 +236,18 @@ label {
   padding: 14px 14px;
   font-size: 14px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.7); /* branco suave */
+  color: var(--texto-sutil);
   border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .nav-principal a:hover {
-  color: #fff;
+  color: var(--acao);
 }
 
 .nav-principal a.ativo {
-  color: #fff;
-  border-bottom-color: #fff;
+  color: var(--acao);
+  border-bottom-color: var(--acao);
 }
 
 /* ----- Cards -------------------------------------------------------------- */
@@ -231,6 +256,7 @@ label {
   border: 1px solid var(--borda);
   border-radius: var(--raio-card);
   padding: 24px;
+  box-shadow: var(--sombra);
 }
 
 .card-titulo {
@@ -242,8 +268,8 @@ label {
 }
 
 .card-link:hover {
-  border-color: var(--texto-sutil);
-  box-shadow: var(--sombra);
+  border-color: var(--acao);
+  box-shadow: 0 0 0 1px var(--acao), var(--sombra);
 }
 
 .grade-cards {
@@ -266,12 +292,13 @@ label {
   border-radius: var(--raio-btn);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .btn-primario {
   background: var(--acao);
-  color: #fff;
+  color: #0e0e0e; /* texto escuro sobre dourado */
+  font-weight: 600;
 }
 
 .btn-primario:hover {
@@ -281,11 +308,12 @@ label {
 .btn-secundario {
   background: transparent;
   border-color: var(--borda);
-  color: var(--texto);
+  color: var(--texto-secundario);
 }
 
 .btn-secundario:hover {
   border-color: var(--texto-sutil);
+  color: var(--texto);
 }
 
 .btn-perigo {
@@ -317,13 +345,15 @@ select,
 textarea {
   width: 100%;
   font-family: inherit;
-  font-size: 16px; /* >=16px evita zoom automático no iOS */
+  font-size: 16px;
   color: var(--texto);
-  background: var(--superficie);
+  background: #111110; /* ligeiramente mais escuro que a superfície */
   border: 1px solid var(--borda);
   border-radius: var(--raio-input);
   padding: 12px 14px;
   transition: border-color 0.15s ease;
+  /* select nativo precisa de aparência forçada no dark */
+  color-scheme: dark;
 }
 
 input::placeholder,
@@ -336,10 +366,10 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--acao);
+  box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.15);
 }
 
 /* ----- Estados de seleção (serviço / barbeiro / horário) ------------------ */
-/* Usados no fluxo do cliente (Fase 2). Sem cor: borda ou fundo preto. */
 .opcao-selecionavel {
   display: block;
   width: 100%;
@@ -350,6 +380,7 @@ textarea:focus {
   padding: 16px;
   cursor: pointer;
   transition: border-color 0.15s ease;
+  color: var(--texto);
 }
 
 .opcao-selecionavel:hover {
@@ -359,9 +390,9 @@ textarea:focus {
 .opcao-selecionavel.selecionado {
   border-color: var(--acao);
   border-width: 2px;
+  background: rgba(201, 168, 76, 0.06);
 }
 
-/* Variante "pílula" para horários */
 .opcao-horario {
   border: 1px solid var(--borda);
   border-radius: var(--raio-btn);
@@ -370,15 +401,18 @@ textarea:focus {
   font-weight: 500;
   cursor: pointer;
   background: var(--superficie);
+  color: var(--texto);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .opcao-horario.selecionado {
   background: var(--acao);
-  color: #fff;
+  color: #0e0e0e;
   border-color: var(--acao);
+  font-weight: 600;
 }
 
-/* ----- Alertas / feedback (discretos) ------------------------------------ */
+/* ----- Alertas / feedback ------------------------------------------------- */
 .alerta {
   border: 1px solid var(--borda);
   border-radius: var(--raio-card);
@@ -391,16 +425,19 @@ textarea:focus {
 .alerta-sucesso {
   border-color: var(--sucesso);
   color: var(--sucesso);
+  background: rgba(76, 175, 114, 0.07);
 }
 
 .alerta-aviso {
   border-color: var(--aviso);
   color: var(--aviso);
+  background: rgba(201, 168, 76, 0.07);
 }
 
 .alerta-erro {
   border-color: var(--erro);
   color: var(--erro);
+  background: rgba(224, 92, 92, 0.07);
 }
 
 /* ----- Badges de status --------------------------------------------------- */
@@ -409,14 +446,16 @@ textarea:focus {
   font-size: 12px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   padding: 3px 10px;
   border-radius: 100px;
   border: 1px solid var(--borda);
+  color: var(--texto-secundario);
 }
 
 .status-agendado {
   color: var(--texto-secundario);
+  border-color: var(--borda);
 }
 
 .status-concluido {
@@ -427,6 +466,11 @@ textarea:focus {
 .status-cancelado {
   color: var(--erro);
   border-color: var(--erro);
+}
+
+.status-aviso {
+  color: var(--aviso);
+  border-color: var(--aviso);
 }
 
 /* ----- Tabelas ------------------------------------------------------------ */
@@ -444,11 +488,15 @@ textarea:focus {
 }
 
 .tabela th {
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--texto-secundario);
+  letter-spacing: 0.06em;
+  color: var(--texto-sutil);
   font-weight: 500;
+}
+
+.tabela tr:hover td {
+  background: var(--secao-alt);
 }
 
 /* ----- Telas centralizadas (login / erro) --------------------------------- */
@@ -458,6 +506,7 @@ textarea:focus {
   justify-content: center;
   min-height: 100vh;
   padding: 24px;
+  background: var(--fundo);
 }
 
 .caixa-central {
@@ -467,6 +516,7 @@ textarea:focus {
 
 .auth-card {
   padding: 32px;
+  border: 1px solid var(--borda);
 }
 
 .auth-cabecalho {
@@ -481,23 +531,22 @@ textarea:focus {
 }
 
 /* ----- Utilitários -------------------------------------------------------- */
-.mt-8 { margin-top: 8px; }
+.mt-8  { margin-top: 8px; }
 .mt-16 { margin-top: 16px; }
 .mt-24 { margin-top: 24px; }
 .mb-16 { margin-bottom: 16px; }
-.flex { display: flex; }
+.flex  { display: flex; }
 .flex-entre { display: flex; align-items: center; justify-content: space-between; }
-.gap-8 { gap: 8px; }
+.gap-8  { gap: 8px; }
 .gap-16 { gap: 16px; }
 
 /* =========================================================================
-   RESPONSIVO — adapta para tablet/desktop a partir do mobile-first
+   RESPONSIVO
    ========================================================================= */
 @media (min-width: 640px) {
   .usuario-nome {
     display: inline;
   }
-
   .grade-cards {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -507,24 +556,24 @@ textarea:focus {
   h1 {
     font-size: 32px;
   }
-
   .grade-cards {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 /* =========================================================================
-   ÁREA PÚBLICA (agendamento do cliente) — foco em 1 passo por tela
+   ÁREA PÚBLICA (agendamento do cliente)
    ========================================================================= */
 .tela-publica {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background: var(--fundo);
 }
 
 .container-estreito {
   width: 100%;
-  max-width: 480px; /* simula a largura de um celular mesmo em telas grandes */
+  max-width: 480px;
   margin: 0 auto;
   padding-left: 20px;
   padding-right: 20px;
@@ -532,7 +581,7 @@ textarea:focus {
 
 .topo-publico {
   border-bottom: 1px solid var(--borda);
-  background: var(--superficie);
+  background: #0a0a0a;
 }
 
 .topo-publico .container-estreito {
@@ -575,7 +624,7 @@ textarea:focus {
   font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
   color: var(--texto-sutil);
   position: relative;
 }
@@ -614,15 +663,16 @@ textarea:focus {
 .passos li.feito .passo-num {
   background: var(--acao);
   border-color: var(--acao);
-  color: #fff;
+  color: #0e0e0e;
+  font-weight: 700;
 }
 
 .passos li.atual,
 .passos li.feito {
-  color: var(--texto);
+  color: var(--texto-secundario);
 }
 
-/* ----- Listas de opções (serviço / barbeiro) ----------------------------- */
+/* ----- Listas de opções --------------------------------------------------- */
 .lista-opcoes {
   display: flex;
   flex-direction: column;
@@ -652,6 +702,7 @@ textarea:focus {
 .opcao-nome {
   font-weight: 600;
   font-size: 16px;
+  color: var(--texto);
 }
 
 .opcao-meta {
@@ -664,6 +715,7 @@ textarea:focus {
 
 .opcao-valor {
   font-weight: 600;
+  color: var(--acao); /* destaque dourado no valor */
 }
 
 .opcao-barbeiro {
@@ -677,16 +729,17 @@ textarea:focus {
   height: 40px;
   border-radius: 50%;
   background: var(--secao-alt);
-  color: var(--texto);
+  color: var(--texto-secundario);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   font-size: 16px;
   flex-shrink: 0;
+  border: 1px solid var(--borda);
 }
 
-/* ----- Seletor de datas (rolagem horizontal) ----------------------------- */
+/* ----- Seletor de datas --------------------------------------------------- */
 .lista-datas {
   display: flex;
   gap: 8px;
@@ -705,12 +758,16 @@ textarea:focus {
   font-weight: 500;
   white-space: nowrap;
   background: var(--superficie);
+  color: var(--texto);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .chip-data.selecionado {
   background: var(--acao);
-  color: #fff;
+  color: #0e0e0e;
   border-color: var(--acao);
+  font-weight: 600;
 }
 
 /* ----- Grade de horários -------------------------------------------------- */
@@ -733,11 +790,11 @@ textarea:focus {
   margin-bottom: 16px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--texto-secundario);
+  color: var(--texto-sutil);
 }
 
 .link-voltar:hover {
-  color: var(--texto);
+  color: var(--acao);
 }
 
 /* ----- Resumo / confirmação ---------------------------------------------- */
@@ -763,6 +820,7 @@ textarea:focus {
   font-weight: 700;
   font-size: 17px;
   padding-top: 14px;
+  color: var(--acao);
 }
 
 /* ----- Tela de sucesso ---------------------------------------------------- */
@@ -776,7 +834,7 @@ textarea:focus {
   height: 56px;
   border-radius: 50%;
   background: var(--acao);
-  color: #fff;
+  color: #0e0e0e;
   font-size: 28px;
   display: flex;
   align-items: center;
@@ -834,6 +892,8 @@ textarea:focus {
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.01em;
+  color: var(--acao);
+  font-family: var(--fonte-editorial);
 }
 
 .agendamento-cliente {
@@ -964,7 +1024,6 @@ textarea:focus {
   width: 1%;
 }
 
-/* Inputs de horário/data não esticam em telas maiores nos formulários gerais */
 .form input[type='time'],
 .form input[type='date'] {
   width: 100%;
@@ -987,7 +1046,7 @@ textarea:focus {
 }
 
 .servico-item.inativo {
-  opacity: 0.55;
+  opacity: 0.4;
 }
 
 .servico-foto {
@@ -1000,6 +1059,7 @@ textarea:focus {
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid var(--borda);
 }
 
 .servico-foto img {
@@ -1025,11 +1085,13 @@ textarea:focus {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  color: var(--texto);
 }
 
 .servico-valor {
   font-weight: 600;
   white-space: nowrap;
+  color: var(--acao);
 }
 
 .servico-acoes {
@@ -1054,6 +1116,7 @@ textarea:focus {
   overflow: hidden;
   background: var(--secao-alt);
   margin-bottom: 10px;
+  border: 1px solid var(--borda);
 }
 
 .preview-foto img {
@@ -1102,7 +1165,6 @@ input[type='file'] {
   border-bottom: none;
 }
 
-/* Miniatura opcional no agendamento do cliente */
 .opcao-thumb {
   width: 44px;
   height: 44px;
@@ -1123,9 +1185,9 @@ input[type='file'] {
   padding: 16px;
 }
 
-/* Item em reposição: borda âmbar (cor só para comunicar estado) */
 .estoque-item.baixo {
   border-color: var(--aviso);
+  background: rgba(201, 168, 76, 0.04);
 }
 
 .estoque-info {
@@ -1143,17 +1205,18 @@ input[type='file'] {
   width: 34px;
   height: 34px;
   border: 1px solid var(--borda);
-  border-radius: 6px;
-  background: var(--superficie);
+  border-radius: 5px;
+  background: var(--secao-alt);
   color: var(--texto);
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .btn-qtd:hover {
-  border-color: var(--texto-sutil);
+  border-color: var(--acao);
+  color: var(--acao);
 }
 
 .qtd-num {
@@ -1166,12 +1229,6 @@ input[type='file'] {
 .qtd-min {
   margin-left: 6px;
   white-space: nowrap;
-}
-
-/* Badge de status âmbar (reposição) */
-.status-aviso {
-  color: var(--aviso);
-  border-color: var(--aviso);
 }
 
 /* =========================================================================
@@ -1194,15 +1251,14 @@ input[type='file'] {
 }
 
 .resumo-titulo {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--texto-secundario);
+  letter-spacing: 0.06em;
+  color: var(--texto-sutil);
   margin-bottom: 8px;
 }
 
-/* Sinais de valor: cor só para comunicar entrada/saída */
 .valor-entrada {
   color: var(--sucesso);
   font-weight: 600;
@@ -1218,7 +1274,6 @@ input[type='file'] {
   white-space: nowrap;
 }
 
-/* Permite rolagem horizontal da tabela em telas estreitas */
 .tabela-rolagem {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -1273,6 +1328,8 @@ input[type='file'] {
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.01em;
+  color: var(--acao);
+  font-family: var(--fonte-editorial);
 }
 
 .comissao-cabecalho {
@@ -1301,12 +1358,10 @@ input[type='file'] {
   letter-spacing: 0.03em;
 }
 
-/* Produto listado no detalhe da comissão (não conta) */
 .item-produto {
   color: var(--texto-sutil);
 }
 
-/* Editor de % de comissão por barbeiro */
 .form-percentual {
   display: flex;
   align-items: center;
@@ -1331,18 +1386,20 @@ input[type='file'] {
   padding: 8px 10px;
 }
 
-/* Nome do cliente clicável (abre o histórico) */
 .link-cliente {
   font-weight: 500;
   border-bottom: 1px solid transparent;
+  color: var(--texto);
+  transition: border-color 0.15s ease, color 0.15s ease;
 }
 
 .link-cliente:hover {
-  border-bottom-color: var(--texto);
+  border-bottom-color: var(--acao);
+  color: var(--acao);
 }
 
 /* =========================================================================
-   AUTOCOMPLETE DE CLIENTE (agendamento manual)
+   AUTOCOMPLETE DE CLIENTE
    ========================================================================= */
 .autocomplete {
   position: relative;
@@ -1355,10 +1412,10 @@ input[type='file'] {
   right: 0;
   top: 100%;
   margin-top: 4px;
-  background: var(--superficie);
+  background: #1e1e1c;
   border: 1px solid var(--borda);
   border-radius: var(--raio-input);
-  box-shadow: var(--sombra);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   z-index: 20;
   overflow: hidden;
   max-height: 280px;
@@ -1380,6 +1437,7 @@ input[type='file'] {
   font-family: inherit;
   font-size: 14px;
   color: var(--texto);
+  transition: background 0.12s ease;
 }
 
 .sugestao:last-child {
@@ -1387,47 +1445,11 @@ input[type='file'] {
 }
 
 .sugestao:hover {
-  background: var(--secao-alt);
+  background: rgba(201, 168, 76, 0.08);
 }
 
 .sugestao span {
   color: var(--texto-sutil);
   font-size: 13px;
-  white-space: nowrap;
-}
-
-/* ----- Banner "Tem um plano?" (área pública) ------------------------------- */
-.plano-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--secao-alt);
-  border-radius: var(--raio-card);
-  padding: 12px 16px;
-  margin-bottom: 24px;
-  text-decoration: none;
-  transition: background 0.15s ease;
-}
-
-.plano-banner:hover {
-  background: var(--borda);
-}
-
-.plano-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--texto);
-}
-
-.btn-plano-topo {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--acao);
-  color: #fff;
-  border-radius: var(--raio-btn);
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 500;
   white-space: nowrap;
 }
