@@ -11,6 +11,8 @@ const caixaController = require('../controllers/caixaController');
 const comissaoController = require('../controllers/comissaoController');
 const clienteController = require('../controllers/clienteController');
 const planoController = require('../controllers/planoController');
+const marcaController = require('../controllers/configuracaoMarcaController');
+const equipeController = require('../controllers/equipeController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -19,6 +21,17 @@ function uploadFoto(req, res, next) {
     if (err) {
       req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload da imagem.' };
       return res.redirect('/painel/servicos');
+    }
+    next();
+  });
+}
+
+// Variante de upload para o logo da marca (redireciona para a tela de marca em caso de erro).
+function uploadLogo(req, res, next) {
+  upload.single('foto')(req, res, (err) => {
+    if (err) {
+      req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload do logo.' };
+      return res.redirect('/painel/configuracoes-marca');
     }
     next();
   });
@@ -104,6 +117,19 @@ router.get('/estoque/:id/editar', exigeAdmin, estoqueController.formEditar);
 router.post('/estoque/:id/ajuste', exigeAdmin, estoqueController.ajustar);
 router.post('/estoque/:id/remover', exigeAdmin, estoqueController.remover);
 router.post('/estoque/:id', exigeAdmin, estoqueController.atualizar);
+
+// --- Equipe / Barbeiros (somente admin) -----------------------------------
+router.get('/equipe', exigeAdmin, equipeController.listar);
+router.get('/equipe/novo', exigeAdmin, equipeController.formNovo);
+router.post('/equipe', exigeAdmin, equipeController.criar);
+router.get('/equipe/:id/editar', exigeAdmin, equipeController.formEditar);
+router.post('/equipe/:id/toggle', exigeAdmin, equipeController.alternarAtivo);
+router.post('/equipe/:id', exigeAdmin, equipeController.atualizar);
+
+// --- Configurações de marca (somente admin) --------------------------------
+router.get('/configuracoes-marca', exigeAdmin, marcaController.ver);
+router.post('/configuracoes-marca', exigeAdmin, uploadLogo, marcaController.salvar);
+router.post('/configuracoes-marca/remover-logo', exigeAdmin, marcaController.removerLogo);
 
 // --- Caixa (somente admin) ------------------------------------------------
 // Específicas (/config, /categorias) antes das paramétricas (/:id).

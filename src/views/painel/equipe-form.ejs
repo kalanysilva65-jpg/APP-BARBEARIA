@@ -1,0 +1,35 @@
+<a href="/painel/equipe" class="link-voltar">← Voltar</a>
+
+<div class="cabecalho-pagina">
+  <h1><%= titulo %></h1>
+</div>
+
+<div class="card">
+  <form method="POST" action="<%= membro ? '/painel/equipe/' + membro.id : '/painel/equipe' %>" class="form">
+
+    <div class="campo">
+      <label for="nome">Nome</label>
+      <input id="nome" name="nome" type="text" value="<%= membro ? membro.nome : '' %>" required placeholder="Ex: Rafael Silva" />
+    </div>
+
+    <div class="campo">
+      <label for="email">E-mail de acesso</label>
+      <input id="email" name="email" type="email" value="<%= membro ? membro.email : '' %>" required placeholder="Ex: rafael@barbearia.com" />
+    </div>
+
+    <div class="campo">
+      <label for="senha"><%= membro ? 'Nova senha (deixe em branco para manter)' : 'Senha' %></label>
+      <input id="senha" name="senha" type="password" <%= membro ? '' : 'required' %> minlength="6" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+    </div>
+
+    <div class="campo">
+      <label for="papel">Perfil</label>
+      <select id="papel" name="papel">
+        <option value="funcionario" <%= !membro || membro.papel === 'funcionario' ? 'selected' : '' %>>Barbeiro</option>
+        <option value="admin" <%= membro && membro.papel === 'admin' ? 'selected' : '' %>>Admin</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primario" type="submit"><%= membro ? 'Salvar alterações' : 'Adicionar barbeiro' %></button>
+  </form>
+</div>

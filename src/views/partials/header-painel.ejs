@@ -1,6 +1,10 @@
 <header class="topo">
   <div class="container topo-inner">
-    <a href="/painel" class="logo-flowbarber logo-flowbarber--sm"><span class="lf">navio</span><span class="ld">.</span></a>
+    <% if (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) { %>
+      <a href="/painel"><img src="<%= marcaLogoUrl %>" alt="Logo" class="logo-marca-img" /></a>
+    <% } else { %>
+      <a href="/painel" class="logo-flowbarber logo-flowbarber--sm"><span class="lf">navio</span><span class="ld">.</span></a>
+    <% } %>
     <div class="topo-usuario">
       <button class="btn-tema" onclick="toggleTema()" title="Alternar tema" type="button">
         <svg class="icone-lua" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -26,6 +30,8 @@
         <a href="/painel/caixa" class="<%= currentPath.startsWith('/painel/caixa') ? 'ativo' : '' %>">Caixa</a>
         <a href="/painel/comissoes" class="<%= currentPath.startsWith('/painel/comissoes') ? 'ativo' : '' %>">Comissões</a>
         <a href="/painel/horarios" class="<%= currentPath.startsWith('/painel/horarios') ? 'ativo' : '' %>">Horários</a>
+        <a href="/painel/equipe" class="<%= currentPath.startsWith('/painel/equipe') ? 'ativo' : '' %>">Equipe</a>
+        <a href="/painel/configuracoes-marca" class="<%= currentPath.startsWith('/painel/configuracoes-marca') ? 'ativo' : '' %>">Marca</a>
       <% } %>
     </div>
   </nav>

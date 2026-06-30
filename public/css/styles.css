@@ -139,7 +139,7 @@ label {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 60px;
+  height: 88px;
 }
 
 .marca {
@@ -177,6 +177,15 @@ label {
 
 .logo-flowbarber--sm { font-size: 22px; }
 .logo-flowbarber--lg { font-size: 36px; }
+
+.logo-marca-img { height: 72px; width: auto; max-width: 260px; object-fit: contain; display: block; }
+.topo-publico .logo-marca-img { height: 96px; max-width: 320px; }
+
+.rodape-publico-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.logo-flowbarber--xs { font-size: 14px; }
+.powered-by-navio { display: inline-flex; align-items: baseline; gap: 4px; font-size: 11px; opacity: 0.45; font-weight: 500; letter-spacing: 0.02em; }
+.powered-by-navio .logo-flowbarber { font-size: 13px; }
+.powered-by-navio .ld { color: #e8a030; }
 
 .topo-usuario {
   display: flex;
@@ -542,16 +551,117 @@ textarea:focus {
 }
 
 .topo-publico .container-estreito {
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 112px;
 }
+
+.topo-publico-inner {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  height: 100%;
+}
+
+.topo-publico-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-tema--fantasma { justify-self: start; }
+.btn-tema--placeholder { display: block; width: 32px; }
 
 .conteudo-publico {
   flex: 1;
   padding-top: 24px;
   padding-bottom: 40px;
+}
+
+/* ---- Animações da área pública ------------------------------------------- */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animar-entrada {
+  animation: fadeSlideUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Cada card/opção entra em cascata */
+.animar-entrada .opcao-toggle,
+.animar-entrada .card,
+.animar-entrada .cabecalho-pagina,
+.animar-entrada .plano-banner,
+.animar-entrada .alerta,
+.animar-entrada .passos,
+.animar-entrada .resumo-agendamento {
+  animation: fadeSlideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animar-entrada .opcao-toggle:nth-child(1) { animation-delay: 0.08s; }
+.animar-entrada .opcao-toggle:nth-child(2) { animation-delay: 0.16s; }
+.animar-entrada .opcao-toggle:nth-child(3) { animation-delay: 0.24s; }
+.animar-entrada .opcao-toggle:nth-child(4) { animation-delay: 0.32s; }
+.animar-entrada .opcao-toggle:nth-child(5) { animation-delay: 0.40s; }
+.animar-entrada .opcao-toggle:nth-child(6) { animation-delay: 0.48s; }
+.animar-entrada .opcao-toggle:nth-child(n+7) { animation-delay: 0.56s; }
+
+/* Cards de barbeiro / horário */
+.animar-entrada .card:nth-child(1) { animation-delay: 0.08s; }
+.animar-entrada .card:nth-child(2) { animation-delay: 0.16s; }
+.animar-entrada .card:nth-child(3) { animation-delay: 0.24s; }
+.animar-entrada .card:nth-child(4) { animation-delay: 0.32s; }
+.animar-entrada .card:nth-child(n+5) { animation-delay: 0.40s; }
+
+/* Header público */
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animar-topo {
+  animation: fadeSlideDown 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animar-topo .topo-publico-logo {
+  animation: fadeSlideDown 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+.animar-topo .btn-tema {
+  animation: fadeIn 0.6s ease 0.18s both;
+}
+
+/* Hover nos cards de opção */
+.opcao-toggle {
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.18s ease,
+              border-color 0.15s ease;
+}
+.opcao-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+.opcao-toggle:active {
+  transform: translateY(0);
+}
+
+/* Transição suave nos botões de ação do agendamento */
+.btn {
+  transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+.btn:active { transform: scale(0.97); }
+
+/* Barra de passos: anima o passo ativo */
+.passo-item { transition: color 0.2s ease; }
+.passo-circulo { transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animar-entrada,
+  .animar-entrada * { animation: none !important; transition: none !important; }
 }
 
 .rodape-publico {

@@ -1,0 +1,41 @@
+<a href="/painel" class="link-voltar">← Voltar</a>
+
+<div class="cabecalho-pagina">
+  <h1>Identidade da marca</h1>
+  <p class="texto-secundario">Logo exibido no agendamento público e no painel interno.</p>
+</div>
+
+<%/* ---- Form de remoção separado (fora do form principal) ----------------- */%>
+<% if (logoUrl) { %>
+  <div class="card" style="margin-bottom:16px">
+    <div class="campo">
+      <label>Logo atual</label>
+      <div class="preview-foto" style="margin-bottom:12px">
+        <img src="<%= logoUrl %>" alt="Logo da barbearia" style="max-height:80px;max-width:240px;object-fit:contain" />
+      </div>
+      <form method="POST" action="/painel/configuracoes-marca/remover-logo">
+        <button type="submit" class="btn btn-perigo btn-sm" onclick="return confirm('Remover o logo?')">
+          Remover logo
+        </button>
+      </form>
+      <p class="texto-sutil" style="margin-top:8px">Envie uma nova imagem abaixo para substituir.</p>
+    </div>
+  </div>
+<% } %>
+
+<div class="card">
+  <form method="POST" action="/painel/configuracoes-marca" enctype="multipart/form-data" class="form">
+
+    <%/* ---- Upload de novo logo ------------------------------------------- */%>
+    <div class="campo">
+      <label for="foto"><%= logoUrl ? 'Substituir logo' : 'Enviar logo' %></label>
+      <% if (!logoUrl) { %>
+        <p class="texto-sutil" style="margin-bottom:8px">Nenhum logo enviado — o nome em texto (navio.) é exibido.</p>
+      <% } %>
+      <input id="foto" name="foto" type="file" accept="image/jpeg,image/png,image/webp" />
+      <span class="texto-sutil">JPG, PNG ou WEBP até 4 MB. Fundo transparente (PNG) recomendado.</span>
+    </div>
+
+    <button class="btn btn-primario" type="submit">Salvar logo</button>
+  </form>
+</div>

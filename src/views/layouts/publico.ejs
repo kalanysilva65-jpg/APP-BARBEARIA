@@ -15,17 +15,22 @@
     <link rel="stylesheet" href="/css/tema-minimal.css" />
   </head>
   <body class="tela-publica">
-    <header class="topo-publico">
-      <div class="container-estreito" style="display:flex;align-items:center;justify-content:space-between">
-        <a href="/agendar" class="logo-flowbarber logo-flowbarber--sm"><span class="lf">navio</span><span class="ld">.</span></a>
-        <button class="btn-tema" onclick="toggleTema()" title="Alternar tema" type="button">
+    <header class="topo-publico animar-topo">
+      <div class="container-estreito topo-publico-inner">
+        <button class="btn-tema btn-tema--fantasma" onclick="toggleTema()" title="Alternar tema" type="button">
           <svg class="icone-lua" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           <svg class="icone-sol" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
+        <% if (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) { %>
+          <a href="/agendar" class="topo-publico-logo"><img src="<%= marcaLogoUrl %>" alt="Logo" class="logo-marca-img" /></a>
+        <% } else { %>
+          <a href="/agendar" class="topo-publico-logo logo-flowbarber logo-flowbarber--sm"><span class="lf">navio</span><span class="ld">.</span></a>
+        <% } %>
+        <span class="btn-tema--placeholder"></span>
       </div>
     </header>
 
-    <main class="container-estreito conteudo-publico">
+    <main class="container-estreito conteudo-publico animar-entrada">
       <% if (typeof passo !== 'undefined' && passo >= 1 && passo <= 4) { %>
         <%- include('../partials/passos', { passo: passo }) %>
       <% } %>
@@ -34,8 +39,9 @@
     </main>
 
     <footer class="rodape-publico">
-      <div class="container-estreito">
+      <div class="container-estreito rodape-publico-inner">
         <a href="/login" class="texto-sutil">Acesso da equipe →</a>
+        <span class="powered-by-navio">Powered by <span class="logo-flowbarber logo-flowbarber--xs"><span class="lf">navio</span><span class="ld">.</span></span></span>
       </div>
     </footer>
 

@@ -49,7 +49,16 @@ app.use((req, res, next) => {
   };
   // Formata telefone normalizado -> "(51) 99999-9999"
   res.locals.fmtTelefone = require('./utils/telefone').formatarTelefone;
-  next();
+  // Configurações de marca (logo + powered by) disponíveis em todas as views
+  require('./controllers/configuracaoMarcaController').lerMarca().then((marca) => {
+    res.locals.marcaLogoUrl = marca.logoUrl;
+    res.locals.marcaMostrarPoweredBy = marca.mostrarPoweredBy;
+    next();
+  }).catch(() => {
+    res.locals.marcaLogoUrl = null;
+    res.locals.marcaMostrarPoweredBy = true;
+    next();
+  });
 });
 
 // --- Rotas ----------------------------------------------------------------

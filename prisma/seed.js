@@ -101,6 +101,16 @@ async function main() {
     update: {},
     create: { chave: 'caixa_automatico', valor: 'false' },
   });
+  await prisma.configuracao.upsert({
+    where: { chave: 'logo_url' },
+    update: {},
+    create: { chave: 'logo_url', valor: '' },
+  });
+  await prisma.configuracao.upsert({
+    where: { chave: 'mostrar_powered_by' },
+    update: {},
+    create: { chave: 'mostrar_powered_by', valor: 'true' },
+  });
 
   console.log('✓ Seed concluído.');
   console.log('  Logins de teste:');
