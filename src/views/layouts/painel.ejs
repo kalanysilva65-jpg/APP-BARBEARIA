@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %>Andrade Barbearia</title>
+    <script>try{if(localStorage.getItem('tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -18,5 +19,17 @@
     <main class="container conteudo">
       <%- include('../partials/flash') %> <%- body %>
     </main>
+    <script>
+      function toggleTema() {
+        const escuro = document.documentElement.getAttribute('data-tema') === 'escuro';
+        if (escuro) {
+          document.documentElement.removeAttribute('data-tema');
+          localStorage.setItem('tema', 'claro');
+        } else {
+          document.documentElement.setAttribute('data-tema', 'escuro');
+          localStorage.setItem('tema', 'escuro');
+        }
+      }
+    </script>
   </body>
 </html>

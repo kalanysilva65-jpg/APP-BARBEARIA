@@ -62,11 +62,16 @@ async function passoPlano(req, res) {
   });
 }
 
+// Converte "1,2,3" ou "1" em [1, 2, 3]
+function parseIds(str) {
+  return (str || '').toString().split(',').map(Number).filter(Boolean);
+}
+
 // Passo 1 — escolher o serviço
 async function passoServico(req, res) {
   const assinatura = await carregarAssinatura(req.query.assinatura);
   const servicos = await prisma.servico.findMany({
-    where: { ativo: true },
+    where: { ativo: true, ehProduto: false },
     include: { categoria: true },
     orderBy: { nome: 'asc' },
   });
@@ -76,15 +81,28 @@ async function passoServico(req, res) {
 // Passo 2 — escolher o barbeiro
 async function passoBarbeiro(req, res) {
   const assinatura = await carregarAssinatura(req.query.assinatura);
-  const servico = await prisma.servico.findFirst({ where: { id: Number(req.query.servicoId), ativo: true } });
-  if (!servico) return res.redirect('/agendar?' + (assinatura ? 'assinatura=' + assinatura.id : ''));
+  // Suporta servicoIds (multi) e servicoId (legado / plano)
+  const ids = parseIds(req.query.servicoIds || req.query.servicoId);
+  const servicos = await prisma.servico.findMany({
+    where: { id: { in: ids }, ativo: true },
+    include: { categoria: true },
+    orderBy: { nome: 'asc' },
+  });
+  if (!servicos.length) return res.redirect('/agendar' + (assinatura ? '?assinatura=' + assinatura.id : ''));
+
+  const servicoIdsStr = servicos.map((s) => s.id).join(',');
+  const duracaoTotal = servicos.reduce((s, x) => s + x.duracaoMin, 0);
+  const valorTotal = servicos.reduce((s, x) => s + x.valor, 0);
 
   const barbeiros = await prisma.usuario.findMany({ where: { ativo: true }, orderBy: { id: 'asc' } });
   res.render('agendar/barbeiro', {
     layout: 'layouts/publico',
     titulo: 'Escolha o barbeiro',
     passo: 2,
-    servico,
+    servicos,
+    servicoIdsStr,
+    duracaoTotal,
+    valorTotal,
     barbeiros,
     assinatura,
   });
@@ -93,10 +111,18 @@ async function passoBarbeiro(req, res) {
 // Passo 3 — escolher data e horário
 async function passoHorario(req, res) {
   const assinatura = await carregarAssinatura(req.query.assinatura);
-  const servico = await prisma.servico.findFirst({ where: { id: Number(req.query.servicoId), ativo: true } });
+  const ids = parseIds(req.query.servicoIds || req.query.servicoId);
+  const servicos = await prisma.servico.findMany({
+    where: { id: { in: ids }, ativo: true },
+    include: { categoria: true },
+    orderBy: { nome: 'asc' },
+  });
   const barbeiro = await prisma.usuario.findFirst({ where: { id: Number(req.query.barbeiroId), ativo: true } });
-  if (!servico || !barbeiro) return res.redirect('/agendar');
+  if (!servicos.length || !barbeiro) return res.redirect('/agendar');
 
+  const servicoIdsStr = servicos.map((s) => s.id).join(',');
+  const duracaoTotal = servicos.reduce((s, x) => s + x.duracaoMin, 0);
+  const valorTotal = servicos.reduce((s, x) => s + x.valor, 0);
   const ilimitado = assinatura && assinatura.plano.tipo === 'ilimitado';
 
   const jornadas = await prisma.horarioTrabalho.findMany({ where: { usuarioId: barbeiro.id, trabalha: true } });
@@ -109,7 +135,6 @@ async function passoHorario(req, res) {
     const d = new Date(hoje);
     d.setDate(hoje.getDate() + i);
     const dow = d.getDay();
-    // Plano ilimitado só pode ser agendado de segunda (1) a quinta (4).
     if (ilimitado && (dow < 1 || dow > 4)) continue;
     if (diasQueTrabalha.has(dow)) {
       const dia = String(d.getDate()).padStart(2, '0');
@@ -122,13 +147,16 @@ async function passoHorario(req, res) {
   if (!dataSel || !datas.find((x) => x.iso === dataSel)) dataSel = datas.length ? datas[0].iso : null;
 
   let horarios = [];
-  if (dataSel) horarios = await horariosDisponiveis(barbeiro.id, dataSel, servico.duracaoMin);
+  if (dataSel) horarios = await horariosDisponiveis(barbeiro.id, dataSel, duracaoTotal);
 
   res.render('agendar/horario', {
     layout: 'layouts/publico',
     titulo: 'Escolha o horário',
     passo: 3,
-    servico,
+    servicos,
+    servicoIdsStr,
+    duracaoTotal,
+    valorTotal,
     barbeiro,
     datas,
     dataSel,
@@ -141,16 +169,25 @@ async function passoHorario(req, res) {
 // Passo 4 — dados do cliente
 async function passoDados(req, res) {
   const assinatura = await carregarAssinatura(req.query.assinatura);
-  const { servicoId, barbeiroId, data, hora } = req.query;
-  const servico = await prisma.servico.findFirst({ where: { id: Number(servicoId), ativo: true } });
+  const { barbeiroId, data, hora } = req.query;
+  const ids = parseIds(req.query.servicoIds || req.query.servicoId);
+  const servicos = await prisma.servico.findMany({
+    where: { id: { in: ids }, ativo: true },
+    orderBy: { nome: 'asc' },
+  });
   const barbeiro = await prisma.usuario.findFirst({ where: { id: Number(barbeiroId), ativo: true } });
-  if (!servico || !barbeiro || !data || !hora) return res.redirect('/agendar');
+  if (!servicos.length || !barbeiro || !data || !hora) return res.redirect('/agendar');
+
+  const servicoIdsStr = servicos.map((s) => s.id).join(',');
+  const valorTotal = servicos.reduce((s, x) => s + x.valor, 0);
 
   res.render('agendar/dados', {
     layout: 'layouts/publico',
     titulo: 'Seus dados',
     passo: 4,
-    servico,
+    servicos,
+    servicoIdsStr,
+    valorTotal,
     barbeiro,
     data,
     hora,
@@ -162,17 +199,17 @@ async function passoDados(req, res) {
 // Confirmação — cria o agendamento (com validação no backend)
 async function confirmar(req, res) {
   const assinatura = await carregarAssinatura(req.body.assinatura);
-  let servicoId = Number(req.body.servicoId);
-  // Se o plano cobre um serviço específico, é esse serviço que vale (segurança).
-  if (assinatura && assinatura.plano.servicoId) servicoId = assinatura.plano.servicoId;
+  let servicoIds = parseIds(req.body.servicoIds || req.body.servicoId);
+  // Se o plano cobre um serviço específico, apenas esse serviço vale (segurança).
+  if (assinatura && assinatura.plano.servicoId) servicoIds = [assinatura.plano.servicoId];
   const barbeiroId = Number(req.body.barbeiroId);
   const data = req.body.data;
   const hora = req.body.hora;
   let nome = (req.body.cliente_nome || '').trim();
-  const email = (req.body.cliente_email || '').trim();
   let telefone = (req.body.cliente_telefone || '').trim();
+  const nascimentoStr = (req.body.cliente_nascimento || '').trim();
 
-  const servico = await prisma.servico.findFirst({ where: { id: servicoId, ativo: true } });
+  const servicos = await prisma.servico.findMany({ where: { id: { in: servicoIds }, ativo: true } });
   const barbeiro = await prisma.usuario.findFirst({ where: { id: barbeiroId, ativo: true } });
 
   // Agendamento via plano usa os dados do cliente do plano.
@@ -181,31 +218,32 @@ async function confirmar(req, res) {
     telefone = assinatura.cliente.telefone;
   }
 
+  const usaPlano = !!assinatura;
+  const duracaoTotal = servicos.reduce((s, x) => s + x.duracaoMin, 0);
+  const valorTotal = usaPlano ? 0 : servicos.reduce((s, x) => s + x.valor, 0);
+
   const erros = [];
-  if (!servico) erros.push('Serviço inválido.');
+  if (!servicos.length) erros.push('Serviço inválido.');
   if (!barbeiroId || !barbeiro) erros.push('Selecione um barbeiro.');
   if (!data || !hora) erros.push('Selecione data e horário.');
   if (!nome) erros.push('Informe seu nome.');
   if (!telefone) erros.push('Informe seu telefone.');
-  if (!assinatura && !email) erros.push('Informe seu e-mail.');
-  // Enviou um plano que não está mais válido
   if (!assinatura && req.body.assinatura) erros.push('Seu plano não está mais ativo.');
-  // Plano ilimitado: só seg–qui
   if (assinatura && assinatura.plano.tipo === 'ilimitado' && data) {
     const dow = dataLocal(data).getDay();
     if (dow < 1 || dow > 4) erros.push('O plano ilimitado só pode ser agendado de segunda a quinta.');
   }
 
-  // Revalida a disponibilidade real (evita corrida / horário ocupado)
-  if (servico && barbeiro && data && hora) {
-    const livres = await horariosDisponiveis(barbeiroId, data, servico.duracaoMin);
+  // Revalida a disponibilidade real (soma das durações de todos os serviços)
+  if (servicos.length && barbeiro && data && hora) {
+    const livres = await horariosDisponiveis(barbeiroId, data, duracaoTotal);
     if (!livres.includes(hora)) erros.push('Esse horário não está mais disponível. Escolha outro.');
   }
 
   if (erros.length) {
     req.session.flash = { tipo: 'erro', texto: erros.join(' ') };
     const qs = new URLSearchParams({
-      servicoId: servicoId || '',
+      servicoIds: servicoIds.join(','),
       barbeiroId: barbeiroId || '',
       data: data || '',
       hora: hora || '',
@@ -222,26 +260,35 @@ async function confirmar(req, res) {
     const telNorm = normalizarTelefone(telefone);
     if (telNorm) {
       let cliente = await prisma.cliente.findUnique({ where: { telefone: telNorm } });
-      if (!cliente) cliente = await prisma.cliente.create({ data: { nome, telefone: telNorm } });
+      if (!cliente) {
+        const dataNascimento =
+          nascimentoStr && /^\d{4}-\d{2}-\d{2}$/.test(nascimentoStr)
+            ? new Date(nascimentoStr + 'T12:00:00')
+            : null;
+        cliente = await prisma.cliente.create({ data: { nome, telefone: telNorm, dataNascimento } });
+      }
       clienteId = cliente.id;
     }
   }
 
-  const usaPlano = !!assinatura;
   const agendamento = await prisma.agendamento.create({
     data: {
       usuarioId: barbeiroId,
       clienteId,
       clientePlanoId: usaPlano ? assinatura.id : null,
       clienteNome: nome,
-      clienteEmail: email,
+      clienteEmail: null,
       clienteTelefone: telefone,
       data: dataLocal(data),
       horaInicio: hora,
       status: 'agendado',
-      valorTotal: usaPlano ? 0 : servico.valor, // plano: coberto (R$ 0)
+      valorTotal,
       itens: {
-        create: [{ servicoId: servico.id, valorUnitario: usaPlano ? 0 : servico.valor, quantidade: 1 }],
+        create: servicos.map((s) => ({
+          servicoId: s.id,
+          valorUnitario: usaPlano ? 0 : s.valor,
+          quantidade: 1,
+        })),
       },
     },
   });

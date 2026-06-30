@@ -27,14 +27,26 @@
     </div>
     <div class="campo">
       <label class="check">
-        <input type="checkbox" name="ehProduto" <%= servico && servico.ehProduto ? 'checked' : '' %> />
+        <input type="checkbox" name="ehProduto" id="ehProduto" <%= servico && servico.ehProduto ? 'checked' : '' %> onchange="toggleComissaoProduto()" />
         É um produto
       </label>
       <span class="texto-sutil">
-        Produto: comissão fixa de 10% e não ocupa horário (deixe a duração em 0).
+        Produto: usa a % de comissão definida abaixo, não ocupa horário (deixe a duração em 0).
         Serviço: usa a % de comissão do barbeiro.
       </span>
     </div>
+
+    <div class="campo" id="campo-comissao-produto" style="display:<%= servico && servico.ehProduto ? 'block' : 'none' %>">
+      <label for="comissaoPercentual">Comissão do produto (%)</label>
+      <input id="comissaoPercentual" name="comissaoPercentual" type="number" min="0" max="100" step="0.1"
+             value="<%= servico ? servico.comissaoPercentual : 10 %>" />
+    </div>
+    <script>
+      function toggleComissaoProduto() {
+        document.getElementById('campo-comissao-produto').style.display =
+          document.getElementById('ehProduto').checked ? 'block' : 'none';
+      }
+    </script>
 
     <div class="campo">
       <label for="categoriaId">Categoria</label>

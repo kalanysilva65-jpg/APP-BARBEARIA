@@ -56,7 +56,7 @@ async function ver(req, res) {
   // Agrupa por barbeiro, separando serviços de produtos
   const mapa = new Map();
   for (const b of barbeiros) {
-    mapa.set(b.id, { barbeiro: b, atendimentos: [], servicosTotal: 0, produtosTotal: 0, ocupadoMin: 0, qtd: 0 });
+    mapa.set(b.id, { barbeiro: b, atendimentos: [], servicosTotal: 0, produtosTotal: 0, comissaoProdutosTotal: 0, ocupadoMin: 0, qtd: 0 });
   }
 
   // O valor do plano conta UMA ÚNICA VEZ por assinatura (não por atendimento).
@@ -89,11 +89,15 @@ async function ver(req, res) {
         planosCreditados.add(ag.clientePlanoId);
       }
     } else {
+      let comissaoProdutosSub = 0;
       for (const it of ag.itens) {
         const valor = it.valorUnitario * it.quantidade;
-        if (it.servico.ehProduto) produtosSub += valor;
-        else servicosSub += valor;
+        if (it.servico.ehProduto) {
+          produtosSub += valor;
+          comissaoProdutosSub += Math.round(valor * ((it.servico.comissaoPercentual ?? 10) / 100));
+        } else servicosSub += valor;
       }
+      grupo.comissaoProdutosTotal += comissaoProdutosSub;
     }
 
     grupo.atendimentos.push({ ag, itens, servicosSub, produtosSub, viaPlano });
@@ -137,7 +141,7 @@ async function ver(req, res) {
   const todosGrupos = Array.from(mapa.values()).map((g) => {
     const pct = g.barbeiro.comissaoPercentual ?? 50;
     const comissaoServicos = Math.round(g.servicosTotal * (pct / 100));
-    const comissaoProdutos = Math.round(g.produtosTotal * (COMISSAO_PRODUTO_PERCENTUAL / 100));
+    const comissaoProdutos = g.comissaoProdutosTotal;
     const faturadoTotal = g.servicosTotal + g.produtosTotal;
     // Ticket médio = faturado total ÷ atendimentos concluídos no período.
     const ticketMedio = g.qtd > 0 ? Math.round(faturadoTotal / g.qtd) : 0;

@@ -3,14 +3,18 @@
 <div class="cabecalho-pagina">
   <h1>Escolha o barbeiro</h1>
   <p class="texto-secundario">
-    <%= servico.nome %> · <%= assinatura ? 'incluso no plano' : fmtBRL(servico.valor) %>
+    <% if (servicos.length === 1) { %>
+      <%= servicos[0].nome %> · <%= assinatura ? 'incluso no plano' : fmtBRL(valorTotal) %>
+    <% } else { %>
+      <%= servicos.length %> serviços · <%= fmtBRL(valorTotal) %>
+    <% } %>
   </p>
 </div>
 
 <div class="lista-opcoes">
   <% barbeiros.forEach(function (b) { %>
     <a class="opcao-selecionavel opcao-barbeiro"
-       href="/agendar/horario?servicoId=<%= servico.id %>&barbeiroId=<%= b.id %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
+       href="/agendar/horario?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= b.id %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
       <span class="avatar"><%= b.nome.charAt(0).toUpperCase() %></span>
       <span class="opcao-nome"><%= b.nome %></span>
     </a>

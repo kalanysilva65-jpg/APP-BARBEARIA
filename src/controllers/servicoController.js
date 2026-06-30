@@ -44,6 +44,7 @@ async function criar(req, res) {
   const duracaoMin = Math.max(0, parseInt(req.body.duracaoMin, 10) || 0);
   const categoriaId = req.body.categoriaId ? Number(req.body.categoriaId) : null;
   const ehProduto = req.body.ehProduto === 'on';
+  const comissaoPercentual = Math.min(100, Math.max(0, parseFloat(req.body.comissaoPercentual) || 10));
   const fotoUrl = req.file ? '/uploads/' + req.file.filename : null;
 
   if (!nome || valor === null) {
@@ -52,7 +53,7 @@ async function criar(req, res) {
     return res.redirect('/painel/servicos/novo');
   }
 
-  await prisma.servico.create({ data: { nome, valor, duracaoMin, categoriaId, ehProduto, fotoUrl } });
+  await prisma.servico.create({ data: { nome, valor, duracaoMin, categoriaId, ehProduto, comissaoPercentual, fotoUrl } });
   req.session.flash = { tipo: 'sucesso', texto: 'Serviço criado.' };
   res.redirect('/painel/servicos');
 }
@@ -79,6 +80,7 @@ async function atualizar(req, res) {
   const duracaoMin = Math.max(0, parseInt(req.body.duracaoMin, 10) || 0);
   const categoriaId = req.body.categoriaId ? Number(req.body.categoriaId) : null;
   const ehProduto = req.body.ehProduto === 'on';
+  const comissaoPercentual = Math.min(100, Math.max(0, parseFloat(req.body.comissaoPercentual) || 10));
 
   if (!nome || valor === null) {
     if (req.file) apagarFoto('/uploads/' + req.file.filename);
@@ -86,7 +88,7 @@ async function atualizar(req, res) {
     return res.redirect('/painel/servicos/' + id + '/editar');
   }
 
-  const data = { nome, valor, duracaoMin, categoriaId, ehProduto };
+  const data = { nome, valor, duracaoMin, categoriaId, ehProduto, comissaoPercentual };
   if (req.file) {
     apagarFoto(servico.fotoUrl); // remove a foto antiga
     data.fotoUrl = '/uploads/' + req.file.filename;

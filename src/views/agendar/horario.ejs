@@ -1,9 +1,12 @@
-<a href="/agendar/barbeiro?servicoId=<%= servico.id %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>"
+<a href="/agendar/barbeiro?servicoIds=<%= servicoIdsStr %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>"
    class="link-voltar">← Voltar</a>
 
 <div class="cabecalho-pagina">
   <h1>Escolha o horário</h1>
-  <p class="texto-secundario">Com <strong><%= barbeiro.nome %></strong> · <%= servico.nome %></p>
+  <p class="texto-secundario">
+    Com <strong><%= barbeiro.nome %></strong> ·
+    <% if (servicos.length === 1) { %><%= servicos[0].nome %><% } else { %><%= servicos.length %> serviços<% } %>
+  </p>
 </div>
 
 <% if (ilimitado) { %>
@@ -19,7 +22,7 @@
   <div class="lista-datas">
     <% datas.forEach(function (d) { %>
       <a class="chip-data <%= d.iso === dataSel ? 'selecionado' : '' %>"
-         href="/agendar/horario?servicoId=<%= servico.id %>&barbeiroId=<%= barbeiro.id %>&data=<%= d.iso %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
+         href="/agendar/horario?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= d.iso %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
         <%= d.rotulo %>
       </a>
     <% }) %>
@@ -32,7 +35,7 @@
     <div class="grade-horarios">
       <% horarios.forEach(function (h) { %>
         <a class="opcao-horario"
-           href="/agendar/dados?servicoId=<%= servico.id %>&barbeiroId=<%= barbeiro.id %>&data=<%= dataSel %>&hora=<%= h %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
+           href="/agendar/dados?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= dataSel %>&hora=<%= h %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
           <%= h %>
         </a>
       <% }) %>

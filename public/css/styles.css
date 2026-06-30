@@ -156,7 +156,7 @@ label {
   font-size: 28px;
 }
 
-/* Logo flowbarber. */
+/* Logo navio. */
 .logo-flowbarber {
   display: inline-flex;
   align-items: baseline;
@@ -165,9 +165,15 @@ label {
   text-decoration: none;
 }
 
-.logo-flowbarber .lf { font-weight: 700; color: var(--texto); letter-spacing: -0.03em; }
-.logo-flowbarber .lb { font-weight: 400; color: var(--texto); letter-spacing: -0.02em; }
-.logo-flowbarber .ld { color: #c1622e; font-weight: 700; }
+.logo-flowbarber .lf { font-weight: 700; color: var(--texto); letter-spacing: -0.02em; }
+.logo-flowbarber .lb { display: none; }
+.logo-flowbarber .ld { color: #e8a030; font-weight: 700; }
+.logo-flowbarber .li {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  opacity: 0.85;
+}
 
 .logo-flowbarber--sm { font-size: 22px; }
 .logo-flowbarber--lg { font-size: 36px; }
@@ -1106,7 +1112,7 @@ input[type='file'] {
 .opcao-thumb {
   width: 44px;
   height: 44px;
-  border-radius: var(--raio-input);
+  border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
   background: var(--secao-alt);
@@ -1430,4 +1436,11 @@ input[type='file'] {
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
+}
+
+/* Multi-select de serviços */
+.opcao-toggle.selecionado {
+  border-color: var(--acao);
+  background: var(--acao-suave, rgba(0,0,0,0.04));
+  box-shadow: 0 0 0 2px var(--acao);
 }

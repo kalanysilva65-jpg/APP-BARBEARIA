@@ -18,31 +18,83 @@
 
 <div class="cabecalho-pagina">
   <h1>Escolha o serviço</h1>
-  <p class="texto-secundario">Selecione o que você deseja agendar.</p>
+  <% if (!assinatura) { %>
+    <p class="texto-secundario">Selecione um ou mais serviços.</p>
+  <% } else { %>
+    <p class="texto-secundario">Selecione o serviço do seu plano.</p>
+  <% } %>
 </div>
 
-<div class="lista-opcoes">
-  <% servicos.forEach(function (s) { %>
-    <a class="opcao-selecionavel opcao-servico"
-       href="/agendar/barbeiro?servicoId=<%= s.id %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
-      <span class="opcao-esquerda">
-        <% if (s.fotoUrl) { %><img class="opcao-thumb" src="<%= s.fotoUrl %>" alt="" /><% } %>
-        <span class="opcao-info">
-          <span class="opcao-nome"><%= s.nome %></span>
-          <% if (s.categoria) { %><span class="texto-sutil"><%= s.categoria.nome %></span><% } %>
+<% if (assinatura) { %>
+  <%/* Plano: seleção única direta por link */%>
+  <div class="lista-opcoes">
+    <% servicos.forEach(function (s) { %>
+      <a class="opcao-selecionavel opcao-servico"
+         href="/agendar/barbeiro?servicoIds=<%= s.id %>&assinatura=<%= assinatura.id %>">
+        <span class="opcao-esquerda">
+          <% if (s.fotoUrl) { %><img class="opcao-thumb" src="<%= s.fotoUrl %>" alt="" /><% } %>
+          <span class="opcao-info">
+            <span class="opcao-nome"><%= s.nome %></span>
+            <% if (s.categoria) { %><span class="texto-sutil"><%= s.categoria.nome %></span><% } %>
+          </span>
         </span>
-      </span>
-      <span class="opcao-meta">
-        <% if (assinatura) { %>
+        <span class="opcao-meta">
           <span class="opcao-valor">Incluso</span>
-        <% } else { %>
-          <span class="opcao-valor"><%= fmtBRL(s.valor) %></span>
-        <% } %>
-        <% if (s.duracaoMin > 0) { %><span class="texto-sutil"><%= s.duracaoMin %> min</span><% } %>
-      </span>
-    </a>
-  <% }) %>
-</div>
+          <% if (s.duracaoMin > 0) { %><span class="texto-sutil"><%= s.duracaoMin %> min</span><% } %>
+        </span>
+      </a>
+    <% }) %>
+  </div>
+<% } else { %>
+  <%/* Sem plano: multi-select com JS */%>
+  <form id="form-servicos" action="/agendar/barbeiro" method="GET" onsubmit="return validarSelecao()">
+    <input type="hidden" name="servicoIds" id="servicoIds-input" value="" />
+
+    <div class="lista-opcoes" id="lista-servicos">
+      <% servicos.forEach(function (s) { %>
+        <div class="opcao-selecionavel opcao-servico opcao-toggle"
+             data-id="<%= s.id %>"
+             onclick="toggleServico(this)"
+             style="cursor:pointer">
+          <span class="opcao-esquerda">
+            <% if (s.fotoUrl) { %><img class="opcao-thumb" src="<%= s.fotoUrl %>" alt="" /><% } %>
+            <span class="opcao-info">
+              <span class="opcao-nome"><%= s.nome %></span>
+              <% if (s.categoria) { %><span class="texto-sutil"><%= s.categoria.nome %></span><% } %>
+            </span>
+          </span>
+          <span class="opcao-meta">
+            <span class="opcao-valor"><%= fmtBRL(s.valor) %></span>
+            <% if (s.duracaoMin > 0) { %><span class="texto-sutil"><%= s.duracaoMin %> min</span><% } %>
+          </span>
+        </div>
+      <% }) %>
+    </div>
+
+    <button class="btn btn-primario btn-bloco" style="margin-top:24px" type="submit" id="btn-continuar" disabled>
+      Continuar
+    </button>
+  </form>
+
+  <script>
+    const selecionados = new Set();
+    function toggleServico(el) {
+      const id = el.dataset.id;
+      if (selecionados.has(id)) {
+        selecionados.delete(id);
+        el.classList.remove('selecionado');
+      } else {
+        selecionados.add(id);
+        el.classList.add('selecionado');
+      }
+      document.getElementById('servicoIds-input').value = Array.from(selecionados).join(',');
+      document.getElementById('btn-continuar').disabled = selecionados.size === 0;
+    }
+    function validarSelecao() {
+      return selecionados.size > 0;
+    }
+  </script>
+<% } %>
 
 <% if (servicos.length === 0) { %>
   <div class="card"><p class="texto-secundario">Nenhum serviço disponível no momento.</p></div>

@@ -75,8 +75,9 @@ model Servico {
   valor       Int // centavos
   duracaoMin  Int     @map("duracao_min") // usado para calcular os horários
   fotoUrl     String? @map("foto_url") // caminho da imagem em /uploads
-  ativo       Boolean @default(true)
-  ehProduto   Boolean @default(false) @map("eh_produto") // produto (comissão fixa) x serviço (% do barbeiro)
+  ativo              Boolean @default(true)
+  ehProduto          Boolean @default(false) @map("eh_produto") // produto x serviço
+  comissaoPercentual Float   @default(10) @map("comissao_percentual") // % de comissão sobre o produto
 
   categoria CategoriaServico? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
   itens     AgendamentoItem[]
@@ -90,7 +91,7 @@ model Agendamento {
   id              Int      @id @default(autoincrement())
   usuarioId       Int      @map("usuario_id") // barbeiro escolhido
   clienteNome     String   @map("cliente_nome")
-  clienteEmail    String   @map("cliente_email")
+  clienteEmail    String?  @map("cliente_email")
   clienteTelefone String   @map("cliente_telefone")
   data            DateTime // dia do agendamento (00:00)
   horaInicio      String   @map("hora_inicio")
