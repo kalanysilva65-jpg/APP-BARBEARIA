@@ -2,6 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const c = require('../controllers/agendamentoPublicoController');
+const { exigeBarbeariaPublica } = require('../middlewares/tenant');
+
+// Toda a área pública precisa de uma barbearia válida no contexto (subdomínio).
+router.use(exigeBarbeariaPublica);
 
 router.get('/plano', c.passoPlano); // consulta de plano por telefone
 router.get('/', c.passoServico); // passo 1: serviço

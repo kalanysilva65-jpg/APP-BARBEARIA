@@ -3,7 +3,7 @@
     <h1>Planos</h1>
     <p class="texto-secundario">Modelos de plano da barbearia (limitados e ilimitados).</p>
   </div>
-  <% if (usuario.papel === 'admin') { %>
+  <% if (ehAdmin) { %>
     <a href="/painel/planos/novo" class="btn btn-primario btn-sm">+ Novo</a>
   <% } %>
 </div>
@@ -23,7 +23,7 @@
       </div>
       <div class="servico-valor"><%= fmtBRL(p.valor) %></div>
 
-      <% if (usuario.papel === 'admin') { %>
+      <% if (ehAdmin) { %>
         <div class="servico-acoes">
           <a href="/painel/planos/<%= p.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
           <form method="POST" action="/painel/planos/<%= p.id %>/toggle" class="inline">
@@ -41,7 +41,7 @@
   <% if (planos.length === 0) { %>
     <div class="card">
       <p class="texto-secundario">
-        Nenhum plano cadastrado<%= usuario.papel === 'admin' ? ' ainda. Clique em + Novo.' : '.' %>
+        Nenhum plano cadastrado<%= ehAdmin ? ' ainda. Clique em + Novo.' : '.' %>
       </p>
     </div>
   <% } %>

@@ -1,0 +1,136 @@
+<div class="cabecalho-pagina agenda-cabecalho">
+  <div>
+    <h1><%= barbearia.nome %></h1>
+    <p class="texto-secundario">Subdomínio: <strong><%= barbearia.slug %></strong> · <%= barbearia.ativo ? 'Ativa' : 'Inativa' %></p>
+  </div>
+  <div class="flex gap-8">
+    <form method="POST" action="/mestre/entrar/<%= barbearia.id %>" class="inline">
+      <button class="btn btn-primario btn-sm" type="submit">Entrar nesta barbearia →</button>
+    </form>
+    <a href="/mestre" class="btn btn-secundario btn-sm">← Voltar</a>
+  </div>
+</div>
+
+<!-- Dados da barbearia -->
+<div class="card mb-16">
+  <h2>Dados da barbearia</h2>
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>" class="form mt-16">
+    <div class="grid-2">
+      <div class="campo">
+        <label for="nome">Nome</label>
+        <input id="nome" name="nome" value="<%= barbearia.nome %>" required />
+      </div>
+      <div class="campo">
+        <label for="slug">Subdomínio</label>
+        <input id="slug" name="slug" value="<%= barbearia.slug %>" required />
+      </div>
+    </div>
+    <label class="flex gap-8" style="align-items:center;margin-top:8px;">
+      <input type="checkbox" name="ativo" <%= barbearia.ativo ? 'checked' : '' %> />
+      <span>Barbearia ativa (desmarcada, o login e o agendamento ficam bloqueados)</span>
+    </label>
+    <div class="mt-16">
+      <button class="btn btn-primario btn-sm" type="submit">Salvar dados</button>
+    </div>
+  </form>
+</div>
+
+<!-- Marca -->
+<div class="card mb-16">
+  <h2>Marca</h2>
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/marca" enctype="multipart/form-data" class="form mt-16">
+    <% if (marca.logoUrl) { %>
+      <div class="mb-16">
+        <img src="<%= marca.logoUrl %>" alt="Logo atual" style="max-height:64px;" />
+      </div>
+    <% } %>
+    <div class="campo">
+      <label for="foto">Logo (JPG, PNG ou WEBP · máx. 4 MB)</label>
+      <input id="foto" type="file" name="foto" accept="image/*" />
+    </div>
+    <label class="flex gap-8" style="align-items:center;">
+      <input type="checkbox" name="mostrar_powered_by" <%= marca.mostrarPoweredBy ? 'checked' : '' %> />
+      <span>Mostrar selo “Desenvolvido por navio.”</span>
+    </label>
+    <div class="flex gap-8 mt-16">
+      <button class="btn btn-primario btn-sm" type="submit">Salvar marca</button>
+      <% if (marca.logoUrl) { %>
+        <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/marca/remover-logo" class="inline">
+          <button class="btn btn-secundario btn-sm" type="submit">Remover logo</button>
+        </form>
+      <% } %>
+    </div>
+  </form>
+</div>
+
+<!-- Equipe -->
+<div class="card mb-16">
+  <h2>Equipe (<%= equipe.length %>)</h2>
+  <% if (equipe.length === 0) { %>
+    <p class="texto-secundario mt-16">Nenhum barbeiro cadastrado ainda.</p>
+  <% } else { %>
+    <div class="tabela-rolagem">
+      <table class="tabela mt-16">
+        <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <% equipe.forEach(function (m) { %>
+            <tr>
+              <td><%= m.nome %></td>
+              <td><span class="texto-sutil"><%= m.email %></span></td>
+              <td><%= m.papel === 'admin' ? 'Admin' : 'Barbeiro' %></td>
+              <td><%= m.ativo ? 'Ativo' : 'Inativo' %></td>
+              <td class="col-acao">
+                <div class="flex gap-8" style="justify-content:flex-end">
+                  <a href="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
+                  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/toggle" class="inline">
+                    <button class="btn btn-secundario btn-sm" type="submit"><%= m.ativo ? 'Desativar' : 'Ativar' %></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+
+  <h3 class="mt-16">Adicionar barbeiro</h3>
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe" class="form mt-16">
+    <div class="grid-2">
+      <div class="campo">
+        <label for="bnome">Nome</label>
+        <input id="bnome" name="nome" required />
+      </div>
+      <div class="campo">
+        <label for="bemail">E-mail</label>
+        <input id="bemail" type="email" name="email" required />
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="campo">
+        <label for="bsenha">Senha (mínimo 6)</label>
+        <input id="bsenha" type="text" name="senha" required />
+      </div>
+      <div class="campo">
+        <label for="bpapel">Papel</label>
+        <select id="bpapel" name="papel">
+          <option value="funcionario">Barbeiro</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+    <div class="mt-16">
+      <button class="btn btn-primario btn-sm" type="submit">Adicionar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Zona de perigo -->
+<div class="card">
+  <h2>Excluir barbearia</h2>
+  <p class="texto-secundario mt-16">Remove a barbearia e todos os dados dela (equipe, clientes, agenda, caixa). Não dá para desfazer.</p>
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/remover" class="mt-16"
+        onsubmit="return confirm('Excluir a barbearia <%= barbearia.nome %> e TODOS os dados dela?')">
+    <button class="btn-x" style="width:auto;padding:8px 16px;border-radius:8px;" type="submit">Excluir barbearia</button>
+  </form>
+</div>

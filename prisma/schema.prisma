@@ -1,4 +1,8 @@
-// Modelo de dados da barbearia.
+// Modelo de dados da barbearia (MULTI-BARBEARIA / SaaS).
+// Cada registro pertence a uma Barbearia (o "tenant"), identificada pelo `slug`
+// (que vira o subdomínio: <slug>.seuapp.com). O painel-mestre (dono do sistema)
+// enxerga todas as barbearias; cada barbearia só enxerga os próprios dados.
+//
 // Os nomes das tabelas/colunas no banco ficam em português (snake_case) via @map.
 // Valores monetários são guardados como INTEIROS em centavos (ex.: 4000 = R$ 40,00)
 // para evitar erros de arredondamento de ponto flutuante; a formatação acontece na view.
@@ -12,57 +16,96 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Equipe / barbeiros (admin + funcionários). Todos são agendáveis pelo cliente.
+/// Tenant do sistema: uma barbearia assinante. O `slug` é o subdomínio.
+model Barbearia {
+  id       Int      @id @default(autoincrement())
+  nome     String
+  slug     String   @unique // subdomínio: <slug>.seuapp.com
+  ativo    Boolean  @default(true)
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  usuarios           Usuario[]
+  horariosTrabalho   HorarioTrabalho[]
+  bloqueios          Bloqueio[]
+  categoriasServico  CategoriaServico[]
+  servicos           Servico[]
+  agendamentos       Agendamento[]
+  clientes           Cliente[]
+  planos             Plano[]
+  clientePlanos      ClientePlano[]
+  categoriasEstoque  CategoriaEstoque[]
+  estoque            Estoque[]
+  categoriasCaixa    CategoriaCaixa[]
+  caixa              Caixa[]
+  configuracoes      Configuracao[]
+
+  @@map("barbearias")
+}
+
+/// Equipe / barbeiros (admin + funcionários) OU o dono do sistema.
+/// - papel "dono": super-admin do SaaS, sem barbearia (barbeariaId nulo).
+/// - papel "admin"/"funcionario": pertence a uma barbearia. Todos agendáveis.
 model Usuario {
-  id        Int      @id @default(autoincrement())
-  nome      String
-  email     String   @unique
-  senhaHash String   @map("senha_hash")
-  papel     String // "admin" ou "funcionario"
-  ativo     Boolean  @default(true)
+  id          Int      @id @default(autoincrement())
+  barbeariaId Int?     @map("barbearia_id") // nulo apenas para o dono do sistema
+  nome        String
+  email       String
+  senhaHash   String   @map("senha_hash")
+  papel       String // "dono" | "admin" | "funcionario"
+  ativo       Boolean  @default(true)
   comissaoPercentual Float @default(50) @map("comissao_percentual") // % de comissão do barbeiro
   criadoEm  DateTime @default(now()) @map("criado_em")
 
+  barbearia        Barbearia? @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   horariosTrabalho HorarioTrabalho[]
   bloqueios        Bloqueio[]
   agendamentos     Agendamento[]
 
+  // E-mail único DENTRO de cada barbearia (o mesmo e-mail pode existir em barbearias diferentes).
+  @@unique([barbeariaId, email])
   @@map("usuarios")
 }
 
 /// Jornada de trabalho de cada barbeiro (um registro por dia da semana).
 model HorarioTrabalho {
-  id         Int     @id @default(autoincrement())
-  usuarioId  Int     @map("usuario_id")
-  diaSemana  Int     @map("dia_semana") // 0=domingo ... 6=sábado
-  horaInicio String  @map("hora_inicio") // ex.: "09:00"
-  horaFim    String  @map("hora_fim") // ex.: "20:00"
-  trabalha   Boolean @default(true) // false = folga nesse dia
+  id          Int     @id @default(autoincrement())
+  barbeariaId Int     @map("barbearia_id")
+  usuarioId   Int     @map("usuario_id")
+  diaSemana   Int     @map("dia_semana") // 0=domingo ... 6=sábado
+  horaInicio  String  @map("hora_inicio") // ex.: "09:00"
+  horaFim     String  @map("hora_fim") // ex.: "20:00"
+  trabalha    Boolean @default(true) // false = folga nesse dia
 
-  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@map("horarios_trabalho")
 }
 
 /// Bloqueios manuais de horário (almoço, compromisso, dia fechado etc.).
 model Bloqueio {
-  id         Int      @id @default(autoincrement())
-  usuarioId  Int      @map("usuario_id")
-  data       DateTime // dia do bloqueio (00:00)
-  horaInicio String   @map("hora_inicio")
-  horaFim    String   @map("hora_fim")
-  motivo     String? // opcional
+  id          Int      @id @default(autoincrement())
+  barbeariaId Int      @map("barbearia_id")
+  usuarioId   Int      @map("usuario_id")
+  data        DateTime // dia do bloqueio (00:00)
+  horaInicio  String   @map("hora_inicio")
+  horaFim     String   @map("hora_fim")
+  motivo      String? // opcional
 
-  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@map("bloqueios")
 }
 
 /// Categorias dos serviços/produtos do catálogo (configuráveis manualmente).
 model CategoriaServico {
-  id       Int       @id @default(autoincrement())
-  nome     String
-  servicos Servico[]
+  id          Int       @id @default(autoincrement())
+  barbeariaId Int       @map("barbearia_id")
+  nome        String
+  servicos    Servico[]
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
 
   @@map("categorias_servico")
 }
@@ -70,6 +113,7 @@ model CategoriaServico {
 /// Serviços e produtos que o cliente agenda / a equipe adiciona ao atendimento.
 model Servico {
   id          Int     @id @default(autoincrement())
+  barbeariaId Int     @map("barbearia_id")
   nome        String
   categoriaId Int?    @map("categoria_id")
   valor       Int // centavos
@@ -79,6 +123,7 @@ model Servico {
   ehProduto          Boolean @default(false) @map("eh_produto") // produto x serviço
   comissaoPercentual Float   @default(10) @map("comissao_percentual") // % de comissão sobre o produto
 
+  barbearia Barbearia         @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   categoria CategoriaServico? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
   itens     AgendamentoItem[]
   planos    Plano[]
@@ -89,6 +134,7 @@ model Servico {
 /// Agendamentos do cliente, vinculados a um barbeiro específico (obrigatório).
 model Agendamento {
   id              Int      @id @default(autoincrement())
+  barbeariaId     Int      @map("barbearia_id")
   usuarioId       Int      @map("usuario_id") // barbeiro escolhido
   clienteNome     String   @map("cliente_nome")
   clienteEmail    String?  @map("cliente_email")
@@ -101,6 +147,7 @@ model Agendamento {
   clientePlanoId  Int?     @map("cliente_plano_id") // assinatura usada (agendamento via plano)
   criadoEm        DateTime @default(now()) @map("criado_em")
 
+  barbearia    Barbearia         @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   usuario      Usuario           @relation(fields: [usuarioId], references: [id])
   cliente      Cliente?          @relation(fields: [clienteId], references: [id], onDelete: SetNull)
   clientePlano ClientePlano?     @relation(fields: [clientePlanoId], references: [id], onDelete: SetNull)
@@ -110,17 +157,21 @@ model Agendamento {
   @@map("agendamentos")
 }
 
-/// Cadastro de clientes. Telefone guardado normalizado (só dígitos) e único.
+/// Cadastro de clientes. Telefone guardado normalizado (só dígitos), único por barbearia.
 model Cliente {
   id             Int       @id @default(autoincrement())
+  barbeariaId    Int       @map("barbearia_id")
   nome           String
-  telefone       String    @unique // normalizado: apenas dígitos
+  telefone       String // normalizado: apenas dígitos
   dataNascimento DateTime? @map("data_nascimento") // opcional
   criadoEm       DateTime  @default(now()) @map("criado_em")
 
+  barbearia    Barbearia      @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentos Agendamento[]
   planos       ClientePlano[]
 
+  // Telefone único DENTRO de cada barbearia.
+  @@unique([barbeariaId, telefone])
   @@map("clientes")
 }
 
@@ -128,6 +179,7 @@ model Cliente {
 /// limitado = nº de usos; ilimitado = sem limite de usos, mas só seg–qui (regra fixa).
 model Plano {
   id           Int      @id @default(autoincrement())
+  barbeariaId  Int      @map("barbearia_id")
   nome         String
   tipo         String // "limitado" | "ilimitado"
   usos         Int? // nº de usos (apenas para o tipo limitado)
@@ -137,6 +189,7 @@ model Plano {
   servicoId    Int?     @map("servico_id") // serviço coberto pelo plano (null = qualquer)
   criadoEm     DateTime @default(now()) @map("criado_em")
 
+  barbearia   Barbearia      @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   servico     Servico?       @relation(fields: [servicoId], references: [id], onDelete: SetNull)
   assinaturas ClientePlano[]
 
@@ -146,6 +199,7 @@ model Plano {
 /// Assinatura: vincula um plano a um cliente, com validade e usos restantes.
 model ClientePlano {
   id            Int      @id @default(autoincrement())
+  barbeariaId   Int      @map("barbearia_id")
   clienteId     Int      @map("cliente_id")
   planoId       Int      @map("plano_id")
   dataInicio    DateTime @map("data_inicio")
@@ -154,6 +208,7 @@ model ClientePlano {
   ativo         Boolean  @default(true)
   criadoEm      DateTime @default(now()) @map("criado_em")
 
+  barbearia    Barbearia     @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   cliente      Cliente       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   plano        Plano         @relation(fields: [planoId], references: [id])
   agendamentos Agendamento[]
@@ -162,6 +217,7 @@ model ClientePlano {
 }
 
 /// Itens (serviços/produtos) de cada agendamento. A equipe adiciona/remove aqui.
+/// Não tem barbeariaId próprio: pertence sempre ao Agendamento (que é da barbearia).
 model AgendamentoItem {
   id            Int @id @default(autoincrement())
   agendamentoId Int @map("agendamento_id")
@@ -177,9 +233,12 @@ model AgendamentoItem {
 
 /// Categorias dos itens de estoque (configuráveis manualmente).
 model CategoriaEstoque {
-  id    Int       @id @default(autoincrement())
-  nome  String
-  itens Estoque[]
+  id          Int       @id @default(autoincrement())
+  barbeariaId Int       @map("barbearia_id")
+  nome        String
+  itens       Estoque[]
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
 
   @@map("categorias_estoque")
 }
@@ -187,6 +246,7 @@ model CategoriaEstoque {
 /// Itens de estoque (insumos internos). Alerta quando quantidade <= quantidadeMinima.
 model Estoque {
   id               Int      @id @default(autoincrement())
+  barbeariaId      Int      @map("barbearia_id")
   nome             String
   categoriaId      Int?     @map("categoria_id")
   quantidade       Int      @default(0)
@@ -194,6 +254,7 @@ model Estoque {
   valorGasto       Int      @default(0) @map("valor_gasto") // custo da compra (centavos)
   atualizadoEm     DateTime @default(now()) @updatedAt @map("atualizado_em")
 
+  barbearia Barbearia         @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   categoria CategoriaEstoque? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
 
   @@map("estoque")
@@ -202,9 +263,12 @@ model Estoque {
 /// Categorias das movimentações de caixa (configuráveis manualmente).
 model CategoriaCaixa {
   id          Int     @id @default(autoincrement())
+  barbeariaId Int     @map("barbearia_id")
   nome        String
   tipo        String // entrada | saida
   lancamentos Caixa[]
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
 
   @@map("categorias_caixa")
 }
@@ -212,6 +276,7 @@ model CategoriaCaixa {
 /// Movimentações de caixa (entradas e saídas).
 model Caixa {
   id            Int      @id @default(autoincrement())
+  barbeariaId   Int      @map("barbearia_id")
   categoriaId   Int?     @map("categoria_id")
   descricao     String
   valor         Int // centavos
@@ -219,17 +284,24 @@ model Caixa {
   data          DateTime @default(now())
   agendamentoId Int?     @map("agendamento_id") // preenchido se veio de um agendamento concluído
 
+  barbearia   Barbearia       @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   categoria   CategoriaCaixa? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
   agendamento Agendamento?    @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
 
   @@map("caixa")
 }
 
-/// Configurações gerais do app (chave/valor). Ex.: caixa_automatico = "false".
+/// Configurações gerais do app (chave/valor) por barbearia.
+/// Ex.: caixa_automatico = "false", logo_url, mostrar_powered_by.
 model Configuracao {
-  id    Int    @id @default(autoincrement())
-  chave String @unique
-  valor String
+  id          Int    @id @default(autoincrement())
+  barbeariaId Int    @map("barbearia_id")
+  chave       String
+  valor       String
 
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+
+  // Cada chave é única DENTRO de cada barbearia.
+  @@unique([barbeariaId, chave])
   @@map("configuracoes")
 }

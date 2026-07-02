@@ -1,7 +1,8 @@
 // Controlador da agenda interna (equipe).
 // Regras de acesso (verificadas no backend):
 //  - Funcionário vê e altera SOMENTE a própria agenda.
-//  - Admin vê a agenda de todos e pode alterar qualquer agendamento.
+//  - Admin (e o dono operando a barbearia) vê a agenda de todos e altera qualquer um.
+// Tudo é escopado pela barbearia do contexto (req.barbeariaId).
 const prisma = require('../config/db');
 const { dataLocal, paraMinutos, duracaoEfetiva } = require('../services/disponibilidade');
 const { DIAS_SEMANA, INTERVALO_SLOT_MIN } = require('../config/constantes');
@@ -25,9 +26,9 @@ async function recalcularTotal(agendamentoId) {
   return total;
 }
 
-// Confere se o usuário logado pode mexer no agendamento (dono ou admin).
-function podeAlterar(usuario, agendamento) {
-  return usuario.papel === 'admin' || agendamento.usuarioId === usuario.id;
+// Confere se o usuário logado pode mexer no agendamento (admin/dono, ou o próprio barbeiro).
+function podeAlterar(req, agendamento) {
+  return req.ehAdmin || agendamento.usuarioId === req.session.usuario.id;
 }
 
 function negarAcesso(res) {
@@ -50,7 +51,8 @@ function urlRetorno(req) {
 // GET /painel/agenda
 async function verAgenda(req, res) {
   const usuario = req.session.usuario;
-  const ehAdmin = usuario.papel === 'admin';
+  const ehAdmin = req.ehAdmin;
+  const b = req.barbeariaId;
 
   // Data selecionada (padrão: hoje)
   const dataStr = req.query.data || iso(new Date());
@@ -69,7 +71,7 @@ async function verAgenda(req, res) {
     filtroBarbeiro = usuario.id;
   }
 
-  const where = { data: dataObj };
+  const where = { barbeariaId: b, data: dataObj };
   if (filtroBarbeiro) where.usuarioId = filtroBarbeiro;
 
   const agendamentos = await prisma.agendamento.findMany({
@@ -79,9 +81,9 @@ async function verAgenda(req, res) {
   });
 
   const barbeiros = ehAdmin
-    ? await prisma.usuario.findMany({ where: { ativo: true }, orderBy: { id: 'asc' } })
+    ? await prisma.usuario.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { id: 'asc' } })
     : [];
-  const servicos = await prisma.servico.findMany({ where: { ativo: true }, orderBy: { nome: 'asc' } });
+  const servicos = await prisma.servico.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { nome: 'asc' } });
 
   // Navegação de datas (dia anterior / seguinte)
   const prev = new Date(dataObj);
@@ -107,12 +109,15 @@ async function verAgenda(req, res) {
 
 // POST /painel/agenda/:id/itens — adiciona um serviço/produto ao agendamento
 async function adicionarItem(req, res) {
-  const agendamento = await prisma.agendamento.findUnique({ where: { id: Number(req.params.id) } });
+  const b = req.barbeariaId;
+  const agendamento = await prisma.agendamento.findFirst({
+    where: { id: Number(req.params.id), barbeariaId: b },
+  });
   if (!agendamento) return res.redirect('/painel/agenda');
-  if (!podeAlterar(req.session.usuario, agendamento)) return negarAcesso(res);
+  if (!podeAlterar(req, agendamento)) return negarAcesso(res);
 
   const servico = await prisma.servico.findFirst({
-    where: { id: Number(req.body.servicoId), ativo: true },
+    where: { id: Number(req.body.servicoId), barbeariaId: b, ativo: true },
   });
   const quantidade = Math.max(1, Number(req.body.quantidade) || 1);
 
@@ -139,8 +144,8 @@ async function removerItem(req, res) {
     where: { id: Number(req.params.id) },
     include: { agendamento: true },
   });
-  if (!item) return res.redirect('/painel/agenda');
-  if (!podeAlterar(req.session.usuario, item.agendamento)) return negarAcesso(res);
+  if (!item || item.agendamento.barbeariaId !== req.barbeariaId) return res.redirect('/painel/agenda');
+  if (!podeAlterar(req, item.agendamento)) return negarAcesso(res);
 
   await prisma.agendamentoItem.delete({ where: { id: item.id } });
   await recalcularTotal(item.agendamentoId);
@@ -150,9 +155,12 @@ async function removerItem(req, res) {
 
 // POST /painel/agenda/:id/status — muda o status do agendamento
 async function mudarStatus(req, res) {
-  const agendamento = await prisma.agendamento.findUnique({ where: { id: Number(req.params.id) } });
+  const b = req.barbeariaId;
+  const agendamento = await prisma.agendamento.findFirst({
+    where: { id: Number(req.params.id), barbeariaId: b },
+  });
   if (!agendamento) return res.redirect('/painel/agenda');
-  if (!podeAlterar(req.session.usuario, agendamento)) return negarAcesso(res);
+  if (!podeAlterar(req, agendamento)) return negarAcesso(res);
 
   const novo = req.body.status;
   if (['agendado', 'concluido', 'cancelado'].includes(novo)) {
@@ -161,7 +169,7 @@ async function mudarStatus(req, res) {
     // Integração com o caixa (toggle "caixa automático"):
     if (novo === 'concluido') {
       // Gera a entrada no caixa, se o toggle estiver ligado (usa o total atualizado).
-      if (await caixaServ.caixaAutomaticoLigado()) {
+      if (await caixaServ.caixaAutomaticoLigado(b)) {
         const atual = await prisma.agendamento.findUnique({ where: { id: agendamento.id } });
         await caixaServ.registrarEntradaAgendamento(atual);
       }
@@ -183,9 +191,11 @@ async function mudarStatus(req, res) {
 
 // POST /painel/agenda/:id/excluir — exclui o agendamento (qualquer status)
 async function excluir(req, res) {
-  const agendamento = await prisma.agendamento.findUnique({ where: { id: Number(req.params.id) } });
+  const agendamento = await prisma.agendamento.findFirst({
+    where: { id: Number(req.params.id), barbeariaId: req.barbeariaId },
+  });
   if (!agendamento) return res.redirect('/painel/agenda');
-  if (!podeAlterar(req.session.usuario, agendamento)) return negarAcesso(res);
+  if (!podeAlterar(req, agendamento)) return negarAcesso(res);
 
   // Remove eventual entrada automática no caixa vinculada a este agendamento.
   await caixaServ.removerEntradaAgendamento(agendamento.id);
@@ -201,13 +211,15 @@ async function excluir(req, res) {
 }
 
 // Carrega os dados auxiliares do formulário de agendamento manual.
-async function dadosForm(usuario) {
-  const ehAdmin = usuario.papel === 'admin';
+async function dadosForm(req) {
+  const b = req.barbeariaId;
+  const ehAdmin = req.ehAdmin;
   const barbeiros = ehAdmin
-    ? await prisma.usuario.findMany({ where: { ativo: true }, orderBy: { id: 'asc' } })
+    ? await prisma.usuario.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { id: 'asc' } })
     : [];
-  const servicos = await prisma.servico.findMany({ where: { ativo: true }, orderBy: { nome: 'asc' } });
+  const servicos = await prisma.servico.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { nome: 'asc' } });
   const clientes = await prisma.cliente.findMany({
+    where: { barbeariaId: b },
     select: { id: true, nome: true, telefone: true },
     orderBy: { nome: 'asc' },
   });
@@ -216,7 +228,7 @@ async function dadosForm(usuario) {
 
 // GET /painel/agenda/novo — formulário de agendamento manual
 async function formNovo(req, res) {
-  const dados = await dadosForm(req.session.usuario);
+  const dados = await dadosForm(req);
   res.render('painel/agenda-novo', {
     titulo: 'Novo agendamento',
     ...dados,
@@ -229,7 +241,8 @@ async function formNovo(req, res) {
 // POST /painel/agenda/novo — cria o agendamento manual (com bloqueio de conflito)
 async function criarManual(req, res) {
   const usuario = req.session.usuario;
-  const ehAdmin = usuario.papel === 'admin';
+  const ehAdmin = req.ehAdmin;
+  const b = req.barbeariaId;
 
   // Barbeiro: admin escolhe; funcionário agenda sempre para si.
   const usuarioId = ehAdmin ? Number(req.body.barbeiroId) : usuario.id;
@@ -240,8 +253,8 @@ async function criarManual(req, res) {
   const email = (req.body.cliente_email || '').trim();
   const telefone = (req.body.cliente_telefone || '').trim();
 
-  const barbeiro = await prisma.usuario.findFirst({ where: { id: usuarioId, ativo: true } });
-  const servico = await prisma.servico.findFirst({ where: { id: servicoId, ativo: true } });
+  const barbeiro = await prisma.usuario.findFirst({ where: { id: usuarioId, barbeariaId: b, ativo: true } });
+  const servico = await prisma.servico.findFirst({ where: { id: servicoId, barbeariaId: b, ativo: true } });
 
   const erros = [];
   if (!barbeiro) erros.push('Selecione um barbeiro.');
@@ -255,7 +268,7 @@ async function criarManual(req, res) {
     const iniNovo = paraMinutos(hora);
     const fimNovo = iniNovo + duracaoEfetiva(servico.duracaoMin);
     const existentes = await prisma.agendamento.findMany({
-      where: { usuarioId, data: dataLocal(data), status: { not: 'cancelado' } },
+      where: { barbeariaId: b, usuarioId, data: dataLocal(data), status: { not: 'cancelado' } },
       include: { itens: { include: { servico: true } } },
     });
     const conflita = existentes.some((ag) => {
@@ -269,7 +282,7 @@ async function criarManual(req, res) {
   }
 
   if (erros.length) {
-    const dados = await dadosForm(usuario);
+    const dados = await dadosForm(req);
     return res.render('painel/agenda-novo', {
       titulo: 'Novo agendamento',
       ...dados,
@@ -283,13 +296,16 @@ async function criarManual(req, res) {
   const telNorm = normalizarTelefone(telefone);
   let clienteId = null;
   if (telNorm) {
-    let cliente = await prisma.cliente.findUnique({ where: { telefone: telNorm } });
-    if (!cliente) cliente = await prisma.cliente.create({ data: { nome, telefone: telNorm } });
+    let cliente = await prisma.cliente.findUnique({
+      where: { barbeariaId_telefone: { barbeariaId: b, telefone: telNorm } },
+    });
+    if (!cliente) cliente = await prisma.cliente.create({ data: { barbeariaId: b, nome, telefone: telNorm } });
     clienteId = cliente.id;
   }
 
   await prisma.agendamento.create({
     data: {
+      barbeariaId: b,
       usuarioId,
       clienteId,
       clienteNome: nome,

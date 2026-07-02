@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { exigeLogin, exigeAdmin } = require('../middlewares/auth');
+const { exigeBarbeariaPainel } = require('../middlewares/tenant');
 const prisma = require('../config/db');
 const agendaController = require('../controllers/agendaController');
 const horarioController = require('../controllers/horarioController');
@@ -11,8 +12,6 @@ const caixaController = require('../controllers/caixaController');
 const comissaoController = require('../controllers/comissaoController');
 const clienteController = require('../controllers/clienteController');
 const planoController = require('../controllers/planoController');
-const marcaController = require('../controllers/configuracaoMarcaController');
-const equipeController = require('../controllers/equipeController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -26,26 +25,28 @@ function uploadFoto(req, res, next) {
   });
 }
 
-// Variante de upload para o logo da marca (redireciona para a tela de marca em caso de erro).
-function uploadLogo(req, res, next) {
-  upload.single('foto')(req, res, (err) => {
-    if (err) {
-      req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload do logo.' };
-      return res.redirect('/painel/configuracoes-marca');
-    }
-    next();
-  });
-}
-
-// Tudo abaixo exige usuário logado.
+// Tudo abaixo exige usuário logado E uma barbearia no contexto.
 router.use(exigeLogin);
+router.use(exigeBarbeariaPainel);
+
+// Define o "papel efetivo": o dono, ao entrar numa barbearia, age como admin dela.
+// Também carrega a barbearia ativa (nome) para o cabeçalho / banner do dono.
+router.use(async (req, res, next) => {
+  const u = req.session.usuario;
+  req.ehAdmin = u.papel === 'admin' || u.papel === 'dono';
+  res.locals.ehAdmin = req.ehAdmin;
+  res.locals.ehDono = u.papel === 'dono';
+  const barbearia = await prisma.barbearia.findUnique({ where: { id: req.barbeariaId } });
+  res.locals.barbeariaAtual = barbearia || null;
+  next();
+});
 
 // Painel (dashboard).
 router.get('/', async (req, res) => {
   // Alerta de estoque baixo visível para o admin.
   let estoqueBaixo = [];
-  if (req.session.usuario.papel === 'admin') {
-    const itens = await prisma.estoque.findMany();
+  if (req.ehAdmin) {
+    const itens = await prisma.estoque.findMany({ where: { barbeariaId: req.barbeariaId } });
     estoqueBaixo = itens.filter((i) => i.quantidade <= i.quantidadeMinima);
   }
   res.render('painel/dashboard', { titulo: 'Painel', estoqueBaixo });
@@ -118,18 +119,8 @@ router.post('/estoque/:id/ajuste', exigeAdmin, estoqueController.ajustar);
 router.post('/estoque/:id/remover', exigeAdmin, estoqueController.remover);
 router.post('/estoque/:id', exigeAdmin, estoqueController.atualizar);
 
-// --- Equipe / Barbeiros (somente admin) -----------------------------------
-router.get('/equipe', exigeAdmin, equipeController.listar);
-router.get('/equipe/novo', exigeAdmin, equipeController.formNovo);
-router.post('/equipe', exigeAdmin, equipeController.criar);
-router.get('/equipe/:id/editar', exigeAdmin, equipeController.formEditar);
-router.post('/equipe/:id/toggle', exigeAdmin, equipeController.alternarAtivo);
-router.post('/equipe/:id', exigeAdmin, equipeController.atualizar);
-
-// --- Configurações de marca (somente admin) --------------------------------
-router.get('/configuracoes-marca', exigeAdmin, marcaController.ver);
-router.post('/configuracoes-marca', exigeAdmin, uploadLogo, marcaController.salvar);
-router.post('/configuracoes-marca/remover-logo', exigeAdmin, marcaController.removerLogo);
+// Equipe (barbeiros) e Marca são gerenciadas apenas no painel-mestre (dono do
+// sistema), em /mestre/barbearias/:id — por isso não há rotas delas aqui.
 
 // --- Caixa (somente admin) ------------------------------------------------
 // Específicas (/config, /categorias) antes das paramétricas (/:id).

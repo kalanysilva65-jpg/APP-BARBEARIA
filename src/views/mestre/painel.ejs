@@ -1,0 +1,53 @@
+<div class="cabecalho-pagina agenda-cabecalho">
+  <div>
+    <h1>Barbearias</h1>
+    <p class="texto-secundario">Todas as barbearias assinantes. Clique no nome para gerenciar ou em “Entrar” para operar.</p>
+  </div>
+  <a href="/mestre/nova" class="btn btn-primario btn-sm">+ Nova barbearia</a>
+</div>
+
+<div class="card">
+  <h2>Assinantes (<%= barbearias.length %>)</h2>
+  <% if (barbearias.length === 0) { %>
+    <p class="texto-secundario mt-16">Nenhuma barbearia cadastrada ainda.</p>
+  <% } else { %>
+    <div class="tabela-rolagem">
+      <table class="tabela mt-16">
+        <thead>
+          <tr>
+            <th>Barbearia</th>
+            <th>Subdomínio</th>
+            <th class="col-valor">Equipe</th>
+            <th class="col-valor">Clientes</th>
+            <th class="col-valor">Agend.</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% barbearias.forEach(function (barb) { %>
+            <tr>
+              <td><a href="/mestre/barbearias/<%= barb.id %>" class="link-cliente"><%= barb.nome %></a></td>
+              <td><span class="texto-sutil"><%= barb.slug %></span></td>
+              <td class="col-valor"><%= barb._count.usuarios %></td>
+              <td class="col-valor"><%= barb._count.clientes %></td>
+              <td class="col-valor"><%= barb._count.agendamentos %></td>
+              <td>
+                <% if (barb.ativo) { %>
+                  <span class="badge-papel">Ativa</span>
+                <% } else { %>
+                  <span class="texto-sutil">Inativa</span>
+                <% } %>
+              </td>
+              <td class="col-acao">
+                <form method="POST" action="/mestre/entrar/<%= barb.id %>" class="inline">
+                  <button class="btn btn-primario btn-sm" type="submit">Entrar →</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>

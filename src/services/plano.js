@@ -12,11 +12,12 @@ function vigente(assinatura, hoje = new Date()) {
   );
 }
 
-// Busca o cliente pelo telefone normalizado e retorna suas assinaturas vigentes.
-async function assinaturasVigentesPorTelefone(telefoneNorm) {
-  if (!telefoneNorm) return { cliente: null, assinaturas: [] };
+// Busca o cliente pelo telefone normalizado (dentro de uma barbearia) e retorna
+// suas assinaturas vigentes.
+async function assinaturasVigentesPorTelefone(barbeariaId, telefoneNorm) {
+  if (!telefoneNorm || !barbeariaId) return { cliente: null, assinaturas: [] };
   const cliente = await prisma.cliente.findUnique({
-    where: { telefone: telefoneNorm },
+    where: { barbeariaId_telefone: { barbeariaId, telefone: telefoneNorm } },
     include: { planos: { include: { plano: { include: { servico: true } } }, orderBy: { dataFim: 'desc' } } },
   });
   if (!cliente) return { cliente: null, assinaturas: [] };

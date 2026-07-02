@@ -33,6 +33,10 @@ app.use(
   })
 );
 
+// --- Tenant: resolve a barbearia do subdomínio (contexto público) ---------
+const { resolverBarbearia, barbeariaIdAtual } = require('./middlewares/tenant');
+app.use(resolverBarbearia);
+
 // --- Variáveis disponíveis em todas as views ------------------------------
 app.use((req, res, next) => {
   res.locals.usuario = req.session.usuario || null;
@@ -49,8 +53,11 @@ app.use((req, res, next) => {
   };
   // Formata telefone normalizado -> "(51) 99999-9999"
   res.locals.fmtTelefone = require('./utils/telefone').formatarTelefone;
-  // Configurações de marca (logo + powered by) disponíveis em todas as views
-  require('./controllers/configuracaoMarcaController').lerMarca().then((marca) => {
+
+  // Logo/marca da barbearia do contexto: a do usuário logado (painel) ou a do
+  // subdomínio (público). Sem contexto, usa os padrões.
+  const ctxId = barbeariaIdAtual(req) || (req.barbearia && req.barbearia.id) || null;
+  require('./controllers/configuracaoMarcaController').lerMarca(ctxId).then((marca) => {
     res.locals.marcaLogoUrl = marca.logoUrl;
     res.locals.marcaMostrarPoweredBy = marca.mostrarPoweredBy;
     next();
@@ -61,10 +68,32 @@ app.use((req, res, next) => {
   });
 });
 
+// --- Manifesto PWA (dinâmico por barbearia) -------------------------------
+// Cada subdomínio serve um manifesto com o nome/logo da sua barbearia e abre
+// direto no login. O logo enviado (se houver) vira o ícone do app.
+app.get('/manifest.webmanifest', (req, res) => {
+  const nome = req.barbearia ? req.barbearia.nome : 'Barbearia';
+  const icones = [{ src: '/app-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }];
+  if (res.locals.marcaLogoUrl) {
+    icones.unshift({ src: res.locals.marcaLogoUrl, sizes: '512x512', type: 'image/png', purpose: 'any' });
+  }
+  res.type('application/manifest+json').json({
+    name: nome,
+    short_name: nome.length > 12 ? nome.slice(0, 12) : nome,
+    start_url: '/login',
+    scope: '/',
+    display: 'standalone',
+    background_color: '#111111',
+    theme_color: '#111111',
+    icons: icones,
+  });
+});
+
 // --- Rotas ----------------------------------------------------------------
 app.use('/', require('./routes/auth'));
 app.use('/agendar', require('./routes/agendar')); // área pública do cliente
 app.use('/painel', require('./routes/painel'));
+app.use('/mestre', require('./routes/mestre')); // painel-mestre (dono do sistema)
 
 // --- 404 ------------------------------------------------------------------
 app.use((req, res) => {

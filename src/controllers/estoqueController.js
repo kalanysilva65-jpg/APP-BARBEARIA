@@ -11,11 +11,14 @@ function reaisParaCentavos(valorStr) {
 
 // GET /painel/estoque — lista os itens, destaca reposição e gerencia categorias
 async function listar(req, res) {
+  const b = req.barbeariaId;
   const itens = await prisma.estoque.findMany({
+    where: { barbeariaId: b },
     include: { categoria: true },
     orderBy: [{ nome: 'asc' }],
   });
   const categorias = await prisma.categoriaEstoque.findMany({
+    where: { barbeariaId: b },
     orderBy: { nome: 'asc' },
     include: { _count: { select: { itens: true } } },
   });
@@ -27,7 +30,7 @@ async function listar(req, res) {
 
 // GET /painel/estoque/novo — formulário de criação
 async function formNovo(req, res) {
-  const categorias = await prisma.categoriaEstoque.findMany({ orderBy: { nome: 'asc' } });
+  const categorias = await prisma.categoriaEstoque.findMany({ where: { barbeariaId: req.barbeariaId }, orderBy: { nome: 'asc' } });
   res.render('painel/estoque-form', { titulo: 'Novo item de estoque', item: null, categorias });
 }
 
@@ -44,23 +47,23 @@ async function criar(req, res) {
     return res.redirect('/painel/estoque/novo');
   }
 
-  await prisma.estoque.create({ data: { nome, quantidade, quantidadeMinima, valorGasto, categoriaId } });
+  await prisma.estoque.create({ data: { barbeariaId: req.barbeariaId, nome, quantidade, quantidadeMinima, valorGasto, categoriaId } });
   req.session.flash = { tipo: 'sucesso', texto: 'Item adicionado ao estoque.' };
   res.redirect('/painel/estoque');
 }
 
 // GET /painel/estoque/:id/editar — formulário de edição
 async function formEditar(req, res) {
-  const item = await prisma.estoque.findUnique({ where: { id: Number(req.params.id) } });
+  const item = await prisma.estoque.findFirst({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } });
   if (!item) return res.redirect('/painel/estoque');
-  const categorias = await prisma.categoriaEstoque.findMany({ orderBy: { nome: 'asc' } });
+  const categorias = await prisma.categoriaEstoque.findMany({ where: { barbeariaId: req.barbeariaId }, orderBy: { nome: 'asc' } });
   res.render('painel/estoque-form', { titulo: 'Editar item', item, categorias });
 }
 
 // POST /painel/estoque/:id — atualiza um item
 async function atualizar(req, res) {
   const id = Number(req.params.id);
-  const item = await prisma.estoque.findUnique({ where: { id } });
+  const item = await prisma.estoque.findFirst({ where: { id, barbeariaId: req.barbeariaId } });
   if (!item) return res.redirect('/painel/estoque');
 
   const nome = (req.body.nome || '').trim();
@@ -86,7 +89,7 @@ async function atualizar(req, res) {
 async function ajustar(req, res) {
   const id = Number(req.params.id);
   const delta = parseInt(req.body.delta, 10) || 0;
-  const item = await prisma.estoque.findUnique({ where: { id } });
+  const item = await prisma.estoque.findFirst({ where: { id, barbeariaId: req.barbeariaId } });
   if (item) {
     const nova = Math.max(0, item.quantidade + delta);
     await prisma.estoque.update({ where: { id }, data: { quantidade: nova } });
@@ -96,7 +99,7 @@ async function ajustar(req, res) {
 
 // POST /painel/estoque/:id/remover — exclui um item (não há FK dependente)
 async function remover(req, res) {
-  await prisma.estoque.delete({ where: { id: Number(req.params.id) } }).catch(() => {});
+  await prisma.estoque.deleteMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } }).catch(() => {});
   req.session.flash = { tipo: 'sucesso', texto: 'Item removido do estoque.' };
   res.redirect('/painel/estoque');
 }
@@ -104,19 +107,19 @@ async function remover(req, res) {
 // --- Categorias de estoque ------------------------------------------------
 async function criarCategoria(req, res) {
   const nome = (req.body.nome || '').trim();
-  if (nome) await prisma.categoriaEstoque.create({ data: { nome } });
+  if (nome) await prisma.categoriaEstoque.create({ data: { barbeariaId: req.barbeariaId, nome } });
   res.redirect('/painel/estoque');
 }
 
 async function renomearCategoria(req, res) {
   const nome = (req.body.nome || '').trim();
-  if (nome) await prisma.categoriaEstoque.update({ where: { id: Number(req.params.id) }, data: { nome } });
+  if (nome) await prisma.categoriaEstoque.updateMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId }, data: { nome } });
   res.redirect('/painel/estoque');
 }
 
 async function removerCategoria(req, res) {
   // Itens da categoria não são apagados: ficam "sem categoria" (SetNull).
-  await prisma.categoriaEstoque.delete({ where: { id: Number(req.params.id) } }).catch(() => {});
+  await prisma.categoriaEstoque.deleteMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } }).catch(() => {});
   res.redirect('/painel/estoque');
 }
 

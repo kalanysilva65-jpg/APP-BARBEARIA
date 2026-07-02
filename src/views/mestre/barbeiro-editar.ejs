@@ -1,0 +1,34 @@
+<div class="cabecalho-pagina">
+  <h1>Editar barbeiro</h1>
+  <p class="texto-secundario"><%= barbearia.nome %> · <%= membro.nome %></p>
+</div>
+
+<form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= membro.id %>" class="card form">
+  <div class="grid-2">
+    <div class="campo">
+      <label for="nome">Nome</label>
+      <input id="nome" name="nome" value="<%= membro.nome %>" required autofocus />
+    </div>
+    <div class="campo">
+      <label for="email">E-mail</label>
+      <input id="email" type="email" name="email" value="<%= membro.email %>" required />
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="campo">
+      <label for="senha">Nova senha (deixe em branco para manter)</label>
+      <input id="senha" type="text" name="senha" placeholder="mínimo 6 caracteres" />
+    </div>
+    <div class="campo">
+      <label for="papel">Papel</label>
+      <select id="papel" name="papel">
+        <option value="funcionario" <%= membro.papel === 'funcionario' ? 'selected' : '' %>>Barbeiro</option>
+        <option value="admin" <%= membro.papel === 'admin' ? 'selected' : '' %>>Admin</option>
+      </select>
+    </div>
+  </div>
+  <div class="flex gap-8 mt-16">
+    <button class="btn btn-primario btn-sm" type="submit">Salvar</button>
+    <a href="/mestre/barbearias/<%= barbearia.id %>" class="btn btn-secundario btn-sm">Cancelar</a>
+  </div>
+</form>

@@ -20,11 +20,14 @@ function apagarFoto(fotoUrl) {
 
 // GET /painel/servicos — lista o catálogo + categorias
 async function listar(req, res) {
+  const b = req.barbeariaId;
   const servicos = await prisma.servico.findMany({
+    where: { barbeariaId: b },
     include: { categoria: true },
     orderBy: [{ ativo: 'desc' }, { nome: 'asc' }],
   });
   const categorias = await prisma.categoriaServico.findMany({
+    where: { barbeariaId: b },
     orderBy: { nome: 'asc' },
     include: { _count: { select: { servicos: true } } },
   });
@@ -33,7 +36,7 @@ async function listar(req, res) {
 
 // GET /painel/servicos/novo — formulário de criação
 async function formNovo(req, res) {
-  const categorias = await prisma.categoriaServico.findMany({ orderBy: { nome: 'asc' } });
+  const categorias = await prisma.categoriaServico.findMany({ where: { barbeariaId: req.barbeariaId }, orderBy: { nome: 'asc' } });
   res.render('painel/servico-form', { titulo: 'Novo serviço', servico: null, categorias });
 }
 
@@ -53,23 +56,23 @@ async function criar(req, res) {
     return res.redirect('/painel/servicos/novo');
   }
 
-  await prisma.servico.create({ data: { nome, valor, duracaoMin, categoriaId, ehProduto, comissaoPercentual, fotoUrl } });
+  await prisma.servico.create({ data: { barbeariaId: req.barbeariaId, nome, valor, duracaoMin, categoriaId, ehProduto, comissaoPercentual, fotoUrl } });
   req.session.flash = { tipo: 'sucesso', texto: 'Serviço criado.' };
   res.redirect('/painel/servicos');
 }
 
 // GET /painel/servicos/:id/editar — formulário de edição
 async function formEditar(req, res) {
-  const servico = await prisma.servico.findUnique({ where: { id: Number(req.params.id) } });
+  const servico = await prisma.servico.findFirst({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } });
   if (!servico) return res.redirect('/painel/servicos');
-  const categorias = await prisma.categoriaServico.findMany({ orderBy: { nome: 'asc' } });
+  const categorias = await prisma.categoriaServico.findMany({ where: { barbeariaId: req.barbeariaId }, orderBy: { nome: 'asc' } });
   res.render('painel/servico-form', { titulo: 'Editar serviço', servico, categorias });
 }
 
 // POST /painel/servicos/:id — atualiza um serviço/produto
 async function atualizar(req, res) {
   const id = Number(req.params.id);
-  const servico = await prisma.servico.findUnique({ where: { id } });
+  const servico = await prisma.servico.findFirst({ where: { id, barbeariaId: req.barbeariaId } });
   if (!servico) {
     if (req.file) apagarFoto('/uploads/' + req.file.filename);
     return res.redirect('/painel/servicos');
@@ -102,7 +105,7 @@ async function atualizar(req, res) {
 // POST /painel/servicos/:id/toggle — ativa/desativa
 async function alternarAtivo(req, res) {
   const id = Number(req.params.id);
-  const s = await prisma.servico.findUnique({ where: { id } });
+  const s = await prisma.servico.findFirst({ where: { id, barbeariaId: req.barbeariaId } });
   if (s) await prisma.servico.update({ where: { id }, data: { ativo: !s.ativo } });
   res.redirect('/painel/servicos');
 }
@@ -110,7 +113,7 @@ async function alternarAtivo(req, res) {
 // POST /painel/servicos/:id/remover — exclui (ou desativa se tiver histórico)
 async function remover(req, res) {
   const id = Number(req.params.id);
-  const s = await prisma.servico.findUnique({ where: { id } });
+  const s = await prisma.servico.findFirst({ where: { id, barbeariaId: req.barbeariaId } });
   if (!s) return res.redirect('/painel/servicos');
 
   try {
@@ -131,19 +134,19 @@ async function remover(req, res) {
 // --- Categorias -----------------------------------------------------------
 async function criarCategoria(req, res) {
   const nome = (req.body.nome || '').trim();
-  if (nome) await prisma.categoriaServico.create({ data: { nome } });
+  if (nome) await prisma.categoriaServico.create({ data: { barbeariaId: req.barbeariaId, nome } });
   res.redirect('/painel/servicos');
 }
 
 async function renomearCategoria(req, res) {
   const nome = (req.body.nome || '').trim();
-  if (nome) await prisma.categoriaServico.update({ where: { id: Number(req.params.id) }, data: { nome } });
+  if (nome) await prisma.categoriaServico.updateMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId }, data: { nome } });
   res.redirect('/painel/servicos');
 }
 
 async function removerCategoria(req, res) {
   // Os serviços da categoria não são apagados: ficam "sem categoria" (SetNull).
-  await prisma.categoriaServico.delete({ where: { id: Number(req.params.id) } }).catch(() => {});
+  await prisma.categoriaServico.deleteMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } }).catch(() => {});
   res.redirect('/painel/servicos');
 }
 

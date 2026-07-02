@@ -41,10 +41,11 @@ async function ver(req, res) {
   const fimExcl = dataLocal(fimStr);
   fimExcl.setDate(fimExcl.getDate() + 1); // limite superior exclusivo (inclui o dia "fim")
 
-  const barbeiros = await prisma.usuario.findMany({ where: { ativo: true }, orderBy: { id: 'asc' } });
+  const b = req.barbeariaId;
+  const barbeiros = await prisma.usuario.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { id: 'asc' } });
 
   const agendamentos = await prisma.agendamento.findMany({
-    where: { status: 'concluido', data: { gte: inicio, lt: fimExcl } },
+    where: { barbeariaId: b, status: 'concluido', data: { gte: inicio, lt: fimExcl } },
     include: {
       usuario: true,
       itens: { include: { servico: true } },
@@ -110,8 +111,8 @@ async function ver(req, res) {
   // --- Disponibilidade (minutos de jornada) por barbeiro no período --------
   // Soma a jornada dos dias trabalhados, desconta os bloqueios e NÃO conta dias
   // futuros (limita ao começo de amanhã), para a ocupação fazer sentido "até hoje".
-  const jornadas = await prisma.horarioTrabalho.findMany();
-  const bloqueios = await prisma.bloqueio.findMany({ where: { data: { gte: inicio, lt: fimExcl } } });
+  const jornadas = await prisma.horarioTrabalho.findMany({ where: { barbeariaId: b } });
+  const bloqueios = await prisma.bloqueio.findMany({ where: { barbeariaId: b, data: { gte: inicio, lt: fimExcl } } });
 
   const amanha = new Date();
   amanha.setHours(0, 0, 0, 0);
@@ -204,7 +205,9 @@ async function salvarPercentual(req, res) {
   let p = parseFloat(String(req.body.percentual || '').replace(',', '.'));
   if (isNaN(p)) p = 0;
   p = Math.min(100, Math.max(0, p)); // limita entre 0 e 100
-  await prisma.usuario.update({ where: { id }, data: { comissaoPercentual: p } }).catch(() => {});
+  await prisma.usuario
+    .updateMany({ where: { id, barbeariaId: req.barbeariaId }, data: { comissaoPercentual: p } })
+    .catch(() => {});
 
   // Redireciona preservando o período e o filtro de barbeiro
   const qs = new URLSearchParams();

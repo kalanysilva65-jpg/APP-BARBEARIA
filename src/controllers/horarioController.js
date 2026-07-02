@@ -6,7 +6,7 @@ const { dataLocal } = require('../services/disponibilidade');
 
 // GET /painel/horarios — mostra jornada + bloqueios do barbeiro selecionado
 async function ver(req, res) {
-  const barbeiros = await prisma.usuario.findMany({ where: { ativo: true }, orderBy: { id: 'asc' } });
+  const barbeiros = await prisma.usuario.findMany({ where: { barbeariaId: req.barbeariaId, ativo: true }, orderBy: { id: 'asc' } });
   if (barbeiros.length === 0) {
     return res.render('painel/horarios', { titulo: 'Horários', barbeiros, barbeiro: null, jornada: [], bloqueios: [], DIAS_SEMANA });
   }
@@ -30,10 +30,17 @@ async function ver(req, res) {
   res.render('painel/horarios', { titulo: 'Horários', barbeiros, barbeiro, jornada, bloqueios, DIAS_SEMANA });
 }
 
+// Confere se o barbeiro pertence à barbearia do contexto.
+async function barbeiroDaBarbearia(barbeiroId, barbeariaId) {
+  if (!barbeiroId) return null;
+  return prisma.usuario.findFirst({ where: { id: barbeiroId, barbeariaId } });
+}
+
 // POST /painel/horarios/jornada — salva a jornada semanal do barbeiro
 async function salvarJornada(req, res) {
+  const b = req.barbeariaId;
   const barbeiroId = Number(req.body.barbeiroId);
-  if (!barbeiroId) return res.redirect('/painel/horarios');
+  if (!(await barbeiroDaBarbearia(barbeiroId, b))) return res.redirect('/painel/horarios');
 
   for (let dia = 0; dia <= 6; dia++) {
     const trabalha = req.body['trabalha_' + dia] === 'on';
@@ -41,7 +48,7 @@ async function salvarJornada(req, res) {
     const horaFim = req.body['fim_' + dia] || '20:00';
 
     const existente = await prisma.horarioTrabalho.findFirst({
-      where: { usuarioId: barbeiroId, diaSemana: dia },
+      where: { barbeariaId: b, usuarioId: barbeiroId, diaSemana: dia },
     });
     if (existente) {
       await prisma.horarioTrabalho.update({
@@ -50,7 +57,7 @@ async function salvarJornada(req, res) {
       });
     } else {
       await prisma.horarioTrabalho.create({
-        data: { usuarioId: barbeiroId, diaSemana: dia, trabalha, horaInicio, horaFim },
+        data: { barbeariaId: b, usuarioId: barbeiroId, diaSemana: dia, trabalha, horaInicio, horaFim },
       });
     }
   }
@@ -61,15 +68,16 @@ async function salvarJornada(req, res) {
 
 // POST /painel/horarios/bloqueios — adiciona um bloqueio
 async function adicionarBloqueio(req, res) {
+  const b = req.barbeariaId;
   const barbeiroId = Number(req.body.barbeiroId);
   const data = req.body.data;
   const horaInicio = req.body.horaInicio;
   const horaFim = req.body.horaFim;
   const motivo = (req.body.motivo || '').trim() || null;
 
-  if (barbeiroId && data && horaInicio && horaFim && horaInicio < horaFim) {
+  if ((await barbeiroDaBarbearia(barbeiroId, b)) && data && horaInicio && horaFim && horaInicio < horaFim) {
     await prisma.bloqueio.create({
-      data: { usuarioId: barbeiroId, data: dataLocal(data), horaInicio, horaFim, motivo },
+      data: { barbeariaId: b, usuarioId: barbeiroId, data: dataLocal(data), horaInicio, horaFim, motivo },
     });
     req.session.flash = { tipo: 'sucesso', texto: 'Bloqueio adicionado.' };
   } else {
@@ -81,7 +89,7 @@ async function adicionarBloqueio(req, res) {
 // POST /painel/horarios/bloqueios/:id/remover — remove um bloqueio
 async function removerBloqueio(req, res) {
   const barbeiroId = Number(req.body.barbeiroId);
-  await prisma.bloqueio.delete({ where: { id: Number(req.params.id) } }).catch(() => {});
+  await prisma.bloqueio.deleteMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } }).catch(() => {});
   req.session.flash = { tipo: 'sucesso', texto: 'Bloqueio removido.' };
   res.redirect('/painel/horarios' + (barbeiroId ? '?barbeiro=' + barbeiroId : ''));
 }

@@ -3,7 +3,7 @@
   <p class="texto-secundario">Bem-vindo ao painel da barbearia.</p>
 </div>
 
-<% if (usuario.papel === 'admin' && estoqueBaixo && estoqueBaixo.length > 0) { %>
+<% if (ehAdmin && estoqueBaixo && estoqueBaixo.length > 0) { %>
   <div class="alerta alerta-aviso">
     <strong>Estoque baixo:</strong>
     <%= estoqueBaixo.map(function (i) { return i.nome + ' (' + i.quantidade + ')'; }).join(', ') %>.
@@ -14,7 +14,7 @@
   <a href="/painel/agenda" class="card card-link">
     <h2 class="card-titulo">Agenda</h2>
     <p class="texto-secundario">
-      <%= usuario.papel === 'admin' ? 'Veja a agenda de todos os barbeiros.' : 'Veja e gerencie a sua agenda.' %>
+      <%= ehAdmin ? 'Veja a agenda de todos os barbeiros.' : 'Veja e gerencie a sua agenda.' %>
     </p>
   </a>
 
@@ -28,7 +28,7 @@
     <p class="texto-secundario">Planos limitados e ilimitados da barbearia.</p>
   </a>
 
-  <% if (usuario.papel === 'admin') { %>
+  <% if (ehAdmin) { %>
     <a href="/painel/servicos" class="card card-link">
       <h2 class="card-titulo">Serviços & Produtos</h2>
       <p class="texto-secundario">Cadastre cortes, produtos e categorias.</p>

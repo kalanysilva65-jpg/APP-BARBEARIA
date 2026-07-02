@@ -1,12 +1,13 @@
 // Controlador do cadastro de clientes.
 // Acessível a admin e funcionários (rota sem exigeAdmin) — útil no balcão.
-// Regra principal: telefone único, comparado de forma NORMALIZADA (só dígitos).
+// Regra principal: telefone único por barbearia, comparado de forma NORMALIZADA (só dígitos).
 const prisma = require('../config/db');
 const { normalizarTelefone } = require('../utils/telefone');
 
 // GET /painel/clientes — lista + formulário (cria ou edita, conforme "editando")
 async function listar(req, res) {
   const clientes = await prisma.cliente.findMany({
+    where: { barbeariaId: req.barbeariaId },
     orderBy: { nome: 'asc' },
     include: { _count: { select: { agendamentos: true } } },
   });
@@ -15,6 +16,7 @@ async function listar(req, res) {
 
 // POST /painel/clientes — cadastra um cliente
 async function criar(req, res) {
+  const b = req.barbeariaId;
   const nome = (req.body.nome || '').trim();
   const telefone = normalizarTelefone(req.body.telefone);
 
@@ -23,24 +25,27 @@ async function criar(req, res) {
     return res.redirect('/painel/clientes');
   }
 
-  // Unicidade do telefone (normalizado)
-  const existe = await prisma.cliente.findUnique({ where: { telefone } });
+  // Unicidade do telefone (normalizado) dentro da barbearia
+  const existe = await prisma.cliente.findUnique({ where: { barbeariaId_telefone: { barbeariaId: b, telefone } } });
   if (existe) {
     req.session.flash = { tipo: 'erro', texto: 'Já existe um cliente com esse telefone.' };
     return res.redirect('/painel/clientes');
   }
 
   const dataNascimento = req.body.dataNascimento ? new Date(req.body.dataNascimento + 'T12:00:00') : null;
-  await prisma.cliente.create({ data: { nome, telefone, dataNascimento } });
+  await prisma.cliente.create({ data: { barbeariaId: b, nome, telefone, dataNascimento } });
   req.session.flash = { tipo: 'sucesso', texto: 'Cliente cadastrado.' };
   res.redirect('/painel/clientes');
 }
 
 // GET /painel/clientes/:id/editar — abre a mesma tela com o formulário em modo edição
 async function formEditar(req, res) {
-  const editando = await prisma.cliente.findUnique({ where: { id: Number(req.params.id) } });
+  const editando = await prisma.cliente.findFirst({
+    where: { id: Number(req.params.id), barbeariaId: req.barbeariaId },
+  });
   if (!editando) return res.redirect('/painel/clientes');
   const clientes = await prisma.cliente.findMany({
+    where: { barbeariaId: req.barbeariaId },
     orderBy: { nome: 'asc' },
     include: { _count: { select: { agendamentos: true } } },
   });
@@ -49,8 +54,9 @@ async function formEditar(req, res) {
 
 // POST /painel/clientes/:id — atualiza nome/telefone (unicidade continua valendo)
 async function atualizar(req, res) {
+  const b = req.barbeariaId;
   const id = Number(req.params.id);
-  const cliente = await prisma.cliente.findUnique({ where: { id } });
+  const cliente = await prisma.cliente.findFirst({ where: { id, barbeariaId: b } });
   if (!cliente) return res.redirect('/painel/clientes');
 
   const nome = (req.body.nome || '').trim();
@@ -61,8 +67,8 @@ async function atualizar(req, res) {
     return res.redirect('/painel/clientes/' + id + '/editar');
   }
 
-  // O telefone não pode ser de OUTRO cliente
-  const outro = await prisma.cliente.findUnique({ where: { telefone } });
+  // O telefone não pode ser de OUTRO cliente da mesma barbearia
+  const outro = await prisma.cliente.findUnique({ where: { barbeariaId_telefone: { barbeariaId: b, telefone } } });
   if (outro && outro.id !== id) {
     req.session.flash = { tipo: 'erro', texto: 'Já existe um cliente com esse telefone.' };
     return res.redirect('/painel/clientes/' + id + '/editar');
@@ -82,7 +88,8 @@ function isoHoje() {
 
 // GET /painel/clientes/:id — detalhe do cliente (histórico + planos)
 async function detalhe(req, res) {
-  const cliente = await prisma.cliente.findUnique({ where: { id: Number(req.params.id) } });
+  const b = req.barbeariaId;
+  const cliente = await prisma.cliente.findFirst({ where: { id: Number(req.params.id), barbeariaId: b } });
   if (!cliente) return res.redirect('/painel/clientes');
 
   const agendamentos = await prisma.agendamento.findMany({
@@ -104,7 +111,10 @@ async function detalhe(req, res) {
     // Vigente = ativo, dentro da validade e (se limitado) com usos restantes.
     vigente: a.ativo && new Date(a.dataFim) >= hoje && (a.usosRestantes === null || a.usosRestantes > 0),
   }));
-  const planosDisponiveis = await prisma.plano.findMany({ where: { ativo: true }, orderBy: { nome: 'asc' } });
+  const planosDisponiveis = await prisma.plano.findMany({
+    where: { barbeariaId: b, ativo: true },
+    orderBy: { nome: 'asc' },
+  });
 
   res.render('painel/cliente-detalhe', {
     titulo: cliente.nome,
@@ -118,11 +128,12 @@ async function detalhe(req, res) {
 
 // POST /painel/clientes/:id/planos — atribui um plano ao cliente (entrada no caixa na compra)
 async function adicionarPlano(req, res) {
+  const b = req.barbeariaId;
   const clienteId = Number(req.params.id);
-  const cliente = await prisma.cliente.findUnique({ where: { id: clienteId } });
+  const cliente = await prisma.cliente.findFirst({ where: { id: clienteId, barbeariaId: b } });
   if (!cliente) return res.redirect('/painel/clientes');
 
-  const plano = await prisma.plano.findFirst({ where: { id: Number(req.body.planoId), ativo: true } });
+  const plano = await prisma.plano.findFirst({ where: { id: Number(req.body.planoId), barbeariaId: b, ativo: true } });
   if (!plano) {
     req.session.flash = { tipo: 'erro', texto: 'Selecione um plano válido.' };
     return res.redirect('/painel/clientes/' + clienteId);
@@ -134,13 +145,14 @@ async function adicionarPlano(req, res) {
   const usosRestantes = plano.tipo === 'limitado' ? plano.usos : null;
 
   await prisma.clientePlano.create({
-    data: { clienteId, planoId: plano.id, dataInicio, dataFim, usosRestantes, ativo: true },
+    data: { barbeariaId: b, clienteId, planoId: plano.id, dataInicio, dataFim, usosRestantes, ativo: true },
   });
 
   // Valor do plano entra no caixa na compra (entrada), se houver valor.
   if (plano.valor > 0) {
     await prisma.caixa.create({
       data: {
+        barbeariaId: b,
         descricao: 'Plano: ' + plano.nome + ' — ' + cliente.nome,
         valor: plano.valor,
         tipo: 'entrada',
@@ -156,8 +168,10 @@ async function adicionarPlano(req, res) {
 
 // POST /painel/clientes/planos/:id/remover — remove uma assinatura do cliente
 async function removerPlano(req, res) {
-  const assinatura = await prisma.clientePlano.findUnique({ where: { id: Number(req.params.id) } });
-  await prisma.clientePlano.delete({ where: { id: Number(req.params.id) } }).catch(() => {});
+  const assinatura = await prisma.clientePlano.findFirst({
+    where: { id: Number(req.params.id), barbeariaId: req.barbeariaId },
+  });
+  if (assinatura) await prisma.clientePlano.delete({ where: { id: assinatura.id } }).catch(() => {});
   // Observação: não removemos a entrada do caixa (o valor já foi recebido na compra).
   req.session.flash = { tipo: 'sucesso', texto: 'Plano removido do cliente.' };
   res.redirect('/painel/clientes' + (assinatura ? '/' + assinatura.clienteId : ''));
@@ -166,7 +180,9 @@ async function removerPlano(req, res) {
 // POST /painel/clientes/:id/remover — exclui o cliente
 async function remover(req, res) {
   // Agendamentos vinculados ficam com clienteId nulo (SetNull no schema).
-  await prisma.cliente.delete({ where: { id: Number(req.params.id) } }).catch(() => {});
+  await prisma.cliente
+    .deleteMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } })
+    .catch(() => {});
   req.session.flash = { tipo: 'sucesso', texto: 'Cliente removido.' };
   res.redirect('/painel/clientes');
 }

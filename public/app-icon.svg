@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#111111"/>
+  <g fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <!-- tesoura de barbeiro -->
+    <circle cx="168" cy="330" r="46"/>
+    <circle cx="168" cy="182" r="46"/>
+    <line x1="205" y1="303" x2="392" y2="150"/>
+    <line x1="205" y1="209" x2="392" y2="362"/>
+    <line x1="300" y1="256" x2="392" y2="256"/>
+  </g>
+</svg>

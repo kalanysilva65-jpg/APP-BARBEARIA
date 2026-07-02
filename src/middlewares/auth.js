@@ -17,7 +17,8 @@ function exigeAdmin(req, res, next) {
     req.session.flash = { tipo: 'erro', texto: 'Faça login para continuar.' };
     return res.redirect('/login');
   }
-  if (req.session.usuario.papel !== 'admin') {
+  // O dono do sistema, ao operar uma barbearia, tem poderes de admin.
+  if (req.session.usuario.papel !== 'admin' && req.session.usuario.papel !== 'dono') {
     return res.status(403).render('erro', {
       layout: 'layouts/blank',
       titulo: 'Acesso negado',
@@ -27,4 +28,20 @@ function exigeAdmin(req, res, next) {
   next();
 }
 
-module.exports = { exigeLogin, exigeAdmin };
+// Exige que o usuário logado seja o DONO do sistema (super-admin do SaaS).
+function exigeDono(req, res, next) {
+  if (!req.session.usuario) {
+    req.session.flash = { tipo: 'erro', texto: 'Faça login para continuar.' };
+    return res.redirect('/login');
+  }
+  if (req.session.usuario.papel !== 'dono') {
+    return res.status(403).render('erro', {
+      layout: 'layouts/blank',
+      titulo: 'Acesso negado',
+      mensagem: 'Área exclusiva do administrador do sistema.',
+    });
+  }
+  next();
+}
+
+module.exports = { exigeLogin, exigeAdmin, exigeDono };

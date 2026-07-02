@@ -39,13 +39,14 @@ function somar(lista) {
 
 // GET /painel/caixa
 async function ver(req, res) {
+  const b = req.barbeariaId;
   const agora = new Date();
   const mesSel = /^\d{4}-\d{2}$/.test(req.query.mes || '') ? req.query.mes : isoMes(agora);
   const { inicio, fim } = intervaloMes(mesSel);
 
   // Lançamentos do mês selecionado
   const lancamentos = await prisma.caixa.findMany({
-    where: { data: { gte: inicio, lt: fim } },
+    where: { barbeariaId: b, data: { gte: inicio, lt: fim } },
     include: { categoria: true },
     orderBy: [{ data: 'desc' }, { id: 'desc' }],
   });
@@ -54,14 +55,15 @@ async function ver(req, res) {
   // Resumo do dia (hoje)
   const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
   const fimHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + 1);
-  const lancHoje = await prisma.caixa.findMany({ where: { data: { gte: inicioHoje, lt: fimHoje } } });
+  const lancHoje = await prisma.caixa.findMany({ where: { barbeariaId: b, data: { gte: inicioHoje, lt: fimHoje } } });
   const resumoHoje = somar(lancHoje);
 
   const categorias = await prisma.categoriaCaixa.findMany({
+    where: { barbeariaId: b },
     orderBy: [{ tipo: 'asc' }, { nome: 'asc' }],
     include: { _count: { select: { lancamentos: true } } },
   });
-  const autoLigado = await caixaServ.caixaAutomaticoLigado();
+  const autoLigado = await caixaServ.caixaAutomaticoLigado(b);
 
   // Navegação de meses
   const [ay, am] = mesSel.split('-').map(Number);
@@ -82,12 +84,13 @@ async function ver(req, res) {
 
 // POST /painel/caixa — registra um lançamento manual
 async function criar(req, res) {
+  const b = req.barbeariaId;
   const descricao = (req.body.descricao || '').trim();
   const valor = reaisParaCentavos(req.body.valor);
   const categoriaId = req.body.categoriaId ? Number(req.body.categoriaId) : null;
 
   const categoria = categoriaId
-    ? await prisma.categoriaCaixa.findUnique({ where: { id: categoriaId } })
+    ? await prisma.categoriaCaixa.findFirst({ where: { id: categoriaId, barbeariaId: b } })
     : null;
 
   // O tipo (entrada/saída) vem da categoria.
@@ -101,6 +104,7 @@ async function criar(req, res) {
 
   await prisma.caixa.create({
     data: {
+      barbeariaId: b,
       descricao: descricao || categoria.nome,
       valor,
       tipo: categoria.tipo,
@@ -114,8 +118,8 @@ async function criar(req, res) {
 
 // POST /painel/caixa/:id/remover
 async function remover(req, res) {
-  const l = await prisma.caixa.findUnique({ where: { id: Number(req.params.id) } });
-  await prisma.caixa.delete({ where: { id: Number(req.params.id) } }).catch(() => {});
+  const l = await prisma.caixa.findFirst({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } });
+  if (l) await prisma.caixa.delete({ where: { id: l.id } }).catch(() => {});
   req.session.flash = { tipo: 'sucesso', texto: 'Lançamento removido.' };
   res.redirect('/painel/caixa' + (l ? '?mes=' + isoMes(new Date(l.data)) : ''));
 }
@@ -123,7 +127,7 @@ async function remover(req, res) {
 // POST /painel/caixa/config — liga/desliga a entrada automática
 async function alternarAutomatico(req, res) {
   const ligar = req.body.ligado === 'true';
-  await caixaServ.definirCaixaAutomatico(ligar);
+  await caixaServ.definirCaixaAutomatico(req.barbeariaId, ligar);
   req.session.flash = {
     tipo: 'sucesso',
     texto: ligar ? 'Entrada automática ligada.' : 'Entrada automática desligada.',
@@ -135,7 +139,7 @@ async function alternarAutomatico(req, res) {
 async function criarCategoria(req, res) {
   const nome = (req.body.nome || '').trim();
   const tipo = req.body.tipo === 'saida' ? 'saida' : 'entrada';
-  if (nome) await prisma.categoriaCaixa.create({ data: { nome, tipo } });
+  if (nome) await prisma.categoriaCaixa.create({ data: { barbeariaId: req.barbeariaId, nome, tipo } });
   res.redirect('/painel/caixa');
 }
 
@@ -144,13 +148,17 @@ async function atualizarCategoria(req, res) {
   const tipo = req.body.tipo === 'saida' ? 'saida' : 'entrada';
   const data = { tipo };
   if (nome) data.nome = nome;
-  await prisma.categoriaCaixa.update({ where: { id: Number(req.params.id) }, data }).catch(() => {});
+  await prisma.categoriaCaixa
+    .updateMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId }, data })
+    .catch(() => {});
   res.redirect('/painel/caixa');
 }
 
 async function removerCategoria(req, res) {
   // Lançamentos da categoria não são apagados: ficam "sem categoria" (SetNull).
-  await prisma.categoriaCaixa.delete({ where: { id: Number(req.params.id) } }).catch(() => {});
+  await prisma.categoriaCaixa
+    .deleteMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } })
+    .catch(() => {});
   res.redirect('/painel/caixa');
 }
 

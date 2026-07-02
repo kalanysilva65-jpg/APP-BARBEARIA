@@ -1,7 +1,8 @@
 // Controlador do fluxo público de agendamento (cliente, sem login).
 // Passos: (plano) -> serviço -> barbeiro -> horário -> dados -> confirmação.
-// O estado segue pela querystring. A assinatura de plano (quando usada) é
-// carregada pelo parâmetro `assinatura` e aplica: só seg–qui (ilimitado),
+// O estado segue pela querystring. A barbearia vem do subdomínio (req.barbeariaId,
+// garantido pelo middleware exigeBarbeariaPublica). A assinatura de plano (quando
+// usada) é carregada pelo parâmetro `assinatura` e aplica: só seg–qui (ilimitado),
 // valor R$ 0 e consumo de 1 uso (limitado).
 const prisma = require('../config/db');
 const { horariosDisponiveis, dataLocal } = require('../services/disponibilidade');
@@ -25,21 +26,16 @@ function dataPorExtenso(dataStr) {
   return `${DIAS_SEMANA[d.getDay()]}, ${dia}/${mes}/${d.getFullYear()}`;
 }
 
-// Carrega e valida a assinatura (plano vigente). Retorna null se inválida/ausente.
-async function carregarAssinatura(idStr) {
+// Carrega e valida a assinatura (plano vigente) DENTRO da barbearia. Null se inválida.
+async function carregarAssinatura(idStr, barbeariaId) {
   const id = Number(idStr);
   if (!id) return null;
-  const a = await prisma.clientePlano.findUnique({
-    where: { id },
+  const a = await prisma.clientePlano.findFirst({
+    where: { id, barbeariaId },
     include: { plano: { include: { servico: true } }, cliente: true },
   });
   if (!a || !planoServ.vigente(a)) return null;
   return a;
-}
-
-// Sufixo de querystring para carregar a assinatura entre os passos.
-function suf(assinatura) {
-  return assinatura ? '&assinatura=' + assinatura.id : '';
 }
 
 // GET /agendar/plano — consulta de plano por telefone
@@ -48,6 +44,7 @@ async function passoPlano(req, res) {
   let resultado = null;
   if (telefoneDigitado.trim()) {
     const { cliente, assinaturas } = await planoServ.assinaturasVigentesPorTelefone(
+      req.barbeariaId,
       normalizarTelefone(telefoneDigitado)
     );
     resultado = { cliente, assinaturas };
@@ -69,9 +66,9 @@ function parseIds(str) {
 
 // Passo 1 — escolher o serviço
 async function passoServico(req, res) {
-  const assinatura = await carregarAssinatura(req.query.assinatura);
+  const assinatura = await carregarAssinatura(req.query.assinatura, req.barbeariaId);
   const servicos = await prisma.servico.findMany({
-    where: { ativo: true, ehProduto: false },
+    where: { barbeariaId: req.barbeariaId, ativo: true, ehProduto: false },
     include: { categoria: true },
     orderBy: { nome: 'asc' },
   });
@@ -80,11 +77,11 @@ async function passoServico(req, res) {
 
 // Passo 2 — escolher o barbeiro
 async function passoBarbeiro(req, res) {
-  const assinatura = await carregarAssinatura(req.query.assinatura);
+  const assinatura = await carregarAssinatura(req.query.assinatura, req.barbeariaId);
   // Suporta servicoIds (multi) e servicoId (legado / plano)
   const ids = parseIds(req.query.servicoIds || req.query.servicoId);
   const servicos = await prisma.servico.findMany({
-    where: { id: { in: ids }, ativo: true },
+    where: { id: { in: ids }, barbeariaId: req.barbeariaId, ativo: true },
     include: { categoria: true },
     orderBy: { nome: 'asc' },
   });
@@ -94,7 +91,7 @@ async function passoBarbeiro(req, res) {
   const duracaoTotal = servicos.reduce((s, x) => s + x.duracaoMin, 0);
   const valorTotal = servicos.reduce((s, x) => s + x.valor, 0);
 
-  const barbeiros = await prisma.usuario.findMany({ where: { ativo: true }, orderBy: { id: 'asc' } });
+  const barbeiros = await prisma.usuario.findMany({ where: { barbeariaId: req.barbeariaId, ativo: true }, orderBy: { id: 'asc' } });
   res.render('agendar/barbeiro', {
     layout: 'layouts/publico',
     titulo: 'Escolha o barbeiro',
@@ -110,14 +107,14 @@ async function passoBarbeiro(req, res) {
 
 // Passo 3 — escolher data e horário
 async function passoHorario(req, res) {
-  const assinatura = await carregarAssinatura(req.query.assinatura);
+  const assinatura = await carregarAssinatura(req.query.assinatura, req.barbeariaId);
   const ids = parseIds(req.query.servicoIds || req.query.servicoId);
   const servicos = await prisma.servico.findMany({
-    where: { id: { in: ids }, ativo: true },
+    where: { id: { in: ids }, barbeariaId: req.barbeariaId, ativo: true },
     include: { categoria: true },
     orderBy: { nome: 'asc' },
   });
-  const barbeiro = await prisma.usuario.findFirst({ where: { id: Number(req.query.barbeiroId), ativo: true } });
+  const barbeiro = await prisma.usuario.findFirst({ where: { id: Number(req.query.barbeiroId), barbeariaId: req.barbeariaId, ativo: true } });
   if (!servicos.length || !barbeiro) return res.redirect('/agendar');
 
   const servicoIdsStr = servicos.map((s) => s.id).join(',');
@@ -168,14 +165,14 @@ async function passoHorario(req, res) {
 
 // Passo 4 — dados do cliente
 async function passoDados(req, res) {
-  const assinatura = await carregarAssinatura(req.query.assinatura);
+  const assinatura = await carregarAssinatura(req.query.assinatura, req.barbeariaId);
   const { barbeiroId, data, hora } = req.query;
   const ids = parseIds(req.query.servicoIds || req.query.servicoId);
   const servicos = await prisma.servico.findMany({
-    where: { id: { in: ids }, ativo: true },
+    where: { id: { in: ids }, barbeariaId: req.barbeariaId, ativo: true },
     orderBy: { nome: 'asc' },
   });
-  const barbeiro = await prisma.usuario.findFirst({ where: { id: Number(barbeiroId), ativo: true } });
+  const barbeiro = await prisma.usuario.findFirst({ where: { id: Number(barbeiroId), barbeariaId: req.barbeariaId, ativo: true } });
   if (!servicos.length || !barbeiro || !data || !hora) return res.redirect('/agendar');
 
   const servicoIdsStr = servicos.map((s) => s.id).join(',');
@@ -198,7 +195,8 @@ async function passoDados(req, res) {
 
 // Confirmação — cria o agendamento (com validação no backend)
 async function confirmar(req, res) {
-  const assinatura = await carregarAssinatura(req.body.assinatura);
+  const b = req.barbeariaId;
+  const assinatura = await carregarAssinatura(req.body.assinatura, b);
   let servicoIds = parseIds(req.body.servicoIds || req.body.servicoId);
   // Se o plano cobre um serviço específico, apenas esse serviço vale (segurança).
   if (assinatura && assinatura.plano.servicoId) servicoIds = [assinatura.plano.servicoId];
@@ -209,8 +207,8 @@ async function confirmar(req, res) {
   let telefone = (req.body.cliente_telefone || '').trim();
   const nascimentoStr = (req.body.cliente_nascimento || '').trim();
 
-  const servicos = await prisma.servico.findMany({ where: { id: { in: servicoIds }, ativo: true } });
-  const barbeiro = await prisma.usuario.findFirst({ where: { id: barbeiroId, ativo: true } });
+  const servicos = await prisma.servico.findMany({ where: { id: { in: servicoIds }, barbeariaId: b, ativo: true } });
+  const barbeiro = await prisma.usuario.findFirst({ where: { id: barbeiroId, barbeariaId: b, ativo: true } });
 
   // Agendamento via plano usa os dados do cliente do plano.
   if (assinatura) {
@@ -259,13 +257,15 @@ async function confirmar(req, res) {
   } else {
     const telNorm = normalizarTelefone(telefone);
     if (telNorm) {
-      let cliente = await prisma.cliente.findUnique({ where: { telefone: telNorm } });
+      let cliente = await prisma.cliente.findUnique({
+        where: { barbeariaId_telefone: { barbeariaId: b, telefone: telNorm } },
+      });
       if (!cliente) {
         const dataNascimento =
           nascimentoStr && /^\d{4}-\d{2}-\d{2}$/.test(nascimentoStr)
             ? new Date(nascimentoStr + 'T12:00:00')
             : null;
-        cliente = await prisma.cliente.create({ data: { nome, telefone: telNorm, dataNascimento } });
+        cliente = await prisma.cliente.create({ data: { barbeariaId: b, nome, telefone: telNorm, dataNascimento } });
       }
       clienteId = cliente.id;
     }
@@ -273,6 +273,7 @@ async function confirmar(req, res) {
 
   const agendamento = await prisma.agendamento.create({
     data: {
+      barbeariaId: b,
       usuarioId: barbeiroId,
       clienteId,
       clientePlanoId: usaPlano ? assinatura.id : null,
@@ -301,8 +302,8 @@ async function confirmar(req, res) {
 
 // Tela de sucesso
 async function sucesso(req, res) {
-  const agendamento = await prisma.agendamento.findUnique({
-    where: { id: Number(req.params.id) },
+  const agendamento = await prisma.agendamento.findFirst({
+    where: { id: Number(req.params.id), barbeariaId: req.barbeariaId },
     include: { usuario: true, itens: { include: { servico: true } } },
   });
   if (!agendamento) return res.redirect('/agendar');

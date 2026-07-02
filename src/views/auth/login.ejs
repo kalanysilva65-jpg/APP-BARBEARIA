@@ -1,7 +1,13 @@
 <div class="card auth-card">
   <div class="auth-cabecalho">
-    <div class="logo-flowbarber logo-flowbarber--lg" style="justify-content:center;margin-bottom:4px;"><span class="lf">navio</span><span class="ld">.</span></div>
-    <p class="texto-secundario">Acesso da equipe</p>
+    <% if (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) { %>
+      <img src="<%= marcaLogoUrl %>" alt="Logo" class="logo-marca-img" style="max-height:64px;margin-bottom:8px;" />
+    <% } else if (barbearia) { %>
+      <div class="logo-flowbarber logo-flowbarber--lg" style="justify-content:center;margin-bottom:4px;"><span class="lf"><%= barbearia.nome %></span></div>
+    <% } else { %>
+      <div class="logo-flowbarber logo-flowbarber--lg" style="justify-content:center;margin-bottom:4px;"><span class="lf">navio</span><span class="ld">.</span></div>
+    <% } %>
+    <p class="texto-secundario"><%= barbearia ? barbearia.nome : 'Acesso da equipe' %></p>
   </div>
 
   <form method="POST" action="/login" class="form">
@@ -17,4 +23,8 @@
 
     <button class="btn btn-primario btn-bloco" type="submit">Entrar</button>
   </form>
+
+  <div style="text-align:center;margin-top:20px;">
+    <span class="powered-by-navio texto-sutil">Desenvolvido por <span class="logo-flowbarber logo-flowbarber--xs"><span class="lf">navio</span><span class="ld">.</span></span></span>
+  </div>
 </div>

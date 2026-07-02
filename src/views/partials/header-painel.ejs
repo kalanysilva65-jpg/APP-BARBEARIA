@@ -11,12 +11,23 @@
         <svg class="icone-sol" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
       </button>
       <span class="usuario-nome"><%= usuario.nome %></span>
-      <span class="badge-papel"><%= usuario.papel === 'admin' ? 'Admin' : 'Funcionário' %></span>
+      <span class="badge-papel"><%= ehDono ? 'Dono' : (usuario.papel === 'admin' ? 'Admin' : 'Funcionário') %></span>
       <form method="POST" action="/logout">
         <button class="btn btn-secundario btn-sm" type="submit">Sair</button>
       </form>
     </div>
   </div>
+
+  <% if (typeof ehDono !== 'undefined' && ehDono) { %>
+    <div class="container" style="padding-top:8px;padding-bottom:8px;">
+      <div class="alerta" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <span>Você está operando <strong><%= barbeariaAtual ? barbeariaAtual.nome : 'uma barbearia' %></strong> como dono do sistema.</span>
+        <form method="POST" action="/mestre/sair" class="inline">
+          <button class="btn btn-secundario btn-sm" type="submit">← Voltar ao painel-mestre</button>
+        </form>
+      </div>
+    </div>
+  <% } %>
 
   <nav class="nav-principal">
     <div class="container nav-inner">
@@ -24,14 +35,12 @@
       <a href="/painel/agenda" class="<%= currentPath.startsWith('/painel/agenda') ? 'ativo' : '' %>">Agenda</a>
       <a href="/painel/clientes" class="<%= currentPath.startsWith('/painel/clientes') ? 'ativo' : '' %>">Clientes</a>
       <a href="/painel/planos" class="<%= currentPath.startsWith('/painel/planos') ? 'ativo' : '' %>">Planos</a>
-      <% if (usuario.papel === 'admin') { %>
+      <% if (ehAdmin) { %>
         <a href="/painel/servicos" class="<%= currentPath.startsWith('/painel/servicos') ? 'ativo' : '' %>">Serviços</a>
         <a href="/painel/estoque" class="<%= currentPath.startsWith('/painel/estoque') ? 'ativo' : '' %>">Estoque</a>
         <a href="/painel/caixa" class="<%= currentPath.startsWith('/painel/caixa') ? 'ativo' : '' %>">Caixa</a>
         <a href="/painel/comissoes" class="<%= currentPath.startsWith('/painel/comissoes') ? 'ativo' : '' %>">Comissões</a>
         <a href="/painel/horarios" class="<%= currentPath.startsWith('/painel/horarios') ? 'ativo' : '' %>">Horários</a>
-        <a href="/painel/equipe" class="<%= currentPath.startsWith('/painel/equipe') ? 'ativo' : '' %>">Equipe</a>
-        <a href="/painel/configuracoes-marca" class="<%= currentPath.startsWith('/painel/configuracoes-marca') ? 'ativo' : '' %>">Marca</a>
       <% } %>
     </div>
   </nav>
