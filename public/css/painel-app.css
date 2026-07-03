@@ -18,7 +18,15 @@
 .app-painel .nav-principal { display: none; }
 
 /* ----- Hero do topo: foto + nome do usuário logado (sem logo) ----------- */
-.app-painel .topo-app { background: transparent; border-bottom: none; box-shadow: none; }
+.app-painel .topo-app {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #f4f5f7;
+  border-bottom: none;
+  box-shadow: none;
+}
+[data-tema="escuro"] .app-painel .topo-app { background: #0d0d0f; }
 .app-hero {
   display: flex;
   align-items: center;
