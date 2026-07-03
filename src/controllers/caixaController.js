@@ -65,6 +65,27 @@ async function ver(req, res) {
   });
   const autoLigado = await caixaServ.caixaAutomaticoLigado(b);
 
+  // Ganhos da semana atual (segunda a domingo) — para o gráfico de barras.
+  const hoje0 = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const offSeg = (agora.getDay() + 6) % 7; // 0 = segunda
+  const seg = new Date(hoje0);
+  seg.setDate(hoje0.getDate() - offSeg);
+  const rotulos = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  const barrasSemana = [];
+  for (let i = 0; i < 7; i++) {
+    const d0 = new Date(seg);
+    d0.setDate(seg.getDate() + i);
+    const d1 = new Date(d0);
+    d1.setDate(d0.getDate() + 1);
+    const soma = await prisma.caixa.aggregate({
+      _sum: { valor: true },
+      where: { barbeariaId: b, tipo: 'entrada', data: { gte: d0, lt: d1 } },
+    });
+    barrasSemana.push({ rotulo: rotulos[i], valor: soma._sum.valor || 0, hoje: d0.getTime() === hoje0.getTime() });
+  }
+  const maxBarraSemana = Math.max(1, ...barrasSemana.map((x) => x.valor));
+  const totalSemana = barrasSemana.reduce((s, x) => s + x.valor, 0);
+
   // Navegação de meses
   const [ay, am] = mesSel.split('-').map(Number);
 
@@ -75,6 +96,9 @@ async function ver(req, res) {
     resumoHoje,
     categorias,
     autoLigado,
+    barrasSemana,
+    maxBarraSemana,
+    totalSemana,
     mesSel,
     mesAnterior: isoMes(new Date(ay, am - 2, 1)),
     mesProximo: isoMes(new Date(ay, am, 1)),

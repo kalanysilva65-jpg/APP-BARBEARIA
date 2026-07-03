@@ -1,74 +1,47 @@
-<div class="cabecalho-pagina">
-  <h1>Caixa</h1>
-  <p class="texto-secundario">Entradas, saídas e saldo do dia e do mês.</p>
-</div>
-
-<!-- Toggle de entrada automática -->
-<div class="card flex-entre" style="flex-wrap: wrap; gap: 12px">
+<div class="cabecalho-pagina agenda-cabecalho">
   <div>
-    <strong>Entrada automática</strong>
-    <div class="texto-sutil">Ao concluir um agendamento, lança o valor como entrada no caixa.</div>
+    <h1>Caixa</h1>
+    <p class="texto-secundario">Entradas, saídas e saldo do dia e do mês.</p>
   </div>
-  <div class="flex" style="align-items: center; gap: 10px">
-    <span class="status <%= autoLigado ? 'status-concluido' : '' %>"><%= autoLigado ? 'Ligada' : 'Desligada' %></span>
-    <form method="POST" action="/painel/caixa/config" class="inline">
-      <input type="hidden" name="ligado" value="<%= autoLigado ? 'false' : 'true' %>" />
-      <button class="btn <%= autoLigado ? 'btn-secundario' : 'btn-primario' %> btn-sm">
-        <%= autoLigado ? 'Desligar' : 'Ligar' %>
-      </button>
-    </form>
-  </div>
+  <form method="POST" action="/painel/caixa/config" class="caixa-auto">
+    <input type="hidden" name="ligado" value="<%= autoLigado ? 'false' : 'true' %>" />
+    <span class="caixa-auto-label">Entrada automática</span>
+    <button class="btn <%= autoLigado ? 'btn-secundario' : 'btn-primario' %> btn-sm btn-pill">
+      <%= autoLigado ? 'Desligar' : 'Ligar' %>
+    </button>
+  </form>
 </div>
 
-<!-- Resumos -->
-<div class="grade-resumo mt-16">
-  <div class="card resumo-caixa">
+<!-- Ganhos da semana + resumo do dia -->
+<div class="caixa-topo">
+  <div class="card caixa-ganhos">
+    <div class="caixa-ganhos-topo">
+      <span class="texto-sutil">Ganhos · esta semana</span>
+      <div class="caixa-ganhos-valor"><%= fmtBRL(totalSemana) %></div>
+    </div>
+    <div class="semana caixa-semana">
+      <% barrasSemana.forEach(function (d) { %>
+        <div class="semana-col">
+          <div class="semana-bar <%= d.hoje ? 'hoje' : '' %>" style="height:<%= Math.max(4, Math.round((d.valor / maxBarraSemana) * 72)) %>px" title="<%= fmtBRL(d.valor) %>"></div>
+          <span class="semana-rot <%= d.hoje ? 'hoje' : '' %>"><%= d.rotulo %></span>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <div class="card caixa-resumo-hoje">
     <div class="resumo-titulo">Hoje</div>
     <div class="resumo-linha"><span class="texto-sutil">Entrou</span><span class="valor-entrada">+<%= fmtBRL(resumoHoje.entrou) %></span></div>
     <div class="resumo-linha"><span class="texto-sutil">Saiu</span><span class="valor-saida">−<%= fmtBRL(resumoHoje.saiu) %></span></div>
     <div class="resumo-linha total"><span>Saldo</span><span><%= fmtBRL(resumoHoje.saldo) %></span></div>
-  </div>
-  <div class="card resumo-caixa">
-    <div class="resumo-titulo">Mês</div>
-    <div class="resumo-linha"><span class="texto-sutil">Entrou</span><span class="valor-entrada">+<%= fmtBRL(resumoMes.entrou) %></span></div>
-    <div class="resumo-linha"><span class="texto-sutil">Saiu</span><span class="valor-saida">−<%= fmtBRL(resumoMes.saiu) %></span></div>
-    <div class="resumo-linha total"><span>Saldo</span><span><%= fmtBRL(resumoMes.saldo) %></span></div>
+    <div class="resumo-linha mt-8"><span class="texto-sutil">Saldo do mês</span><span><%= fmtBRL(resumoMes.saldo) %></span></div>
   </div>
 </div>
 
-<!-- Novo lançamento -->
-<div class="card mt-16">
-  <h2>Novo lançamento</h2>
-  <% if (categorias.length === 0) { %>
-    <p class="texto-secundario mt-16">Cadastre uma categoria abaixo para poder lançar.</p>
-  <% } else { %>
-    <form method="POST" action="/painel/caixa" class="form mt-16">
-      <div class="campo">
-        <label for="categoriaId">Categoria</label>
-        <select id="categoriaId" name="categoriaId" required>
-          <option value="">Selecione…</option>
-          <% categorias.forEach(function (c) { %>
-            <option value="<%= c.id %>"><%= c.tipo === 'entrada' ? 'Entrada' : 'Saída' %> · <%= c.nome %></option>
-          <% }) %>
-        </select>
-      </div>
-      <div class="grid-2">
-        <div class="campo">
-          <label for="valor">Valor (R$)</label>
-          <input id="valor" name="valor" type="number" step="0.01" min="0" required />
-        </div>
-        <div class="campo">
-          <label for="data">Data</label>
-          <input id="data" name="data" type="date" value="<%= hojeIso %>" />
-        </div>
-      </div>
-      <div class="campo">
-        <label for="descricao">Descrição (opcional)</label>
-        <input id="descricao" name="descricao" placeholder="Ex.: Corte do João" />
-      </div>
-      <button class="btn btn-primario btn-bloco" type="submit">Registrar lançamento</button>
-    </form>
-  <% } %>
+<!-- Ações: abrem em pop-up -->
+<div class="caixa-acoes">
+  <button type="button" class="btn btn-secundario btn-pill" onclick="abrirModalCaixa('categorias')">Categorias de caixa</button>
+  <button type="button" class="btn btn-primario btn-pill" onclick="abrirModalCaixa('lancamento')">+ Novo lançamento</button>
 </div>
 
 <!-- Movimentações do mês -->
@@ -113,40 +86,101 @@
   <% } %>
 </div>
 
-<!-- Categorias de caixa -->
-<div class="card mt-16">
-  <h2>Categorias de caixa</h2>
-  <p class="texto-secundario mb-16">Cada categoria é de entrada ou saída. Remover não apaga lançamentos.</p>
-
-  <form method="POST" action="/painel/caixa/categorias" class="form-cat-caixa">
-    <input name="nome" placeholder="Nova categoria" required />
-    <select name="tipo">
-      <option value="entrada">Entrada</option>
-      <option value="saida">Saída</option>
-    </select>
-    <button class="btn btn-secundario btn-sm">Adicionar</button>
-  </form>
-
-  <ul class="lista-categorias mt-16">
-    <% categorias.forEach(function (c) { %>
-      <li>
-        <form method="POST" action="/painel/caixa/categorias/<%= c.id %>" class="form-cat-caixa">
-          <input name="nome" value="<%= c.nome %>" />
-          <select name="tipo">
-            <option value="entrada" <%= c.tipo === 'entrada' ? 'selected' : '' %>>Entrada</option>
-            <option value="saida" <%= c.tipo === 'saida' ? 'selected' : '' %>>Saída</option>
-          </select>
-          <span class="texto-sutil"><%= c._count.lancamentos %></span>
-          <button class="btn btn-secundario btn-sm">Salvar</button>
-        </form>
-        <form method="POST" action="/painel/caixa/categorias/<%= c.id %>/remover" class="inline"
-              onsubmit="return confirm('Remover esta categoria?')">
-          <button class="btn-x" title="Remover categoria">×</button>
-        </form>
-      </li>
-    <% }) %>
+<!-- Pop-up: Novo lançamento -->
+<div class="ag-overlay" id="caixa-modal-lancamento" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Novo lançamento</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
     <% if (categorias.length === 0) { %>
-      <li class="texto-secundario">Nenhuma categoria.</li>
+      <p class="texto-secundario mt-16">Cadastre uma categoria para poder lançar.</p>
+    <% } else { %>
+      <form method="POST" action="/painel/caixa" class="form mt-16">
+        <div class="campo">
+          <label for="categoriaId">Categoria</label>
+          <select id="categoriaId" name="categoriaId" required>
+            <option value="">Selecione…</option>
+            <% categorias.forEach(function (c) { %>
+              <option value="<%= c.id %>"><%= c.tipo === 'entrada' ? 'Entrada' : 'Saída' %> · <%= c.nome %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="grid-2">
+          <div class="campo">
+            <label for="valor">Valor (R$)</label>
+            <input id="valor" name="valor" type="number" step="0.01" min="0" required />
+          </div>
+          <div class="campo">
+            <label for="data">Data</label>
+            <input id="data" name="data" type="date" value="<%= hojeIso %>" />
+          </div>
+        </div>
+        <div class="campo">
+          <label for="descricao">Descrição (opcional)</label>
+          <input id="descricao" name="descricao" placeholder="Ex.: Corte do João" />
+        </div>
+        <button class="btn btn-primario btn-bloco" type="submit">Registrar lançamento</button>
+      </form>
     <% } %>
-  </ul>
+  </div>
 </div>
+
+<!-- Pop-up: Categorias de caixa -->
+<div class="ag-overlay" id="caixa-modal-categorias" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Categorias de caixa</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
+    <p class="texto-secundario">Cada categoria é de entrada ou saída. Remover não apaga lançamentos.</p>
+
+    <form method="POST" action="/painel/caixa/categorias" class="form-cat-caixa mt-16">
+      <input name="nome" placeholder="Nova categoria" required />
+      <select name="tipo">
+        <option value="entrada">Entrada</option>
+        <option value="saida">Saída</option>
+      </select>
+      <button class="btn btn-secundario btn-sm">Adicionar</button>
+    </form>
+
+    <ul class="lista-categorias mt-16">
+      <% categorias.forEach(function (c) { %>
+        <li>
+          <form method="POST" action="/painel/caixa/categorias/<%= c.id %>" class="form-cat-caixa">
+            <input name="nome" value="<%= c.nome %>" />
+            <select name="tipo">
+              <option value="entrada" <%= c.tipo === 'entrada' ? 'selected' : '' %>>Entrada</option>
+              <option value="saida" <%= c.tipo === 'saida' ? 'selected' : '' %>>Saída</option>
+            </select>
+            <span class="texto-sutil"><%= c._count.lancamentos %></span>
+            <button class="btn btn-secundario btn-sm">Salvar</button>
+          </form>
+          <form method="POST" action="/painel/caixa/categorias/<%= c.id %>/remover" class="inline"
+                onsubmit="return confirm('Remover esta categoria?')">
+            <button class="btn-x" title="Remover categoria">×</button>
+          </form>
+        </li>
+      <% }) %>
+      <% if (categorias.length === 0) { %>
+        <li class="texto-secundario">Nenhuma categoria.</li>
+      <% } %>
+    </ul>
+  </div>
+</div>
+
+<script>
+  function abrirModalCaixa(nome) {
+    var o = document.getElementById('caixa-modal-' + nome);
+    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+  }
+  function fecharModal(o) {
+    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
+      document.body.classList.remove('modal-aberto');
+    }
+  });
+</script>
