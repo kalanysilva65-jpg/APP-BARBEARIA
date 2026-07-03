@@ -21,12 +21,33 @@
   </form>
 </div>
 
-<div class="agenda-acoes-topo mb-16">
-  <a href="/painel/agenda/novo" class="btn btn-primario btn-sm btn-pill">+ Novo agendamento</a>
-  <% if (ehAdmin) { %>
-    <details class="bloq-form">
-      <summary class="btn btn-secundario btn-sm btn-pill">Bloquear horário</summary>
-      <form method="POST" action="/painel/agenda/bloqueios" class="card mt-16 form">
+<!-- Botão flutuante: Novo agendamento / Bloquear horário (só nesta tela) -->
+<div class="agenda-fab-wrap">
+  <div class="agenda-fab-menu" id="agenda-fab-menu">
+    <a href="/painel/agenda/novo" class="agenda-fab-opcao">
+      <span>Add an appointment</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </a>
+    <% if (ehAdmin) { %>
+      <button type="button" class="agenda-fab-opcao" onclick="abrirModal('bloqueio')">
+        <span>Block time</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      </button>
+    <% } %>
+  </div>
+  <button type="button" class="agenda-fab" onclick="document.getElementById('agenda-fab-menu').classList.toggle('aberto')" aria-label="Nova ação">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div>
+
+<% if (ehAdmin) { %>
+  <div class="ag-overlay" id="agm-bloqueio" onclick="if(event.target===this)fecharModal(this)">
+    <div class="ag-modal-box">
+      <div class="ag-modal-topo">
+        <div class="ag-modal-nome">Bloquear horário</div>
+        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+      </div>
+      <form method="POST" action="/painel/agenda/bloqueios" class="form mt-16">
         <input type="hidden" name="data" value="<%= dataStr %>" />
         <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
         <div class="grid-2">
@@ -55,9 +76,38 @@
         </div>
         <button class="btn btn-primario btn-sm">Bloquear</button>
       </form>
-    </details>
-  <% } %>
-</div>
+    </div>
+  </div>
+<% } %>
+
+<script>
+  function abrirModal(id) {
+    var menu = document.getElementById('agenda-fab-menu');
+    if (menu) menu.classList.remove('aberto');
+    var o = document.getElementById('agm-' + id);
+    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+  }
+  function abrirGrupo(id) {
+    var o = document.getElementById('grp-' + id);
+    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+  }
+  function fecharModal(o) {
+    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+  }
+  document.addEventListener('click', function (e) {
+    var wrap = document.querySelector('.agenda-fab-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      var menu = document.getElementById('agenda-fab-menu');
+      if (menu) menu.classList.remove('aberto');
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
+      document.body.classList.remove('modal-aberto');
+    }
+  });
+</script>
 
 <% if (agendamentos.length === 0 && bloqueios.length === 0) { %>
   <div class="card"><p class="texto-secundario">Nada agendado para esta data.</p></div>
@@ -326,24 +376,4 @@
       </div>
     </div>
   <% }) %>
-
-  <script>
-    function abrirModal(id) {
-      var o = document.getElementById('agm-' + id);
-      if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
-    }
-    function abrirGrupo(id) {
-      var o = document.getElementById('grp-' + id);
-      if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
-    }
-    function fecharModal(o) {
-      if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
-    }
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
-        document.body.classList.remove('modal-aberto');
-      }
-    });
-  </script>
 <% } %>
