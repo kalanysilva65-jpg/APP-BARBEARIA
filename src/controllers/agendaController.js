@@ -85,6 +85,15 @@ async function verAgenda(req, res) {
     : [];
   const servicos = await prisma.servico.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { nome: 'asc' } });
 
+  // Bloqueios do dia (mesmo filtro de barbeiro) — aparecem na linha do tempo.
+  const whereBloq = { barbeariaId: b, data: dataObj };
+  if (filtroBarbeiro) whereBloq.usuarioId = filtroBarbeiro;
+  const bloqueios = await prisma.bloqueio.findMany({
+    where: whereBloq,
+    include: { usuario: true },
+    orderBy: { horaInicio: 'asc' },
+  });
+
   // Navegação de datas (dia anterior / seguinte)
   const prev = new Date(dataObj);
   prev.setDate(prev.getDate() - 1);
@@ -95,6 +104,7 @@ async function verAgenda(req, res) {
     titulo: 'Agenda',
     ehAdmin,
     agendamentos,
+    bloqueios,
     barbeiros,
     servicos,
     dataStr,
@@ -323,4 +333,39 @@ async function criarManual(req, res) {
   res.redirect('/painel/agenda?data=' + data + (ehAdmin ? '&barbeiro=' + usuarioId : ''));
 }
 
-module.exports = { verAgenda, adicionarItem, removerItem, mudarStatus, excluir, formNovo, criarManual };
+// POST /painel/agenda/bloqueios — cria um bloqueio direto da agenda (admin).
+async function criarBloqueio(req, res) {
+  const b = req.barbeariaId;
+  const barbeiroId = Number(req.body.barbeiroId);
+  const data = req.body.data;
+  const horaInicio = req.body.horaInicio;
+  const horaFim = req.body.horaFim;
+  const motivo = (req.body.motivo || '').trim() || null;
+  const barbeiro = await prisma.usuario.findFirst({ where: { id: barbeiroId, barbeariaId: b } });
+
+  if (barbeiro && data && horaInicio && horaFim && horaInicio < horaFim) {
+    await prisma.bloqueio.create({
+      data: { barbeariaId: b, usuarioId: barbeiroId, data: dataLocal(data), horaInicio, horaFim, motivo },
+    });
+    req.session.flash = { tipo: 'sucesso', texto: 'Horário bloqueado.' };
+  } else {
+    req.session.flash = { tipo: 'erro', texto: 'Preencha barbeiro, data e um intervalo de horário válido.' };
+  }
+  const barbeiroRet = req.body.barbeiro || String(barbeiroId);
+  res.redirect('/painel/agenda?data=' + (data || '') + '&barbeiro=' + barbeiroRet);
+}
+
+// POST /painel/agenda/bloqueios/:id/remover — remove um bloqueio (admin).
+async function removerBloqueio(req, res) {
+  await prisma.bloqueio
+    .deleteMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } })
+    .catch(() => {});
+  req.session.flash = { tipo: 'sucesso', texto: 'Bloqueio removido.' };
+  const qs = new URLSearchParams();
+  if (req.body.retornoData) qs.set('data', req.body.retornoData);
+  if (req.body.retornoBarbeiro) qs.set('barbeiro', req.body.retornoBarbeiro);
+  const s = qs.toString();
+  res.redirect('/painel/agenda' + (s ? '?' + s : ''));
+}
+
+module.exports = { verAgenda, adicionarItem, removerItem, mudarStatus, excluir, formNovo, criarManual, criarBloqueio, removerBloqueio };

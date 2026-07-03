@@ -21,12 +21,46 @@
   </form>
 </div>
 
-<div class="mb-16">
+<div class="agenda-acoes-topo mb-16">
   <a href="/painel/agenda/novo" class="btn btn-primario btn-sm btn-pill">+ Novo agendamento</a>
+  <% if (ehAdmin) { %>
+    <details class="bloq-form">
+      <summary class="btn btn-secundario btn-sm btn-pill">Bloquear horário</summary>
+      <form method="POST" action="/painel/agenda/bloqueios" class="card mt-16 form">
+        <input type="hidden" name="data" value="<%= dataStr %>" />
+        <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
+        <div class="grid-2">
+          <div class="campo">
+            <label for="bloq-barbeiro">Barbeiro</label>
+            <select id="bloq-barbeiro" name="barbeiroId" required>
+              <% barbeiros.forEach(function (b) { %>
+                <option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="bloq-motivo">Motivo (opcional)</label>
+            <input id="bloq-motivo" name="motivo" placeholder="Almoço, folga…" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="campo">
+            <label for="bloq-ini">Início</label>
+            <input id="bloq-ini" type="time" name="horaInicio" required />
+          </div>
+          <div class="campo">
+            <label for="bloq-fim">Fim</label>
+            <input id="bloq-fim" type="time" name="horaFim" required />
+          </div>
+        </div>
+        <button class="btn btn-primario btn-sm">Bloquear</button>
+      </form>
+    </details>
+  <% } %>
 </div>
 
-<% if (agendamentos.length === 0) { %>
-  <div class="card"><p class="texto-secundario">Nenhum agendamento para esta data.</p></div>
+<% if (agendamentos.length === 0 && bloqueios.length === 0) { %>
+  <div class="card"><p class="texto-secundario">Nada agendado para esta data.</p></div>
 <% } else { %>
   <%
     // ----- Cálculo do layout da linha do tempo -----------------------------
@@ -35,9 +69,14 @@
       var d = ag.itens.reduce(function (s, it) { return s + (it.servico.duracaoMin || 0) * it.quantidade; }, 0);
       return d > 0 ? d : 30; // produtos / vazio ocupam 30 min visualmente
     }
-    var eventos = agendamentos.map(function (ag) {
+    var eventos = [];
+    agendamentos.forEach(function (ag) {
       var ini = _min(ag.horaInicio);
-      return { ag: ag, ini: ini, fim: ini + _dur(ag) };
+      eventos.push({ tipo: 'ag', ag: ag, ini: ini, fim: ini + _dur(ag) });
+    });
+    bloqueios.forEach(function (bl) {
+      var ini = _min(bl.horaInicio), fim = _min(bl.horaFim);
+      eventos.push({ tipo: 'bloq', bl: bl, ini: ini, fim: Math.max(fim, ini + 15) });
     });
     eventos.sort(function (a, b) { return a.ini - b.ini || a.fim - b.fim; });
 
@@ -90,14 +129,28 @@
            var alt = Math.max(32, (e.fim - e.ini) * PX - 3);
            var largura = 100 / e.cols;
            var esq = e.col * largura;
-           var ag = e.ag;
+           var curto = (e.fim - e.ini) <= 35 ? 'curto' : '';
+           var pos = 'top:' + top + 'px;height:' + alt + 'px;left:calc(' + esq + '% + 2px);width:calc(' + largura + '% - 4px)';
       %>
-        <a class="agenda-bloco st-<%= ag.status %> <%= (e.fim - e.ini) <= 35 ? 'curto' : '' %>" onclick="abrirAg(<%= ag.id %>);return false;" href="#ag-<%= ag.id %>"
-           style="top:<%= top %>px;height:<%= alt %>px;left:calc(<%= esq %>% + 2px);width:calc(<%= largura %>% - 4px)">
-          <span class="agenda-bloco-cliente"><%= ag.clienteNome %></span>
-          <span class="agenda-bloco-serv"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %></span>
-          <span class="agenda-bloco-hora"><%= ag.horaInicio %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome %><% } %></span>
-        </a>
+        <% if (e.tipo === 'ag') { var ag = e.ag; %>
+          <a class="agenda-bloco st-<%= ag.status %> <%= curto %>" onclick="abrirAg(<%= ag.id %>);return false;" href="#ag-<%= ag.id %>" style="<%= pos %>">
+            <span class="agenda-bloco-cliente"><%= ag.clienteNome %></span>
+            <span class="agenda-bloco-serv"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %></span>
+            <span class="agenda-bloco-hora"><%= ag.horaInicio %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome %><% } %></span>
+          </a>
+        <% } else { var bl = e.bl; %>
+          <div class="agenda-bloco bloq <%= curto %>" style="<%= pos %>">
+            <span class="agenda-bloco-cliente"><%= bl.motivo || 'Bloqueado' %></span>
+            <span class="agenda-bloco-hora"><%= bl.horaInicio %>–<%= bl.horaFim %><% if (mostrarBarbeiroNoCard) { %> · <%= bl.usuario.nome %><% } %></span>
+            <% if (ehAdmin) { %>
+              <form method="POST" action="/painel/agenda/bloqueios/<%= bl.id %>/remover" class="agenda-bloco-x" onsubmit="return confirm('Remover este bloqueio?')">
+                <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+                <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+                <button title="Remover bloqueio" type="submit">×</button>
+              </form>
+            <% } %>
+          </div>
+        <% } %>
       <% }) %>
     </div>
   </div>

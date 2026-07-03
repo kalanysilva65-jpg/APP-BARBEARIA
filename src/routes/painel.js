@@ -67,6 +67,9 @@ router.post('/agenda/:id/itens', agendaController.adicionarItem);
 router.post('/agenda/itens/:id/remover', agendaController.removerItem);
 router.post('/agenda/:id/status', agendaController.mudarStatus);
 router.post('/agenda/:id/excluir', agendaController.excluir);
+// Bloqueios direto da agenda (somente admin)
+router.post('/agenda/bloqueios', exigeAdmin, agendaController.criarBloqueio);
+router.post('/agenda/bloqueios/:id/remover', exigeAdmin, agendaController.removerBloqueio);
 
 // --- Clientes (admin + funcionários) --------------------------------------
 // Específicas (/:id/editar, /:id/remover) antes da paramétrica de update (/:id).

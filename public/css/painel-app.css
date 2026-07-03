@@ -216,6 +216,29 @@
 .agenda-bloco.st-cancelado { border-left-color: var(--texto-sutil); background: var(--secao-alt); }
 .agenda-bloco.st-cancelado .agenda-bloco-cliente { text-decoration: line-through; color: var(--texto-secundario); }
 
+/* Bloqueio (Block time) — hachurado, sem clique */
+.agenda-bloco.bloq {
+  border-left-color: var(--texto-sutil);
+  background-color: var(--secao-alt);
+  background-image: repeating-linear-gradient(45deg, transparent 0 6px, rgba(128, 128, 128, 0.14) 6px 12px);
+  color: var(--texto-secundario);
+  cursor: default;
+}
+.agenda-bloco.bloq .agenda-bloco-cliente { color: var(--texto-secundario); }
+.agenda-bloco-x { position: absolute; top: 1px; right: 3px; margin: 0; }
+.agenda-bloco-x button {
+  background: none; border: none; cursor: pointer; padding: 0 3px;
+  font-size: 16px; line-height: 1; color: var(--texto-sutil);
+}
+.agenda-bloco-x button:hover { color: var(--erro); }
+
+/* Ações do topo da agenda + formulário de bloqueio */
+.agenda-acoes-topo { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+.bloq-form > summary { list-style: none; cursor: pointer; display: inline-flex; }
+.bloq-form > summary::-webkit-details-marker { display: none; }
+.bloq-form[open] { flex: 1 1 100%; }
+.bloq-form .form { width: 100%; }
+
 /* Cards de detalhe (recolhíveis) */
 .agenda-detalhe > summary { cursor: pointer; list-style: none; }
 .agenda-detalhe > summary::-webkit-details-marker { display: none; }
