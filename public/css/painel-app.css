@@ -1,0 +1,206 @@
+/* =========================================================================
+   PAINEL DO BARBEIRO — visual "app" (azul + cards + navegação inferior).
+   Escopado em .app-painel para não afetar o agendamento público nem o mestre.
+   Funciona em tema claro e escuro (o cliente/barbeiro escolhe).
+   ========================================================================= */
+.app-painel {
+  --azul: #2f6bff;
+  --azul-hover: #235ce0;
+  --azul-barra: rgba(47, 107, 255, 0.30);
+  background: #f4f5f7;
+}
+[data-tema="escuro"] .app-painel {
+  --azul-barra: rgba(47, 107, 255, 0.30);
+  background: #0d0d0f;
+}
+
+/* Usa a navegação inferior no lugar das abas horizontais do topo. */
+.app-painel .nav-principal { display: none; }
+
+/* Respiro para o conteúdo não ficar atrás da barra inferior fixa. */
+.app-painel .conteudo { padding-bottom: 88px; }
+
+/* Botão primário azul dentro do painel (nos dois temas). */
+.app-painel .btn-primario,
+[data-tema="escuro"] .app-painel .btn-primario { background: var(--azul); color: #fff; }
+.app-painel .btn-primario:hover,
+[data-tema="escuro"] .app-painel .btn-primario:hover { background: var(--azul-hover); }
+
+/* Cards do painel um pouco mais arredondados. */
+.app-painel .card { border-radius: 16px; }
+
+/* ----- Card de destaque: agenda de hoje ---------------------------------- */
+.dash-azul {
+  display: block;
+  background: var(--azul);
+  color: #fff;
+  border-radius: 20px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  text-decoration: none;
+}
+.dash-azul-label { font-size: 13px; color: rgba(255, 255, 255, 0.85); }
+.dash-azul-num { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
+.dash-azul-num .n { font-size: 46px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+.dash-azul-num .u { font-size: 15px; color: rgba(255, 255, 255, 0.9); }
+.dash-azul-rodape {
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dash-azul-prox { font-size: 12px; color: rgba(255, 255, 255, 0.85); }
+.dash-azul-cliente { font-size: 13px; font-weight: 600; }
+
+/* ----- Cards de métrica -------------------------------------------------- */
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.dash-card {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 16px;
+  padding: 16px;
+  display: block;
+  text-decoration: none;
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+.dash-card-titulo { font-size: 13px; font-weight: 600; color: var(--texto); }
+.dash-card-sub { font-size: 11px; color: var(--texto-sutil); margin-top: 2px; }
+.dash-card-num { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 12px 0 10px; }
+
+.barra-prog { height: 6px; background: var(--secao-alt); border-radius: 99px; overflow: hidden; }
+.barra-prog-fill { height: 100%; background: var(--azul); border-radius: 99px; }
+
+.dash-card-linha { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.dash-novos { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+
+/* ----- Faturamento + barras da semana ------------------------------------ */
+.dash-fat { margin-bottom: 12px; }
+.dash-fat-topo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.dash-fat .dash-card-num { margin: 0; }
+.semana { display: flex; align-items: flex-end; gap: 8px; height: 92px; margin-top: 16px; }
+.semana-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; justify-content: flex-end; }
+.semana-bar { width: 100%; background: var(--azul-barra); border-radius: 5px; }
+.semana-bar.hoje { background: var(--azul); }
+.semana-rot { font-size: 10px; color: var(--texto-sutil); }
+.semana-rot.hoje { color: var(--texto); font-weight: 600; }
+
+/* ----- Menu "Mais" (linhas) ---------------------------------------------- */
+.menu-mais { display: flex; flex-direction: column; gap: 8px; }
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  padding: 16px 18px;
+  text-decoration: none;
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+.menu-item-nome { font-size: 15px; font-weight: 500; }
+.menu-item-seta { color: var(--texto-sutil); font-size: 20px; }
+
+/* ----- Card de barbeiro (Equipe) ----------------------------------------- */
+.equipe-topo { display: flex; align-items: center; gap: 14px; }
+.equipe-topo-info h2 { margin: 0; }
+.equipe-foto-form { margin: 0; }
+.equipe-foto {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--secao-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: visible;
+  flex-shrink: 0;
+}
+.equipe-foto img {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.equipe-foto-inicial { font-size: 22px; font-weight: 700; color: var(--texto); }
+.equipe-foto-cam {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--azul);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--superficie);
+}
+
+.equipe-metricas { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+.equipe-metrica-topo { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.equipe-metrica-topo strong { font-size: 16px; }
+
+.equipe-subcards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.equipe-sub {
+  background: var(--secao-alt);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.equipe-sub strong { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+
+.equipe-detalhes summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--texto-secundario);
+  list-style: none;
+}
+.equipe-detalhes summary::-webkit-details-marker { display: none; }
+.equipe-detalhes summary::before { content: '▸ '; }
+.equipe-detalhes[open] summary::before { content: '▾ '; }
+
+/* ----- Navegação inferior (fixa) ----------------------------------------- */
+.nav-inferior {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: var(--superficie);
+  border-top: 1px solid var(--borda);
+  padding: 8px 4px calc(8px + env(safe-area-inset-bottom, 0px));
+}
+.nav-inferior a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  padding: 2px 0;
+  color: var(--texto-sutil);
+  font-size: 10px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.nav-inferior a svg { width: 22px; height: 22px; }
+.nav-inferior a.ativo { color: var(--azul); }
+
+/* Em telas largas, centraliza a barra como um app estreito. */
+@media (min-width: 720px) {
+  .nav-inferior { max-width: 560px; margin: 0 auto; border-radius: 16px 16px 0 0; border: 1px solid var(--borda); border-bottom: none; }
+}

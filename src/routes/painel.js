@@ -12,6 +12,7 @@ const caixaController = require('../controllers/caixaController');
 const comissaoController = require('../controllers/comissaoController');
 const clienteController = require('../controllers/clienteController');
 const planoController = require('../controllers/planoController');
+const dashboardController = require('../controllers/dashboardController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -20,6 +21,17 @@ function uploadFoto(req, res, next) {
     if (err) {
       req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload da imagem.' };
       return res.redirect('/painel/servicos');
+    }
+    next();
+  });
+}
+
+// Upload da foto do barbeiro (volta para a tela de Equipe/Comissões em caso de erro).
+function uploadFotoBarbeiro(req, res, next) {
+  upload.single('foto')(req, res, (err) => {
+    if (err) {
+      req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload da foto.' };
+      return res.redirect('/painel/comissoes');
     }
     next();
   });
@@ -42,15 +54,10 @@ router.use(async (req, res, next) => {
 });
 
 // Painel (dashboard).
-router.get('/', async (req, res) => {
-  // Alerta de estoque baixo visível para o admin.
-  let estoqueBaixo = [];
-  if (req.ehAdmin) {
-    const itens = await prisma.estoque.findMany({ where: { barbeariaId: req.barbeariaId } });
-    estoqueBaixo = itens.filter((i) => i.quantidade <= i.quantidadeMinima);
-  }
-  res.render('painel/dashboard', { titulo: 'Painel', estoqueBaixo });
-});
+router.get('/', dashboardController.ver);
+
+// "Mais" — menu com as demais seções (acesso pela navegação inferior).
+router.get('/mais', (req, res) => res.render('painel/mais', { titulo: 'Mais' }));
 
 // --- Agenda (todos: funcionário vê a sua, admin vê todas) -----------------
 router.get('/agenda', agendaController.verAgenda);
@@ -81,9 +88,10 @@ router.post('/planos/:id/toggle', exigeAdmin, planoController.alternarAtivo);
 router.post('/planos/:id/remover', exigeAdmin, planoController.remover);
 router.post('/planos/:id', exigeAdmin, planoController.atualizar);
 
-// --- Comissões (somente admin) --------------------------------------------
+// --- Equipe / Comissões (somente admin) -----------------------------------
 router.get('/comissoes', exigeAdmin, comissaoController.ver);
 router.post('/comissoes/percentual/:id', exigeAdmin, comissaoController.salvarPercentual);
+router.post('/comissoes/:id/foto', exigeAdmin, uploadFotoBarbeiro, comissaoController.salvarFoto);
 
 // --- Horários & bloqueios (somente admin) ---------------------------------
 router.get('/horarios', exigeAdmin, horarioController.ver);

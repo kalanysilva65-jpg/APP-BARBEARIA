@@ -43,6 +43,7 @@ async function formNovo(req, res) {
 // POST /painel/servicos — cria um serviço/produto
 async function criar(req, res) {
   const nome = (req.body.nome || '').trim();
+  const descricao = (req.body.descricao || '').trim() || null;
   const valor = reaisParaCentavos(req.body.valor);
   const duracaoMin = Math.max(0, parseInt(req.body.duracaoMin, 10) || 0);
   const categoriaId = req.body.categoriaId ? Number(req.body.categoriaId) : null;
@@ -56,7 +57,7 @@ async function criar(req, res) {
     return res.redirect('/painel/servicos/novo');
   }
 
-  await prisma.servico.create({ data: { barbeariaId: req.barbeariaId, nome, valor, duracaoMin, categoriaId, ehProduto, comissaoPercentual, fotoUrl } });
+  await prisma.servico.create({ data: { barbeariaId: req.barbeariaId, nome, descricao, valor, duracaoMin, categoriaId, ehProduto, comissaoPercentual, fotoUrl } });
   req.session.flash = { tipo: 'sucesso', texto: 'Serviço criado.' };
   res.redirect('/painel/servicos');
 }
@@ -79,6 +80,7 @@ async function atualizar(req, res) {
   }
 
   const nome = (req.body.nome || '').trim();
+  const descricao = (req.body.descricao || '').trim() || null;
   const valor = reaisParaCentavos(req.body.valor);
   const duracaoMin = Math.max(0, parseInt(req.body.duracaoMin, 10) || 0);
   const categoriaId = req.body.categoriaId ? Number(req.body.categoriaId) : null;
@@ -91,7 +93,7 @@ async function atualizar(req, res) {
     return res.redirect('/painel/servicos/' + id + '/editar');
   }
 
-  const data = { nome, valor, duracaoMin, categoriaId, ehProduto, comissaoPercentual };
+  const data = { nome, descricao, valor, duracaoMin, categoriaId, ehProduto, comissaoPercentual };
   if (req.file) {
     apagarFoto(servico.fotoUrl); // remove a foto antiga
     data.fotoUrl = '/uploads/' + req.file.filename;

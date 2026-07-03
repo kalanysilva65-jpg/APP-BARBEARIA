@@ -1,8 +1,6 @@
 <div class="cabecalho-pagina">
-  <h1>Comissões</h1>
-  <p class="texto-secundario">
-    Serviços pela % de cada barbeiro · só atendimentos concluídos.
-  </p>
+  <h1>Equipe</h1>
+  <p class="texto-secundario">Desempenho e comissões por barbeiro · só atendimentos concluídos.</p>
 </div>
 
 <!-- Seletor de período e de barbeiro -->
@@ -46,35 +44,57 @@
   </div>
 </div>
 
-<!-- Por barbeiro -->
+<!-- Por barbeiro (card estilo perfil) -->
 <% grupos.forEach(function (g) { %>
-  <div class="card mb-16">
-    <div class="comissao-cabecalho">
-      <div>
+  <div class="card equipe-card mb-16">
+    <div class="equipe-topo">
+      <form method="POST" action="/painel/comissoes/<%= g.barbeiro.id %>/foto" enctype="multipart/form-data" class="equipe-foto-form">
+        <input type="hidden" name="inicio" value="<%= inicioStr %>" />
+        <input type="hidden" name="fim" value="<%= fimStr %>" />
+        <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
+        <label class="equipe-foto" title="Adicionar/trocar foto">
+          <% if (g.barbeiro.fotoUrl) { %>
+            <img src="<%= g.barbeiro.fotoUrl %>" alt="Foto de <%= g.barbeiro.nome %>" />
+          <% } else { %>
+            <span class="equipe-foto-inicial"><%= g.barbeiro.nome.charAt(0).toUpperCase() %></span>
+          <% } %>
+          <span class="equipe-foto-cam" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </span>
+          <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
+        </label>
+      </form>
+      <div class="equipe-topo-info">
         <h2><%= g.barbeiro.nome %></h2>
         <span class="texto-sutil"><%= g.qtd %> atendimento(s) concluído(s)</span>
       </div>
-      <div class="comissao-numeros">
-        <div class="comissao-num">
-          <span class="texto-sutil">Serviços</span>
-          <strong><%= fmtBRL(g.servicosTotal) %></strong>
-        </div>
-        <div class="comissao-num">
-          <span class="texto-sutil">Produtos</span>
-          <strong><%= fmtBRL(g.produtosTotal) %></strong>
-        </div>
-        <div class="comissao-num">
+    </div>
+
+    <div class="equipe-metricas">
+      <div class="equipe-metrica">
+        <div class="equipe-metrica-topo">
           <span class="texto-sutil">Ticket médio</span>
           <strong><%= fmtBRL(g.ticketMedio) %></strong>
         </div>
-        <div class="comissao-num">
+        <div class="barra-prog"><div class="barra-prog-fill" style="width:<%= Math.round((g.ticketMedio / maxTicket) * 100) %>%"></div></div>
+      </div>
+      <div class="equipe-metrica">
+        <div class="equipe-metrica-topo">
           <span class="texto-sutil">Ocupação</span>
           <strong><%= g.ocupacaoPct === null ? '—' : g.ocupacaoPct + '%' %></strong>
         </div>
-        <div class="comissao-num">
-          <span class="texto-sutil">Comissão</span>
-          <strong class="valor-entrada"><%= fmtBRL(g.comissao) %></strong>
-        </div>
+        <div class="barra-prog"><div class="barra-prog-fill" style="width:<%= g.ocupacaoPct || 0 %>%"></div></div>
+      </div>
+    </div>
+
+    <div class="equipe-subcards">
+      <div class="equipe-sub">
+        <span class="texto-sutil">Faturamento</span>
+        <strong><%= fmtBRL(g.faturadoTotal) %></strong>
+      </div>
+      <div class="equipe-sub">
+        <span class="texto-sutil">Comissão</span>
+        <strong class="valor-entrada"><%= fmtBRL(g.comissao) %></strong>
       </div>
     </div>
 
@@ -92,33 +112,36 @@
     <% if (g.atendimentos.length === 0) { %>
       <p class="texto-secundario mt-16">Nenhum atendimento concluído neste período.</p>
     <% } else { %>
-      <div class="tabela-rolagem">
-        <table class="tabela mt-16">
-          <thead>
-            <tr>
-              <th>Data</th><th>Cliente</th><th>Itens</th>
-              <th class="col-valor">Serviços</th><th class="col-valor">Produtos</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% g.atendimentos.forEach(function (a) { %>
+      <details class="equipe-detalhes mt-16">
+        <summary>Ver atendimentos (<%= g.atendimentos.length %>)</summary>
+        <div class="tabela-rolagem">
+          <table class="tabela mt-16">
+            <thead>
               <tr>
-                <td><%= fmtData(a.ag.data) %></td>
-                <td><%= a.ag.clienteNome %><% if (a.viaPlano) { %> <span class="status">plano</span><% } %></td>
-                <td>
-                  <% a.itens.forEach(function (it) { %>
-                    <span class="<%= it.ehProduto ? 'item-produto' : '' %>">
-                      <%= it.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %><%= it.ehProduto ? ' (produto)' : '' %>
-                    </span><br />
-                  <% }) %>
-                </td>
-                <td class="col-valor"><%= a.servicosSub > 0 ? fmtBRL(a.servicosSub) : '—' %></td>
-                <td class="col-valor"><%= a.produtosSub > 0 ? fmtBRL(a.produtosSub) : '—' %></td>
+                <th>Data</th><th>Cliente</th><th>Itens</th>
+                <th class="col-valor">Serviços</th><th class="col-valor">Produtos</th>
               </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              <% g.atendimentos.forEach(function (a) { %>
+                <tr>
+                  <td><%= fmtData(a.ag.data) %></td>
+                  <td><%= a.ag.clienteNome %><% if (a.viaPlano) { %> <span class="status">plano</span><% } %></td>
+                  <td>
+                    <% a.itens.forEach(function (it) { %>
+                      <span class="<%= it.ehProduto ? 'item-produto' : '' %>">
+                        <%= it.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %><%= it.ehProduto ? ' (produto)' : '' %>
+                      </span><br />
+                    <% }) %>
+                  </td>
+                  <td class="col-valor"><%= a.servicosSub > 0 ? fmtBRL(a.servicosSub) : '—' %></td>
+                  <td class="col-valor"><%= a.produtosSub > 0 ? fmtBRL(a.produtosSub) : '—' %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </details>
     <% } %>
   </div>
 <% }) %>

@@ -11,12 +11,12 @@
   </p>
 </div>
 
-<div class="lista-opcoes">
+<div class="grade-opcoes">
   <% barbeiros.forEach(function (b) { %>
-    <a class="opcao-selecionavel opcao-barbeiro"
+    <a class="card-barbeiro opcao-toggle"
        href="/agendar/horario?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= b.id %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
       <span class="avatar"><%= b.nome.charAt(0).toUpperCase() %></span>
-      <span class="opcao-nome"><%= b.nome %></span>
+      <span class="card-barbeiro-nome"><%= b.nome %></span>
     </a>
   <% }) %>
 </div>

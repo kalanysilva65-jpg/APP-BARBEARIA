@@ -5,14 +5,14 @@
   </div>
 <% } else { %>
   <a href="/agendar/plano" class="plano-banner">
-    <span class="plano-label">Tem um plano?</span>
-    <span class="btn-plano-topo">
-      Clique aqui
-      <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <line x1="1" y1="5" x2="11" y2="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M7.5 1.5 L11.5 5 L7.5 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <span class="plano-esquerda">
+      <svg class="plano-coroa" width="24" height="22" viewBox="0 0 24 24" fill="#e0a92e" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 7l4.6 3.3L12 3.6l5.4 6.7L22 7l-1.9 11.2H3.9L2 7z"/>
+        <rect x="4" y="19.4" width="16" height="2.4" rx="1.2"/>
       </svg>
+      <span class="plano-label">Tem um plano?</span>
     </span>
+    <span class="btn-plano-topo">Clique aqui</span>
   </a>
 <% } %>
 
@@ -25,23 +25,23 @@
   <% } %>
 </div>
 
+<%
+  // Ícone de relógio reutilizado na duração dos cards.
+  function iconeRelogio() { return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'; }
+%>
+
 <% if (assinatura) { %>
   <%/* Plano: seleção única direta por link */%>
-  <div class="lista-opcoes">
+  <div class="grade-opcoes">
     <% servicos.forEach(function (s) { %>
-      <a class="opcao-selecionavel opcao-servico"
-         href="/agendar/barbeiro?servicoIds=<%= s.id %>&assinatura=<%= assinatura.id %>">
-        <span class="opcao-esquerda">
-          <% if (s.fotoUrl) { %><img class="opcao-thumb" src="<%= s.fotoUrl %>" alt="" /><% } %>
-          <span class="opcao-info">
-            <span class="opcao-nome"><%= s.nome %></span>
-            <% if (s.categoria) { %><span class="texto-sutil"><%= s.categoria.nome %></span><% } %>
-          </span>
-        </span>
-        <span class="opcao-meta">
-          <span class="opcao-valor">Incluso</span>
-          <% if (s.duracaoMin > 0) { %><span class="texto-sutil"><%= s.duracaoMin %> min</span><% } %>
-        </span>
+      <a class="card-opcao opcao-toggle" href="/agendar/barbeiro?servicoIds=<%= s.id %>&assinatura=<%= assinatura.id %>">
+        <div class="card-opcao-nome"><%= s.nome %></div>
+        <% var descServico = s.descricao || (s.categoria ? s.categoria.nome : ''); %>
+        <% if (descServico) { %><div class="card-opcao-desc"><%= descServico %></div><% } %>
+        <div class="card-opcao-rodape">
+          <span class="card-opcao-valor">Incluso</span>
+          <% if (s.duracaoMin > 0) { %><span class="card-opcao-duracao"><%- iconeRelogio() %> <%= s.duracaoMin %> min</span><% } %>
+        </div>
       </a>
     <% }) %>
   </div>
@@ -50,30 +50,25 @@
   <form id="form-servicos" action="/agendar/barbeiro" method="GET" onsubmit="return validarSelecao()">
     <input type="hidden" name="servicoIds" id="servicoIds-input" value="" />
 
-    <div class="lista-opcoes" id="lista-servicos">
+    <div class="grade-opcoes" id="lista-servicos">
       <% servicos.forEach(function (s) { %>
-        <div class="opcao-selecionavel opcao-servico opcao-toggle"
-             data-id="<%= s.id %>"
-             onclick="toggleServico(this)"
-             style="cursor:pointer">
-          <span class="opcao-esquerda">
-            <% if (s.fotoUrl) { %><img class="opcao-thumb" src="<%= s.fotoUrl %>" alt="" /><% } %>
-            <span class="opcao-info">
-              <span class="opcao-nome"><%= s.nome %></span>
-              <% if (s.categoria) { %><span class="texto-sutil"><%= s.categoria.nome %></span><% } %>
-            </span>
-          </span>
-          <span class="opcao-meta">
-            <span class="opcao-valor"><%= fmtBRL(s.valor) %></span>
-            <% if (s.duracaoMin > 0) { %><span class="texto-sutil"><%= s.duracaoMin %> min</span><% } %>
-          </span>
+        <div class="card-opcao opcao-toggle" data-id="<%= s.id %>" onclick="toggleServico(this)">
+          <div class="card-opcao-nome"><%= s.nome %></div>
+          <% var descServico = s.descricao || (s.categoria ? s.categoria.nome : ''); %>
+        <% if (descServico) { %><div class="card-opcao-desc"><%= descServico %></div><% } %>
+          <div class="card-opcao-rodape">
+            <span class="card-opcao-valor"><%= fmtBRL(s.valor) %></span>
+            <% if (s.duracaoMin > 0) { %><span class="card-opcao-duracao"><%- iconeRelogio() %> <%= s.duracaoMin %> min</span><% } %>
+          </div>
         </div>
       <% }) %>
     </div>
 
-    <button class="btn btn-primario btn-bloco" style="margin-top:24px" type="submit" id="btn-continuar" disabled>
-      Continuar
-    </button>
+    <div class="acao-central">
+      <button class="btn btn-primario btn-pill" type="submit" id="btn-continuar" disabled>
+        Continuar
+      </button>
+    </div>
   </form>
 
   <script>

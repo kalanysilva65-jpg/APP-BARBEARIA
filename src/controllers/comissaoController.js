@@ -3,6 +3,8 @@
 // Relatório sobre dados existentes, usando o valorUnitario congelado e só
 // agendamentos CONCLUÍDOS no período.
 const prisma = require('../config/db');
+const fs = require('fs');
+const path = require('path');
 const { COMISSAO_PRODUTO_PERCENTUAL } = require('../config/constantes');
 const { paraMinutos } = require('../services/disponibilidade');
 
@@ -173,6 +175,8 @@ async function ver(req, res) {
   const totalServicos = grupos.reduce((s, g) => s + g.servicosTotal, 0);
   const totalProdutos = grupos.reduce((s, g) => s + g.produtosTotal, 0);
   const totalGeralComissao = grupos.reduce((s, g) => s + g.comissao, 0);
+  // Maior ticket médio da seleção — usado para escalar a barrinha do card.
+  const maxTicket = Math.max(1, ...grupos.map((g) => g.ticketMedio));
 
   // Atalhos de período
   const hoje = new Date();
@@ -192,6 +196,7 @@ async function ver(req, res) {
     totalServicos,
     totalProdutos,
     totalGeralComissao,
+    maxTicket,
     comissaoProdutoPct: COMISSAO_PRODUTO_PERCENTUAL,
     presetHoje: { inicio: iso(hoje), fim: iso(hoje) },
     presetSemana: { inicio: iso(seg), fim: iso(dom) },
@@ -218,4 +223,29 @@ async function salvarPercentual(req, res) {
   res.redirect('/painel/comissoes' + (s ? '?' + s : ''));
 }
 
-module.exports = { ver, salvarPercentual };
+// POST /painel/comissoes/:id/foto — envia/troca a foto de um barbeiro da barbearia.
+async function salvarFoto(req, res) {
+  const id = Number(req.params.id);
+  const barbeiro = await prisma.usuario.findFirst({ where: { id, barbeariaId: req.barbeariaId } });
+
+  const qs = new URLSearchParams();
+  if (req.body.inicio) qs.set('inicio', req.body.inicio);
+  if (req.body.fim) qs.set('fim', req.body.fim);
+  if (req.body.barbeiro) qs.set('barbeiro', req.body.barbeiro);
+  const destino = '/painel/comissoes' + (qs.toString() ? '?' + qs.toString() : '');
+
+  if (!barbeiro || !req.file) {
+    if (req.file) fs.unlink(path.join(__dirname, '..', '..', 'uploads', req.file.filename), () => {});
+    return res.redirect(destino);
+  }
+
+  // Apaga a foto anterior, se houver.
+  if (barbeiro.fotoUrl) {
+    fs.unlink(path.join(__dirname, '..', '..', barbeiro.fotoUrl.replace(/^\//, '')), () => {});
+  }
+  await prisma.usuario.update({ where: { id }, data: { fotoUrl: '/uploads/' + req.file.filename } });
+  req.session.flash = { tipo: 'sucesso', texto: 'Foto atualizada.' };
+  res.redirect(destino);
+}
+
+module.exports = { ver, salvarPercentual, salvarFoto };

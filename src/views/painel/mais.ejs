@@ -1,0 +1,37 @@
+<div class="cabecalho-pagina">
+  <h1>Mais</h1>
+  <p class="texto-secundario">Outras seções do painel.</p>
+</div>
+
+<div class="menu-mais">
+  <a href="/painel/planos" class="menu-item">
+    <span class="menu-item-nome">Planos</span>
+    <span class="menu-item-seta">›</span>
+  </a>
+  <% if (ehAdmin) { %>
+    <a href="/painel/servicos" class="menu-item">
+      <span class="menu-item-nome">Serviços &amp; Produtos</span>
+      <span class="menu-item-seta">›</span>
+    </a>
+    <a href="/painel/estoque" class="menu-item">
+      <span class="menu-item-nome">Estoque</span>
+      <span class="menu-item-seta">›</span>
+    </a>
+    <a href="/painel/comissoes" class="menu-item">
+      <span class="menu-item-nome">Equipe</span>
+      <span class="menu-item-seta">›</span>
+    </a>
+    <a href="/painel/horarios" class="menu-item">
+      <span class="menu-item-nome">Horários</span>
+      <span class="menu-item-seta">›</span>
+    </a>
+  <% } %>
+</div>
+
+<div class="card mt-16">
+  <div class="dash-card-titulo"><%= usuario.nome %></div>
+  <div class="dash-card-sub"><%= ehDono ? 'Dono do sistema' : (usuario.papel === 'admin' ? 'Admin' : 'Barbeiro') %><%= barbeariaAtual ? ' · ' + barbeariaAtual.nome : '' %></div>
+  <form method="POST" action="/logout" class="mt-16">
+    <button class="btn btn-secundario btn-bloco" type="submit">Sair</button>
+  </form>
+</div>

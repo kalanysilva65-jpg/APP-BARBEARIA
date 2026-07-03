@@ -73,12 +73,12 @@ async function popularConteudo(barbeariaId) {
 
     await prisma.servico.createMany({
       data: [
-        { barbeariaId, nome: 'Corte Masculino', categoriaId: catCortes.id, valor: 4000, duracaoMin: 30 },
-        { barbeariaId, nome: 'Corte + Barba', categoriaId: catCortes.id, valor: 6000, duracaoMin: 60 },
-        { barbeariaId, nome: 'Barba', categoriaId: catBarba.id, valor: 3000, duracaoMin: 30 },
-        { barbeariaId, nome: 'Pigmentação', categoriaId: catCortes.id, valor: 7000, duracaoMin: 60 },
-        { barbeariaId, nome: 'Pomada Modeladora', categoriaId: catPomadas.id, valor: 3500, duracaoMin: 0, ehProduto: true },
-        { barbeariaId, nome: 'Creme Hidratante', categoriaId: catCremes.id, valor: 2500, duracaoMin: 0, ehProduto: true },
+        { barbeariaId, nome: 'Corte Masculino', descricao: 'Corte tradicional com finalização.', categoriaId: catCortes.id, valor: 4000, duracaoMin: 30 },
+        { barbeariaId, nome: 'Corte + Barba', descricao: 'Corte completo com barba alinhada.', categoriaId: catCortes.id, valor: 6000, duracaoMin: 60 },
+        { barbeariaId, nome: 'Barba', descricao: 'Ajuste e modelagem com acabamento.', categoriaId: catBarba.id, valor: 3000, duracaoMin: 30 },
+        { barbeariaId, nome: 'Pigmentação', descricao: 'Realce capilar com acabamento natural.', categoriaId: catCortes.id, valor: 7000, duracaoMin: 60 },
+        { barbeariaId, nome: 'Pomada Modeladora', descricao: 'Fixação e brilho para o penteado.', categoriaId: catPomadas.id, valor: 3500, duracaoMin: 0, ehProduto: true },
+        { barbeariaId, nome: 'Creme Hidratante', descricao: 'Hidratação para cabelo e barba.', categoriaId: catCremes.id, valor: 2500, duracaoMin: 0, ehProduto: true },
       ],
     });
   }

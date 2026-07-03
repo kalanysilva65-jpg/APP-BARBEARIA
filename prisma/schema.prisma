@@ -51,6 +51,7 @@ model Usuario {
   nome        String
   email       String
   senhaHash   String   @map("senha_hash")
+  fotoUrl     String?  @map("foto_url") // foto do barbeiro (em /uploads)
   papel       String // "dono" | "admin" | "funcionario"
   ativo       Boolean  @default(true)
   comissaoPercentual Float @default(50) @map("comissao_percentual") // % de comissão do barbeiro
@@ -115,6 +116,7 @@ model Servico {
   id          Int     @id @default(autoincrement())
   barbeariaId Int     @map("barbearia_id")
   nome        String
+  descricao   String? // descrição curta exibida no card de agendamento
   categoriaId Int?    @map("categoria_id")
   valor       Int // centavos
   duracaoMin  Int     @map("duracao_min") // usado para calcular os horários

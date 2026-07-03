@@ -1554,3 +1554,110 @@ input[type='file'] {
   background: var(--acao-suave, rgba(0,0,0,0.04));
   box-shadow: 0 0 0 2px var(--acao);
 }
+
+/* =========================================================================
+   AGENDAMENTO — cards em grade (concept art). Mesmo estilo nas 4 etapas.
+   ========================================================================= */
+
+/* Banner "Tem um plano?" totalmente arredondado (pílula), igual aos botões. */
+.plano-banner { border-radius: 999px; padding: 14px 22px; }
+
+/* Brasão dourado do banner "Tem um plano?" */
+.plano-esquerda {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.plano-coroa { flex-shrink: 0; }
+
+/* Botões em pílula (área pública).
+   Especificidade extra (.btn.btn-pill / .plano-banner ...) para vencer a regra
+   `.btn { border-radius: var(--raio-btn) }` do tema, que carrega depois. */
+.btn.btn-pill,
+.btn-pill { border-radius: 999px; }
+.plano-banner .btn-plano-topo,
+.btn-plano-topo { border-radius: 999px; }
+.acao-central {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+.acao-central .btn { padding: 13px 30px; }
+
+/* Grade de cards (serviços e barbeiros) */
+.grade-opcoes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (max-width: 390px) {
+  .grade-opcoes { grid-template-columns: 1fr; }
+}
+
+/* Card de opção (serviço) — layout vertical com divisória */
+.card-opcao {
+  display: flex;
+  flex-direction: column;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 16px;
+  padding: 20px;
+  min-height: 150px;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--texto);
+}
+.card-opcao-nome {
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.card-opcao-desc {
+  margin-top: 6px;
+  color: var(--texto-secundario);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.card-opcao-rodape {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--borda);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.card-opcao-valor { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+.card-opcao-duracao {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--texto-secundario);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.card-opcao-duracao svg { opacity: 0.7; flex-shrink: 0; }
+.card-opcao.selecionado {
+  border-color: var(--acao);
+  box-shadow: 0 0 0 2px var(--acao);
+}
+
+/* Card de barbeiro (etapa 2) — mesmo cartão, avatar + nome */
+.card-barbeiro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid var(--borda);
+  background: var(--superficie);
+  text-decoration: none;
+  color: var(--texto);
+}
+.card-barbeiro .avatar { width: 46px; height: 46px; }
+.card-barbeiro-nome { font-weight: 600; font-size: 16px; letter-spacing: -0.01em; }
+
+/* Chips de data em pílula (etapa 3) */
+.lista-datas .chip-data { border-radius: 100px; padding: 10px 16px; }

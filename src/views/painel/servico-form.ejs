@@ -13,6 +13,14 @@
       <input id="nome" name="nome" value="<%= servico ? servico.nome : '' %>" required autofocus />
     </div>
 
+    <div class="campo">
+      <label for="descricao">Descrição <span class="texto-sutil">(opcional)</span></label>
+      <input id="descricao" name="descricao" maxlength="80"
+             placeholder="Ex.: Corte tradicional com finalização."
+             value="<%= servico && servico.descricao ? servico.descricao : '' %>" />
+      <span class="texto-sutil">Aparece embaixo do nome no agendamento do cliente.</span>
+    </div>
+
     <div class="grid-2">
       <div class="campo">
         <label for="valor">Valor (R$)</label>

@@ -13,6 +13,7 @@
     />
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/tema-minimal.css" />
+    <link rel="stylesheet" href="/css/painel-app.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#111111" />
     <link rel="apple-touch-icon" href="/app-icon.svg" />
@@ -20,11 +21,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
   </head>
-  <body>
+  <body class="app-painel">
     <%- include('../partials/header-painel') %>
     <main class="container conteudo">
       <%- include('../partials/flash') %> <%- body %>
     </main>
+    <%- include('../partials/nav-inferior') %>
     <script>
       function toggleTema() {
         const escuro = document.documentElement.getAttribute('data-tema') === 'escuro';
