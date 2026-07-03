@@ -197,19 +197,21 @@
 .agenda-bloco {
   position: absolute;
   border-radius: 10px;
-  padding: 5px 8px;
+  padding: 4px 9px;
   overflow: hidden;
   text-decoration: none;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+  display: block;
+  line-height: 1.25;
   border-left: 3px solid var(--azul);
   background: rgba(47, 107, 255, 0.14);
   color: var(--texto);
 }
-.agenda-bloco-cliente { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.agenda-bloco-serv { font-size: 11px; color: var(--texto-secundario); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.agenda-bloco-hora { font-size: 10px; color: var(--texto-sutil); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-bloco-cliente { display: block; font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-bloco-serv { display: block; font-size: 11px; color: var(--texto-secundario); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-bloco-hora { display: block; font-size: 10px; color: var(--texto-sutil); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Blocos curtos (30 min): mostra só nome + horário, sem a linha do serviço. */
+.agenda-bloco.curto { padding-top: 3px; }
+.agenda-bloco.curto .agenda-bloco-serv { display: none; }
 .agenda-bloco.st-concluido { border-left-color: var(--sucesso); background: rgba(34, 197, 94, 0.14); }
 .agenda-bloco.st-cancelado { border-left-color: var(--texto-sutil); background: var(--secao-alt); }
 .agenda-bloco.st-cancelado .agenda-bloco-cliente { text-decoration: line-through; color: var(--texto-secundario); }

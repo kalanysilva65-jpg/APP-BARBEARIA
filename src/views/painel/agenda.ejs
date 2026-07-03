@@ -92,7 +92,7 @@
            var esq = e.col * largura;
            var ag = e.ag;
       %>
-        <a class="agenda-bloco st-<%= ag.status %>" onclick="abrirAg(<%= ag.id %>);return false;" href="#ag-<%= ag.id %>"
+        <a class="agenda-bloco st-<%= ag.status %> <%= (e.fim - e.ini) <= 35 ? 'curto' : '' %>" onclick="abrirAg(<%= ag.id %>);return false;" href="#ag-<%= ag.id %>"
            style="top:<%= top %>px;height:<%= alt %>px;left:calc(<%= esq %>% + 2px);width:calc(<%= largura %>% - 4px)">
           <span class="agenda-bloco-cliente"><%= ag.clienteNome %></span>
           <span class="agenda-bloco-serv"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %></span>
