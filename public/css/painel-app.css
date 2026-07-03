@@ -269,6 +269,24 @@
 }
 .equipe-sub strong { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
 
+.equipe-metrica-legenda { display: block; font-size: 10.5px; color: var(--texto-sutil); margin-top: 5px; }
+
+/* ----- Card compacto (lista) — clicável, abre o detalhe em pop-up -------- */
+.equipe-mini { cursor: pointer; }
+.equipe-mini-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.equipe-mini-topo h2 { margin: 0; font-size: 22px; line-height: 1.15; }
+.equipe-foto--view { width: 52px; height: 52px; cursor: default; }
+.equipe-foto--view img,
+.equipe-foto--view .equipe-foto-inicial { width: 52px; height: 52px; }
+
+/* ----- Pop-up de detalhe do barbeiro -------------------------------------- */
+.equipe-modal-topo { align-items: flex-start; gap: 12px; }
+.equipe-modal-nome { flex: 1; min-width: 0; }
+.equipe-modal-topo .equipe-foto-form { flex-shrink: 0; }
+
+.equipe-vendas-topo { margin-bottom: 10px; }
+.equipe-semana { margin-top: 14px; }
+
 .equipe-detalhes summary {
   cursor: pointer;
   font-size: 13px;

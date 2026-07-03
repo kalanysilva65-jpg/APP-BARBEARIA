@@ -141,6 +141,7 @@ async function ver(req, res) {
   }
 
   // Comissão = serviços × (% do barbeiro) + produtos × (% fixo de produto)
+  const rotulosSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
   const todosGrupos = Array.from(mapa.values()).map((g) => {
     const pct = g.barbeiro.comissaoPercentual ?? 50;
     const comissaoServicos = Math.round(g.servicosTotal * (pct / 100));
@@ -151,6 +152,16 @@ async function ver(req, res) {
     // Ocupação = tempo ocupado ÷ jornada disponível (null se não há jornada no período).
     const disponivelMin = dispMin.get(g.barbeiro.id) || 0;
     const ocupacaoPct = disponivelMin > 0 ? Math.round((g.ocupadoMin / disponivelMin) * 100) : null;
+
+    // Faturado por dia da semana (soma de todos os atendimentos do período) — gráfico do detalhe.
+    const porDia = [0, 0, 0, 0, 0, 0, 0];
+    for (const a of g.atendimentos) {
+      const idx = (new Date(a.ag.data).getDay() + 6) % 7; // 0 = segunda
+      porDia[idx] += a.servicosSub + a.produtosSub;
+    }
+    const barsSemana = rotulosSemana.map((rotulo, i) => ({ rotulo, valor: porDia[i] }));
+    const maxBarSemana = Math.max(1, ...porDia);
+
     return {
       ...g,
       comissaoServicos,
@@ -159,6 +170,8 @@ async function ver(req, res) {
       faturadoTotal,
       ticketMedio,
       ocupacaoPct,
+      barsSemana,
+      maxBarSemana,
     };
   });
 
