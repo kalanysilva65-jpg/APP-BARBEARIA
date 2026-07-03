@@ -13,11 +13,16 @@ const prisma = require('../config/db');
 // Subdomínios que NÃO representam uma barbearia.
 const SUBDOMINIOS_RESERVADOS = new Set(['www', 'admin', 'painel', 'app', 'api', 'mestre']);
 
+// Endereço IPv4 puro (ex.: "192.168.2.107") — usado para testar em outros
+// aparelhos na mesma rede local. Não tem subdomínio de verdade.
+const REGEX_IPV4 = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+
 // Extrai o slug da barbearia a partir do hostname.
 // Ex.: "barbearia1.seuapp.com" -> "barbearia1"; "barbearia1.localhost" -> "barbearia1".
 // localhost puro / IP não têm subdomínio utilizável -> null.
 function extrairSlug(req) {
   const host = (req.hostname || '').toLowerCase();
+  if (REGEX_IPV4.test(host)) return null; // ex.: acesso via IP da rede local (celular/PC de teste)
   const partes = host.split('.');
   const ehLocalhost = partes[partes.length - 1] === 'localhost';
   const minPartes = ehLocalhost ? 2 : 3; // sub.localhost (2) ou sub.dominio.tld (3)
