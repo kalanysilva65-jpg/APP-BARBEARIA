@@ -13,6 +13,7 @@ const comissaoController = require('../controllers/comissaoController');
 const clienteController = require('../controllers/clienteController');
 const planoController = require('../controllers/planoController');
 const dashboardController = require('../controllers/dashboardController');
+const perfilController = require('../controllers/perfilController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -21,6 +22,17 @@ function uploadFoto(req, res, next) {
     if (err) {
       req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload da imagem.' };
       return res.redirect('/painel/servicos');
+    }
+    next();
+  });
+}
+
+// Upload da foto do próprio usuário logado (hero do painel).
+function uploadFotoPerfil(req, res, next) {
+  upload.single('foto')(req, res, (err) => {
+    if (err) {
+      req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload da imagem.' };
+      return res.redirect(req.get('Referer') || '/painel');
     }
     next();
   });
@@ -50,11 +62,16 @@ router.use(async (req, res, next) => {
   res.locals.ehDono = u.papel === 'dono';
   const barbearia = await prisma.barbearia.findUnique({ where: { id: req.barbeariaId } });
   res.locals.barbeariaAtual = barbearia || null;
+  const usuarioDb = await prisma.usuario.findUnique({ where: { id: u.id } });
+  res.locals.usuarioFotoUrl = usuarioDb ? usuarioDb.fotoUrl : null;
   next();
 });
 
 // Painel (dashboard).
 router.get('/', dashboardController.ver);
+
+// Foto do próprio usuário logado (hero do painel).
+router.post('/perfil/foto', uploadFotoPerfil, perfilController.salvarFoto);
 
 // "Mais" — menu com as demais seções (acesso pela navegação inferior).
 router.get('/mais', (req, res) => res.render('painel/mais', { titulo: 'Mais' }));
