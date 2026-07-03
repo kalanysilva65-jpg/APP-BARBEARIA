@@ -22,23 +22,98 @@
 </div>
 
 <div class="mb-16">
-  <a href="/painel/agenda/novo" class="btn btn-primario btn-sm">+ Novo agendamento</a>
+  <a href="/painel/agenda/novo" class="btn btn-primario btn-sm btn-pill">+ Novo agendamento</a>
 </div>
 
 <% if (agendamentos.length === 0) { %>
   <div class="card"><p class="texto-secundario">Nenhum agendamento para esta data.</p></div>
 <% } else { %>
+  <%
+    // ----- Cálculo do layout da linha do tempo -----------------------------
+    function _min(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
+    function _dur(ag) {
+      var d = ag.itens.reduce(function (s, it) { return s + (it.servico.duracaoMin || 0) * it.quantidade; }, 0);
+      return d > 0 ? d : 30; // produtos / vazio ocupam 30 min visualmente
+    }
+    var eventos = agendamentos.map(function (ag) {
+      var ini = _min(ag.horaInicio);
+      return { ag: ag, ini: ini, fim: ini + _dur(ag) };
+    });
+    eventos.sort(function (a, b) { return a.ini - b.ini || a.fim - b.fim; });
+
+    var minIni = Math.min.apply(null, eventos.map(function (e) { return e.ini; }));
+    var maxFim = Math.max.apply(null, eventos.map(function (e) { return e.fim; }));
+    var hIni = Math.floor(minIni / 60);
+    var hFim = Math.ceil(maxFim / 60);
+    if (hFim <= hIni) hFim = hIni + 1;
+    var PX = 1.35; // pixels por minuto
+
+    // Colisão: agrupa em "clusters" que se encadeiam e distribui em colunas.
+    var clusters = [], cur = [], curEnd = -1;
+    eventos.forEach(function (e) {
+      if (cur.length && e.ini >= curEnd) { clusters.push(cur); cur = []; curEnd = -1; }
+      cur.push(e); curEnd = Math.max(curEnd, e.fim);
+    });
+    if (cur.length) clusters.push(cur);
+    clusters.forEach(function (cl) {
+      var colsEnd = [];
+      cl.forEach(function (e) {
+        var ok = false;
+        for (var i = 0; i < colsEnd.length; i++) { if (e.ini >= colsEnd[i]) { e.col = i; colsEnd[i] = e.fim; ok = true; break; } }
+        if (!ok) { e.col = colsEnd.length; colsEnd.push(e.fim); }
+      });
+      cl.forEach(function (e) { e.cols = colsEnd.length; });
+    });
+
+    var alturaTotal = (hFim - hIni) * 60 * PX;
+    // Linha "agora" (só se a data vista for hoje).
+    var agoraDate = new Date();
+    var agoraMin = agoraDate.getHours() * 60 + agoraDate.getMinutes();
+    var ehHoje = (dataStr === dataHoje);
+  %>
+
+  <div class="agenda-timeline" style="height:<%= alturaTotal %>px">
+    <% for (var h = hIni; h <= hFim; h++) { %>
+      <div class="agenda-hora" style="top:<%= (h - hIni) * 60 * PX %>px">
+        <span class="agenda-hora-rot"><%= (h % 24) + ':00' %></span>
+        <span class="agenda-hora-linha"></span>
+      </div>
+    <% } %>
+
+    <% if (ehHoje && agoraMin >= hIni * 60 && agoraMin <= hFim * 60) { %>
+      <div class="agenda-agora" style="top:<%= (agoraMin - hIni * 60) * PX %>px"><span></span></div>
+    <% } %>
+
+    <div class="agenda-blocos">
+      <% eventos.forEach(function (e) {
+           var top = (e.ini - hIni * 60) * PX;
+           var alt = Math.max(32, (e.fim - e.ini) * PX - 3);
+           var largura = 100 / e.cols;
+           var esq = e.col * largura;
+           var ag = e.ag;
+      %>
+        <a class="agenda-bloco st-<%= ag.status %>" onclick="abrirAg(<%= ag.id %>);return false;" href="#ag-<%= ag.id %>"
+           style="top:<%= top %>px;height:<%= alt %>px;left:calc(<%= esq %>% + 2px);width:calc(<%= largura %>% - 4px)">
+          <span class="agenda-bloco-cliente"><%= ag.clienteNome %></span>
+          <span class="agenda-bloco-serv"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %></span>
+          <span class="agenda-bloco-hora"><%= ag.horaInicio %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome %><% } %></span>
+        </a>
+      <% }) %>
+    </div>
+  </div>
+
+  <p class="texto-sutil mb-16">Toque num atendimento para ver os detalhes e ações.</p>
+
   <div class="lista-agenda">
     <% agendamentos.forEach(function (ag) { %>
-      <div class="card agendamento">
-        <div class="agendamento-topo">
+      <details id="ag-<%= ag.id %>" class="card agendamento agenda-detalhe">
+        <summary class="agenda-detalhe-resumo">
           <span class="agendamento-hora"><%= ag.horaInicio %></span>
+          <span class="agenda-detalhe-nome"><%= ag.clienteNome %><% if (mostrarBarbeiroNoCard) { %> <span class="texto-sutil">· <%= ag.usuario.nome %></span><% } %></span>
           <span class="status status-<%= ag.status %>"><%= ag.status %></span>
-        </div>
+        </summary>
 
-        <div class="agendamento-cliente">
-          <strong><%= ag.clienteNome %></strong>
-          <% if (mostrarBarbeiroNoCard) { %><span class="texto-sutil"> · <%= ag.usuario.nome %></span><% } %>
+        <div class="agendamento-cliente mt-16">
           <div class="texto-sutil"><%= ag.clienteEmail %> · <%= ag.clienteTelefone %></div>
         </div>
 
@@ -66,7 +141,6 @@
           <strong><%= fmtBRL(ag.valorTotal) %></strong>
         </div>
 
-        <!-- Adicionar item -->
         <form method="POST" action="/painel/agenda/<%= ag.id %>/itens" class="form-add-item">
           <input type="hidden" name="retornoData" value="<%= dataStr %>" />
           <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
@@ -80,7 +154,6 @@
           <button class="btn btn-secundario btn-sm">Adicionar</button>
         </form>
 
-        <!-- Ações de status -->
         <div class="agendamento-acoes">
           <% if (ag.status !== 'concluido') { %>
             <form method="POST" action="/painel/agenda/<%= ag.id %>/status" class="inline">
@@ -114,7 +187,16 @@
             <button class="btn btn-perigo btn-sm">Excluir</button>
           </form>
         </div>
-      </div>
+      </details>
     <% }) %>
   </div>
+
+  <script>
+    function abrirAg(id) {
+      var d = document.getElementById('ag-' + id);
+      if (!d) return;
+      d.open = true;
+      d.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  </script>
 <% } %>

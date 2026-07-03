@@ -171,6 +171,55 @@
 .equipe-detalhes summary::before { content: '▸ '; }
 .equipe-detalhes[open] summary::before { content: '▾ '; }
 
+/* ----- Agenda: linha do tempo (dia) -------------------------------------- */
+.agenda-timeline {
+  position: relative;
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+.agenda-hora { position: absolute; left: 0; right: 0; height: 0; }
+.agenda-hora-rot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 42px;
+  text-align: right;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--texto-sutil);
+}
+.agenda-hora-linha { position: absolute; left: 52px; right: 0; top: 0; border-top: 1px solid var(--borda); }
+.agenda-agora { position: absolute; left: 52px; right: 0; height: 0; z-index: 3; }
+.agenda-agora::before { content: ''; position: absolute; left: 0; right: 0; top: 0; border-top: 2px solid var(--azul); }
+.agenda-agora span { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--azul); }
+
+.agenda-blocos { position: absolute; left: 52px; right: 0; top: 0; bottom: 0; }
+.agenda-bloco {
+  position: absolute;
+  border-radius: 10px;
+  padding: 5px 8px;
+  overflow: hidden;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-left: 3px solid var(--azul);
+  background: rgba(47, 107, 255, 0.14);
+  color: var(--texto);
+}
+.agenda-bloco-cliente { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-bloco-serv { font-size: 11px; color: var(--texto-secundario); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-bloco-hora { font-size: 10px; color: var(--texto-sutil); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-bloco.st-concluido { border-left-color: var(--sucesso); background: rgba(34, 197, 94, 0.14); }
+.agenda-bloco.st-cancelado { border-left-color: var(--texto-sutil); background: var(--secao-alt); }
+.agenda-bloco.st-cancelado .agenda-bloco-cliente { text-decoration: line-through; color: var(--texto-secundario); }
+
+/* Cards de detalhe (recolhíveis) */
+.agenda-detalhe > summary { cursor: pointer; list-style: none; }
+.agenda-detalhe > summary::-webkit-details-marker { display: none; }
+.agenda-detalhe-resumo { display: flex; align-items: center; gap: 10px; }
+.agenda-detalhe-nome { flex: 1; font-weight: 600; }
+
 /* ----- Navegação inferior (fixa) ----------------------------------------- */
 .nav-inferior {
   position: fixed;
