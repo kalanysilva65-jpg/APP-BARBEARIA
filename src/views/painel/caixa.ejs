@@ -16,13 +16,13 @@
 <div class="caixa-topo">
   <div class="card caixa-ganhos">
     <div class="caixa-ganhos-topo">
-      <span class="texto-sutil">Ganhos · esta semana</span>
-      <div class="caixa-ganhos-valor"><%= fmtBRL(totalSemana) %></div>
+      <span class="texto-sutil">Ganhos · <%= nomeMesSel %></span>
+      <div class="caixa-ganhos-valor"><%= fmtBRL(resumoMes.entrou) %></div>
     </div>
     <div class="semana caixa-semana">
-      <% barrasSemana.forEach(function (d) { %>
+      <% barrasMes.forEach(function (d) { %>
         <div class="semana-col">
-          <div class="semana-bar <%= d.hoje ? 'hoje' : '' %>" style="height:<%= Math.max(4, Math.round((d.valor / maxBarraSemana) * 72)) %>px" title="<%= fmtBRL(d.valor) %>"></div>
+          <div class="semana-bar <%= d.hoje ? 'hoje' : '' %>" style="height:<%= Math.max(4, Math.round((d.valor / maxBarraMes) * 72)) %>px" title="<%= fmtBRL(d.valor) %>"></div>
           <span class="semana-rot <%= d.hoje ? 'hoje' : '' %>"><%= d.rotulo %></span>
         </div>
       <% }) %>
@@ -30,11 +30,13 @@
   </div>
 
   <div class="card caixa-resumo-hoje">
-    <div class="resumo-titulo">Hoje</div>
-    <div class="resumo-linha"><span class="texto-sutil">Entrou</span><span class="valor-entrada">+<%= fmtBRL(resumoHoje.entrou) %></span></div>
-    <div class="resumo-linha"><span class="texto-sutil">Saiu</span><span class="valor-saida">−<%= fmtBRL(resumoHoje.saiu) %></span></div>
-    <div class="resumo-linha total"><span>Saldo</span><span><%= fmtBRL(resumoHoje.saldo) %></span></div>
-    <div class="resumo-linha mt-8"><span class="texto-sutil">Saldo do mês</span><span><%= fmtBRL(resumoMes.saldo) %></span></div>
+    <div class="resumo-titulo"><%= nomeMesSel %></div>
+    <div class="resumo-linha"><span class="texto-sutil">Entrou</span><span class="valor-entrada">+<%= fmtBRL(resumoMes.entrou) %></span></div>
+    <div class="resumo-linha"><span class="texto-sutil">Saiu</span><span class="valor-saida">−<%= fmtBRL(resumoMes.saiu) %></span></div>
+    <div class="resumo-linha total"><span>Saldo</span><span><%= fmtBRL(resumoMes.saldo) %></span></div>
+    <% if (ehMesAtual) { %>
+      <div class="resumo-linha mt-8"><span class="texto-sutil">Saldo de hoje</span><span><%= fmtBRL(resumoHoje.saldo) %></span></div>
+    <% } %>
   </div>
 </div>
 
