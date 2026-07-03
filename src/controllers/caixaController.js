@@ -10,20 +10,28 @@ function reaisParaCentavos(valorStr) {
   return Math.round(n * 100);
 }
 
-// Date -> "YYYY-MM"
-function isoMes(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
 // Date -> "YYYY-MM-DD"
 function isoDia(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// "YYYY-MM" -> { inicio, fim } (primeiro dia do mês e primeiro dia do mês seguinte)
-function intervaloMes(mesStr) {
-  const [ano, mes] = mesStr.split('-').map(Number);
-  return { inicio: new Date(ano, mes - 1, 1), fim: new Date(ano, mes, 1) };
+// "YYYY-MM-DD" -> Date à meia-noite local
+function dataLocal(s) {
+  const [a, m, d] = s.split('-').map(Number);
+  return new Date(a, m - 1, d);
+}
+
+function fmtDataBR(d) {
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+// Período padrão = mês atual (primeiro ao último dia)
+function periodoMesAtual() {
+  const hoje = new Date();
+  return {
+    inicio: isoDia(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
+    fim: isoDia(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)),
+  };
 }
 
 // Soma entradas/saídas de uma lista de lançamentos.
@@ -41,22 +49,35 @@ function somar(lista) {
 async function ver(req, res) {
   const b = req.barbeariaId;
   const agora = new Date();
-  const mesSel = /^\d{4}-\d{2}$/.test(req.query.mes || '') ? req.query.mes : isoMes(agora);
-  const { inicio, fim } = intervaloMes(mesSel);
 
-  // Lançamentos do mês selecionado
+  const padrao = periodoMesAtual();
+  let inicioStr = /^\d{4}-\d{2}-\d{2}$/.test(req.query.inicio || '') ? req.query.inicio : padrao.inicio;
+  let fimStr = /^\d{4}-\d{2}-\d{2}$/.test(req.query.fim || '') ? req.query.fim : padrao.fim;
+  if (inicioStr > fimStr) {
+    const t = inicioStr;
+    inicioStr = fimStr;
+    fimStr = t;
+  }
+
+  const inicio = dataLocal(inicioStr);
+  const fimExcl = dataLocal(fimStr);
+  fimExcl.setDate(fimExcl.getDate() + 1); // limite superior exclusivo (inclui o dia "fim")
+
+  // Lançamentos do período selecionado
   const lancamentos = await prisma.caixa.findMany({
-    where: { barbeariaId: b, data: { gte: inicio, lt: fim } },
+    where: { barbeariaId: b, data: { gte: inicio, lt: fimExcl } },
     include: { categoria: true },
     orderBy: [{ data: 'desc' }, { id: 'desc' }],
   });
-  const resumoMes = somar(lancamentos);
+  const resumoPeriodo = somar(lancamentos);
 
-  // Resumo do dia (hoje)
-  const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
-  const fimHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + 1);
-  const lancHoje = await prisma.caixa.findMany({ where: { barbeariaId: b, data: { gte: inicioHoje, lt: fimHoje } } });
+  // Resumo do dia (hoje) — só faz sentido mostrar se "hoje" está dentro do período visto.
+  const hoje0 = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const amanha0 = new Date(hoje0);
+  amanha0.setDate(hoje0.getDate() + 1);
+  const lancHoje = await prisma.caixa.findMany({ where: { barbeariaId: b, data: { gte: hoje0, lt: amanha0 } } });
   const resumoHoje = somar(lancHoje);
+  const incluiHoje = hoje0 >= inicio && hoje0 < fimExcl;
 
   const categorias = await prisma.categoriaCaixa.findMany({
     where: { barbeariaId: b },
@@ -65,51 +86,51 @@ async function ver(req, res) {
   });
   const autoLigado = await caixaServ.caixaAutomaticoLigado(b);
 
-  // Ganhos por semana DENTRO do mês selecionado — para o gráfico de barras.
-  // Acompanha o mês escolhido no filtro (não fica travado no mês atual).
-  const hoje0 = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
-  const barrasMes = [];
+  // Ganhos por semana DENTRO do período selecionado — para o gráfico de barras.
+  const barrasPeriodo = [];
   let cursor = new Date(inicio);
-  while (cursor < fim) {
+  while (cursor < fimExcl) {
     const fimSemana = new Date(cursor);
     fimSemana.setDate(cursor.getDate() + 7);
-    const bucketFim = fimSemana > fim ? fim : fimSemana;
+    const bucketFim = fimSemana > fimExcl ? fimExcl : fimSemana;
     const valor = lancamentos
       .filter((l) => l.tipo === 'entrada' && l.data >= cursor && l.data < bucketFim)
       .reduce((s, l) => s + l.valor, 0);
-    barrasMes.push({
-      rotulo: String(cursor.getDate()).padStart(2, '0'),
+    barrasPeriodo.push({
+      rotulo: String(cursor.getDate()).padStart(2, '0') + '/' + String(cursor.getMonth() + 1).padStart(2, '0'),
       valor,
       hoje: hoje0 >= cursor && hoje0 < bucketFim,
     });
     cursor = bucketFim;
   }
-  const maxBarraMes = Math.max(1, ...barrasMes.map((x) => x.valor));
+  const maxBarraPeriodo = Math.max(1, ...barrasPeriodo.map((x) => x.valor));
 
-  // Navegação de meses
-  const [ay, am] = mesSel.split('-').map(Number);
-  const nomesMes = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-  ];
-  const nomeMesSel = `${nomesMes[am - 1]} de ${ay}`;
-  const ehMesAtual = mesSel === isoMes(agora);
+  const nomePeriodoSel = inicioStr === fimStr ? fmtDataBR(inicio) : `${fmtDataBR(inicio)} – ${fmtDataBR(new Date(fimExcl.getTime() - 86400000))}`;
+
+  // Atalhos de período
+  const offSegunda = (agora.getDay() + 6) % 7; // 0 = segunda
+  const seg = new Date(hoje0);
+  seg.setDate(hoje0.getDate() - offSegunda);
+  const dom = new Date(seg);
+  dom.setDate(seg.getDate() + 6);
 
   res.render('painel/caixa', {
     titulo: 'Caixa',
     lancamentos,
-    resumoMes,
+    resumoPeriodo,
     resumoHoje,
+    incluiHoje,
     categorias,
     autoLigado,
-    barrasMes,
-    maxBarraMes,
-    nomeMesSel,
-    ehMesAtual,
-    mesSel,
-    mesAnterior: isoMes(new Date(ay, am - 2, 1)),
-    mesProximo: isoMes(new Date(ay, am, 1)),
+    barrasPeriodo,
+    maxBarraPeriodo,
+    nomePeriodoSel,
+    inicioStr,
+    fimStr,
     hojeIso: isoDia(agora),
+    presetHoje: { inicio: isoDia(hoje0), fim: isoDia(hoje0) },
+    presetSemana: { inicio: isoDia(seg), fim: isoDia(dom) },
+    presetMes: padrao,
   });
 }
 
@@ -124,10 +145,15 @@ async function criar(req, res) {
     ? await prisma.categoriaCaixa.findFirst({ where: { id: categoriaId, barbeariaId: b } })
     : null;
 
+  const qs = new URLSearchParams();
+  if (req.body.inicio) qs.set('inicio', req.body.inicio);
+  if (req.body.fim) qs.set('fim', req.body.fim);
+  const destino = '/painel/caixa' + (qs.toString() ? '?' + qs.toString() : '');
+
   // O tipo (entrada/saída) vem da categoria.
   if (!categoria || valor === null) {
     req.session.flash = { tipo: 'erro', texto: 'Selecione uma categoria e informe um valor válido.' };
-    return res.redirect('/painel/caixa');
+    return res.redirect(destino);
   }
 
   // Data: meio-dia local evita "pular" de dia por causa de fuso.
@@ -144,7 +170,7 @@ async function criar(req, res) {
     },
   });
   req.session.flash = { tipo: 'sucesso', texto: 'Lançamento registrado.' };
-  res.redirect('/painel/caixa?mes=' + isoMes(data));
+  res.redirect(destino);
 }
 
 // POST /painel/caixa/:id/remover
@@ -152,7 +178,11 @@ async function remover(req, res) {
   const l = await prisma.caixa.findFirst({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } });
   if (l) await prisma.caixa.delete({ where: { id: l.id } }).catch(() => {});
   req.session.flash = { tipo: 'sucesso', texto: 'Lançamento removido.' };
-  res.redirect('/painel/caixa' + (l ? '?mes=' + isoMes(new Date(l.data)) : ''));
+
+  const qs = new URLSearchParams();
+  if (req.body.inicio) qs.set('inicio', req.body.inicio);
+  if (req.body.fim) qs.set('fim', req.body.fim);
+  res.redirect('/painel/caixa' + (qs.toString() ? '?' + qs.toString() : ''));
 }
 
 // POST /painel/caixa/config — liga/desliga a entrada automática

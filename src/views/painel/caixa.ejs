@@ -1,7 +1,7 @@
 <div class="cabecalho-pagina agenda-cabecalho">
   <div>
     <h1>Caixa</h1>
-    <p class="texto-secundario">Entradas, saídas e saldo do dia e do mês.</p>
+    <p class="texto-secundario">Entradas, saídas e saldo do período selecionado.</p>
   </div>
   <form method="POST" action="/painel/caixa/config" class="caixa-auto">
     <input type="hidden" name="ligado" value="<%= autoLigado ? 'false' : 'true' %>" />
@@ -12,17 +12,37 @@
   </form>
 </div>
 
-<!-- Ganhos da semana + resumo do dia -->
+<!-- Seletor de período (data a data) -->
+<div class="card mb-16">
+  <div class="comissao-presets">
+    <a class="btn btn-secundario btn-sm" href="/painel/caixa?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>">Hoje</a>
+    <a class="btn btn-secundario btn-sm" href="/painel/caixa?inicio=<%= presetSemana.inicio %>&fim=<%= presetSemana.fim %>">Semana</a>
+    <a class="btn btn-secundario btn-sm" href="/painel/caixa?inicio=<%= presetMes.inicio %>&fim=<%= presetMes.fim %>">Mês</a>
+  </div>
+  <form method="GET" action="/painel/caixa" class="form-periodo mt-16">
+    <div class="campo">
+      <label for="inicio">De</label>
+      <input id="inicio" type="date" name="inicio" value="<%= inicioStr %>" />
+    </div>
+    <div class="campo">
+      <label for="fim">Até</label>
+      <input id="fim" type="date" name="fim" value="<%= fimStr %>" />
+    </div>
+    <button class="btn btn-primario btn-sm">Aplicar</button>
+  </form>
+</div>
+
+<!-- Ganhos do período + resumo -->
 <div class="caixa-topo">
   <div class="card caixa-ganhos">
     <div class="caixa-ganhos-topo">
-      <span class="texto-sutil">Ganhos · <%= nomeMesSel %></span>
-      <div class="caixa-ganhos-valor"><%= fmtBRL(resumoMes.entrou) %></div>
+      <span class="texto-sutil">Ganhos · <%= nomePeriodoSel %></span>
+      <div class="caixa-ganhos-valor"><%= fmtBRL(resumoPeriodo.entrou) %></div>
     </div>
     <div class="semana caixa-semana">
-      <% barrasMes.forEach(function (d) { %>
+      <% barrasPeriodo.forEach(function (d) { %>
         <div class="semana-col">
-          <div class="semana-bar <%= d.hoje ? 'hoje' : '' %>" style="height:<%= Math.max(4, Math.round((d.valor / maxBarraMes) * 72)) %>px" title="<%= fmtBRL(d.valor) %>"></div>
+          <div class="semana-bar <%= d.hoje ? 'hoje' : '' %>" style="height:<%= Math.max(4, Math.round((d.valor / maxBarraPeriodo) * 72)) %>px" title="<%= fmtBRL(d.valor) %>"></div>
           <span class="semana-rot <%= d.hoje ? 'hoje' : '' %>"><%= d.rotulo %></span>
         </div>
       <% }) %>
@@ -30,11 +50,11 @@
   </div>
 
   <div class="card caixa-resumo-hoje">
-    <div class="resumo-titulo"><%= nomeMesSel %></div>
-    <div class="resumo-linha"><span class="texto-sutil">Entrou</span><span class="valor-entrada">+<%= fmtBRL(resumoMes.entrou) %></span></div>
-    <div class="resumo-linha"><span class="texto-sutil">Saiu</span><span class="valor-saida">−<%= fmtBRL(resumoMes.saiu) %></span></div>
-    <div class="resumo-linha total"><span>Saldo</span><span><%= fmtBRL(resumoMes.saldo) %></span></div>
-    <% if (ehMesAtual) { %>
+    <div class="resumo-titulo"><%= nomePeriodoSel %></div>
+    <div class="resumo-linha"><span class="texto-sutil">Entrou</span><span class="valor-entrada">+<%= fmtBRL(resumoPeriodo.entrou) %></span></div>
+    <div class="resumo-linha"><span class="texto-sutil">Saiu</span><span class="valor-saida">−<%= fmtBRL(resumoPeriodo.saiu) %></span></div>
+    <div class="resumo-linha total"><span>Saldo</span><span><%= fmtBRL(resumoPeriodo.saldo) %></span></div>
+    <% if (incluiHoje) { %>
       <div class="resumo-linha mt-8"><span class="texto-sutil">Saldo de hoje</span><span><%= fmtBRL(resumoHoje.saldo) %></span></div>
     <% } %>
   </div>
@@ -46,19 +66,12 @@
   <button type="button" class="btn btn-primario btn-pill" onclick="abrirModalCaixa('lancamento')">+ Novo lançamento</button>
 </div>
 
-<!-- Movimentações do mês -->
+<!-- Movimentações do período -->
 <div class="card mt-16">
-  <div class="flex-entre" style="flex-wrap: wrap; gap: 8px">
-    <h2>Movimentações</h2>
-    <form method="GET" action="/painel/caixa" class="agenda-filtros">
-      <a class="btn btn-secundario btn-sm" href="/painel/caixa?mes=<%= mesAnterior %>" title="Mês anterior">←</a>
-      <input type="month" name="mes" value="<%= mesSel %>" onchange="this.form.submit()" />
-      <a class="btn btn-secundario btn-sm" href="/painel/caixa?mes=<%= mesProximo %>" title="Próximo mês">→</a>
-    </form>
-  </div>
+  <h2>Movimentações · <%= nomePeriodoSel %></h2>
 
   <% if (lancamentos.length === 0) { %>
-    <p class="texto-secundario mt-16">Nenhum lançamento neste mês.</p>
+    <p class="texto-secundario mt-16">Nenhum lançamento neste período.</p>
   <% } else { %>
     <div class="tabela-rolagem">
       <table class="tabela mt-16">
@@ -77,6 +90,8 @@
               <td class="col-acao">
                 <form method="POST" action="/painel/caixa/<%= l.id %>/remover" class="inline"
                       onsubmit="return confirm('Excluir este lançamento?')">
+                  <input type="hidden" name="inicio" value="<%= inicioStr %>" />
+                  <input type="hidden" name="fim" value="<%= fimStr %>" />
                   <button class="btn-x" title="Excluir">×</button>
                 </form>
               </td>
@@ -99,6 +114,8 @@
       <p class="texto-secundario mt-16">Cadastre uma categoria para poder lançar.</p>
     <% } else { %>
       <form method="POST" action="/painel/caixa" class="form mt-16">
+        <input type="hidden" name="inicio" value="<%= inicioStr %>" />
+        <input type="hidden" name="fim" value="<%= fimStr %>" />
         <div class="campo">
           <label for="categoriaId">Categoria</label>
           <select id="categoriaId" name="categoriaId" required>
