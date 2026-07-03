@@ -69,6 +69,12 @@
       var d = ag.itens.reduce(function (s, it) { return s + (it.servico.duracaoMin || 0) * it.quantidade; }, 0);
       return d > 0 ? d : 30; // produtos / vazio ocupam 30 min visualmente
     }
+    function _fmtH(m) { var h = Math.floor(m / 60), mm = m % 60; return mm === 0 ? String(h) : h + ':' + String(mm).padStart(2, '0'); }
+    var _icones =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
     var eventos = [];
     agendamentos.forEach(function (ag) {
       var ini = _min(ag.horaInicio);
@@ -132,11 +138,13 @@
            var curto = (e.fim - e.ini) <= 35 ? 'curto' : '';
            var pos = 'top:' + top + 'px;height:' + alt + 'px;left:calc(' + esq + '% + 2px);width:calc(' + largura + '% - 4px)';
       %>
-        <% if (e.tipo === 'ag') { var ag = e.ag; %>
-          <a class="agenda-bloco st-<%= ag.status %> <%= curto %>" onclick="abrirAg(<%= ag.id %>);return false;" href="#ag-<%= ag.id %>" style="<%= pos %>">
+        <% if (e.tipo === 'ag') { var ag = e.ag; var mostraIcones = (e.fim - e.ini) >= 45; %>
+          <a class="agenda-bloco st-<%= ag.status %> <%= curto %>" onclick="abrirModal(<%= ag.id %>);return false;" href="#" style="<%= pos %>">
+            <span class="ag-dot"></span>
             <span class="agenda-bloco-cliente"><%= ag.clienteNome %></span>
-            <span class="agenda-bloco-serv"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %></span>
-            <span class="agenda-bloco-hora"><%= ag.horaInicio %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome %><% } %></span>
+            <% if (!curto) { %><span class="agenda-bloco-serv"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %></span><% } %>
+            <span class="agenda-bloco-hora"><%= _fmtH(e.ini) %> – <%= _fmtH(e.fim) %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome %><% } %></span>
+            <% if (mostraIcones) { %><span class="ag-icones"><%- _icones %></span><% } %>
           </a>
         <% } else { var bl = e.bl; %>
           <div class="agenda-bloco bloq <%= curto %>" style="<%= pos %>">
@@ -155,16 +163,21 @@
     </div>
   </div>
 
-  <p class="texto-sutil mb-16">Toque num atendimento para ver os detalhes e ações.</p>
+  <p class="texto-sutil mb-16">Toque num atendimento para ver os detalhes.</p>
 
-  <div class="lista-agenda">
-    <% agendamentos.forEach(function (ag) { %>
-      <details id="ag-<%= ag.id %>" class="card agendamento agenda-detalhe">
-        <summary class="agenda-detalhe-resumo">
-          <span class="agendamento-hora"><%= ag.horaInicio %></span>
-          <span class="agenda-detalhe-nome"><%= ag.clienteNome %><% if (mostrarBarbeiroNoCard) { %> <span class="texto-sutil">· <%= ag.usuario.nome %></span><% } %></span>
-          <span class="status status-<%= ag.status %>"><%= ag.status %></span>
-        </summary>
+  <% agendamentos.forEach(function (ag) { %>
+    <div class="ag-overlay" id="agm-<%= ag.id %>" onclick="if(event.target===this)fecharModal(this)">
+      <div class="ag-modal-box">
+        <div class="ag-modal-topo">
+          <div>
+            <div class="ag-modal-hora"><%= ag.horaInicio %></div>
+            <div class="ag-modal-nome"><%= ag.clienteNome %></div>
+            <div class="texto-sutil"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome %><% } %></div>
+          </div>
+          <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+        </div>
+
+        <span class="status status-<%= ag.status %>"><%= ag.status %></span>
 
         <div class="agendamento-cliente mt-16">
           <div class="texto-sutil"><%= ag.clienteEmail %> · <%= ag.clienteTelefone %></div>
@@ -240,16 +253,23 @@
             <button class="btn btn-perigo btn-sm">Excluir</button>
           </form>
         </div>
-      </details>
-    <% }) %>
-  </div>
+      </div>
+    </div>
+  <% }) %>
 
   <script>
-    function abrirAg(id) {
-      var d = document.getElementById('ag-' + id);
-      if (!d) return;
-      d.open = true;
-      d.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    function abrirModal(id) {
+      var o = document.getElementById('agm-' + id);
+      if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
     }
+    function fecharModal(o) {
+      if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
+        document.body.classList.remove('modal-aberto');
+      }
+    });
   </script>
 <% } %>
