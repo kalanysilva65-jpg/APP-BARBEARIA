@@ -58,8 +58,6 @@ async function ver(req, res) {
     orderBy: { horaInicio: 'asc' },
   });
   const totalHoje = agsHoje.length;
-  const concluidosHoje = agsHoje.filter((a) => a.status === 'concluido').length;
-  const restantesHoje = totalHoje - concluidosHoje;
   const proximoAg = agsHoje.find((a) => a.status === 'agendado' && paraMinutos(a.horaInicio) >= minutoAgora) || null;
   const proximo = proximoAg
     ? {
@@ -73,7 +71,6 @@ async function ver(req, res) {
   // --- Faturamento de hoje + previsto + barras da semana (admin) ------------
   let ganhoHoje = 0;
   let previstoHoje = 0;
-  let variacaoHojeOntem = null; // % vs ontem (null = sem dado de ontem pra comparar)
   let barras = [];
   let maxBarra = 1;
   if (ehAdmin) {
@@ -83,15 +80,6 @@ async function ver(req, res) {
     });
     ganhoHoje = caixaHoje._sum.valor || 0;
     previstoHoje = agsHoje.reduce((s, a) => s + a.valorTotal, 0);
-
-    const ontem0 = new Date(hoje0);
-    ontem0.setDate(ontem0.getDate() - 1);
-    const caixaOntem = await prisma.caixa.aggregate({
-      _sum: { valor: true },
-      where: { barbeariaId: b, tipo: 'entrada', data: { gte: ontem0, lt: hoje0 } },
-    });
-    const ganhoOntem = caixaOntem._sum.valor || 0;
-    if (ganhoOntem > 0) variacaoHojeOntem = Math.round(((ganhoHoje - ganhoOntem) / ganhoOntem) * 100);
 
     // Semana atual (segunda a domingo)
     const offSeg = (agora.getDay() + 6) % 7; // 0 = segunda
@@ -141,12 +129,9 @@ async function ver(req, res) {
   res.render('painel/dashboard', {
     titulo: 'Painel',
     totalHoje,
-    concluidosHoje,
-    restantesHoje,
     proximo,
     ganhoHoje,
     previstoHoje,
-    variacaoHojeOntem,
     barras,
     maxBarra,
     novosClientes,
