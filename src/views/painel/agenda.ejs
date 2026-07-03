@@ -110,6 +110,24 @@
       cl.forEach(function (e) { e.cols = colsEnd.length; });
     });
 
+    // Overflow "+N": clusters com 3+ atendimentos simultâneos viram um bloco só
+    // (evita colunas finas e ilegíveis no celular). Toque abre a lista.
+    var itensRender = [], grupos = [];
+    clusters.forEach(function (cl) {
+      if (cl[0].cols >= 3) {
+        var g = {
+          id: grupos.length,
+          membros: cl,
+          ini: Math.min.apply(null, cl.map(function (e) { return e.ini; })),
+          fim: Math.max.apply(null, cl.map(function (e) { return e.fim; })),
+        };
+        grupos.push(g);
+        itensRender.push({ kind: 'grupo', g: g });
+      } else {
+        cl.forEach(function (e) { itensRender.push({ kind: 'evento', e: e }); });
+      }
+    });
+
     var alturaTotal = (hFim - hIni) * 60 * PX;
     // Linha "agora" (só se a data vista for hoje).
     var agoraDate = new Date();
@@ -130,13 +148,26 @@
     <% } %>
 
     <div class="agenda-blocos">
-      <% eventos.forEach(function (e) {
-           var top = (e.ini - hIni * 60) * PX;
-           var alt = Math.max(32, (e.fim - e.ini) * PX - 3);
-           var largura = 100 / e.cols;
-           var esq = e.col * largura;
-           var curto = (e.fim - e.ini) <= 35 ? 'curto' : '';
-           var pos = 'top:' + top + 'px;height:' + alt + 'px;left:calc(' + esq + '% + 2px);width:calc(' + largura + '% - 4px)';
+      <% itensRender.forEach(function (item) {
+           if (item.kind === 'grupo') {
+             var g = item.g;
+             var top = (g.ini - hIni * 60) * PX;
+             var alt = Math.max(32, (g.fim - g.ini) * PX - 3);
+             var pos = 'top:' + top + 'px;height:' + alt + 'px;left:2px;width:calc(100% - 4px)';
+      %>
+        <a class="agenda-bloco grupo-n" onclick="abrirGrupo(<%= g.id %>);return false;" href="#" style="<%= pos %>">
+          <span class="agenda-bloco-cliente">+<%= g.membros.length %> atendimentos</span>
+          <span class="agenda-bloco-hora"><%= _fmtH(g.ini) %> – <%= _fmtH(g.fim) %></span>
+        </a>
+      <%
+           } else {
+             var e = item.e;
+             var top = (e.ini - hIni * 60) * PX;
+             var alt = Math.max(32, (e.fim - e.ini) * PX - 3);
+             var largura = 100 / e.cols;
+             var esq = e.col * largura;
+             var curto = (e.fim - e.ini) <= 35 ? 'curto' : '';
+             var pos = 'top:' + top + 'px;height:' + alt + 'px;left:calc(' + esq + '% + 2px);width:calc(' + largura + '% - 4px)';
       %>
         <% if (e.tipo === 'ag') { var ag = e.ag; var mostraIcones = (e.fim - e.ini) >= 45; %>
           <a class="agenda-bloco st-<%= ag.status %> <%= curto %>" onclick="abrirModal(<%= ag.id %>);return false;" href="#" style="<%= pos %>">
@@ -158,10 +189,49 @@
               </form>
             <% } %>
           </div>
-        <% } %>
-      <% }) %>
+        <% } }
+      }) %>
     </div>
   </div>
+
+  <% if (grupos.length > 0) { %>
+    <% grupos.forEach(function (g) { %>
+      <div class="ag-overlay" id="grp-<%= g.id %>" onclick="if(event.target===this)fecharModal(this)">
+        <div class="ag-modal-box">
+          <div class="ag-modal-topo">
+            <div>
+              <div class="ag-modal-hora"><%= _fmtH(g.ini) %> – <%= _fmtH(g.fim) %></div>
+              <div class="ag-modal-nome"><%= g.membros.length %> atendimentos</div>
+            </div>
+            <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+          </div>
+          <div class="grupo-lista">
+            <% g.membros.forEach(function (e) { %>
+              <% if (e.tipo === 'ag') { var ag = e.ag; %>
+                <a class="grupo-item" href="#" onclick="fecharModal(document.getElementById('grp-<%= g.id %>'));abrirModal(<%= ag.id %>);return false;">
+                  <span class="ag-dot dot-<%= ag.status %>"></span>
+                  <span class="grupo-item-info">
+                    <span class="grupo-item-nome"><%= ag.clienteNome %></span>
+                    <span class="texto-sutil"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome %><% } %></span>
+                  </span>
+                  <span class="grupo-item-hora"><%= _fmtH(e.ini) %>–<%= _fmtH(e.fim) %></span>
+                </a>
+              <% } else { var bl = e.bl; %>
+                <div class="grupo-item grupo-item-bloq">
+                  <span class="ag-dot" style="background:var(--texto-sutil)"></span>
+                  <span class="grupo-item-info">
+                    <span class="grupo-item-nome"><%= bl.motivo || 'Bloqueado' %></span>
+                    <% if (mostrarBarbeiroNoCard) { %><span class="texto-sutil"><%= bl.usuario.nome %></span><% } %>
+                  </span>
+                  <span class="grupo-item-hora"><%= _fmtH(e.ini) %>–<%= _fmtH(e.fim) %></span>
+                </div>
+              <% } %>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  <% } %>
 
   <p class="texto-sutil mb-16">Toque num atendimento para ver os detalhes.</p>
 
@@ -260,6 +330,10 @@
   <script>
     function abrirModal(id) {
       var o = document.getElementById('agm-' + id);
+      if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+    }
+    function abrirGrupo(id) {
+      var o = document.getElementById('grp-' + id);
       if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
     }
     function fecharModal(o) {

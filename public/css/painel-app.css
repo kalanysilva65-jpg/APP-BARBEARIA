@@ -216,6 +216,44 @@
 .agenda-bloco.st-cancelado .ag-dot { background: var(--texto-sutil); }
 .agenda-bloco.st-cancelado .agenda-bloco-cliente { text-decoration: line-through; color: var(--texto-secundario); }
 
+/* Bolinha standalone (usada na lista do grupo "+N", fora do bloco) */
+.dot-concluido { background: var(--sucesso); }
+.dot-agendado { background: var(--azul); }
+.dot-cancelado { background: var(--texto-sutil); }
+
+/* Bloco "+N" (overflow de horário lotado) */
+.agenda-bloco.grupo-n {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--secao-alt);
+  border-style: dashed;
+  font-weight: 600;
+  text-align: center;
+}
+.agenda-bloco.grupo-n .agenda-bloco-cliente { padding-right: 0; text-align: center; }
+.agenda-bloco.grupo-n .agenda-bloco-hora { display: none; }
+
+/* Lista de atendimentos dentro do pop-up de grupo */
+.grupo-lista { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.grupo-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 30px 10px 12px;
+  border-radius: 12px;
+  background: var(--secao-alt);
+  text-decoration: none;
+  color: var(--texto);
+}
+.grupo-item .ag-dot { position: static; flex-shrink: 0; }
+.grupo-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.grupo-item-nome { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.grupo-item-hora { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--texto-sutil); }
+.grupo-item-bloq .grupo-item-nome { color: var(--texto-secundario); }
+
 /* Linha de ícones (decorativa) no canto inferior direito */
 .ag-icones { position: absolute; right: 9px; bottom: 7px; display: flex; gap: 9px; color: var(--azul); pointer-events: none; }
 .ag-icones svg { width: 15px; height: 15px; }
