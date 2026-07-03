@@ -5,22 +5,33 @@
   </div>
 <% } %>
 
-<!-- Agenda de hoje (card de destaque) -->
-<a href="/painel/agenda" class="dash-azul">
-  <div class="dash-azul-label">Agenda de hoje</div>
-  <div class="dash-azul-num">
-    <span class="n"><%= totalHoje %></span>
-    <span class="u">agendamento<%= totalHoje === 1 ? '' : 's' %></span>
-  </div>
-  <div class="dash-azul-rodape">
-    <% if (proximo) { %>
-      <span class="dash-azul-prox">Próximo · <%= proximo.hora %></span>
-      <span class="dash-azul-cliente"><%= proximo.nome %> · <%= proximo.servico %></span>
-    <% } else { %>
-      <span class="dash-azul-prox">Sem próximos atendimentos hoje</span>
-    <% } %>
-  </div>
-</a>
+<!-- Cards de destaque: faturamento (admin) + agenda de hoje -->
+<div class="dash-hero-grid <%= ehAdmin ? '' : 'dash-hero-grid--1' %>">
+  <% if (ehAdmin) { %>
+    <a href="/painel/caixa" class="dash-azul dash-azul--mini">
+      <div class="dash-azul-label">Faturamento hoje</div>
+      <div class="dash-azul-num"><span class="n"><%= fmtBRL(ganhoHoje) %></span></div>
+      <div class="dash-azul-rodape">
+        <span class="dash-azul-prox"><%= concluidosHoje %> atendimento<%= concluidosHoje === 1 ? '' : 's' %></span>
+        <span class="dash-azul-cliente">
+          <% if (variacaoHojeOntem === null) { %>
+            — vs ontem
+          <% } else { %>
+            <%= variacaoHojeOntem >= 0 ? '+' : '' %><%= variacaoHojeOntem %>% vs ontem
+          <% } %>
+        </span>
+      </div>
+    </a>
+  <% } %>
+  <a href="/painel/agenda" class="dash-azul dash-azul--mini">
+    <div class="dash-azul-label">Agenda de hoje</div>
+    <div class="dash-azul-num"><span class="n"><%= totalHoje %></span></div>
+    <div class="dash-azul-rodape">
+      <span class="dash-azul-prox"><%= concluidosHoje %> concluído<%= concluidosHoje === 1 ? '' : 's' %></span>
+      <span class="dash-azul-cliente"><%= restantesHoje %> restante<%= restantesHoje === 1 ? '' : 's' %></span>
+    </div>
+  </a>
+</div>
 
 <!-- Produtividade + Retenção -->
 <div class="dash-grid">
@@ -47,15 +58,14 @@
   <div class="dash-novos"><%= novosClientes %></div>
 </a>
 
-<!-- Faturamento do dia + semana (admin) -->
+<!-- Faturamento da semana (admin) -->
 <% if (ehAdmin) { %>
   <a href="/painel/caixa" class="dash-card dash-fat">
     <div class="dash-fat-topo">
       <div>
-        <div class="dash-card-titulo">Faturamento de hoje</div>
-        <div class="dash-card-sub">Previsto <%= fmtBRL(previstoHoje) %></div>
+        <div class="dash-card-titulo">Faturamento da semana</div>
+        <div class="dash-card-sub">Previsto hoje <%= fmtBRL(previstoHoje) %></div>
       </div>
-      <div class="dash-card-num"><%= fmtBRL(ganhoHoje) %></div>
     </div>
     <div class="semana">
       <% barras.forEach(function (d) { %>
