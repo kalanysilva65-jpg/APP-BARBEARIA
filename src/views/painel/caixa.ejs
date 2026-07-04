@@ -12,58 +12,48 @@
   </form>
 </div>
 
-<!-- Seletor de período (data a data) -->
-<div class="card mb-16">
-  <div class="comissao-presets">
-    <a class="btn btn-secundario btn-sm" href="/painel/caixa?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>">Hoje</a>
-    <a class="btn btn-secundario btn-sm" href="/painel/caixa?inicio=<%= presetSemana.inicio %>&fim=<%= presetSemana.fim %>">Semana</a>
-    <a class="btn btn-secundario btn-sm" href="/painel/caixa?inicio=<%= presetMes.inicio %>&fim=<%= presetMes.fim %>">Mês</a>
+<!-- Seletor de período: pills (Hoje/Semana/Mês) + ícone de calendário (De/Até) -->
+<div class="periodo-barra mb-16">
+  <div class="periodo-pills">
+    <a class="periodo-pill <%= periodoAtivo === 'hoje' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>">Hoje</a>
+    <a class="periodo-pill <%= periodoAtivo === 'semana' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetSemana.inicio %>&fim=<%= presetSemana.fim %>">Semana</a>
+    <a class="periodo-pill <%= periodoAtivo === 'mes' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetMes.inicio %>&fim=<%= presetMes.fim %>">Mês</a>
   </div>
-  <form method="GET" action="/painel/caixa" class="form-periodo mt-16">
-    <div class="campo">
-      <label for="inicio">De</label>
-      <input id="inicio" type="date" name="inicio" value="<%= inicioStr %>" />
-    </div>
-    <div class="campo">
-      <label for="fim">Até</label>
-      <input id="fim" type="date" name="fim" value="<%= fimStr %>" />
-    </div>
-    <button class="btn btn-primario btn-sm">Aplicar</button>
-  </form>
+  <button type="button" class="periodo-cal-btn <%= periodoAtivo === 'custom' ? 'ativo' : '' %>" onclick="abrirModalCaixa('periodo')" title="Escolher período (De/Até)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+  </button>
 </div>
 
-<!-- Ganhos do período + resumo -->
-<div class="caixa-topo">
-  <div class="card caixa-ganhos">
-    <div class="caixa-ganhos-topo">
-      <span class="texto-sutil">Ganhos · <%= nomePeriodoSel %></span>
-      <div class="caixa-ganhos-valor"><%= fmtBRL(resumoPeriodo.entrou) %></div>
-    </div>
-    <div class="semana caixa-semana">
-      <% barrasPeriodo.forEach(function (d) { %>
-        <div class="semana-col">
-          <div class="semana-bar <%= d.hoje ? 'hoje' : '' %>" style="height:<%= Math.max(4, Math.round((d.valor / maxBarraPeriodo) * 72)) %>px" title="<%= fmtBRL(d.valor) %>"></div>
-          <span class="semana-rot <%= d.hoje ? 'hoje' : '' %>"><%= d.rotulo %></span>
-        </div>
-      <% }) %>
-    </div>
-  </div>
-
-  <div class="card caixa-resumo-hoje">
-    <div class="resumo-titulo"><%= nomePeriodoSel %></div>
-    <div class="resumo-linha"><span class="texto-sutil">Entrou</span><span class="valor-entrada">+<%= fmtBRL(resumoPeriodo.entrou) %></span></div>
-    <div class="resumo-linha"><span class="texto-sutil">Saiu</span><span class="valor-saida">−<%= fmtBRL(resumoPeriodo.saiu) %></span></div>
-    <div class="resumo-linha total"><span>Saldo</span><span><%= fmtBRL(resumoPeriodo.saldo) %></span></div>
-    <% if (incluiHoje) { %>
-      <div class="resumo-linha mt-8"><span class="texto-sutil">Saldo de hoje</span><span><%= fmtBRL(resumoHoje.saldo) %></span></div>
-    <% } %>
+<!-- Gráfico do período -->
+<div class="card caixa-ganhos mb-16">
+  <span class="caixa-ganhos-rotulo texto-sutil"><%= nomePeriodoSel.toUpperCase() %></span>
+  <div class="semana caixa-semana">
+    <% barrasPeriodo.forEach(function (d) { %>
+      <div class="semana-col">
+        <div class="semana-bar <%= d.hoje ? 'hoje' : '' %>" style="height:<%= Math.max(4, Math.round((d.valor / maxBarraPeriodo) * 72)) %>px" title="<%= fmtBRL(d.valor) %>"></div>
+        <span class="semana-rot <%= d.hoje ? 'hoje' : '' %>"><%= d.rotulo %></span>
+      </div>
+    <% }) %>
   </div>
 </div>
 
-<!-- Ações: abrem em pop-up -->
-<div class="caixa-acoes">
-  <button type="button" class="btn btn-secundario btn-pill" onclick="abrirModalCaixa('categorias')">Categorias de caixa</button>
-  <button type="button" class="btn btn-primario btn-pill" onclick="abrirModalCaixa('lancamento')">+ Novo lançamento</button>
+<!-- Entrou / Saiu / Lucro do período -->
+<div class="card caixa-resumo-hoje mb-16">
+  <div class="resumo-linha"><span class="texto-sutil">Entrou</span><span class="valor-entrada">+<%= fmtBRL(resumoPeriodo.entrou) %></span></div>
+  <div class="resumo-linha"><span class="texto-sutil">Saiu</span><span class="valor-saida">−<%= fmtBRL(resumoPeriodo.saiu) %></span></div>
+  <div class="resumo-linha total"><span>Lucro</span><span><%= fmtBRL(resumoPeriodo.saldo) %></span></div>
+</div>
+
+<!-- Saldo do dia + saldo do mês (fixos, não mudam com o período acima) -->
+<div class="caixa-saldos mb-16">
+  <div class="caixa-saldo caixa-saldo--destaque">
+    <span class="caixa-saldo-label">Saldo do dia</span>
+    <span class="caixa-saldo-valor"><%= fmtBRL(resumoHoje.saldo) %></span>
+  </div>
+  <div class="caixa-saldo">
+    <span class="caixa-saldo-label">Saldo do mês</span>
+    <span class="caixa-saldo-valor"><%= fmtBRL(resumoMesAtual.saldo) %></span>
+  </div>
 </div>
 
 <!-- Movimentações do período -->
@@ -73,34 +63,66 @@
   <% if (lancamentos.length === 0) { %>
     <p class="texto-secundario mt-16">Nenhum lançamento neste período.</p>
   <% } else { %>
-    <div class="tabela-rolagem">
-      <table class="tabela mt-16">
-        <thead>
-          <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="col-valor">Valor</th><th></th></tr>
-        </thead>
-        <tbody>
-          <% lancamentos.forEach(function (l) { %>
-            <tr>
-              <td><%= fmtData(l.data) %></td>
-              <td><%= l.descricao %><% if (l.agendamentoId) { %> <span class="texto-sutil">(auto)</span><% } %></td>
-              <td><%= l.categoria ? l.categoria.nome : '—' %></td>
-              <td class="col-valor <%= l.tipo === 'entrada' ? 'valor-entrada' : 'valor-saida' %>">
-                <%= l.tipo === 'entrada' ? '+' : '−' %><%= fmtBRL(l.valor) %>
-              </td>
-              <td class="col-acao">
-                <form method="POST" action="/painel/caixa/<%= l.id %>/remover" class="inline"
-                      onsubmit="return confirm('Excluir este lançamento?')">
-                  <input type="hidden" name="inicio" value="<%= inicioStr %>" />
-                  <input type="hidden" name="fim" value="<%= fimStr %>" />
-                  <button class="btn-x" title="Excluir">×</button>
-                </form>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
+    <div class="caixa-mov-lista mt-16">
+      <% lancamentos.forEach(function (l) { %>
+        <div class="caixa-mov-item">
+          <div class="caixa-mov-info">
+            <span class="caixa-mov-titulo"><%= l.descricao %><% if (l.agendamentoId) { %> <span class="texto-sutil">(auto)</span><% } %></span>
+            <span class="caixa-mov-sub"><%= l.categoria ? l.categoria.nome : '—' %> · <%= fmtData(l.data) %></span>
+          </div>
+          <span class="caixa-mov-valor <%= l.tipo === 'entrada' ? 'valor-entrada' : 'valor-saida' %>">
+            <%= l.tipo === 'entrada' ? '+' : '−' %><%= fmtBRL(l.valor) %>
+          </span>
+          <form method="POST" action="/painel/caixa/<%= l.id %>/remover" class="caixa-mov-x"
+                onsubmit="return confirm('Excluir este lançamento?')">
+            <input type="hidden" name="inicio" value="<%= inicioStr %>" />
+            <input type="hidden" name="fim" value="<%= fimStr %>" />
+            <button title="Excluir">×</button>
+          </form>
+        </div>
+      <% }) %>
     </div>
   <% } %>
+</div>
+
+<!-- Botão flutuante: Novo lançamento / Categorias (só nesta tela) -->
+<div class="agenda-fab-wrap">
+  <div class="agenda-fab-menu" id="caixa-fab-menu">
+    <button type="button" class="agenda-fab-opcao" onclick="abrirModalCaixa('lancamento')">
+      <span>Novo lançamento</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <button type="button" class="agenda-fab-opcao" onclick="abrirModalCaixa('categorias')">
+      <span>Categorias de caixa</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+    </button>
+  </div>
+  <button type="button" class="agenda-fab" onclick="document.getElementById('caixa-fab-menu').classList.toggle('aberto')" aria-label="Nova ação">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div>
+
+<!-- Pop-up: escolher período (De/Até) -->
+<div class="ag-overlay" id="caixa-modal-periodo" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Escolher período</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
+    <form method="GET" action="/painel/caixa" class="form mt-16">
+      <div class="grid-2">
+        <div class="campo">
+          <label for="inicio">De</label>
+          <input id="inicio" type="date" name="inicio" value="<%= inicioStr %>" />
+        </div>
+        <div class="campo">
+          <label for="fim">Até</label>
+          <input id="fim" type="date" name="fim" value="<%= fimStr %>" />
+        </div>
+      </div>
+      <button class="btn btn-primario btn-bloco">Aplicar</button>
+    </form>
+  </div>
 </div>
 
 <!-- Pop-up: Novo lançamento -->
@@ -190,12 +212,21 @@
 
 <script>
   function abrirModalCaixa(nome) {
+    var menu = document.getElementById('caixa-fab-menu');
+    if (menu) menu.classList.remove('aberto');
     var o = document.getElementById('caixa-modal-' + nome);
     if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
   }
   function fecharModal(o) {
     if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
   }
+  document.addEventListener('click', function (e) {
+    var wrap = document.querySelector('.agenda-fab-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      var menu = document.getElementById('caixa-fab-menu');
+      if (menu) menu.classList.remove('aberto');
+    }
+  });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });

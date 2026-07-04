@@ -79,6 +79,16 @@ async function ver(req, res) {
   const resumoHoje = somar(lancHoje);
   const incluiHoje = hoje0 >= inicio && hoje0 < fimExcl;
 
+  // Saldo do mês corrente (fixo — independe do período filtrado acima).
+  const mesAtualStr = periodoMesAtual();
+  const inicioMesAtual = dataLocal(mesAtualStr.inicio);
+  const fimMesAtualExcl = dataLocal(mesAtualStr.fim);
+  fimMesAtualExcl.setDate(fimMesAtualExcl.getDate() + 1);
+  const lancMesAtual = await prisma.caixa.findMany({
+    where: { barbeariaId: b, data: { gte: inicioMesAtual, lt: fimMesAtualExcl } },
+  });
+  const resumoMesAtual = somar(lancMesAtual);
+
   const categorias = await prisma.categoriaCaixa.findMany({
     where: { barbeariaId: b },
     orderBy: [{ tipo: 'asc' }, { nome: 'asc' }],
@@ -113,23 +123,34 @@ async function ver(req, res) {
   seg.setDate(hoje0.getDate() - offSegunda);
   const dom = new Date(seg);
   dom.setDate(seg.getDate() + 6);
+  const presetHoje = { inicio: isoDia(hoje0), fim: isoDia(hoje0) };
+  const presetSemana = { inicio: isoDia(seg), fim: isoDia(dom) };
+
+  // Qual pill de atalho está ativa (pra destacar visualmente) — 'custom' se o
+  // período não bater com nenhum atalho (ex.: De/Até escolhido manualmente).
+  let periodoAtivo = 'custom';
+  if (inicioStr === presetHoje.inicio && fimStr === presetHoje.fim) periodoAtivo = 'hoje';
+  else if (inicioStr === presetSemana.inicio && fimStr === presetSemana.fim) periodoAtivo = 'semana';
+  else if (inicioStr === padrao.inicio && fimStr === padrao.fim) periodoAtivo = 'mes';
 
   res.render('painel/caixa', {
     titulo: 'Caixa',
     lancamentos,
     resumoPeriodo,
     resumoHoje,
+    resumoMesAtual,
     incluiHoje,
     categorias,
     autoLigado,
     barrasPeriodo,
     maxBarraPeriodo,
     nomePeriodoSel,
+    periodoAtivo,
     inicioStr,
     fimStr,
     hojeIso: isoDia(agora),
-    presetHoje: { inicio: isoDia(hoje0), fim: isoDia(hoje0) },
-    presetSemana: { inicio: isoDia(seg), fim: isoDia(dom) },
+    presetHoje,
+    presetSemana,
     presetMes: padrao,
   });
 }
