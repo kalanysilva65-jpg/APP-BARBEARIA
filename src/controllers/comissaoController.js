@@ -198,6 +198,15 @@ async function ver(req, res) {
   seg.setDate(hoje.getDate() - offSegunda);
   const dom = new Date(seg);
   dom.setDate(seg.getDate() + 6);
+  const presetHoje = { inicio: iso(hoje), fim: iso(hoje) };
+  const presetSemana = { inicio: iso(seg), fim: iso(dom) };
+  const presetMes = periodoMesAtual();
+
+  // Qual pill de atalho está ativa (pra destacar visualmente).
+  let periodoAtivo = 'custom';
+  if (inicioStr === presetHoje.inicio && fimStr === presetHoje.fim) periodoAtivo = 'hoje';
+  else if (inicioStr === presetSemana.inicio && fimStr === presetSemana.fim) periodoAtivo = 'semana';
+  else if (inicioStr === presetMes.inicio && fimStr === presetMes.fim) periodoAtivo = 'mes';
 
   res.render('painel/comissoes', {
     titulo: 'Comissões',
@@ -206,14 +215,15 @@ async function ver(req, res) {
     barbeiroSelecionado,
     inicioStr,
     fimStr,
+    periodoAtivo,
     totalServicos,
     totalProdutos,
     totalGeralComissao,
     maxTicket,
     comissaoProdutoPct: COMISSAO_PRODUTO_PERCENTUAL,
-    presetHoje: { inicio: iso(hoje), fim: iso(hoje) },
-    presetSemana: { inicio: iso(seg), fim: iso(dom) },
-    presetMes: periodoMesAtual(),
+    presetHoje,
+    presetSemana,
+    presetMes,
   });
 }
 

@@ -346,6 +346,12 @@
 .equipe-foto--view img,
 .equipe-foto--view .equipe-foto-inicial { width: 52px; height: 52px; }
 
+.equipe-mini-topo2 { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.equipe-mini-info { flex: 1; min-width: 0; }
+.equipe-mini-comissao { text-align: right; flex-shrink: 0; }
+.equipe-mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.equipe-mini-stat { background: var(--secao-alt); border-radius: 8px; padding: 9px 10px; text-align: center; }
+
 /* ----- Pop-up de detalhe do barbeiro -------------------------------------- */
 .equipe-modal-topo { align-items: flex-start; gap: 12px; }
 .equipe-modal-nome { flex: 1; min-width: 0; }
@@ -365,97 +371,143 @@
 .equipe-detalhes summary::before { content: '▸ '; }
 .equipe-detalhes[open] summary::before { content: '▾ '; }
 
-/* ----- Agenda: linha do tempo (dia) -------------------------------------- */
-.agenda-timeline {
-  position: relative;
-  margin-bottom: 12px;
-  padding-left: 4px;
-}
-.agenda-hora { position: absolute; left: 0; right: 0; height: 0; }
-.agenda-hora-rot {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 42px;
-  text-align: right;
-  transform: translateY(-50%);
-  font-size: 11px;
-  color: var(--texto-sutil);
-}
-.agenda-hora-linha { position: absolute; left: 52px; right: 0; top: 0; border-top: 1px solid var(--borda); }
-.agenda-agora { position: absolute; left: 52px; right: 0; height: 0; z-index: 3; }
-.agenda-agora::before { content: ''; position: absolute; left: 0; right: 0; top: 0; border-top: 2px solid var(--azul); }
-.agenda-agora span { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--azul); }
-
-.agenda-blocos { position: absolute; left: 52px; right: 0; top: 0; bottom: 0; }
-.agenda-bloco {
-  position: absolute;
-  border-radius: 10px;
-  padding: 6px 10px;
-  overflow: hidden;
-  text-decoration: none;
-  display: block;
-  line-height: 1.3;
-  background: var(--superficie);
-  border: 1px solid var(--borda);
+/* ----- Agenda: navegação de data + seletor de barbeiro ------------------- */
+.agenda-data-nav { display: flex; align-items: center; gap: 8px; }
+.icon-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--secao-alt);
+  border: 0.8px solid var(--borda);
   color: var(--texto);
-}
-.agenda-bloco-cliente { display: block; font-size: 13px; font-weight: 600; padding-right: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.agenda-bloco-serv { display: block; font-size: 11.5px; color: var(--texto-secundario); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.agenda-bloco-hora { display: block; font-size: 11px; color: var(--texto-sutil); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-/* Bolinha de status no canto superior direito */
-.ag-dot { position: absolute; top: 9px; right: 10px; width: 7px; height: 7px; border-radius: 50%; background: var(--sucesso); }
-.agenda-bloco.st-agendado .ag-dot { background: var(--azul); }
-.agenda-bloco.st-cancelado .ag-dot { background: var(--texto-sutil); }
-.agenda-bloco.st-cancelado .agenda-bloco-cliente { text-decoration: line-through; color: var(--texto-secundario); }
-
-/* Bolinha standalone (usada na lista do grupo "+N", fora do bloco) */
-.dot-concluido { background: var(--sucesso); }
-.dot-agendado { background: var(--azul); }
-.dot-cancelado { background: var(--texto-sutil); }
-
-/* Bloco "+N" (overflow de horário lotado) */
-.agenda-bloco.grupo-n {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  background: var(--secao-alt);
-  border-style: dashed;
-  font-weight: 600;
-  text-align: center;
+  text-decoration: none;
 }
-.agenda-bloco.grupo-n .agenda-bloco-cliente { padding-right: 0; text-align: center; }
-.agenda-bloco.grupo-n .agenda-bloco-hora { display: none; }
+.agenda-data-form { flex: 1; margin: 0; }
+.agenda-data-input {
+  width: 100%;
+  text-align: center;
+  background: var(--superficie);
+  border: 0.8px solid var(--borda);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13.5px;
+  color: var(--texto);
+}
 
-/* Lista de atendimentos dentro do pop-up de grupo */
-.grupo-lista { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-.grupo-item {
-  position: relative;
+.agenda-barbeiros-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.agenda-barbeiros-scroll::-webkit-scrollbar { display: none; }
+.agenda-barbeiros { display: inline-flex; gap: 14px; padding-bottom: 2px; }
+.agenda-barbeiro-chip { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; flex-shrink: 0; }
+.avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(47, 107, 255, 0.2);
+  color: #7ea3ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.avatar--lg { width: 44px; height: 44px; font-size: 13px; }
+.avatar--lg.ativo,
+.avatar.ativo { background: var(--azul); color: #fff; }
+.avatar--bloq { background: var(--secao-alt); color: var(--texto-sutil); }
+.agenda-barbeiro-nome { font-size: 11px; color: var(--texto-sutil); }
+.agenda-barbeiro-nome.ativo { color: var(--texto); font-weight: 600; }
+
+/* ----- Agenda: lista do dia (linhas simples, sem escala de horário) ------ */
+.lista-rows { display: flex; flex-direction: column; gap: 10px; }
+.agenda-linha { display: flex; align-items: center; gap: 10px; }
+.agenda-linha-hora { flex-shrink: 0; width: 40px; font-size: 11px; font-weight: 600; color: var(--texto-sutil); }
+.row {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 30px 10px 12px;
-  border-radius: 12px;
   background: var(--secao-alt);
+  border: 0.8px solid var(--borda);
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: var(--texto);
+  position: relative;
+}
+.row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.row-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-sub { font-size: 11px; color: var(--texto-sutil); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-bloq .row-title { color: var(--texto-secundario); }
+.row-x { margin: 0; flex-shrink: 0; }
+.row-x button { background: none; border: none; cursor: pointer; padding: 0 3px; font-size: 16px; line-height: 1; color: var(--texto-sutil); }
+.row-x button:hover { color: var(--erro); }
+
+/* ----- Grid de cards (Serviços, Estoque) --------------------------------- */
+.cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.item-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--secao-alt);
+  border: 0.8px solid var(--borda);
+  border-radius: 10px;
+  padding: 10px 12px;
   text-decoration: none;
   color: var(--texto);
 }
-.grupo-item .ag-dot { position: static; flex-shrink: 0; }
-.grupo-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.grupo-item-nome { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.grupo-item-hora { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--texto-sutil); }
-.grupo-item-bloq .grupo-item-nome { color: var(--texto-secundario); }
+.item-card--baixo { border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.06); }
+.item-edit-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+.item-thumb {
+  width: 100%;
+  height: 56px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+}
+.item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.item-bottom { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.item-preco { font-size: 13px; font-weight: 700; color: var(--texto); }
+.item-numero { font-size: 15px; font-weight: 700; color: var(--texto); }
+.badge-repor {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--aviso);
+  background: rgba(251, 191, 36, 0.14);
+  padding: 2px 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
 
-/* Linha de ícones (decorativa) no canto inferior direito */
-.ag-icones { position: absolute; right: 9px; bottom: 7px; display: flex; gap: 9px; color: var(--azul); pointer-events: none; }
-.ag-icones svg { width: 15px; height: 15px; }
-
-/* Bloco curto (<=30 min): nome + horário em uma linha */
-.agenda-bloco.curto { display: flex; align-items: center; gap: 10px; padding-right: 22px; }
-.agenda-bloco.curto .agenda-bloco-cliente { flex: 1; min-width: 0; padding-right: 0; }
-.agenda-bloco.curto .agenda-bloco-hora { flex-shrink: 0; }
+/* Bolinha de status */
+.ag-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sucesso); flex-shrink: 0; }
+.dot-concluido { background: var(--sucesso); }
+.dot-agendado { background: #7ea3ff; }
+.dot-cancelado { background: var(--texto-sutil); }
 
 /* ----- Pop-up de detalhe do agendamento ---------------------------------- */
 .ag-overlay {
@@ -468,7 +520,12 @@
   justify-content: center;
 }
 .ag-modal-box {
-  background: var(--superficie);
+  /* Precisa ser praticamente opaco — var(--superficie) é translúcido (vidro sobre
+     o degradê) e deixaria o conteúdo de trás vazando/ilegível dentro do modal. */
+  background: linear-gradient(rgba(20, 26, 46, 0.98), rgba(20, 26, 46, 0.98)), var(--fundo);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 0.8px solid var(--borda);
   border-radius: 20px 20px 0 0;
   width: 100%;
   max-width: 560px;
@@ -486,22 +543,6 @@ body.modal-aberto { overflow: hidden; }
 .ag-modal-nome { font-size: 16px; font-weight: 600; }
 .ag-modal-fechar { background: none; border: none; font-size: 26px; line-height: 1; color: var(--texto-sutil); cursor: pointer; padding: 0 4px; }
 .ag-modal-fechar:hover { color: var(--texto); }
-
-/* Bloqueio (Block time) — hachurado, sem clique */
-.agenda-bloco.bloq {
-  border-left-color: var(--texto-sutil);
-  background-color: var(--secao-alt);
-  background-image: repeating-linear-gradient(45deg, transparent 0 6px, rgba(128, 128, 128, 0.14) 6px 12px);
-  color: var(--texto-secundario);
-  cursor: default;
-}
-.agenda-bloco.bloq .agenda-bloco-cliente { color: var(--texto-secundario); }
-.agenda-bloco-x { position: absolute; top: 1px; right: 3px; margin: 0; }
-.agenda-bloco-x button {
-  background: none; border: none; cursor: pointer; padding: 0 3px;
-  font-size: 16px; line-height: 1; color: var(--texto-sutil);
-}
-.agenda-bloco-x button:hover { color: var(--erro); }
 
 /* Botão flutuante da agenda (novo agendamento / bloquear horário) --------- */
 .agenda-fab-wrap {
@@ -556,10 +597,4 @@ body.modal-aberto { overflow: hidden; }
   box-shadow: 0 4px 12px rgba(47, 107, 255, 0.35);
 }
 .agenda-fab-opcao svg { flex-shrink: 0; }
-
-/* Cards de detalhe (recolhíveis) */
-.agenda-detalhe > summary { cursor: pointer; list-style: none; }
-.agenda-detalhe > summary::-webkit-details-marker { display: none; }
-.agenda-detalhe-resumo { display: flex; align-items: center; gap: 10px; }
-.agenda-detalhe-nome { flex: 1; font-weight: 600; }
 

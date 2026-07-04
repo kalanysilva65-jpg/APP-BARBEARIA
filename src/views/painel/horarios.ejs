@@ -1,94 +1,132 @@
-<% if (!barbeiro) { %>
+<% if (barbeiros.length === 0) { %>
   <div class="card"><p class="texto-secundario">Nenhum barbeiro ativo.</p></div>
 <% } else { %>
 
-  <form method="GET" action="/painel/horarios" class="mb-16">
-    <label for="barbeiro">Barbeiro</label>
-    <select id="barbeiro" name="barbeiro" onchange="this.form.submit()">
-      <% barbeiros.forEach(function (b) { %>
-        <option value="<%= b.id %>" <%= b.id === barbeiro.id ? 'selected' : '' %>><%= b.nome %></option>
-      <% }) %>
-    </select>
-  </form>
-
-  <!-- Jornada semanal -->
-  <div class="card mb-16">
-    <h2>Jornada semanal</h2>
-    <p class="texto-secundario mb-16">Desmarque um dia para fechar (folga).</p>
-    <form method="POST" action="/painel/horarios/jornada">
-      <input type="hidden" name="barbeiroId" value="<%= barbeiro.id %>" />
-      <table class="tabela tabela-jornada">
-        <tbody>
-          <% jornada.forEach(function (j) { %>
-            <tr>
-              <td>
-                <label class="check">
-                  <input type="checkbox" name="trabalha_<%= j.diaSemana %>" <%= j.trabalha ? 'checked' : '' %> />
-                  <%= DIAS_SEMANA[j.diaSemana] %>
-                </label>
-              </td>
-              <td><input type="time" name="inicio_<%= j.diaSemana %>" value="<%= j.horaInicio %>" /></td>
-              <td><input type="time" name="fim_<%= j.diaSemana %>" value="<%= j.horaFim %>" /></td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-      <button class="btn btn-primario btn-sm mt-16">Salvar jornada</button>
-    </form>
+  <span class="dash-rotulo texto-sutil">JORNADA SEMANAL</span>
+  <div class="lista-rows mt-16 mb-16">
+    <% barbeirosComJornada.forEach(function (bj) { %>
+      <a href="#" class="row" onclick="abrirModal(<%= bj.barbeiro.id %>);return false;">
+        <span class="avatar" style="width:34px;height:34px;font-size:11.5px"><%= bj.barbeiro.nome.split(' ').length > 1 ? (bj.barbeiro.nome[0] + bj.barbeiro.nome.split(' ').slice(-1)[0][0]).toUpperCase() : bj.barbeiro.nome.slice(0, 2).toUpperCase() %></span>
+        <span class="row-info">
+          <span class="row-title"><%= bj.barbeiro.nome %></span>
+          <span class="row-sub"><%= bj.resumo %></span>
+        </span>
+      </a>
+    <% }) %>
   </div>
 
-  <!-- Bloqueios -->
-  <div class="card">
-    <h2>Bloqueios</h2>
-    <p class="texto-secundario mb-16">Marque um intervalo como indisponível numa data específica.</p>
-
-    <form method="POST" action="/painel/horarios/bloqueios" class="form">
-      <input type="hidden" name="barbeiroId" value="<%= barbeiro.id %>" />
-      <div class="campo">
-        <label for="data">Data</label>
-        <input id="data" type="date" name="data" required />
-      </div>
-      <div class="grid-2">
-        <div class="campo">
-          <label for="horaInicio">Início</label>
-          <input id="horaInicio" type="time" name="horaInicio" required />
-        </div>
-        <div class="campo">
-          <label for="horaFim">Fim</label>
-          <input id="horaFim" type="time" name="horaFim" required />
-        </div>
-      </div>
-      <div class="campo">
-        <label for="motivo">Motivo (opcional)</label>
-        <input id="motivo" name="motivo" placeholder="Almoço, compromisso…" />
-      </div>
-      <button class="btn btn-primario btn-sm">Adicionar bloqueio</button>
-    </form>
-
+  <span class="dash-rotulo texto-sutil">BLOQUEIOS MANUAIS</span>
+  <div class="lista-rows mt-16">
     <% if (bloqueios.length === 0) { %>
-      <p class="texto-secundario mt-24">Nenhum bloqueio futuro.</p>
+      <p class="texto-secundario">Nenhum bloqueio futuro.</p>
     <% } else { %>
-      <table class="tabela mt-24">
-        <thead>
-          <tr><th>Data</th><th>Horário</th><th>Motivo</th><th></th></tr>
-        </thead>
-        <tbody>
-          <% bloqueios.forEach(function (b) { %>
-            <tr>
-              <td><%= fmtData(b.data) %></td>
-              <td><%= b.horaInicio %>–<%= b.horaFim %></td>
-              <td><%= b.motivo || '—' %></td>
-              <td class="col-acao">
-                <form method="POST" action="/painel/horarios/bloqueios/<%= b.id %>/remover" class="inline">
-                  <input type="hidden" name="barbeiroId" value="<%= barbeiro.id %>" />
-                  <button class="btn-x" title="Remover bloqueio">×</button>
-                </form>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
+      <% bloqueios.forEach(function (bl) { %>
+        <div class="row row-bloq">
+          <span class="row-info">
+            <span class="row-title"><%= fmtData(bl.data) %> · <%= bl.horaInicio %>–<%= bl.horaFim %></span>
+            <span class="row-sub"><%= bl.motivo || 'Bloqueado' %> · <%= bl.usuario.nome %></span>
+          </span>
+          <form method="POST" action="/painel/horarios/bloqueios/<%= bl.id %>/remover" class="row-x" onsubmit="return confirm('Remover este bloqueio?')">
+            <button title="Remover bloqueio" type="submit">×</button>
+          </form>
+        </div>
+      <% }) %>
     <% } %>
   </div>
+
+  <!-- Botão flutuante: bloquear horário (só nesta tela) -->
+  <div class="agenda-fab-wrap">
+    <button type="button" class="agenda-fab" onclick="abrirModal('bloqueio')" aria-label="Bloquear horário">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+
+  <!-- Pop-up: bloquear horário -->
+  <div class="ag-overlay" id="agm-bloqueio" onclick="if(event.target===this)fecharModal(this)">
+    <div class="ag-modal-box">
+      <div class="ag-modal-topo">
+        <div class="ag-modal-nome">Bloquear horário</div>
+        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+      </div>
+      <form method="POST" action="/painel/horarios/bloqueios" class="form mt-16">
+        <div class="campo">
+          <label for="barbeiroId">Barbeiro</label>
+          <select id="barbeiroId" name="barbeiroId" required>
+            <% barbeiros.forEach(function (b) { %>
+              <option value="<%= b.id %>"><%= b.nome %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="data">Data</label>
+          <input id="data" type="date" name="data" required />
+        </div>
+        <div class="grid-2">
+          <div class="campo">
+            <label for="horaInicio">Início</label>
+            <input id="horaInicio" type="time" name="horaInicio" required />
+          </div>
+          <div class="campo">
+            <label for="horaFim">Fim</label>
+            <input id="horaFim" type="time" name="horaFim" required />
+          </div>
+        </div>
+        <div class="campo">
+          <label for="motivo">Motivo (opcional)</label>
+          <input id="motivo" name="motivo" placeholder="Almoço, compromisso…" />
+        </div>
+        <button class="btn btn-primario btn-bloco">Adicionar bloqueio</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pop-up: jornada semanal por barbeiro -->
+  <% barbeirosComJornada.forEach(function (bj) { %>
+    <div class="ag-overlay" id="agm-<%= bj.barbeiro.id %>" onclick="if(event.target===this)fecharModal(this)">
+      <div class="ag-modal-box">
+        <div class="ag-modal-topo">
+          <div class="ag-modal-nome"><%= bj.barbeiro.nome %></div>
+          <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+        </div>
+        <p class="texto-secundario mb-16">Desmarque um dia para fechar (folga).</p>
+        <form method="POST" action="/painel/horarios/jornada">
+          <input type="hidden" name="barbeiroId" value="<%= bj.barbeiro.id %>" />
+          <table class="tabela tabela-jornada">
+            <tbody>
+              <% bj.jornada.forEach(function (j) { %>
+                <tr>
+                  <td>
+                    <label class="check">
+                      <input type="checkbox" name="trabalha_<%= j.diaSemana %>" <%= j.trabalha ? 'checked' : '' %> />
+                      <%= DIAS_SEMANA[j.diaSemana] %>
+                    </label>
+                  </td>
+                  <td><input type="time" name="inicio_<%= j.diaSemana %>" value="<%= j.horaInicio %>" /></td>
+                  <td><input type="time" name="fim_<%= j.diaSemana %>" value="<%= j.horaFim %>" /></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+          <button class="btn btn-primario btn-bloco mt-16">Salvar jornada</button>
+        </form>
+      </div>
+    </div>
+  <% }) %>
+
+  <script>
+    function abrirModal(id) {
+      var o = document.getElementById('agm-' + id);
+      if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+    }
+    function fecharModal(o) {
+      if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
+        document.body.classList.remove('modal-aberto');
+      }
+    });
+  </script>
 
 <% } %>

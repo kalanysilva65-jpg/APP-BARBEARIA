@@ -42,3 +42,10 @@
     </button>
   </form>
 </div>
+
+<% if (item) { %>
+  <form method="POST" action="/painel/estoque/<%= item.id %>/remover" class="mt-16"
+        onsubmit="return confirm('Excluir este item?')">
+    <button class="btn btn-perigo btn-sm">Excluir item</button>
+  </form>
+<% } %>

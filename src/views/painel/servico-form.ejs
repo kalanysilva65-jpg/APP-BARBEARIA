@@ -78,3 +78,15 @@
     </button>
   </form>
 </div>
+
+<% if (servico) { %>
+  <div class="flex gap-8 mt-16">
+    <form method="POST" action="/painel/servicos/<%= servico.id %>/toggle" class="inline">
+      <button class="btn btn-secundario btn-sm"><%= servico.ativo ? 'Desativar' : 'Ativar' %></button>
+    </form>
+    <form method="POST" action="/painel/servicos/<%= servico.id %>/remover" class="inline"
+          onsubmit="return confirm('Excluir este item?')">
+      <button class="btn btn-perigo btn-sm">Excluir</button>
+    </form>
+  </div>
+<% } %>

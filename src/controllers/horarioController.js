@@ -4,30 +4,63 @@ const prisma = require('../config/db');
 const { DIAS_SEMANA } = require('../config/constantes');
 const { dataLocal } = require('../services/disponibilidade');
 
-// GET /painel/horarios — mostra jornada + bloqueios do barbeiro selecionado
-async function ver(req, res) {
-  const barbeiros = await prisma.usuario.findMany({ where: { barbeariaId: req.barbeariaId, ativo: true }, orderBy: { id: 'asc' } });
-  if (barbeiros.length === 0) {
-    return res.render('painel/horarios', { titulo: 'Horários', barbeiros, barbeiro: null, jornada: [], bloqueios: [], DIAS_SEMANA });
+const DIAS_ABREV = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+// Resume a jornada semanal numa frase curta (ex.: "Seg–Sáb, 09:00–18:00"),
+// agrupando dias consecutivos que têm o mesmo horário.
+function resumoJornada(jornada) {
+  const porDia = new Array(7).fill(null);
+  jornada.forEach((j) => { porDia[j.diaSemana] = j; });
+
+  const grupos = [];
+  let atual = null;
+  for (let i = 0; i < 7; i++) {
+    const j = porDia[i];
+    if (j && j.trabalha) {
+      if (atual && atual.fim === i - 1 && atual.horaInicio === j.horaInicio && atual.horaFim === j.horaFim) {
+        atual.fim = i;
+      } else {
+        atual = { ini: i, fim: i, horaInicio: j.horaInicio, horaFim: j.horaFim };
+        grupos.push(atual);
+      }
+    }
   }
+  if (grupos.length === 0) return 'Sem expediente';
+  return grupos
+    .map((g) => {
+      const dias = g.ini === g.fim ? DIAS_ABREV[g.ini] : `${DIAS_ABREV[g.ini]}–${DIAS_ABREV[g.fim]}`;
+      return `${dias}, ${g.horaInicio}–${g.horaFim}`;
+    })
+    .join(' · ');
+}
 
-  const barbeiroId = Number(req.query.barbeiro) || barbeiros[0].id;
-  const barbeiro = barbeiros.find((b) => b.id === barbeiroId) || barbeiros[0];
+// GET /painel/horarios — jornada de todos os barbeiros + bloqueios manuais (todos)
+async function ver(req, res) {
+  const b = req.barbeariaId;
+  const barbeiros = await prisma.usuario.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { id: 'asc' } });
 
-  const jornada = await prisma.horarioTrabalho.findMany({
-    where: { usuarioId: barbeiro.id },
-    orderBy: { diaSemana: 'asc' },
+  const todaJornada = await prisma.horarioTrabalho.findMany({ where: { barbeariaId: b } });
+  const barbeirosComJornada = barbeiros.map((barbeiro) => {
+    const jornada = todaJornada.filter((j) => j.usuarioId === barbeiro.id);
+    return { barbeiro, jornada, resumo: resumoJornada(jornada) };
   });
 
-  // Bloqueios de hoje em diante
+  // Bloqueios manuais de hoje em diante (todos os barbeiros).
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
   const bloqueios = await prisma.bloqueio.findMany({
-    where: { usuarioId: barbeiro.id, data: { gte: hoje } },
+    where: { barbeariaId: b, data: { gte: hoje } },
+    include: { usuario: true },
     orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
   });
 
-  res.render('painel/horarios', { titulo: 'Horários', barbeiros, barbeiro, jornada, bloqueios, DIAS_SEMANA });
+  res.render('painel/horarios', {
+    titulo: 'Horários',
+    barbeirosComJornada,
+    barbeiros,
+    bloqueios,
+    DIAS_SEMANA,
+  });
 }
 
 // Confere se o barbeiro pertence à barbearia do contexto.
@@ -63,7 +96,7 @@ async function salvarJornada(req, res) {
   }
 
   req.session.flash = { tipo: 'sucesso', texto: 'Jornada atualizada.' };
-  res.redirect('/painel/horarios?barbeiro=' + barbeiroId);
+  res.redirect('/painel/horarios');
 }
 
 // POST /painel/horarios/bloqueios — adiciona um bloqueio
@@ -83,15 +116,14 @@ async function adicionarBloqueio(req, res) {
   } else {
     req.session.flash = { tipo: 'erro', texto: 'Preencha data e um intervalo de horário válido.' };
   }
-  res.redirect('/painel/horarios?barbeiro=' + barbeiroId);
+  res.redirect('/painel/horarios');
 }
 
 // POST /painel/horarios/bloqueios/:id/remover — remove um bloqueio
 async function removerBloqueio(req, res) {
-  const barbeiroId = Number(req.body.barbeiroId);
   await prisma.bloqueio.deleteMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } }).catch(() => {});
   req.session.flash = { tipo: 'sucesso', texto: 'Bloqueio removido.' };
-  res.redirect('/painel/horarios' + (barbeiroId ? '?barbeiro=' + barbeiroId : ''));
+  res.redirect('/painel/horarios');
 }
 
 module.exports = { ver, salvarJornada, adicionarBloqueio, removerBloqueio };

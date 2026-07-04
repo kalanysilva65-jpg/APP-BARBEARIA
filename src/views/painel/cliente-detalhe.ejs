@@ -1,6 +1,12 @@
 <div class="flex-entre mb-16">
   <a href="/painel/clientes" class="link-voltar">← Voltar para clientes</a>
-  <a href="/painel/clientes/<%= cliente.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
+  <div class="flex gap-8">
+    <a href="/painel/clientes/<%= cliente.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
+    <form method="POST" action="/painel/clientes/<%= cliente.id %>/remover" class="inline"
+          onsubmit="return confirm('Remover este cliente?')">
+      <button class="btn btn-perigo btn-sm">Remover</button>
+    </form>
+  </div>
 </div>
 
 <p class="texto-secundario mb-16">

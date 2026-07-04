@@ -1,30 +1,44 @@
-<!-- Seletor de período e de barbeiro -->
-<div class="card mb-16">
-  <div class="comissao-presets">
-    <a class="btn btn-secundario btn-sm" href="/painel/comissoes?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>&barbeiro=<%= barbeiroSelecionado %>">Hoje</a>
-    <a class="btn btn-secundario btn-sm" href="/painel/comissoes?inicio=<%= presetSemana.inicio %>&fim=<%= presetSemana.fim %>&barbeiro=<%= barbeiroSelecionado %>">Semana</a>
-    <a class="btn btn-secundario btn-sm" href="/painel/comissoes?inicio=<%= presetMes.inicio %>&fim=<%= presetMes.fim %>&barbeiro=<%= barbeiroSelecionado %>">Mês</a>
+<!-- Seletor de período: pills (Hoje/Semana/Mês) + ícone de calendário (De/Até + barbeiro) -->
+<div class="periodo-barra mb-16">
+  <div class="periodo-pills">
+    <a class="periodo-pill <%= periodoAtivo === 'hoje' ? 'ativo' : '' %>" href="/painel/comissoes?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>&barbeiro=<%= barbeiroSelecionado %>">Hoje</a>
+    <a class="periodo-pill <%= periodoAtivo === 'semana' ? 'ativo' : '' %>" href="/painel/comissoes?inicio=<%= presetSemana.inicio %>&fim=<%= presetSemana.fim %>&barbeiro=<%= barbeiroSelecionado %>">Semana</a>
+    <a class="periodo-pill <%= periodoAtivo === 'mes' ? 'ativo' : '' %>" href="/painel/comissoes?inicio=<%= presetMes.inicio %>&fim=<%= presetMes.fim %>&barbeiro=<%= barbeiroSelecionado %>">Mês</a>
   </div>
-  <form method="GET" action="/painel/comissoes" class="form-periodo mt-16">
-    <div class="campo">
-      <label for="barbeiro">Barbeiro</label>
-      <select id="barbeiro" name="barbeiro" onchange="this.form.submit()">
-        <option value="todos" <%= barbeiroSelecionado === 'todos' ? 'selected' : '' %>>Todos os barbeiros</option>
-        <% barbeiros.forEach(function (b) { %>
-          <option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
-        <% }) %>
-      </select>
+  <button type="button" class="periodo-cal-btn <%= periodoAtivo === 'custom' ? 'ativo' : '' %>" onclick="abrirModalEquipe('periodo')" title="Escolher período e barbeiro">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+  </button>
+</div>
+
+<div class="ag-overlay" id="equipe-modal-periodo" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Período e barbeiro</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
     </div>
-    <div class="campo">
-      <label for="inicio">De</label>
-      <input id="inicio" type="date" name="inicio" value="<%= inicioStr %>" />
-    </div>
-    <div class="campo">
-      <label for="fim">Até</label>
-      <input id="fim" type="date" name="fim" value="<%= fimStr %>" />
-    </div>
-    <button class="btn btn-primario btn-sm">Aplicar</button>
-  </form>
+    <form method="GET" action="/painel/comissoes" class="form mt-16">
+      <div class="campo">
+        <label for="barbeiro">Barbeiro</label>
+        <select id="barbeiro" name="barbeiro">
+          <option value="todos" <%= barbeiroSelecionado === 'todos' ? 'selected' : '' %>>Todos os barbeiros</option>
+          <% barbeiros.forEach(function (b) { %>
+            <option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="grid-2">
+        <div class="campo">
+          <label for="inicio">De</label>
+          <input id="inicio" type="date" name="inicio" value="<%= inicioStr %>" />
+        </div>
+        <div class="campo">
+          <label for="fim">Até</label>
+          <input id="fim" type="date" name="fim" value="<%= fimStr %>" />
+        </div>
+      </div>
+      <button class="btn btn-primario btn-bloco">Aplicar</button>
+    </form>
+  </div>
 </div>
 
 <!-- Faturado do período -->
@@ -36,32 +50,31 @@
 <!-- Por barbeiro (card compacto, clicável) -->
 <% grupos.forEach(function (g) { %>
   <div class="card equipe-mini mb-16" onclick="abrirModalEquipe(<%= g.barbeiro.id %>)">
-    <div class="equipe-mini-topo">
-      <h2><%= g.barbeiro.nome %></h2>
-      <span class="equipe-foto equipe-foto--view">
+    <div class="equipe-mini-topo2">
+      <span class="equipe-foto equipe-foto--view" style="width:38px;height:38px">
         <% if (g.barbeiro.fotoUrl) { %>
-          <img src="<%= g.barbeiro.fotoUrl %>" alt="Foto de <%= g.barbeiro.nome %>" />
+          <img src="<%= g.barbeiro.fotoUrl %>" alt="Foto de <%= g.barbeiro.nome %>" style="width:38px;height:38px" />
         <% } else { %>
-          <span class="equipe-foto-inicial"><%= g.barbeiro.nome.charAt(0).toUpperCase() %></span>
+          <span class="equipe-foto-inicial" style="font-size:13px"><%= g.barbeiro.nome.charAt(0).toUpperCase() %></span>
         <% } %>
       </span>
-    </div>
-    <div class="equipe-metricas">
-      <div class="equipe-metrica">
-        <div class="equipe-metrica-topo">
-          <span class="texto-sutil">Ticket médio</span>
-          <strong><%= fmtBRL(g.ticketMedio) %></strong>
-        </div>
-        <div class="barra-prog"><div class="barra-prog-fill" style="width:<%= Math.round((g.ticketMedio / maxTicket) * 100) %>%"></div></div>
-        <span class="equipe-metrica-legenda">Período selecionado</span>
+      <div class="equipe-mini-info">
+        <div class="row-title"><%= g.barbeiro.nome %></div>
+        <div class="row-sub">Faturado: <%= fmtBRL(g.faturadoTotal) %></div>
       </div>
-      <div class="equipe-metrica">
-        <div class="equipe-metrica-topo">
-          <span class="texto-sutil">Ocupação</span>
-          <strong><%= g.ocupacaoPct === null ? '—' : g.ocupacaoPct + '%' %></strong>
-        </div>
-        <div class="barra-prog"><div class="barra-prog-fill" style="width:<%= g.ocupacaoPct || 0 %>%"></div></div>
-        <span class="equipe-metrica-legenda">Da jornada disponível</span>
+      <div class="equipe-mini-comissao">
+        <div class="item-preco"><%= fmtBRL(g.comissao) %></div>
+        <div class="row-sub">comissão <%= g.barbeiro.comissaoPercentual %>%</div>
+      </div>
+    </div>
+    <div class="equipe-mini-stats">
+      <div class="equipe-mini-stat">
+        <div class="item-preco"><%= fmtBRL(g.ticketMedio) %></div>
+        <div class="row-sub">Ticket médio</div>
+      </div>
+      <div class="equipe-mini-stat">
+        <div class="item-preco"><%= g.ocupacaoPct === null ? '—' : g.ocupacaoPct + '%' %></div>
+        <div class="row-sub">Ocupação</div>
       </div>
     </div>
   </div>

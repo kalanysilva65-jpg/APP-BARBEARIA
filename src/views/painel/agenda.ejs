@@ -1,22 +1,43 @@
-<div class="agenda-cabecalho mb-16">
-  <p class="texto-secundario"><%= dataExtenso %></p>
+<%
+  function _iniciais(nome) {
+    var p = String(nome).trim().split(/\s+/);
+    return p.length > 1 ? (p[0][0] + p[p.length - 1][0]).toUpperCase() : p[0].slice(0, 2).toUpperCase();
+  }
+%>
 
-  <form method="GET" action="/painel/agenda" class="agenda-filtros">
-    <a class="btn btn-secundario btn-sm" title="Dia anterior"
-       href="/painel/agenda?data=<%= dataPrev %><%= ehAdmin ? '&barbeiro=' + barbeiroSelecionado : '' %>">←</a>
-    <input type="date" name="data" value="<%= dataStr %>" onchange="this.form.submit()" />
-    <a class="btn btn-secundario btn-sm" title="Próximo dia"
-       href="/painel/agenda?data=<%= dataNext %><%= ehAdmin ? '&barbeiro=' + barbeiroSelecionado : '' %>">→</a>
-    <% if (ehAdmin) { %>
-      <select name="barbeiro" onchange="this.form.submit()">
-        <option value="todos" <%= barbeiroSelecionado === 'todos' ? 'selected' : '' %>>Todos os barbeiros</option>
-        <% barbeiros.forEach(function (b) { %>
-          <option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
-        <% }) %>
-      </select>
-    <% } %>
+<!-- Navegação de data -->
+<div class="agenda-data-nav mb-16">
+  <a class="icon-btn" title="Dia anterior"
+     href="/painel/agenda?data=<%= dataPrev %><%= ehAdmin ? '&barbeiro=' + barbeiroSelecionado : '' %>">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </a>
+  <form method="GET" action="/painel/agenda" class="agenda-data-form">
+    <% if (ehAdmin) { %><input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" /><% } %>
+    <input type="date" name="data" value="<%= dataStr %>" onchange="this.form.submit()" class="agenda-data-input" />
   </form>
+  <a class="icon-btn" title="Próximo dia"
+     href="/painel/agenda?data=<%= dataNext %><%= ehAdmin ? '&barbeiro=' + barbeiroSelecionado : '' %>">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </a>
 </div>
+
+<!-- Seletor de barbeiro (avatares) -->
+<% if (ehAdmin) { %>
+  <div class="agenda-barbeiros-scroll mb-16">
+    <div class="agenda-barbeiros">
+      <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=todos" class="agenda-barbeiro-chip">
+        <span class="avatar avatar--lg <%= barbeiroSelecionado === 'todos' ? 'ativo' : '' %>">T</span>
+        <span class="agenda-barbeiro-nome <%= barbeiroSelecionado === 'todos' ? 'ativo' : '' %>">Todos</span>
+      </a>
+      <% barbeiros.forEach(function (b) { %>
+        <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=<%= b.id %>" class="agenda-barbeiro-chip">
+          <span class="avatar avatar--lg <%= barbeiroSelecionado === String(b.id) ? 'ativo' : '' %>"><%= _iniciais(b.nome) %></span>
+          <span class="agenda-barbeiro-nome <%= barbeiroSelecionado === String(b.id) ? 'ativo' : '' %>"><%= b.nome.split(' ')[0] %></span>
+        </a>
+      <% }) %>
+    </div>
+  </div>
+<% } %>
 
 <!-- Botão flutuante: Novo agendamento / Bloquear horário (só nesta tela) -->
 <div class="agenda-fab-wrap">
@@ -84,10 +105,6 @@
     var o = document.getElementById('agm-' + id);
     if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
   }
-  function abrirGrupo(id) {
-    var o = document.getElementById('grp-' + id);
-    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
-  }
   function fecharModal(o) {
     if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
   }
@@ -110,177 +127,49 @@
   <div class="card"><p class="texto-secundario">Nada agendado para esta data.</p></div>
 <% } else { %>
   <%
-    // ----- Cálculo do layout da linha do tempo -----------------------------
     function _min(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
-    function _dur(ag) {
-      var d = ag.itens.reduce(function (s, it) { return s + (it.servico.duracaoMin || 0) * it.quantidade; }, 0);
-      return d > 0 ? d : 30; // produtos / vazio ocupam 30 min visualmente
-    }
-    function _fmtH(m) { var h = Math.floor(m / 60), mm = m % 60; return mm === 0 ? String(h) : h + ':' + String(mm).padStart(2, '0'); }
-    var _icones =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
     var eventos = [];
-    agendamentos.forEach(function (ag) {
-      var ini = _min(ag.horaInicio);
-      eventos.push({ tipo: 'ag', ag: ag, ini: ini, fim: ini + _dur(ag) });
-    });
-    bloqueios.forEach(function (bl) {
-      var ini = _min(bl.horaInicio), fim = _min(bl.horaFim);
-      eventos.push({ tipo: 'bloq', bl: bl, ini: ini, fim: Math.max(fim, ini + 15) });
-    });
-    eventos.sort(function (a, b) { return a.ini - b.ini || a.fim - b.fim; });
-
-    var minIni = Math.min.apply(null, eventos.map(function (e) { return e.ini; }));
-    var maxFim = Math.max.apply(null, eventos.map(function (e) { return e.fim; }));
-    var hIni = Math.floor(minIni / 60);
-    var hFim = Math.ceil(maxFim / 60);
-    if (hFim <= hIni) hFim = hIni + 1;
-    var PX = 1.35; // pixels por minuto
-
-    // Colisão: agrupa em "clusters" que se encadeiam e distribui em colunas.
-    var clusters = [], cur = [], curEnd = -1;
-    eventos.forEach(function (e) {
-      if (cur.length && e.ini >= curEnd) { clusters.push(cur); cur = []; curEnd = -1; }
-      cur.push(e); curEnd = Math.max(curEnd, e.fim);
-    });
-    if (cur.length) clusters.push(cur);
-    clusters.forEach(function (cl) {
-      var colsEnd = [];
-      cl.forEach(function (e) {
-        var ok = false;
-        for (var i = 0; i < colsEnd.length; i++) { if (e.ini >= colsEnd[i]) { e.col = i; colsEnd[i] = e.fim; ok = true; break; } }
-        if (!ok) { e.col = colsEnd.length; colsEnd.push(e.fim); }
-      });
-      cl.forEach(function (e) { e.cols = colsEnd.length; });
-    });
-
-    // Overflow "+N": clusters com 3+ atendimentos simultâneos viram um bloco só
-    // (evita colunas finas e ilegíveis no celular). Toque abre a lista.
-    var itensRender = [], grupos = [];
-    clusters.forEach(function (cl) {
-      if (cl[0].cols >= 3) {
-        var g = {
-          id: grupos.length,
-          membros: cl,
-          ini: Math.min.apply(null, cl.map(function (e) { return e.ini; })),
-          fim: Math.max.apply(null, cl.map(function (e) { return e.fim; })),
-        };
-        grupos.push(g);
-        itensRender.push({ kind: 'grupo', g: g });
-      } else {
-        cl.forEach(function (e) { itensRender.push({ kind: 'evento', e: e }); });
-      }
-    });
-
-    var alturaTotal = (hFim - hIni) * 60 * PX;
-    // Linha "agora" (só se a data vista for hoje).
-    var agoraDate = new Date();
-    var agoraMin = agoraDate.getHours() * 60 + agoraDate.getMinutes();
-    var ehHoje = (dataStr === dataHoje);
+    agendamentos.forEach(function (ag) { eventos.push({ tipo: 'ag', ag: ag, ini: _min(ag.horaInicio) }); });
+    bloqueios.forEach(function (bl) { eventos.push({ tipo: 'bloq', bl: bl, ini: _min(bl.horaInicio) }); });
+    eventos.sort(function (a, b) { return a.ini - b.ini; });
   %>
 
-  <div class="agenda-timeline" style="height:<%= alturaTotal %>px">
-    <% for (var h = hIni; h <= hFim; h++) { %>
-      <div class="agenda-hora" style="top:<%= (h - hIni) * 60 * PX %>px">
-        <span class="agenda-hora-rot"><%= (h % 24) + ':00' %></span>
-        <span class="agenda-hora-linha"></span>
-      </div>
-    <% } %>
-
-    <% if (ehHoje && agoraMin >= hIni * 60 && agoraMin <= hFim * 60) { %>
-      <div class="agenda-agora" style="top:<%= (agoraMin - hIni * 60) * PX %>px"><span></span></div>
-    <% } %>
-
-    <div class="agenda-blocos">
-      <% itensRender.forEach(function (item) {
-           if (item.kind === 'grupo') {
-             var g = item.g;
-             var top = (g.ini - hIni * 60) * PX;
-             var alt = Math.max(32, (g.fim - g.ini) * PX - 3);
-             var pos = 'top:' + top + 'px;height:' + alt + 'px;left:2px;width:calc(100% - 4px)';
-      %>
-        <a class="agenda-bloco grupo-n" onclick="abrirGrupo(<%= g.id %>);return false;" href="#" style="<%= pos %>">
-          <span class="agenda-bloco-cliente">+<%= g.membros.length %> atendimentos</span>
-          <span class="agenda-bloco-hora"><%= _fmtH(g.ini) %> – <%= _fmtH(g.fim) %></span>
-        </a>
-      <%
-           } else {
-             var e = item.e;
-             var top = (e.ini - hIni * 60) * PX;
-             var alt = Math.max(32, (e.fim - e.ini) * PX - 3);
-             var largura = 100 / e.cols;
-             var esq = e.col * largura;
-             var curto = (e.fim - e.ini) <= 35 ? 'curto' : '';
-             var pos = 'top:' + top + 'px;height:' + alt + 'px;left:calc(' + esq + '% + 2px);width:calc(' + largura + '% - 4px)';
-      %>
-        <% if (e.tipo === 'ag') { var ag = e.ag; var mostraIcones = (e.fim - e.ini) >= 45; %>
-          <a class="agenda-bloco st-<%= ag.status %> <%= curto %>" onclick="abrirModal(<%= ag.id %>);return false;" href="#" style="<%= pos %>">
-            <span class="ag-dot"></span>
-            <span class="agenda-bloco-cliente"><%= ag.clienteNome %></span>
-            <% if (!curto) { %><span class="agenda-bloco-serv"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %></span><% } %>
-            <span class="agenda-bloco-hora"><%= _fmtH(e.ini) %> – <%= _fmtH(e.fim) %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome %><% } %></span>
-            <% if (mostraIcones) { %><span class="ag-icones"><%- _icones %></span><% } %>
+  <div class="card lista-rows">
+    <% eventos.forEach(function (e) { %>
+      <div class="agenda-linha">
+        <span class="agenda-linha-hora"><%= e.tipo === 'ag' ? e.ag.horaInicio : e.bl.horaInicio %></span>
+        <% if (e.tipo === 'ag') { var ag = e.ag; %>
+          <a href="#" class="row" onclick="abrirModal(<%= ag.id %>);return false;">
+            <span class="avatar"><%= _iniciais(ag.usuario.nome) %></span>
+            <span class="row-info">
+              <span class="row-title"><%= ag.clienteNome %></span>
+              <span class="row-sub"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %></span>
+            </span>
+            <span class="ag-dot dot-<%= ag.status %>"></span>
           </a>
         <% } else { var bl = e.bl; %>
-          <div class="agenda-bloco bloq <%= curto %>" style="<%= pos %>">
-            <span class="agenda-bloco-cliente"><%= bl.motivo || 'Bloqueado' %></span>
-            <span class="agenda-bloco-hora"><%= bl.horaInicio %>–<%= bl.horaFim %><% if (mostrarBarbeiroNoCard) { %> · <%= bl.usuario.nome %><% } %></span>
+          <div class="row row-bloq">
+            <span class="avatar avatar--bloq">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+            </span>
+            <span class="row-info">
+              <span class="row-title"><%= bl.motivo || 'Bloqueado' %></span>
+              <span class="row-sub"><%= bl.horaInicio %>–<%= bl.horaFim %><% if (mostrarBarbeiroNoCard) { %> · <%= bl.usuario.nome %><% } %></span>
+            </span>
             <% if (ehAdmin) { %>
-              <form method="POST" action="/painel/agenda/bloqueios/<%= bl.id %>/remover" class="agenda-bloco-x" onsubmit="return confirm('Remover este bloqueio?')">
+              <form method="POST" action="/painel/agenda/bloqueios/<%= bl.id %>/remover" class="row-x" onsubmit="return confirm('Remover este bloqueio?')">
                 <input type="hidden" name="retornoData" value="<%= dataStr %>" />
                 <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
                 <button title="Remover bloqueio" type="submit">×</button>
               </form>
             <% } %>
           </div>
-        <% } }
-      }) %>
-    </div>
-  </div>
-
-  <% if (grupos.length > 0) { %>
-    <% grupos.forEach(function (g) { %>
-      <div class="ag-overlay" id="grp-<%= g.id %>" onclick="if(event.target===this)fecharModal(this)">
-        <div class="ag-modal-box">
-          <div class="ag-modal-topo">
-            <div>
-              <div class="ag-modal-hora"><%= _fmtH(g.ini) %> – <%= _fmtH(g.fim) %></div>
-              <div class="ag-modal-nome"><%= g.membros.length %> atendimentos</div>
-            </div>
-            <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-          </div>
-          <div class="grupo-lista">
-            <% g.membros.forEach(function (e) { %>
-              <% if (e.tipo === 'ag') { var ag = e.ag; %>
-                <a class="grupo-item" href="#" onclick="fecharModal(document.getElementById('grp-<%= g.id %>'));abrirModal(<%= ag.id %>);return false;">
-                  <span class="ag-dot dot-<%= ag.status %>"></span>
-                  <span class="grupo-item-info">
-                    <span class="grupo-item-nome"><%= ag.clienteNome %></span>
-                    <span class="texto-sutil"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome %><% } %></span>
-                  </span>
-                  <span class="grupo-item-hora"><%= _fmtH(e.ini) %>–<%= _fmtH(e.fim) %></span>
-                </a>
-              <% } else { var bl = e.bl; %>
-                <div class="grupo-item grupo-item-bloq">
-                  <span class="ag-dot" style="background:var(--texto-sutil)"></span>
-                  <span class="grupo-item-info">
-                    <span class="grupo-item-nome"><%= bl.motivo || 'Bloqueado' %></span>
-                    <% if (mostrarBarbeiroNoCard) { %><span class="texto-sutil"><%= bl.usuario.nome %></span><% } %>
-                  </span>
-                  <span class="grupo-item-hora"><%= _fmtH(e.ini) %>–<%= _fmtH(e.fim) %></span>
-                </div>
-              <% } %>
-            <% }) %>
-          </div>
-        </div>
+        <% } %>
       </div>
     <% }) %>
-  <% } %>
+  </div>
 
-  <p class="texto-sutil mb-16">Toque num atendimento para ver os detalhes.</p>
+  <p class="texto-sutil mt-16 mb-16">Toque num atendimento para ver os detalhes.</p>
 
   <% agendamentos.forEach(function (ag) { %>
     <div class="ag-overlay" id="agm-<%= ag.id %>" onclick="if(event.target===this)fecharModal(this)">
