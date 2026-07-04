@@ -1,35 +1,28 @@
 <header class="topo topo-app">
   <div class="container app-hero">
-    <div class="app-hero-usuario">
-      <form method="POST" action="/painel/perfil/foto" enctype="multipart/form-data" class="app-hero-foto-form">
-        <label class="app-hero-foto" title="Adicionar/trocar foto">
-          <% if (typeof usuarioFotoUrl !== 'undefined' && usuarioFotoUrl) { %>
-            <img src="<%= usuarioFotoUrl %>" alt="Foto de <%= usuario.nome %>" />
-          <% } else { %>
-            <span class="app-hero-foto-inicial"><%= usuario.nome.charAt(0).toUpperCase() %></span>
-          <% } %>
-          <span class="app-hero-foto-cam" aria-hidden="true">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          </span>
-          <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
-        </label>
-      </form>
-      <div class="app-hero-info">
-        <span class="app-hero-nome"><%= usuario.nome %></span>
-        <span class="app-hero-papel"><%= ehDono ? 'Dono' : (usuario.papel === 'admin' ? 'Admin' : 'Funcionário') %></span>
-      </div>
-    </div>
-    <div class="app-hero-acoes">
-      <button class="btn-tema" onclick="toggleTema()" title="Alternar tema" type="button">
-        <svg class="icone-lua" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        <svg class="icone-sol" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-      </button>
-      <form method="POST" action="/logout">
-        <button class="btn-sair" type="submit" title="Sair">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </button>
-      </form>
-    </div>
+    <% if (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) { %>
+      <a href="/painel" class="app-hero-marca"><img src="<%= marcaLogoUrl %>" alt="Logo" /></a>
+    <% } else { %>
+      <a href="/painel" class="app-hero-marca app-hero-marca--texto">navio<span>.</span></a>
+    <% } %>
+
+    <form method="POST" action="/painel/perfil/foto" enctype="multipart/form-data" class="app-hero-foto-form">
+      <label class="app-hero-foto" title="Adicionar/trocar foto">
+        <% if (typeof usuarioFotoUrl !== 'undefined' && usuarioFotoUrl) { %>
+          <img src="<%= usuarioFotoUrl %>" alt="Foto de <%= usuario.nome %>" />
+        <% } else { %>
+          <span class="app-hero-foto-inicial"><%= usuario.nome.charAt(0).toUpperCase() %></span>
+        <% } %>
+        <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
+      </label>
+    </form>
+  </div>
+
+  <div class="container app-hero-titulo">
+    <h1><%= currentPath === '/painel' ? 'Olá, ' + usuarioPrimeiroNome : titulo %></h1>
+    <p class="app-hero-sub">
+      <%= hojeFormatado %><% if (estoqueBaixoCount > 0) { %> <span class="app-hero-alerta">• <%= estoqueBaixoCount %> item(ns) no estoque mínimo</span><% } %>
+    </p>
   </div>
 
   <% if (typeof ehDono !== 'undefined' && ehDono) { %>
@@ -42,20 +35,4 @@
       </div>
     </div>
   <% } %>
-
-  <nav class="nav-principal">
-    <div class="container nav-inner">
-      <a href="/painel" class="<%= currentPath === '/painel' ? 'ativo' : '' %>">Painel</a>
-      <a href="/painel/agenda" class="<%= currentPath.startsWith('/painel/agenda') ? 'ativo' : '' %>">Agenda</a>
-      <a href="/painel/clientes" class="<%= currentPath.startsWith('/painel/clientes') ? 'ativo' : '' %>">Clientes</a>
-      <a href="/painel/planos" class="<%= currentPath.startsWith('/painel/planos') ? 'ativo' : '' %>">Planos</a>
-      <% if (ehAdmin) { %>
-        <a href="/painel/servicos" class="<%= currentPath.startsWith('/painel/servicos') ? 'ativo' : '' %>">Serviços</a>
-        <a href="/painel/estoque" class="<%= currentPath.startsWith('/painel/estoque') ? 'ativo' : '' %>">Estoque</a>
-        <a href="/painel/caixa" class="<%= currentPath.startsWith('/painel/caixa') ? 'ativo' : '' %>">Caixa</a>
-        <a href="/painel/comissoes" class="<%= currentPath.startsWith('/painel/comissoes') ? 'ativo' : '' %>">Equipe</a>
-        <a href="/painel/horarios" class="<%= currentPath.startsWith('/painel/horarios') ? 'ativo' : '' %>">Horários</a>
-      <% } %>
-    </div>
-  </nav>
 </header>

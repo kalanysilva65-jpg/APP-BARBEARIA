@@ -1,14 +1,11 @@
-<a href="/painel/clientes" class="link-voltar">← Voltar para clientes</a>
-
-<div class="cabecalho-pagina agenda-cabecalho">
-  <div>
-    <h1><%= cliente.nome %></h1>
-    <p class="texto-secundario">
-      <%= fmtTelefone(cliente.telefone) %><% if (cliente.dataNascimento) { %> · nasc. <%= fmtData(cliente.dataNascimento) %><% } %>
-    </p>
-  </div>
+<div class="flex-entre mb-16">
+  <a href="/painel/clientes" class="link-voltar">← Voltar para clientes</a>
   <a href="/painel/clientes/<%= cliente.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
 </div>
+
+<p class="texto-secundario mb-16">
+  <%= fmtTelefone(cliente.telefone) %><% if (cliente.dataNascimento) { %> · nasc. <%= fmtData(cliente.dataNascimento) %><% } %>
+</p>
 
 <div class="card mb-16">
   <h2>Planos do cliente</h2>

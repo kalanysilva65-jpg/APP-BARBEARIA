@@ -502,6 +502,7 @@ textarea:focus {
 .mb-16 { margin-bottom: 16px; }
 .flex { display: flex; }
 .flex-entre { display: flex; align-items: center; justify-content: space-between; }
+.flex-fim { display: flex; align-items: center; justify-content: flex-end; }
 .gap-8 { gap: 8px; }
 .gap-16 { gap: 16px; }
 

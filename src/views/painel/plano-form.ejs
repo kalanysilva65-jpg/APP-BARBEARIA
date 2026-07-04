@@ -1,8 +1,4 @@
-<a href="/painel/planos" class="link-voltar">← Voltar</a>
-
-<div class="cabecalho-pagina">
-  <h1><%= plano ? 'Editar plano' : 'Novo plano' %></h1>
-</div>
+<a href="/painel/planos" class="link-voltar mb-16">← Voltar</a>
 
 <div class="card">
   <form method="POST" class="form" action="<%= plano ? '/painel/planos/' + plano.id : '/painel/planos' %>">

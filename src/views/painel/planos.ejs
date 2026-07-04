@@ -1,12 +1,8 @@
-<div class="cabecalho-pagina agenda-cabecalho">
-  <div>
-    <h1>Planos</h1>
-    <p class="texto-secundario">Modelos de plano da barbearia (limitados e ilimitados).</p>
-  </div>
-  <% if (ehAdmin) { %>
+<% if (ehAdmin) { %>
+  <div class="flex-fim mb-16">
     <a href="/painel/planos/novo" class="btn btn-primario btn-sm">+ Novo</a>
-  <% } %>
-</div>
+  </div>
+<% } %>
 
 <div class="lista-servicos">
   <% planos.forEach(function (p) { %>

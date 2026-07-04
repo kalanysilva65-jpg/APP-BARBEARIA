@@ -1,0 +1,20 @@
+<div class="nav-topo-area">
+  <div class="container">
+    <div class="nav-topo-scroll">
+      <div class="nav-topo-pills">
+        <a href="/painel" class="nav-topo-pill <%= currentPath === '/painel' ? 'ativo' : '' %>">Início</a>
+        <a href="/painel/agenda" class="nav-topo-pill <%= currentPath.startsWith('/painel/agenda') ? 'ativo' : '' %>">Agenda</a>
+        <% if (ehAdmin) { %>
+          <a href="/painel/servicos" class="nav-topo-pill <%= currentPath.startsWith('/painel/servicos') ? 'ativo' : '' %>">Serviços</a>
+          <a href="/painel/estoque" class="nav-topo-pill <%= currentPath.startsWith('/painel/estoque') ? 'ativo' : '' %>">Estoque</a>
+          <a href="/painel/caixa" class="nav-topo-pill <%= currentPath.startsWith('/painel/caixa') ? 'ativo' : '' %>">Financeiro</a>
+          <a href="/painel/comissoes" class="nav-topo-pill <%= currentPath.startsWith('/painel/comissoes') ? 'ativo' : '' %>">Comissões</a>
+          <a href="/painel/horarios" class="nav-topo-pill <%= currentPath.startsWith('/painel/horarios') ? 'ativo' : '' %>">Horários</a>
+        <% } %>
+        <a href="/painel/clientes" class="nav-topo-pill <%= currentPath.startsWith('/painel/clientes') ? 'ativo' : '' %>">Clientes</a>
+        <a href="/painel/planos" class="nav-topo-pill <%= currentPath.startsWith('/painel/planos') ? 'ativo' : '' %>">Planos</a>
+        <a href="/painel/mais" class="nav-topo-pill <%= currentPath.startsWith('/painel/mais') ? 'ativo' : '' %>">Perfil</a>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,63 +1,36 @@
-<% if (ehAdmin && estoqueBaixo && estoqueBaixo.length > 0) { %>
-  <div class="alerta alerta-aviso">
-    <strong>Estoque baixo:</strong>
-    <%= estoqueBaixo.map(function (i) { return i.nome + ' (' + i.quantidade + ')'; }).join(', ') %>.
-  </div>
-<% } %>
-
-<!-- Agenda de hoje (card de destaque) -->
-<a href="/painel/agenda" class="dash-azul">
-  <div class="dash-azul-label">Agenda de hoje</div>
-  <div class="dash-azul-num">
-    <span class="n"><%= totalHoje %></span>
-    <span class="u">agendamento<%= totalHoje === 1 ? '' : 's' %></span>
-  </div>
-  <div class="dash-azul-rodape">
-    <% if (proximo) { %>
-      <span class="dash-azul-prox">Próximo · <%= proximo.hora %></span>
-      <span class="dash-azul-cliente"><%= proximo.nome %> · <%= proximo.servico %></span>
-    <% } else { %>
-      <span class="dash-azul-prox">Sem próximos atendimentos hoje</span>
-    <% } %>
-  </div>
-</a>
-
-<!-- Produtividade + Retenção -->
-<div class="dash-grid">
-  <div class="dash-card">
-    <div class="dash-card-titulo">Produtividade</div>
-    <div class="dash-card-sub">Ocupação · 90 dias</div>
-    <div class="dash-card-num"><%= produtividade %>%</div>
-    <div class="barra-prog"><div class="barra-prog-fill" style="width:<%= produtividade %>%"></div></div>
-  </div>
-  <div class="dash-card">
-    <div class="dash-card-titulo">Retenção</div>
-    <div class="dash-card-sub">Voltaram · 90 dias</div>
-    <div class="dash-card-num"><%= retencao %>%</div>
-    <div class="barra-prog"><div class="barra-prog-fill" style="width:<%= retencao %>%"></div></div>
-  </div>
+<!-- Cards de destaque: faturamento (admin) + agenda de hoje -->
+<div class="dash-hero-grid <%= ehAdmin ? '' : 'dash-hero-grid--1' %>">
+  <% if (ehAdmin) { %>
+    <a href="/painel/caixa" class="dash-azul dash-azul--mini">
+      <div class="dash-azul-label">Faturamento hoje</div>
+      <div class="dash-azul-num"><span class="n"><%= fmtBRL(ganhoHoje) %></span></div>
+      <div class="dash-azul-rodape">
+        <span class="dash-azul-prox"><%= concluidosHoje %> atendimento<%= concluidosHoje === 1 ? '' : 's' %></span>
+        <span class="dash-azul-cliente">
+          <% if (variacaoHojeOntem === null) { %>
+            — vs ontem
+          <% } else { %>
+            <%= variacaoHojeOntem >= 0 ? '+' : '' %><%= variacaoHojeOntem %>% vs ontem
+          <% } %>
+        </span>
+      </div>
+    </a>
+  <% } %>
+  <a href="/painel/agenda" class="dash-azul dash-azul--mini">
+    <div class="dash-azul-label">Agenda de hoje</div>
+    <div class="dash-azul-num"><span class="n"><%= totalHoje %></span></div>
+    <div class="dash-azul-rodape">
+      <span class="dash-azul-prox"><%= concluidosHoje %> concluído<%= concluidosHoje === 1 ? '' : 's' %></span>
+      <span class="dash-azul-cliente"><%= restantesHoje %> restante<%= restantesHoje === 1 ? '' : 's' %></span>
+    </div>
+  </a>
 </div>
 
-<!-- Novos clientes -->
-<a href="/painel/clientes" class="dash-card dash-card-linha">
-  <div>
-    <div class="dash-card-titulo">Novos clientes</div>
-    <div class="dash-card-sub">Últimos 90 dias</div>
-  </div>
-  <div class="dash-novos"><%= novosClientes %></div>
-</a>
-
-<!-- Faturamento do dia + semana (admin) -->
+<!-- Semana atual (faturamento, admin) -->
 <% if (ehAdmin) { %>
-  <a href="/painel/caixa" class="dash-card dash-fat">
-    <div class="dash-fat-topo">
-      <div>
-        <div class="dash-card-titulo">Faturamento de hoje</div>
-        <div class="dash-card-sub">Previsto <%= fmtBRL(previstoHoje) %></div>
-      </div>
-      <div class="dash-card-num"><%= fmtBRL(ganhoHoje) %></div>
-    </div>
-    <div class="semana">
+  <a href="/painel/caixa" class="card mb-16">
+    <span class="dash-rotulo texto-sutil">SEMANA ATUAL</span>
+    <div class="semana mt-16">
       <% barras.forEach(function (d) { %>
         <div class="semana-col">
           <div class="semana-bar <%= d.hoje ? 'hoje' : '' %>" style="height:<%= Math.max(4, Math.round((d.valor / maxBarra) * 72)) %>px" title="<%= fmtBRL(d.valor) %>"></div>
@@ -67,3 +40,46 @@
     </div>
   </a>
 <% } %>
+
+<!-- Métricas -->
+<div class="card mb-16">
+  <span class="dash-rotulo texto-sutil">MÉTRICAS</span>
+  <div class="dash-metrica mt-16">
+    <div class="dash-metrica-topo"><span>Ocupação</span><strong><%= produtividade %>%</strong></div>
+    <div class="barra-prog"><div class="barra-prog-fill" style="width:<%= produtividade %>%"></div></div>
+    <span class="dash-metrica-legenda"><%= produtividade %>% dos horários preenchidos</span>
+  </div>
+  <div class="dash-metrica mt-16">
+    <div class="dash-metrica-topo"><span>Retenção</span><strong><%= retencao %>%</strong></div>
+    <div class="barra-prog"><div class="barra-prog-fill" style="width:<%= retencao %>%"></div></div>
+    <span class="dash-metrica-legenda"><%= retencao %>% dos clientes retornaram</span>
+  </div>
+</div>
+
+<!-- Próximos atendimentos -->
+<div class="card mb-16">
+  <span class="dash-rotulo texto-sutil">PRÓXIMOS</span>
+  <% if (proximosLista.length === 0) { %>
+    <p class="texto-secundario mt-16">Sem próximos atendimentos hoje.</p>
+  <% } else { %>
+    <div class="dash-proximos-lista mt-16">
+      <% proximosLista.forEach(function (p) { %>
+        <div class="dash-proximo-item">
+          <div class="dash-proximo-info">
+            <span class="dash-proximo-nome"><%= p.nome %></span>
+            <span class="texto-sutil"><%= p.servico %> · <%= p.hora %></span>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+
+<!-- Novos clientes -->
+<a href="/painel/clientes" class="card dash-card-linha">
+  <div>
+    <span class="dash-rotulo texto-sutil">NOVOS CLIENTES</span>
+    <div class="texto-sutil mt-16">Últimos 90 dias</div>
+  </div>
+  <div class="dash-novos"><%= novosClientes %></div>
+</a>

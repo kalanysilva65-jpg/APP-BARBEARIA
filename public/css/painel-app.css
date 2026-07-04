@@ -1,117 +1,130 @@
 /* =========================================================================
-   PAINEL DO BARBEIRO — visual "app" (azul + cards + navegação inferior).
+   PAINEL DO BARBEIRO — visual "app" escuro (redesign "Kavynn").
    Escopado em .app-painel para não afetar o agendamento público nem o mestre.
-   Funciona em tema claro e escuro (o cliente/barbeiro escolhe).
+   Só existe em modo escuro — sem alternância de tema aqui (decisão do dono).
    ========================================================================= */
 .app-painel {
   --azul: #2f6bff;
   --azul-hover: #235ce0;
   --azul-barra: rgba(47, 107, 255, 0.30);
-  background: #f4f5f7;
+  /* Sobrescreve os tokens neutros do tema (claro/escuro) com o visual escuro
+     único do redesign — cartões em "vidro" translúcido sobre o degradê. */
+  --fundo: #0a0d16;
+  --superficie: rgba(255, 255, 255, 0.043);
+  --secao-alt: rgba(255, 255, 255, 0.06);
+  --borda: rgba(255, 255, 255, 0.08);
+  --texto: #ffffff;
+  --texto-secundario: rgba(255, 255, 255, 0.55);
+  --texto-sutil: rgba(255, 255, 255, 0.42);
+  --sucesso: #4ade80;
+  --erro: #f87171;
+  --aviso: #fbbf24;
+  --sombra: none;
+  background: var(--fundo);
+  color: var(--texto);
+  position: relative;
 }
-[data-tema="escuro"] .app-painel {
-  --azul-barra: rgba(47, 107, 255, 0.30);
-  background: #0d0d0f;
+/* Degradê de fundo fixo (não distorce ao rolar a página). */
+.app-painel::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(140% 80% at 30% -10%, #16234f 0%, #0a0d16 55%, #08090d 100%);
 }
 
-/* Usa a navegação inferior no lugar das abas horizontais do topo. */
-.app-painel .nav-principal { display: none; }
-
-/* ----- Hero do topo: foto + nome do usuário logado (sem logo) ----------- */
-.app-painel .topo-app {
+/* Cabeçalho + nav ficam juntos, fixos no topo, como um único bloco. */
+.app-topo-fixo {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: #f4f5f7;
+  background: rgba(10, 13, 22, 0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* ----- Cabeçalho: marca + avatar, depois título da página --------------- */
+.app-painel .topo-app {
+  background: transparent;
   border-bottom: none;
   box-shadow: none;
 }
-[data-tema="escuro"] .app-painel .topo-app { background: #0d0d0f; }
-.app-hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 18px 0 10px;
-}
-.app-hero-usuario { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.app-hero { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0 8px; }
+.app-hero-marca { display: flex; align-items: baseline; gap: 2px; text-decoration: none; }
+.app-hero-marca img { height: 22px; width: auto; display: block; }
+.app-hero-marca--texto { font-size: 15px; font-weight: 700; color: var(--texto); }
+.app-hero-marca--texto span { color: #e8a030; }
 .app-hero-foto-form { margin: 0; }
 .app-hero-foto {
   position: relative;
-  width: 46px;
-  height: 46px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: var(--secao-alt);
+  background: rgba(255, 255, 255, 0.08);
+  border: 0.8px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  overflow: visible;
   flex-shrink: 0;
 }
-.app-hero-foto img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; }
-.app-hero-foto-inicial { font-size: 18px; font-weight: 700; color: var(--texto); }
-.app-hero-foto-cam {
-  position: absolute;
-  right: -2px;
-  bottom: -2px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--azul);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--fundo, #f4f5f7);
-}
-.app-hero-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.app-hero-nome {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+.app-hero-foto img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+.app-hero-foto-inicial { font-size: 12px; font-weight: 700; color: var(--texto); }
+
+.app-hero-titulo { padding-bottom: 14px; }
+.app-hero-titulo h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--texto); margin: 0; }
+.app-hero-sub { font-size: 12px; color: var(--texto-sutil); margin-top: 4px; }
+.app-hero-alerta { color: var(--aviso); }
+
+/* Botão primário azul dentro do painel. */
+.app-painel .btn-primario { background: var(--azul); color: #fff; }
+.app-painel .btn-primario:hover { background: var(--azul-hover); }
+
+/* Cards do painel: vidro translúcido sobre o degradê. */
+.app-painel .card { border-radius: 18px; box-shadow: none; }
+
+/* Inputs: tema-minimal.css fixa um fundo claro (#fafafa) — sobrescreve aqui
+   pros campos usarem o mesmo vidro translúcido dos cards. */
+.app-painel input,
+.app-painel select,
+.app-painel textarea {
+  background: var(--superficie);
+  border-color: var(--borda);
   color: var(--texto);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.app-hero-papel { font-size: 12px; color: var(--texto-sutil); }
-.app-hero-acoes { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.app-hero-acoes .btn-tema {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.app-painel input::placeholder,
+.app-painel textarea::placeholder { color: var(--texto-sutil); }
+.app-painel input:focus,
+.app-painel select:focus,
+.app-painel textarea:focus { border-color: var(--azul); }
+
+/* ----- Navegação: pills roláveis no topo (substitui a barra inferior) --- */
+.nav-topo-area { padding-bottom: 12px; }
+.nav-topo-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
-.btn-sair {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+.nav-topo-scroll::-webkit-scrollbar { display: none; }
+.nav-topo-pills {
+  display: inline-flex;
+  gap: 5px;
   background: var(--superficie);
-  border: 1px solid var(--borda);
+  border: 0.8px solid var(--borda);
+  border-radius: 999px;
+  padding: 4px;
+}
+.nav-topo-pill {
+  flex-shrink: 0;
+  padding: 7px 13px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
   color: var(--texto-sutil);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
 }
-.btn-sair:hover { color: var(--erro); border-color: var(--erro); }
-
-/* Respiro para o conteúdo não ficar atrás da barra inferior fixa. */
-.app-painel .conteudo { padding-bottom: 88px; }
-
-/* Botão primário azul dentro do painel (nos dois temas). */
-.app-painel .btn-primario,
-[data-tema="escuro"] .app-painel .btn-primario { background: var(--azul); color: #fff; }
-.app-painel .btn-primario:hover,
-[data-tema="escuro"] .app-painel .btn-primario:hover { background: var(--azul-hover); }
-
-/* Cards do painel um pouco mais arredondados. */
-.app-painel .card { border-radius: 16px; }
+.nav-topo-pill.ativo { background: rgba(255, 255, 255, 0.14); color: #fff; font-weight: 600; }
 
 /* ----- Card de destaque: agenda de hoje ---------------------------------- */
 .dash-azul {
@@ -123,9 +136,9 @@
   margin-bottom: 12px;
   text-decoration: none;
 }
-.dash-azul-label { font-size: 13px; color: rgba(255, 255, 255, 0.85); }
+.dash-azul-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255, 255, 255, 0.85); }
 .dash-azul-num { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
-.dash-azul-num .n { font-size: 46px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+.dash-azul-num .n { font-size: clamp(26px, 8vw, 46px); font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
 .dash-azul-num .u { font-size: 15px; color: rgba(255, 255, 255, 0.9); }
 .dash-azul-rodape {
   margin-top: 12px;
@@ -140,32 +153,37 @@
 .dash-azul-prox { font-size: 12px; color: rgba(255, 255, 255, 0.85); }
 .dash-azul-cliente { font-size: 13px; font-weight: 600; }
 
-/* ----- Cards de métrica -------------------------------------------------- */
-.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-.dash-card {
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: 16px;
-  padding: 16px;
-  display: block;
-  text-decoration: none;
-  color: var(--texto);
-  box-shadow: var(--sombra);
-}
+/* ----- Textos reaproveitados (usado em Perfil/Mais) ---------------------- */
 .dash-card-titulo { font-size: 13px; font-weight: 600; color: var(--texto); }
 .dash-card-sub { font-size: 11px; color: var(--texto-sutil); margin-top: 2px; }
-.dash-card-num { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 12px 0 10px; }
 
 .barra-prog { height: 6px; background: var(--secao-alt); border-radius: 99px; overflow: hidden; }
 .barra-prog-fill { height: 100%; background: var(--azul); border-radius: 99px; }
 
-.dash-card-linha { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.dash-card-linha { display: flex; align-items: center; justify-content: space-between; }
 .dash-novos { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
 
-/* ----- Faturamento + barras da semana ------------------------------------ */
-.dash-fat { margin-bottom: 12px; }
-.dash-fat-topo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.dash-fat .dash-card-num { margin: 0; }
+/* Duas lado a lado (ex.: Faturamento hoje + Agenda de hoje) ---------------- */
+.dash-hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.dash-hero-grid--1 { grid-template-columns: 1fr; }
+.dash-hero-grid .dash-azul--mini { margin-bottom: 0; padding: 16px; }
+.dash-hero-grid .dash-azul-rodape { gap: 4px; }
+
+/* Rótulo pequeno uppercase acima das seções do painel (Kavynn) ------------ */
+.dash-rotulo { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; }
+
+/* Métricas (Ocupação/Retenção) --------------------------------------------- */
+.dash-metrica-topo { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.dash-metrica-topo strong { font-size: 16px; }
+.dash-metrica-legenda { display: block; font-size: 11px; color: var(--texto-sutil); margin-top: 6px; }
+
+/* Próximos atendimentos ---------------------------------------------------- */
+.dash-proximos-lista { display: flex; flex-direction: column; gap: 8px; }
+.dash-proximo-item { padding: 10px 12px; border-radius: 12px; background: var(--secao-alt); }
+.dash-proximo-info { display: flex; flex-direction: column; gap: 2px; }
+.dash-proximo-nome { font-size: 13.5px; font-weight: 600; }
+
+/* ----- Barras da semana (reaproveitado no Painel e no Caixa) ------------- */
 .semana { display: flex; align-items: flex-end; gap: 8px; height: 92px; margin-top: 16px; }
 .semana-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; justify-content: flex-end; }
 .semana-bar { width: 100%; background: var(--azul-barra); border-radius: 5px; }
@@ -174,7 +192,7 @@
 .semana-rot.hoje { color: var(--texto); font-weight: 600; }
 
 /* ----- Caixa: toggle compacto ---------------------------------------------*/
-.caixa-auto { display: flex; align-items: center; gap: 8px; margin: 0; }
+.caixa-auto { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .caixa-auto-label { font-size: 12px; color: var(--texto-sutil); white-space: nowrap; }
 
 /* Barra de período: pills (Hoje/Semana/Mês) + botão de calendário --------- */
@@ -263,23 +281,6 @@
   font-size: 16px; line-height: 1; color: var(--texto-sutil);
 }
 .caixa-mov-x button:hover { color: var(--erro); }
-
-/* ----- Menu "Mais" (linhas) ---------------------------------------------- */
-.menu-mais { display: flex; flex-direction: column; gap: 8px; }
-.menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: 14px;
-  padding: 16px 18px;
-  text-decoration: none;
-  color: var(--texto);
-  box-shadow: var(--sombra);
-}
-.menu-item-nome { font-size: 15px; font-weight: 500; }
-.menu-item-seta { color: var(--texto-sutil); font-size: 20px; }
 
 /* ----- Card de barbeiro (Equipe) ----------------------------------------- */
 .equipe-topo { display: flex; align-items: center; gap: 14px; }
@@ -506,7 +507,7 @@ body.modal-aberto { overflow: hidden; }
 .agenda-fab-wrap {
   position: fixed;
   right: 20px;
-  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   z-index: 40;
   display: flex;
   flex-direction: column;
@@ -562,36 +563,3 @@ body.modal-aberto { overflow: hidden; }
 .agenda-detalhe-resumo { display: flex; align-items: center; gap: 10px; }
 .agenda-detalhe-nome { flex: 1; font-weight: 600; }
 
-/* ----- Navegação inferior (fixa) ----------------------------------------- */
-.nav-inferior {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 50;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  background: var(--superficie);
-  border-top: 1px solid var(--borda);
-  padding: 8px 4px calc(8px + env(safe-area-inset-bottom, 0px));
-}
-.nav-inferior a {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  flex: 1;
-  padding: 2px 0;
-  color: var(--texto-sutil);
-  font-size: 10px;
-  font-weight: 500;
-  text-decoration: none;
-}
-.nav-inferior a svg { width: 22px; height: 22px; }
-.nav-inferior a.ativo { color: var(--azul); }
-
-/* Em telas largas, centraliza a barra como um app estreito. */
-@media (min-width: 720px) {
-  .nav-inferior { max-width: 560px; margin: 0 auto; border-radius: 16px 16px 0 0; border: 1px solid var(--borda); border-bottom: none; }
-}

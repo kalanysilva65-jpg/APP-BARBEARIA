@@ -134,7 +134,7 @@ async function ver(req, res) {
   else if (inicioStr === padrao.inicio && fimStr === padrao.fim) periodoAtivo = 'mes';
 
   res.render('painel/caixa', {
-    titulo: 'Caixa',
+    titulo: 'Financeiro',
     lancamentos,
     resumoPeriodo,
     resumoHoje,

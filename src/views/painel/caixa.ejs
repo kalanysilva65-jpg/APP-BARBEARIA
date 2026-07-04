@@ -1,16 +1,10 @@
-<div class="cabecalho-pagina agenda-cabecalho">
-  <div>
-    <h1>Caixa</h1>
-    <p class="texto-secundario">Entradas, saídas e saldo do período selecionado.</p>
-  </div>
-  <form method="POST" action="/painel/caixa/config" class="caixa-auto">
-    <input type="hidden" name="ligado" value="<%= autoLigado ? 'false' : 'true' %>" />
-    <span class="caixa-auto-label">Entrada automática</span>
-    <button class="btn <%= autoLigado ? 'btn-secundario' : 'btn-primario' %> btn-sm btn-pill">
-      <%= autoLigado ? 'Desligar' : 'Ligar' %>
-    </button>
-  </form>
-</div>
+<form method="POST" action="/painel/caixa/config" class="caixa-auto mb-16">
+  <input type="hidden" name="ligado" value="<%= autoLigado ? 'false' : 'true' %>" />
+  <span class="caixa-auto-label">Entrada automática</span>
+  <button class="btn <%= autoLigado ? 'btn-secundario' : 'btn-primario' %> btn-sm btn-pill">
+    <%= autoLigado ? 'Desligar' : 'Ligar' %>
+  </button>
+</form>
 
 <!-- Seletor de período: pills (Hoje/Semana/Mês) + ícone de calendário (De/Até) -->
 <div class="periodo-barra mb-16">

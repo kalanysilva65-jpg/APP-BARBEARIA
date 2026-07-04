@@ -53,6 +53,13 @@ function uploadFotoBarbeiro(req, res, next) {
 router.use(exigeLogin);
 router.use(exigeBarbeariaPainel);
 
+// "Qui, 3 jul" — usado no subtítulo constante do cabeçalho do painel.
+const DIAS_SEMANA_ABR = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const MESES_ABR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+function formatarDataCabecalho(d) {
+  return `${DIAS_SEMANA_ABR[d.getDay()]}, ${d.getDate()} ${MESES_ABR[d.getMonth()]}`;
+}
+
 // Define o "papel efetivo": o dono, ao entrar numa barbearia, age como admin dela.
 // Também carrega a barbearia ativa (nome) para o cabeçalho / banner do dono.
 router.use(async (req, res, next) => {
@@ -64,6 +71,15 @@ router.use(async (req, res, next) => {
   res.locals.barbeariaAtual = barbearia || null;
   const usuarioDb = await prisma.usuario.findUnique({ where: { id: u.id } });
   res.locals.usuarioFotoUrl = usuarioDb ? usuarioDb.fotoUrl : null;
+  res.locals.usuarioPrimeiroNome = (u.nome || '').split(' ')[0];
+  res.locals.hojeFormatado = formatarDataCabecalho(new Date());
+
+  // Alerta de estoque baixo (admin) — mostrado no subtítulo do cabeçalho em todas as telas.
+  res.locals.estoqueBaixoCount = 0;
+  if (req.ehAdmin) {
+    const itens = await prisma.estoque.findMany({ where: { barbeariaId: req.barbeariaId } });
+    res.locals.estoqueBaixoCount = itens.filter((i) => i.quantidade <= i.quantidadeMinima).length;
+  }
   next();
 });
 
@@ -74,7 +90,7 @@ router.get('/', dashboardController.ver);
 router.post('/perfil/foto', uploadFotoPerfil, perfilController.salvarFoto);
 
 // "Mais" — menu com as demais seções (acesso pela navegação inferior).
-router.get('/mais', (req, res) => res.render('painel/mais', { titulo: 'Mais' }));
+router.get('/mais', (req, res) => res.render('painel/mais', { titulo: 'Perfil' }));
 
 // --- Agenda (todos: funcionário vê a sua, admin vê todas) -----------------
 router.get('/agenda', agendaController.verAgenda);
