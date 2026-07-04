@@ -102,7 +102,9 @@
 .nav-topo-area { padding-bottom: 12px; }
 .nav-topo-scroll {
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
   scrollbar-width: none;
 }
 .nav-topo-scroll::-webkit-scrollbar { display: none; }

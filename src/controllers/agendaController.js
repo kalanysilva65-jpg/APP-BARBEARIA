@@ -84,6 +84,12 @@ async function verAgenda(req, res) {
     ? await prisma.usuario.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { id: 'asc' } })
     : [];
   const servicos = await prisma.servico.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { nome: 'asc' } });
+  // Clientes cadastrados — usado no autocomplete do pop-up "Novo agendamento".
+  const clientes = await prisma.cliente.findMany({
+    where: { barbeariaId: b },
+    select: { id: true, nome: true, telefone: true },
+    orderBy: { nome: 'asc' },
+  });
 
   // Bloqueios do dia (mesmo filtro de barbeiro) — aparecem na linha do tempo.
   const whereBloq = { barbeariaId: b, data: dataObj };
@@ -107,12 +113,14 @@ async function verAgenda(req, res) {
     bloqueios,
     barbeiros,
     servicos,
+    clientes,
     dataStr,
     dataExtenso: `${DIAS_SEMANA[dataObj.getDay()]}, ${res.locals.fmtData(dataObj)}`,
     barbeiroSelecionado,
     dataPrev: iso(prev),
     dataNext: iso(next),
     dataHoje: iso(new Date()),
+    hojeIso: iso(new Date()),
     mostrarBarbeiroNoCard: !filtroBarbeiro, // mostra o nome do barbeiro quando vê "todos"
   });
 }
@@ -292,14 +300,11 @@ async function criarManual(req, res) {
   }
 
   if (erros.length) {
-    const dados = await dadosForm(req);
-    return res.render('painel/agenda-novo', {
-      titulo: 'Novo agendamento',
-      ...dados,
-      valores: req.body,
-      erro: erros.join(' '),
-      hojeIso: iso(new Date()),
-    });
+    req.session.flash = { tipo: 'erro', texto: erros.join(' ') };
+    const qs = new URLSearchParams();
+    if (data) qs.set('data', data);
+    if (ehAdmin && req.body.barbeiroId) qs.set('barbeiro', req.body.barbeiroId);
+    return res.redirect('/painel/agenda' + (qs.toString() ? '?' + qs.toString() : ''));
   }
 
   // Alimenta/vincula o cliente pelo telefone normalizado (igual ao agendamento do site).

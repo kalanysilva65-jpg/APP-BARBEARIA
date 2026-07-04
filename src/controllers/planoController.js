@@ -33,7 +33,7 @@ async function listar(req, res) {
     include: { servico: true },
     orderBy: [{ ativo: 'desc' }, { nome: 'asc' }],
   });
-  res.render('painel/planos', { titulo: 'Planos', planos });
+  res.render('painel/planos', { titulo: 'Planos', planos, servicos: await listarServicos(req.barbeariaId) });
 }
 
 // GET /painel/planos/novo

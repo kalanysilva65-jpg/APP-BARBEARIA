@@ -1,7 +1,3 @@
-<div class="flex-fim mb-16">
-  <a href="/painel/estoque/novo" class="btn btn-primario btn-sm">+ Novo</a>
-</div>
-
 <% if (baixoEstoque.length > 0) { %>
   <div class="alerta alerta-aviso mb-16">
     <strong>Reposição:</strong> <%= baixoEstoque.length %> item(ns) no mínimo ou abaixo —
@@ -12,9 +8,9 @@
 <div class="cards-grid">
   <% itens.forEach(function (i) { var baixo = i.quantidade <= i.quantidadeMinima; %>
     <div class="item-card <%= baixo ? 'item-card--baixo' : '' %>">
-      <a href="/painel/estoque/<%= i.id %>/editar" class="item-edit-btn" title="Editar">
+      <button type="button" class="item-edit-btn" title="Editar" onclick="abrirModal(<%= i.id %>)">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-      </a>
+      </button>
       <div class="item-thumb">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </div>
@@ -65,3 +61,112 @@
     <% } %>
   </ul>
 </div>
+
+<!-- Botão flutuante: Novo item (só nesta tela) -->
+<div class="agenda-fab-wrap">
+  <button type="button" class="agenda-fab" onclick="abrirModal('novo')" aria-label="Novo item de estoque">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div>
+
+<!-- Pop-up: novo item -->
+<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Novo item de estoque</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
+    <form method="POST" class="form mt-16" action="/painel/estoque">
+      <div class="campo">
+        <label for="nome-novo">Nome</label>
+        <input id="nome-novo" name="nome" required />
+      </div>
+      <div class="campo">
+        <label for="categoriaId-novo">Categoria</label>
+        <select id="categoriaId-novo" name="categoriaId">
+          <option value="">Sem categoria</option>
+          <% categorias.forEach(function (c) { %>
+            <option value="<%= c.id %>"><%= c.nome %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="grid-2">
+        <div class="campo">
+          <label for="quantidade-novo">Quantidade atual</label>
+          <input id="quantidade-novo" name="quantidade" type="number" min="0" value="0" />
+        </div>
+        <div class="campo">
+          <label for="quantidadeMinima-novo">Mínimo (alerta)</label>
+          <input id="quantidadeMinima-novo" name="quantidadeMinima" type="number" min="0" value="0" />
+        </div>
+      </div>
+      <div class="campo">
+        <label for="valorGasto-novo">Valor gasto na compra (R$)</label>
+        <input id="valorGasto-novo" name="valorGasto" type="number" step="0.01" min="0" />
+      </div>
+      <button class="btn btn-primario btn-bloco" type="submit">Adicionar ao estoque</button>
+    </form>
+  </div>
+</div>
+
+<!-- Pop-up de edição: um por item -->
+<% itens.forEach(function (i) { %>
+  <div class="ag-overlay" id="agm-<%= i.id %>" onclick="if(event.target===this)fecharModal(this)">
+    <div class="ag-modal-box">
+      <div class="ag-modal-topo">
+        <div class="ag-modal-nome"><%= i.nome %></div>
+        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+      </div>
+      <form method="POST" class="form mt-16" action="/painel/estoque/<%= i.id %>">
+        <div class="campo">
+          <label for="nome-<%= i.id %>">Nome</label>
+          <input id="nome-<%= i.id %>" name="nome" value="<%= i.nome %>" required />
+        </div>
+        <div class="campo">
+          <label for="categoriaId-<%= i.id %>">Categoria</label>
+          <select id="categoriaId-<%= i.id %>" name="categoriaId">
+            <option value="">Sem categoria</option>
+            <% categorias.forEach(function (c) { %>
+              <option value="<%= c.id %>" <%= i.categoriaId === c.id ? 'selected' : '' %>><%= c.nome %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="grid-2">
+          <div class="campo">
+            <label for="quantidade-<%= i.id %>">Quantidade atual</label>
+            <input id="quantidade-<%= i.id %>" name="quantidade" type="number" min="0" value="<%= i.quantidade %>" />
+          </div>
+          <div class="campo">
+            <label for="quantidadeMinima-<%= i.id %>">Mínimo (alerta)</label>
+            <input id="quantidadeMinima-<%= i.id %>" name="quantidadeMinima" type="number" min="0" value="<%= i.quantidadeMinima %>" />
+          </div>
+        </div>
+        <div class="campo">
+          <label for="valorGasto-<%= i.id %>">Valor gasto na compra (R$)</label>
+          <input id="valorGasto-<%= i.id %>" name="valorGasto" type="number" step="0.01" min="0" value="<%= (i.valorGasto / 100).toFixed(2) %>" />
+        </div>
+        <button class="btn btn-primario btn-bloco" type="submit">Salvar alterações</button>
+      </form>
+      <form method="POST" action="/painel/estoque/<%= i.id %>/remover" class="mt-16"
+            onsubmit="return confirm('Excluir este item?')">
+        <button class="btn btn-perigo btn-sm">Excluir item</button>
+      </form>
+    </div>
+  </div>
+<% }) %>
+
+<script>
+  function abrirModal(id) {
+    var o = document.getElementById('agm-' + id);
+    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+  }
+  function fecharModal(o) {
+    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
+      document.body.classList.remove('modal-aberto');
+    }
+  });
+</script>

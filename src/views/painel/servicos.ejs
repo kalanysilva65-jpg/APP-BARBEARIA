@@ -1,14 +1,10 @@
-<div class="flex-fim mb-16">
-  <a href="/painel/servicos/novo" class="btn btn-primario btn-sm">+ Novo</a>
-</div>
-
 <span class="dash-rotulo texto-sutil">SERVIÇOS</span>
 <div class="cards-grid mt-16 mb-16">
   <% servicos.filter(function (s) { return !s.ehProduto; }).forEach(function (s) { %>
     <div class="item-card <%= s.ativo ? '' : 'item-card--baixo' %>">
-      <a href="/painel/servicos/<%= s.id %>/editar" class="item-edit-btn" title="Editar">
+      <button type="button" class="item-edit-btn" title="Editar" onclick="abrirModal(<%= s.id %>)">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-      </a>
+      </button>
       <div class="item-thumb">
         <% if (s.fotoUrl) { %>
           <img src="<%= s.fotoUrl %>" alt="<%= s.nome %>" />
@@ -32,9 +28,9 @@
 <div class="cards-grid mt-16">
   <% servicos.filter(function (s) { return s.ehProduto; }).forEach(function (s) { %>
     <div class="item-card <%= s.ativo ? '' : 'item-card--baixo' %>">
-      <a href="/painel/servicos/<%= s.id %>/editar" class="item-edit-btn" title="Editar">
+      <button type="button" class="item-edit-btn" title="Editar" onclick="abrirModal(<%= s.id %>)">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-      </a>
+      </button>
       <div class="item-thumb">
         <% if (s.fotoUrl) { %>
           <img src="<%= s.fotoUrl %>" alt="<%= s.nome %>" />
@@ -89,3 +85,152 @@
     <% } %>
   </ul>
 </div>
+
+<!-- Botão flutuante: Novo serviço/produto (só nesta tela) -->
+<div class="agenda-fab-wrap">
+  <button type="button" class="agenda-fab" onclick="abrirModal('novo')" aria-label="Novo serviço ou produto">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div>
+
+<!-- Pop-up: novo serviço/produto -->
+<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Novo</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
+    <form method="POST" enctype="multipart/form-data" class="form mt-16" action="/painel/servicos">
+      <div class="campo">
+        <label for="nome-novo">Nome</label>
+        <input id="nome-novo" name="nome" required />
+      </div>
+      <div class="campo">
+        <label for="descricao-novo">Descrição <span class="texto-sutil">(opcional)</span></label>
+        <input id="descricao-novo" name="descricao" maxlength="80" placeholder="Ex.: Corte tradicional com finalização." />
+      </div>
+      <div class="grid-2">
+        <div class="campo">
+          <label for="valor-novo">Valor (R$)</label>
+          <input id="valor-novo" name="valor" type="number" step="0.01" min="0" required />
+        </div>
+        <div class="campo">
+          <label for="duracaoMin-novo">Duração (min)</label>
+          <input id="duracaoMin-novo" name="duracaoMin" type="number" min="0" value="0" />
+        </div>
+      </div>
+      <div class="campo">
+        <label class="check">
+          <input type="checkbox" name="ehProduto" id="ehProduto-novo" onchange="document.getElementById('campo-comissao-novo').style.display=this.checked?'block':'none'" />
+          É um produto
+        </label>
+        <span class="texto-sutil">Produto: usa a % de comissão abaixo, não ocupa horário. Serviço: usa a % do barbeiro.</span>
+      </div>
+      <div class="campo" id="campo-comissao-novo" style="display:none">
+        <label for="comissaoPercentual-novo">Comissão do produto (%)</label>
+        <input id="comissaoPercentual-novo" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="10" />
+      </div>
+      <div class="campo">
+        <label for="categoriaId-novo">Categoria</label>
+        <select id="categoriaId-novo" name="categoriaId">
+          <option value="">Sem categoria</option>
+          <% categorias.forEach(function (c) { %>
+            <option value="<%= c.id %>"><%= c.nome %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="foto-novo">Foto</label>
+        <input id="foto-novo" name="foto" type="file" accept="image/*" />
+        <span class="texto-sutil">JPG, PNG ou WEBP, até 4 MB.</span>
+      </div>
+      <button class="btn btn-primario btn-bloco" type="submit">Criar</button>
+    </form>
+  </div>
+</div>
+
+<!-- Pop-up de edição: um por item -->
+<% servicos.forEach(function (s) { %>
+  <div class="ag-overlay" id="agm-<%= s.id %>" onclick="if(event.target===this)fecharModal(this)">
+    <div class="ag-modal-box">
+      <div class="ag-modal-topo">
+        <div class="ag-modal-nome"><%= s.nome %></div>
+        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+      </div>
+      <form method="POST" enctype="multipart/form-data" class="form mt-16" action="/painel/servicos/<%= s.id %>">
+        <div class="campo">
+          <label for="nome-<%= s.id %>">Nome</label>
+          <input id="nome-<%= s.id %>" name="nome" value="<%= s.nome %>" required />
+        </div>
+        <div class="campo">
+          <label for="descricao-<%= s.id %>">Descrição <span class="texto-sutil">(opcional)</span></label>
+          <input id="descricao-<%= s.id %>" name="descricao" maxlength="80" value="<%= s.descricao || '' %>" />
+        </div>
+        <div class="grid-2">
+          <div class="campo">
+            <label for="valor-<%= s.id %>">Valor (R$)</label>
+            <input id="valor-<%= s.id %>" name="valor" type="number" step="0.01" min="0" value="<%= (s.valor / 100).toFixed(2) %>" required />
+          </div>
+          <div class="campo">
+            <label for="duracaoMin-<%= s.id %>">Duração (min)</label>
+            <input id="duracaoMin-<%= s.id %>" name="duracaoMin" type="number" min="0" value="<%= s.duracaoMin %>" />
+          </div>
+        </div>
+        <div class="campo">
+          <label class="check">
+            <input type="checkbox" name="ehProduto" id="ehProduto-<%= s.id %>" <%= s.ehProduto ? 'checked' : '' %>
+                   onchange="document.getElementById('campo-comissao-<%= s.id %>').style.display=this.checked?'block':'none'" />
+            É um produto
+          </label>
+        </div>
+        <div class="campo" id="campo-comissao-<%= s.id %>" style="display:<%= s.ehProduto ? 'block' : 'none' %>">
+          <label for="comissaoPercentual-<%= s.id %>">Comissão do produto (%)</label>
+          <input id="comissaoPercentual-<%= s.id %>" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="<%= s.comissaoPercentual %>" />
+        </div>
+        <div class="campo">
+          <label for="categoriaId-<%= s.id %>">Categoria</label>
+          <select id="categoriaId-<%= s.id %>" name="categoriaId">
+            <option value="">Sem categoria</option>
+            <% categorias.forEach(function (c) { %>
+              <option value="<%= c.id %>" <%= s.categoriaId === c.id ? 'selected' : '' %>><%= c.nome %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="foto-<%= s.id %>">Foto</label>
+          <% if (s.fotoUrl) { %>
+            <div class="preview-foto"><img src="<%= s.fotoUrl %>" alt="Foto atual" /></div>
+          <% } %>
+          <input id="foto-<%= s.id %>" name="foto" type="file" accept="image/*" />
+          <span class="texto-sutil">JPG, PNG ou WEBP, até 4 MB.<%= s.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %></span>
+        </div>
+        <button class="btn btn-primario btn-bloco" type="submit">Salvar alterações</button>
+      </form>
+      <div class="flex gap-8 mt-16">
+        <form method="POST" action="/painel/servicos/<%= s.id %>/toggle" class="inline">
+          <button class="btn btn-secundario btn-sm"><%= s.ativo ? 'Desativar' : 'Ativar' %></button>
+        </form>
+        <form method="POST" action="/painel/servicos/<%= s.id %>/remover" class="inline"
+              onsubmit="return confirm('Excluir este item?')">
+          <button class="btn btn-perigo btn-sm">Excluir</button>
+        </form>
+      </div>
+    </div>
+  </div>
+<% }) %>
+
+<script>
+  function abrirModal(id) {
+    var o = document.getElementById('agm-' + id);
+    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+  }
+  function fecharModal(o) {
+    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
+      document.body.classList.remove('modal-aberto');
+    }
+  });
+</script>

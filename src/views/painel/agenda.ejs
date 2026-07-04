@@ -42,10 +42,10 @@
 <!-- Botão flutuante: Novo agendamento / Bloquear horário (só nesta tela) -->
 <div class="agenda-fab-wrap">
   <div class="agenda-fab-menu" id="agenda-fab-menu">
-    <a href="/painel/agenda/novo" class="agenda-fab-opcao">
+    <button type="button" class="agenda-fab-opcao" onclick="abrirModal('novo')">
       <span>Novo agendamento</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    </a>
+    </button>
     <% if (ehAdmin) { %>
       <button type="button" class="agenda-fab-opcao" onclick="abrirModal('bloqueio')">
         <span>Bloquear horário</span>
@@ -97,6 +97,125 @@
     </div>
   </div>
 <% } %>
+
+<!-- Pop-up: Novo agendamento -->
+<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Novo agendamento</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
+    <form method="POST" action="/painel/agenda/novo" class="form mt-16">
+      <% if (ehAdmin) { %>
+        <div class="campo">
+          <label for="barbeiroId-novo">Barbeiro</label>
+          <select id="barbeiroId-novo" name="barbeiroId" required>
+            <option value="">Selecione…</option>
+            <% barbeiros.forEach(function (b) { %>
+              <option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
+            <% }) %>
+          </select>
+        </div>
+      <% } else { %>
+        <p class="texto-secundario mb-16">Agendamento para você (<%= usuario.nome %>).</p>
+      <% } %>
+
+      <div class="campo">
+        <label for="servicoId-novo">Serviço</label>
+        <select id="servicoId-novo" name="servicoId" required>
+          <option value="">Selecione…</option>
+          <% servicos.forEach(function (s) { %>
+            <option value="<%= s.id %>"><%= s.nome %> — <%= fmtBRL(s.valor) %><%= s.duracaoMin > 0 ? ' (' + s.duracaoMin + ' min)' : '' %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="grid-2">
+        <div class="campo">
+          <label for="data-novo">Data</label>
+          <input id="data-novo" type="date" name="data" required value="<%= dataStr %>" />
+        </div>
+        <div class="campo">
+          <label for="hora-novo">Horário</label>
+          <input id="hora-novo" type="time" name="hora" required />
+        </div>
+      </div>
+
+      <div class="campo autocomplete">
+        <label for="cliente_nome-novo">Cliente</label>
+        <input id="cliente_nome-novo" name="cliente_nome" autocomplete="off" placeholder="Digite o nome (sugere cadastrados)" required />
+        <div id="sugestoes-cliente-novo" class="sugestoes"></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="campo">
+          <label for="cliente_telefone-novo">Telefone</label>
+          <input id="cliente_telefone-novo" name="cliente_telefone" inputmode="tel" placeholder="(51) 99999-9999" required />
+        </div>
+        <div class="campo">
+          <label for="cliente_email-novo">E-mail (opcional)</label>
+          <input id="cliente_email-novo" type="email" name="cliente_email" />
+        </div>
+      </div>
+
+      <button class="btn btn-primario btn-bloco" type="submit">Criar agendamento</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var clientes = <%- JSON.stringify(clientes) %>;
+    var inputNome = document.getElementById('cliente_nome-novo');
+    var inputTel = document.getElementById('cliente_telefone-novo');
+    var box = document.getElementById('sugestoes-cliente-novo');
+
+    function fmtTel(d) {
+      d = (d || '').replace(/\D/g, '');
+      if (d.length === 11) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+      if (d.length === 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
+      return d;
+    }
+    function escapar(t) {
+      return String(t).replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+      });
+    }
+    function fechar() { box.innerHTML = ''; box.style.display = 'none'; }
+    function buscar(q) {
+      q = q.trim().toLowerCase();
+      if (!q) return [];
+      var qDig = q.replace(/\D/g, '');
+      return clientes.filter(function (c) {
+        var nomeOk = c.nome.toLowerCase().indexOf(q) !== -1;
+        var telOk = qDig && c.telefone.indexOf(qDig) !== -1;
+        return nomeOk || telOk;
+      }).slice(0, 8);
+    }
+    function render(lista) {
+      if (!lista.length) { fechar(); return; }
+      box.innerHTML = lista.map(function (c) {
+        return '<button type="button" class="sugestao" data-nome="' + escapar(c.nome) +
+          '" data-tel="' + c.telefone + '"><strong>' + escapar(c.nome) +
+          '</strong><span>' + fmtTel(c.telefone) + '</span></button>';
+      }).join('');
+      box.style.display = 'block';
+      Array.prototype.forEach.call(box.querySelectorAll('.sugestao'), function (btn) {
+        btn.addEventListener('click', function () {
+          inputNome.value = btn.getAttribute('data-nome');
+          inputTel.value = fmtTel(btn.getAttribute('data-tel'));
+          fechar();
+          inputTel.focus();
+        });
+      });
+    }
+    inputNome.addEventListener('input', function () { render(buscar(inputNome.value)); });
+    inputNome.addEventListener('focus', function () { render(buscar(inputNome.value)); });
+    document.addEventListener('click', function (e) {
+      if (!box.contains(e.target) && e.target !== inputNome) fechar();
+    });
+  })();
+</script>
 
 <script>
   function abrirModal(id) {

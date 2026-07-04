@@ -242,6 +242,7 @@ label {
 
 /* ----- Cards -------------------------------------------------------------- */
 .card {
+  display: block;
   background: var(--superficie);
   border: 1px solid var(--borda);
   border-radius: var(--raio-card);
