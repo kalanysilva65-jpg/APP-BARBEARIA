@@ -26,7 +26,7 @@
 .topo-agendamento { background: transparent; border-bottom: none; box-shadow: none; padding: 18px 0 0; }
 .topo-agendamento-inner { display: flex; flex-direction: column; gap: 14px; }
 .topo-agendamento-logo { text-decoration: none; }
-.topo-agendamento-logo img { height: 20px; width: auto; display: block; }
+.topo-agendamento-logo img { height: 56px; width: auto; display: block; }
 .topo-agendamento-logo--texto {
   font-size: 13px;
   font-weight: 400;
