@@ -100,6 +100,17 @@
 }
 .app-painel input::placeholder,
 .app-painel textarea::placeholder { color: var(--texto-sutil); }
+/* Sem isso, o menu nativo do <select> (e o pop-up de data/hora) abre no
+   estilo claro do sistema mesmo com o campo escuro por cima. */
+.app-painel select,
+.app-painel input[type='date'],
+.app-painel input[type='time'] {
+  color-scheme: dark;
+}
+.app-painel select option {
+  background: #141519;
+  color: var(--texto);
+}
 .app-painel input:focus,
 .app-painel select:focus,
 .app-painel textarea:focus { border-color: rgba(255, 255, 255, 0.3); }
