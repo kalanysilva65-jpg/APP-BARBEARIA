@@ -18,3 +18,44 @@
     </div>
   </div>
 </div>
+
+<script>
+  // No touch (celular) o scroll horizontal já funciona nativamente. No PC (mouse),
+  // não há como "arrastar" a barra sem isso: permite clicar e arrastar para o lado.
+  (function () {
+    var el = document.querySelector('.nav-topo-scroll');
+    if (!el) return;
+    var arrastando = false;
+    var movido = false;
+    var startX = 0;
+    var startScroll = 0;
+
+    el.addEventListener('mousedown', function (e) {
+      arrastando = true;
+      movido = false;
+      startX = e.pageX;
+      startScroll = el.scrollLeft;
+      el.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mouseup', function () {
+      arrastando = false;
+      el.style.cursor = '';
+    });
+    window.addEventListener('mousemove', function (e) {
+      if (!arrastando) return;
+      var dx = e.pageX - startX;
+      if (Math.abs(dx) > 3) movido = true;
+      el.scrollLeft = startScroll - dx;
+    });
+    // Evita que o clique no link dispare navegação quando o usuário só queria arrastar.
+    el.addEventListener('click', function (e) {
+      if (movido) { e.preventDefault(); e.stopPropagation(); }
+    }, true);
+    // Roda do mouse: permite rolar na horizontal mesmo sem Shift.
+    el.addEventListener('wheel', function (e) {
+      if (e.deltaY === 0) return;
+      el.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }, { passive: false });
+  })();
+</script>

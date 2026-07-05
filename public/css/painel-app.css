@@ -112,6 +112,8 @@
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
   scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
 }
 .nav-topo-scroll::-webkit-scrollbar { display: none; }
 .nav-topo-pills {

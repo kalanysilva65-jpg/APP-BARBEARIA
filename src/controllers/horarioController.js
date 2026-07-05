@@ -151,4 +151,4 @@ async function removerBloqueio(req, res) {
   res.redirect('/painel/horarios');
 }
 
-module.exports = { ver, salvarJornada, adicionarBloqueio, removerBloqueio, salvarJanela, resumoJornada };
+module.exports = { ver, salvarJornada, adicionarBloqueio, removerBloqueio, salvarJanela, resumoJornada, lerJanelaAgendamento };

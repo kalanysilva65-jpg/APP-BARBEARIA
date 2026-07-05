@@ -9,6 +9,11 @@ const { horariosDisponiveis, dataLocal } = require('../services/disponibilidade'
 const { DIAS_SEMANA } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const planoServ = require('../services/plano');
+const { lerJanelaAgendamento } = require('./horarioController');
+
+// Até quantos dias no futuro o cliente pode marcar, de acordo com a janela
+// configurada pelo admin em Horários ("Janela de agendamento do cliente").
+const JANELA_DIAS = { semana: 7, duas_semanas: 14, sem_limite: 60 };
 
 // Date -> "YYYY-MM-DD"
 function iso(data) {
@@ -125,10 +130,13 @@ async function passoHorario(req, res) {
   const jornadas = await prisma.horarioTrabalho.findMany({ where: { usuarioId: barbeiro.id, trabalha: true } });
   const diasQueTrabalha = new Set(jornadas.map((j) => j.diaSemana));
 
+  const janela = await lerJanelaAgendamento(req.barbeariaId);
+  const janelaDias = JANELA_DIAS[janela] || JANELA_DIAS.sem_limite;
+
   const datas = [];
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 21 && datas.length < 14; i++) {
+  for (let i = 0; i < janelaDias && datas.length < 30; i++) {
     const d = new Date(hoje);
     d.setDate(hoje.getDate() + i);
     const dow = d.getDay();
