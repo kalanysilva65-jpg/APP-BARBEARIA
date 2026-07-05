@@ -5,7 +5,7 @@
 // usada) é carregada pelo parâmetro `assinatura` e aplica: os dias da semana
 // configurados no plano (diasSemana), valor R$ 0 e consumo de 1 uso (limitado).
 const prisma = require('../config/db');
-const { horariosDisponiveis, dataLocal } = require('../services/disponibilidade');
+const { horariosDisponiveis, todosHorarios, dataLocal } = require('../services/disponibilidade');
 const { DIAS_SEMANA } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const planoServ = require('../services/plano');
@@ -14,6 +14,8 @@ const { lerJanelaAgendamento } = require('./horarioController');
 // Até quantos dias no futuro o cliente pode marcar, de acordo com a janela
 // configurada pelo admin em Horários ("Janela de agendamento do cliente").
 const JANELA_DIAS = { semana: 7, duas_semanas: 14, sem_limite: 60 };
+
+const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 // Date -> "YYYY-MM-DD"
 function iso(data) {
@@ -155,15 +157,23 @@ async function passoHorario(req, res) {
     if (diasQueTrabalha.has(dow)) {
       const dia = String(d.getDate()).padStart(2, '0');
       const mes = String(d.getMonth() + 1).padStart(2, '0');
-      datas.push({ iso: iso(d), rotulo: `${DIAS_SEMANA[dow].slice(0, 3)} ${dia}/${mes}` });
+      const linha1 = i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : `${DIAS_SEMANA[dow].slice(0, 3)}, ${d.getDate()}`;
+      datas.push({ iso: iso(d), linha1, linha2: `${DIAS_SEMANA[dow].slice(0, 3)}, ${d.getDate()} ${MESES_ABREV[d.getMonth()]}` });
     }
   }
 
   let dataSel = req.query.data;
   if (!dataSel || !datas.find((x) => x.iso === dataSel)) dataSel = datas.length ? datas[0].iso : null;
 
-  let horarios = [];
-  if (dataSel) horarios = await horariosDisponiveis(barbeiro.id, dataSel, duracaoTotal);
+  // Mostra o expediente inteiro (livres + ocupados riscados), separado em
+  // Manhã/Tarde, igual ao mockup — não só os horários livres.
+  let horariosManha = [];
+  let horariosTarde = [];
+  if (dataSel) {
+    const todos = await todosHorarios(barbeiro.id, dataSel, duracaoTotal);
+    horariosManha = todos.filter((h) => Number(h.hora.slice(0, 2)) < 12);
+    horariosTarde = todos.filter((h) => Number(h.hora.slice(0, 2)) >= 12);
+  }
 
   res.render('agendar/horario', {
     layout: 'layouts/publico',
@@ -176,7 +186,8 @@ async function passoHorario(req, res) {
     barbeiro,
     datas,
     dataSel,
-    horarios,
+    horariosManha,
+    horariosTarde,
     assinatura,
     ilimitado,
     diasPlanoLabel: assinatura && assinatura.plano.diasSemana !== '0,1,2,3,4,5,6' ? diasLabel(assinatura.plano.diasSemana) : null,

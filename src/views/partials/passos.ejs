@@ -1,14 +1,11 @@
-<ol class="passos">
-  <li class="<%= passo > 1 ? 'feito' : passo === 1 ? 'atual' : '' %>">
-    <span class="passo-num">1</span><span class="passo-rotulo">Serviço</span>
-  </li>
-  <li class="<%= passo > 2 ? 'feito' : passo === 2 ? 'atual' : '' %>">
-    <span class="passo-num">2</span><span class="passo-rotulo">Barbeiro</span>
-  </li>
-  <li class="<%= passo > 3 ? 'feito' : passo === 3 ? 'atual' : '' %>">
-    <span class="passo-num">3</span><span class="passo-rotulo">Horário</span>
-  </li>
-  <li class="<%= passo > 4 ? 'feito' : passo === 4 ? 'atual' : '' %>">
-    <span class="passo-num">4</span><span class="passo-rotulo">Dados</span>
-  </li>
-</ol>
+<%
+  var ROTULOS_PASSO = { 1: 'Serviço', 2: 'Barbeiro', 3: 'Horário', 4: 'Dados' };
+%>
+<div class="passos-agendamento">
+  <span class="passos-agendamento-label"><%= passo %> / 4 — <%= ROTULOS_PASSO[passo].toUpperCase() %></span>
+  <div class="passos-agendamento-barra">
+    <% for (var i = 1; i <= 4; i++) { %>
+      <span class="passos-agendamento-seg <%= i <= passo ? 'feito' : '' %>"></span>
+    <% } %>
+  </div>
+</div>

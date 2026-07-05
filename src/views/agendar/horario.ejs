@@ -3,42 +3,51 @@
 
 <div class="cabecalho-pagina">
   <h1>Escolha o horário</h1>
-  <p class="texto-secundario">
-    Com <strong><%= barbeiro.nome %></strong> ·
-    <% if (servicos.length === 1) { %><%= servicos[0].nome %><% } else { %><%= servicos.length %> serviços<% } %>
-  </p>
+  <p><%= barbeiro.nome.toUpperCase() %> · <%= duracaoTotal %> MIN</p>
 </div>
 
 <% if (diasPlanoLabel) { %>
-  <div class="alerta alerta-aviso">Plano <%= assinatura.plano.nome %>: agendamento só <strong><%= diasPlanoLabel %></strong>.</div>
+  <div class="alerta alerta-aviso mb-24">Plano <%= assinatura.plano.nome %>: agendamento só <strong><%= diasPlanoLabel %></strong>.</div>
 <% } %>
 
 <% if (datas.length === 0) { %>
-  <div class="card">
-    <p class="texto-secundario">Sem datas disponíveis para este barbeiro<%= diasPlanoLabel ? ' (' + diasPlanoLabel + ')' : '' %>.</p>
-  </div>
+  <p class="texto-secundario">Sem datas disponíveis para este barbeiro<%= diasPlanoLabel ? ' (' + diasPlanoLabel + ')' : '' %>.</p>
 <% } else { %>
-  <label>Data</label>
-  <div class="lista-datas">
+  <div class="lista-datas mb-24">
     <% datas.forEach(function (d) { %>
       <a class="chip-data <%= d.iso === dataSel ? 'selecionado' : '' %>"
          href="/agendar/horario?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= d.iso %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
-        <%= d.rotulo %>
+        <span><%= d.linha1 %></span><span class="chip-data-sub"><%= d.linha2 %></span>
       </a>
     <% }) %>
   </div>
 
-  <label class="mt-24">Horários disponíveis</label>
-  <% if (horarios.length === 0) { %>
-    <p class="texto-secundario">Sem horários livres nesta data. Tente outra.</p>
+  <% if (horariosManha.length === 0 && horariosTarde.length === 0) { %>
+    <p class="texto-secundario">Sem horários nesta data. Tente outra.</p>
   <% } else { %>
-    <div class="grade-horarios">
-      <% horarios.forEach(function (h) { %>
-        <a class="opcao-horario"
-           href="/agendar/dados?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= dataSel %>&hora=<%= h %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
-          <%= h %>
-        </a>
-      <% }) %>
-    </div>
+    <% if (horariosManha.length > 0) { %>
+      <div class="grupo-horarios-titulo">Manhã</div>
+      <div class="grade-horarios mb-24">
+        <% horariosManha.forEach(function (h) { %>
+          <% if (h.livre) { %>
+            <a class="opcao-horario" href="/agendar/dados?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= dataSel %>&hora=<%= h.hora %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>"><%= h.hora %></a>
+          <% } else { %>
+            <span class="opcao-horario opcao-horario--indisponivel"><%= h.hora %></span>
+          <% } %>
+        <% }) %>
+      </div>
+    <% } %>
+    <% if (horariosTarde.length > 0) { %>
+      <div class="grupo-horarios-titulo">Tarde</div>
+      <div class="grade-horarios">
+        <% horariosTarde.forEach(function (h) { %>
+          <% if (h.livre) { %>
+            <a class="opcao-horario" href="/agendar/dados?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= dataSel %>&hora=<%= h.hora %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>"><%= h.hora %></a>
+          <% } else { %>
+            <span class="opcao-horario opcao-horario--indisponivel"><%= h.hora %></span>
+          <% } %>
+        <% }) %>
+      </div>
+    <% } %>
   <% } %>
 <% } %>

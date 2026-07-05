@@ -4,42 +4,37 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : 'Agendamento' %></title>
-    <script>try{if(localStorage.getItem('tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/tema-minimal.css" />
+    <link rel="stylesheet" href="/css/agendamento-app.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#111111" />
+    <meta name="theme-color" content="#0d0d0f" />
     <link rel="apple-touch-icon" href="/app-icon.svg" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
   </head>
-  <body class="tela-publica">
-    <header class="topo-publico animar-topo">
-      <div class="container-estreito topo-publico-inner">
-        <button class="btn-tema btn-tema--fantasma" onclick="toggleTema()" title="Alternar tema" type="button">
-          <svg class="icone-lua" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          <svg class="icone-sol" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-        </button>
+  <body class="tela-publica app-agendamento">
+    <header class="topo-agendamento">
+      <div class="container-estreito topo-agendamento-inner">
         <% if (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) { %>
-          <a href="/agendar" class="topo-publico-logo"><img src="<%= marcaLogoUrl %>" alt="Logo" class="logo-marca-img" /></a>
+          <a href="/agendar" class="topo-agendamento-logo"><img src="<%= marcaLogoUrl %>" alt="Logo" class="logo-marca-img" /></a>
         <% } else { %>
-          <a href="/agendar" class="topo-publico-logo logo-flowbarber logo-flowbarber--sm"><span class="lf">navio</span><span class="ld">.</span></a>
+          <a href="/agendar" class="topo-agendamento-logo topo-agendamento-logo--texto">navio</a>
         <% } %>
-        <span class="btn-tema--placeholder"></span>
+        <% if (typeof passo !== 'undefined' && passo >= 1 && passo <= 4) { %>
+          <%- include('../partials/passos', { passo: passo }) %>
+        <% } %>
       </div>
     </header>
 
     <main class="container-estreito conteudo-publico animar-entrada">
-      <% if (typeof passo !== 'undefined' && passo >= 1 && passo <= 4) { %>
-        <%- include('../partials/passos', { passo: passo }) %>
-      <% } %>
       <%- include('../partials/flash') %>
       <%- body %>
     </main>
@@ -47,21 +42,7 @@
     <footer class="rodape-publico">
       <div class="container-estreito rodape-publico-inner">
         <a href="/login" class="texto-sutil">Acesso da equipe →</a>
-        <span class="powered-by-navio">Powered by <span class="logo-flowbarber logo-flowbarber--xs"><span class="lf">navio</span><span class="ld">.</span></span></span>
       </div>
     </footer>
-
-    <script>
-      function toggleTema() {
-        const escuro = document.documentElement.getAttribute('data-tema') === 'escuro';
-        if (escuro) {
-          document.documentElement.removeAttribute('data-tema');
-          localStorage.setItem('tema', 'claro');
-        } else {
-          document.documentElement.setAttribute('data-tema', 'escuro');
-          localStorage.setItem('tema', 'escuro');
-        }
-      }
-    </script>
   </body>
 </html>

@@ -3,29 +3,10 @@
 
 <div class="cabecalho-pagina">
   <h1>Seus dados</h1>
-  <p class="texto-secundario">Estamos quase lá. Confira o resumo e preencha seus dados.</p>
+  <p>Quase lá</p>
 </div>
 
-<div class="card resumo">
-  <% if (servicos.length === 1) { %>
-    <div class="resumo-linha"><span class="texto-sutil">Serviço</span><span><%= servicos[0].nome %></span></div>
-  <% } else { %>
-    <% servicos.forEach(function(s) { %>
-      <div class="resumo-linha"><span class="texto-sutil">Serviço</span><span><%= s.nome %></span></div>
-    <% }) %>
-  <% } %>
-  <div class="resumo-linha"><span class="texto-sutil">Barbeiro</span><span><%= barbeiro.nome %></span></div>
-  <div class="resumo-linha"><span class="texto-sutil">Data</span><span><%= dataExtenso %></span></div>
-  <div class="resumo-linha"><span class="texto-sutil">Horário</span><span><%= hora %></span></div>
-  <% if (assinatura) { %>
-    <div class="resumo-linha"><span class="texto-sutil">Plano</span><span><%= assinatura.plano.nome %></span></div>
-    <div class="resumo-linha total"><span>Total</span><span>Incluso no plano (<%= fmtBRL(0) %>)</span></div>
-  <% } else { %>
-    <div class="resumo-linha total"><span>Total</span><span><%= fmtBRL(valorTotal) %></span></div>
-  <% } %>
-</div>
-
-<form method="POST" action="/agendar/confirmar" class="form mt-24">
+<form method="POST" action="/agendar/confirmar" class="form">
   <input type="hidden" name="servicoIds" value="<%= servicoIdsStr %>" />
   <input type="hidden" name="barbeiroId" value="<%= barbeiro.id %>" />
   <input type="hidden" name="data" value="<%= data %>" />
@@ -44,12 +25,30 @@
   </div>
   <% if (!assinatura) { %>
   <div class="campo">
-    <label for="cliente_nascimento">Data de nascimento <span class="texto-sutil">(opcional)</span></label>
+    <label for="cliente_nascimento">Data de nascimento (opcional)</label>
     <input id="cliente_nascimento" type="date" name="cliente_nascimento" />
   </div>
   <% } %>
 
+  <div class="resumo-titulo mt-24">Resumo</div>
+  <div class="resumo">
+    <% if (servicos.length === 1) { %>
+      <div class="resumo-linha"><span class="texto-sutil">Serviços</span><span><%= servicos[0].nome %></span></div>
+    <% } else { %>
+      <div class="resumo-linha"><span class="texto-sutil">Serviços</span><span><%= servicos.map(function (s) { return s.nome; }).join(', ') %></span></div>
+    <% } %>
+    <div class="resumo-linha"><span class="texto-sutil">Barbeiro</span><span><%= barbeiro.nome %></span></div>
+    <div class="resumo-linha"><span class="texto-sutil">Data</span><span><%= dataExtenso %></span></div>
+    <div class="resumo-linha"><span class="texto-sutil">Horário</span><span><%= hora %></span></div>
+    <% if (assinatura) { %>
+      <div class="resumo-linha"><span class="texto-sutil">Plano</span><span><%= assinatura.plano.nome %></span></div>
+      <div class="resumo-linha total"><span>Total</span><span>Incluso no plano (<%= fmtBRL(0) %>)</span></div>
+    <% } else { %>
+      <div class="resumo-linha total"><span>Total</span><span><%= fmtBRL(valorTotal) %></span></div>
+    <% } %>
+  </div>
+
   <div class="acao-central">
-    <button class="btn btn-primario btn-pill" type="submit">Confirmar agendamento</button>
+    <button class="btn btn-primario btn-bloco" type="submit">Confirmar agendamento</button>
   </div>
 </form>
