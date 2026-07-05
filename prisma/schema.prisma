@@ -178,7 +178,8 @@ model Cliente {
 }
 
 /// Modelos de plano (assinatura) configurados pelo admin.
-/// limitado = nº de usos; ilimitado = sem limite de usos, mas só seg–qui (regra fixa).
+/// limitado = nº de usos; ilimitado = sem limite de usos.
+/// diasSemana: dias em que o plano pode ser usado (0=dom .. 6=sáb, separados por vírgula).
 model Plano {
   id           Int      @id @default(autoincrement())
   barbeariaId  Int      @map("barbearia_id")
@@ -189,6 +190,7 @@ model Plano {
   valor        Int      @default(0) // centavos; entra no caixa quando o cliente adquire
   ativo        Boolean  @default(true)
   servicoId    Int?     @map("servico_id") // serviço coberto pelo plano (null = qualquer)
+  diasSemana   String   @default("0,1,2,3,4,5,6") @map("dias_semana")
   criadoEm     DateTime @default(now()) @map("criado_em")
 
   barbearia   Barbearia      @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)

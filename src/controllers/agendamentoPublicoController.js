@@ -2,8 +2,8 @@
 // Passos: (plano) -> serviço -> barbeiro -> horário -> dados -> confirmação.
 // O estado segue pela querystring. A barbearia vem do subdomínio (req.barbeariaId,
 // garantido pelo middleware exigeBarbeariaPublica). A assinatura de plano (quando
-// usada) é carregada pelo parâmetro `assinatura` e aplica: só seg–qui (ilimitado),
-// valor R$ 0 e consumo de 1 uso (limitado).
+// usada) é carregada pelo parâmetro `assinatura` e aplica: os dias da semana
+// configurados no plano (diasSemana), valor R$ 0 e consumo de 1 uso (limitado).
 const prisma = require('../config/db');
 const { horariosDisponiveis, dataLocal } = require('../services/disponibilidade');
 const { DIAS_SEMANA } = require('../config/constantes');
@@ -29,6 +29,15 @@ function dataPorExtenso(dataStr) {
   const dia = String(d.getDate()).padStart(2, '0');
   const mes = String(d.getMonth() + 1).padStart(2, '0');
   return `${DIAS_SEMANA[d.getDay()]}, ${dia}/${mes}/${d.getFullYear()}`;
+}
+
+// "0,1,2,3,4,5,6" -> "todos os dias" / "segunda a quinta" (dias corridos) / "seg, ter, qua"
+function diasLabel(diasStr) {
+  const dias = String(diasStr || '').split(',').map(Number).filter((n) => !isNaN(n)).sort((a, b) => a - b);
+  if (dias.length === 7) return 'todos os dias';
+  const corrido = dias.every((d, i) => i === 0 || d === dias[i - 1] + 1);
+  if (corrido && dias.length > 1) return `${DIAS_SEMANA[dias[0]].toLowerCase()} a ${DIAS_SEMANA[dias[dias.length - 1]].toLowerCase()}`;
+  return dias.map((d) => DIAS_SEMANA[d].slice(0, 3)).join(', ');
 }
 
 // Carrega e valida a assinatura (plano vigente) DENTRO da barbearia. Null se inválida.
@@ -126,6 +135,8 @@ async function passoHorario(req, res) {
   const duracaoTotal = servicos.reduce((s, x) => s + x.duracaoMin, 0);
   const valorTotal = servicos.reduce((s, x) => s + x.valor, 0);
   const ilimitado = assinatura && assinatura.plano.tipo === 'ilimitado';
+  // Dias em que o plano da assinatura pode ser usado (null = sem restrição de plano).
+  const diasPlano = assinatura ? new Set(assinatura.plano.diasSemana.split(',').map(Number)) : null;
 
   const jornadas = await prisma.horarioTrabalho.findMany({ where: { usuarioId: barbeiro.id, trabalha: true } });
   const diasQueTrabalha = new Set(jornadas.map((j) => j.diaSemana));
@@ -140,7 +151,7 @@ async function passoHorario(req, res) {
     const d = new Date(hoje);
     d.setDate(hoje.getDate() + i);
     const dow = d.getDay();
-    if (ilimitado && (dow < 1 || dow > 4)) continue;
+    if (diasPlano && !diasPlano.has(dow)) continue;
     if (diasQueTrabalha.has(dow)) {
       const dia = String(d.getDate()).padStart(2, '0');
       const mes = String(d.getMonth() + 1).padStart(2, '0');
@@ -168,6 +179,7 @@ async function passoHorario(req, res) {
     horarios,
     assinatura,
     ilimitado,
+    diasPlanoLabel: assinatura && assinatura.plano.diasSemana !== '0,1,2,3,4,5,6' ? diasLabel(assinatura.plano.diasSemana) : null,
   });
 }
 
@@ -235,9 +247,10 @@ async function confirmar(req, res) {
   if (!nome) erros.push('Informe seu nome.');
   if (!telefone) erros.push('Informe seu telefone.');
   if (!assinatura && req.body.assinatura) erros.push('Seu plano não está mais ativo.');
-  if (assinatura && assinatura.plano.tipo === 'ilimitado' && data) {
+  if (assinatura && data) {
     const dow = dataLocal(data).getDay();
-    if (dow < 1 || dow > 4) erros.push('O plano ilimitado só pode ser agendado de segunda a quinta.');
+    const diasPermitidos = new Set(assinatura.plano.diasSemana.split(',').map(Number));
+    if (!diasPermitidos.has(dow)) erros.push('Esse plano não pode ser usado nesse dia da semana.');
   }
 
   // Revalida a disponibilidade real (soma das durações de todos os serviços)

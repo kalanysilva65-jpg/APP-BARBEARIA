@@ -9,13 +9,13 @@
   </p>
 </div>
 
-<% if (ilimitado) { %>
-  <div class="alerta alerta-aviso">Plano ilimitado: agendamento só de <strong>segunda a quinta</strong>.</div>
+<% if (diasPlanoLabel) { %>
+  <div class="alerta alerta-aviso">Plano <%= assinatura.plano.nome %>: agendamento só <strong><%= diasPlanoLabel %></strong>.</div>
 <% } %>
 
 <% if (datas.length === 0) { %>
   <div class="card">
-    <p class="texto-secundario">Sem datas disponíveis para este barbeiro<%= ilimitado ? ' de seg a qui' : '' %>.</p>
+    <p class="texto-secundario">Sem datas disponíveis para este barbeiro<%= diasPlanoLabel ? ' (' + diasPlanoLabel + ')' : '' %>.</p>
   </div>
 <% } else { %>
   <label>Data</label>

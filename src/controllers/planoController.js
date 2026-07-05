@@ -10,6 +10,16 @@ function reaisParaCentavos(valorStr) {
   return Math.round(n * 100);
 }
 
+// "0,2,3" (vindo do seletor de dias) -> "0,2,3" validado; vazio/inválido -> todos os dias.
+function lerDiasSemana(diasStr) {
+  const dias = String(diasStr || '')
+    .split(',')
+    .map((d) => parseInt(d, 10))
+    .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+  const unicos = Array.from(new Set(dias)).sort();
+  return unicos.length ? unicos.join(',') : '0,1,2,3,4,5,6';
+}
+
 // Normaliza os campos do formulário num objeto pronto para o banco.
 function lerForm(body) {
   const nome = (body.nome || '').trim();
@@ -18,7 +28,8 @@ function lerForm(body) {
   const validadeDias = Math.max(1, parseInt(body.validadeDias, 10) || 30);
   const valor = reaisParaCentavos(body.valor);
   const servicoId = body.servicoId ? Number(body.servicoId) : null; // null = qualquer serviço
-  return { nome, tipo, usos, validadeDias, valor, servicoId };
+  const diasSemana = lerDiasSemana(body.diasSemana);
+  return { nome, tipo, usos, validadeDias, valor, servicoId, diasSemana };
 }
 
 // Serviços ativos (da barbearia) para o select do formulário.

@@ -1,6 +1,16 @@
+<%
+  function _diasPlanoLabelServico(diasStr) {
+    var DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+    var dias = String(diasStr || '').split(',').map(Number).filter(function (n) { return !isNaN(n); }).sort(function (a, b) { return a - b; });
+    if (dias.length === 7) return 'todos os dias';
+    var corrido = dias.every(function (d, i) { return i === 0 || d === dias[i - 1] + 1; });
+    if (corrido && dias.length > 1) return DIAS[dias[0]] + '–' + DIAS[dias[dias.length - 1]];
+    return dias.map(function (d) { return DIAS[d]; }).join(', ');
+  }
+%>
 <% if (assinatura) { %>
   <div class="alerta alerta-sucesso">
-    Usando o plano <strong><%= assinatura.plano.nome %></strong><%= assinatura.usosRestantes !== null ? ' · ' + assinatura.usosRestantes + ' uso(s) restante(s)' : ' · ilimitado (seg–qui)' %>.
+    Usando o plano <strong><%= assinatura.plano.nome %></strong><%= assinatura.usosRestantes !== null ? ' · ' + assinatura.usosRestantes + ' uso(s) restante(s)' : ' · ilimitado (' + _diasPlanoLabelServico(assinatura.plano.diasSemana) + ')' %>.
     <a href="/agendar">Agendar sem plano</a>
   </div>
 <% } else { %>

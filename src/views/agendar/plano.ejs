@@ -1,3 +1,13 @@
+<%
+  var DIAS_SEMANA_EXT = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+  function _diasPlanoLabel(diasStr) {
+    var dias = String(diasStr || '').split(',').map(Number).filter(function (n) { return !isNaN(n); }).sort(function (a, b) { return a - b; });
+    if (dias.length === 7) return 'todos os dias';
+    var corrido = dias.every(function (d, i) { return i === 0 || d === dias[i - 1] + 1; });
+    if (corrido && dias.length > 1) return DIAS_SEMANA_EXT[dias[0]] + ' a ' + DIAS_SEMANA_EXT[dias[dias.length - 1]];
+    return dias.map(function (d) { return DIAS_SEMANA_EXT[d].slice(0, 3); }).join(', ');
+  }
+%>
 <a href="/agendar" class="link-voltar">← Agendar normalmente</a>
 
 <div class="cabecalho-pagina">
@@ -32,7 +42,7 @@
           <span class="opcao-info">
             <span class="opcao-nome"><%= a.plano.nome %></span>
             <span class="texto-sutil">
-              <%= a.plano.tipo === 'ilimitado' ? 'Ilimitado · só seg–qui' : a.usosRestantes + ' uso(s) restante(s)' %>
+              <%= a.plano.tipo === 'ilimitado' ? 'Ilimitado · ' + _diasPlanoLabel(a.plano.diasSemana) : a.usosRestantes + ' uso(s) restante(s)' %>
               · até <%= fmtData(a.dataFim) %><%= a.plano.servico ? ' · ' + a.plano.servico.nome : '' %>
             </span>
           </span>
