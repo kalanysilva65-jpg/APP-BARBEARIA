@@ -25,6 +25,17 @@
   (function () {
     var el = document.querySelector('.nav-topo-scroll');
     if (!el) return;
+
+    // Cada página é um carregamento novo (não é SPA), então a barra sempre
+    // nasceria rolada lá no início — o que parece "voltar" pro usuário toda
+    // vez que ele navega para uma aba mais à direita. Centraliza a aba ativa
+    // já na primeira renderização, sem depender de scroll salvo/animação.
+    var ativa = el.querySelector('.nav-topo-pill.ativo');
+    if (ativa) {
+      var alvo = ativa.offsetLeft - (el.clientWidth - ativa.offsetWidth) / 2;
+      el.scrollLeft = Math.max(0, alvo);
+    }
+
     var arrastando = false;
     var movido = false;
     var startX = 0;
