@@ -45,9 +45,12 @@
         <input id="dataNascimento" type="date" name="dataNascimento"
                value="<%= editando && editando.dataNascimento ? new Date(editando.dataNascimento).toISOString().slice(0, 10) : '' %>" />
       </div>
-      <button class="btn btn-primario btn-bloco" type="submit">
-        <%= editando ? 'Salvar' : 'Cadastrar' %>
-      </button>
+      <div class="modal-acoes">
+        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+        <button class="btn btn-primario" type="submit">
+          <%= editando ? 'Salvar' : 'Cadastrar' %>
+        </button>
+      </div>
     </form>
   </div>
 </div>

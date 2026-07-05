@@ -104,7 +104,10 @@
         <label for="valorGasto-novo">Valor gasto na compra (R$)</label>
         <input id="valorGasto-novo" name="valorGasto" type="number" step="0.01" min="0" />
       </div>
-      <button class="btn btn-primario btn-bloco" type="submit">Adicionar ao estoque</button>
+      <div class="modal-acoes">
+        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+        <button class="btn btn-primario" type="submit">Adicionar ao estoque</button>
+      </div>
     </form>
   </div>
 </div>
@@ -145,11 +148,14 @@
           <label for="valorGasto-<%= i.id %>">Valor gasto na compra (R$)</label>
           <input id="valorGasto-<%= i.id %>" name="valorGasto" type="number" step="0.01" min="0" value="<%= (i.valorGasto / 100).toFixed(2) %>" />
         </div>
-        <button class="btn btn-primario btn-bloco" type="submit">Salvar alterações</button>
+        <div class="modal-acoes">
+          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+          <button class="btn btn-primario" type="submit">Salvar alterações</button>
+        </div>
       </form>
       <form method="POST" action="/painel/estoque/<%= i.id %>/remover" class="mt-16"
             onsubmit="return confirm('Excluir este item?')">
-        <button class="btn btn-perigo btn-sm">Excluir item</button>
+        <button type="submit" class="btn btn-perigo">Excluir item</button>
       </form>
     </div>
   </div>

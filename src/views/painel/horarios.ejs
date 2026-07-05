@@ -81,7 +81,10 @@
           <label for="motivo">Motivo (opcional)</label>
           <input id="motivo" name="motivo" placeholder="Almoço, compromisso…" />
         </div>
-        <button class="btn btn-primario btn-bloco">Adicionar bloqueio</button>
+        <div class="modal-acoes">
+          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+          <button class="btn btn-primario">Adicionar bloqueio</button>
+        </div>
       </form>
     </div>
   </div>
@@ -113,7 +116,10 @@
               <% }) %>
             </tbody>
           </table>
-          <button class="btn btn-primario btn-bloco mt-16">Salvar jornada</button>
+          <div class="modal-acoes mt-16">
+            <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+            <button class="btn btn-primario">Salvar jornada</button>
+          </div>
         </form>
       </div>
     </div>

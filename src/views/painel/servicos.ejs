@@ -144,7 +144,10 @@
         <input id="foto-novo" name="foto" type="file" accept="image/*" />
         <span class="texto-sutil">JPG, PNG ou WEBP, até 4 MB.</span>
       </div>
-      <button class="btn btn-primario btn-bloco" type="submit">Criar</button>
+      <div class="modal-acoes">
+        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+        <button class="btn btn-primario" type="submit">Criar</button>
+      </div>
     </form>
   </div>
 </div>
@@ -204,7 +207,10 @@
           <input id="foto-<%= s.id %>" name="foto" type="file" accept="image/*" />
           <span class="texto-sutil">JPG, PNG ou WEBP, até 4 MB.<%= s.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %></span>
         </div>
-        <button class="btn btn-primario btn-bloco" type="submit">Salvar alterações</button>
+        <div class="modal-acoes">
+          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+          <button class="btn btn-primario" type="submit">Salvar alterações</button>
+        </div>
       </form>
       <div class="flex gap-8 mt-16">
         <form method="POST" action="/painel/servicos/<%= s.id %>/toggle" class="inline">

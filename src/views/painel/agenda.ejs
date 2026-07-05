@@ -95,7 +95,10 @@
             <input id="bloq-fim" type="time" name="horaFim" required />
           </div>
         </div>
-        <button class="btn btn-primario btn-sm">Bloquear</button>
+        <div class="modal-acoes">
+          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+          <button class="btn btn-primario">Bloquear</button>
+        </div>
       </form>
     </div>
   </div>
@@ -161,7 +164,10 @@
         </div>
       </div>
 
-      <button class="btn btn-primario btn-bloco" type="submit">Criar agendamento</button>
+      <div class="modal-acoes">
+        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+        <button class="btn btn-primario" type="submit">Criar agendamento</button>
+      </div>
     </form>
   </div>
 </div>

@@ -114,7 +114,10 @@
           <input id="fim" type="date" name="fim" value="<%= fimStr %>" />
         </div>
       </div>
-      <button class="btn btn-primario btn-bloco">Aplicar</button>
+      <div class="modal-acoes">
+        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+        <button class="btn btn-primario">Aplicar</button>
+      </div>
     </form>
   </div>
 </div>
@@ -155,7 +158,10 @@
           <label for="descricao">Descrição (opcional)</label>
           <input id="descricao" name="descricao" placeholder="Ex.: Corte do João" />
         </div>
-        <button class="btn btn-primario btn-bloco" type="submit">Registrar lançamento</button>
+        <div class="modal-acoes">
+          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+          <button class="btn btn-primario" type="submit">Registrar lançamento</button>
+        </div>
       </form>
     <% } %>
   </div>
