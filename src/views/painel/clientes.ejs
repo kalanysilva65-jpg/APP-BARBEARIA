@@ -1,22 +1,20 @@
-<input type="search" id="busca-cliente" placeholder="Buscar cliente…" class="mb-16" oninput="filtrarClientes(this.value)" />
+<input type="search" id="busca-cliente" placeholder="Buscar cliente…" class="mb-16 input-busca" oninput="filtrarClientes(this.value)" />
 
-<div class="card">
-  <% if (clientes.length === 0) { %>
-    <p class="texto-secundario">Nenhum cliente cadastrado ainda.</p>
-  <% } else { %>
-    <div class="lista-rows" id="lista-clientes">
-      <% clientes.forEach(function (c) { %>
-        <a href="/painel/clientes/<%= c.id %>" class="row" data-nome="<%= c.nome.toLowerCase() %>">
-          <span class="avatar avatar--lg" style="width:34px;height:34px;font-size:11.5px"><%= c.nome.split(' ').length > 1 ? (c.nome[0] + c.nome.split(' ').slice(-1)[0][0]).toUpperCase() : c.nome.slice(0, 2).toUpperCase() %></span>
-          <span class="row-info">
-            <span class="row-title"><%= c.nome %></span>
-            <span class="row-sub"><%= fmtTelefone(c.telefone) %></span>
-          </span>
-        </a>
-      <% }) %>
-    </div>
-  <% } %>
-</div>
+<% if (clientes.length === 0) { %>
+  <p class="texto-secundario">Nenhum cliente cadastrado ainda.</p>
+<% } else { %>
+  <div class="linha-simples-lista" id="lista-clientes">
+    <% clientes.forEach(function (c) { %>
+      <a href="/painel/clientes/<%= c.id %>" class="linha-simples" data-nome="<%= c.nome.toLowerCase() %>">
+        <span class="avatar" style="width:32px;height:32px;font-size:11px"><%= c.nome.split(' ').length > 1 ? (c.nome[0] + c.nome.split(' ').slice(-1)[0][0]).toUpperCase() : c.nome.slice(0, 2).toUpperCase() %></span>
+        <span class="linha-simples-info">
+          <span class="linha-simples-titulo"><%= c.nome %></span>
+          <span class="linha-simples-sub"><%= fmtTelefone(c.telefone) %></span>
+        </span>
+      </a>
+    <% }) %>
+  </div>
+<% } %>
 
 <!-- Botão flutuante: Novo cliente (só nesta tela) -->
 <div class="agenda-fab-wrap">
@@ -64,7 +62,7 @@
   }
   function filtrarClientes(termo) {
     var t = termo.trim().toLowerCase();
-    document.querySelectorAll('#lista-clientes .row').forEach(function (r) {
+    document.querySelectorAll('#lista-clientes .linha-simples').forEach(function (r) {
       r.style.display = r.dataset.nome.indexOf(t) === -1 ? 'none' : 'flex';
     });
   }

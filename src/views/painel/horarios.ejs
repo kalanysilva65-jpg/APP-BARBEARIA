@@ -2,43 +2,49 @@
   <div class="card"><p class="texto-secundario">Nenhum barbeiro ativo.</p></div>
 <% } else { %>
 
+  <span class="dash-rotulo texto-sutil">JANELA DE AGENDAMENTO DO CLIENTE</span>
+  <p class="janela-desc">Controla até quando os clientes podem marcar horários pelo app.</p>
+  <form method="POST" action="/painel/horarios/janela" class="janela-pills mb-24" id="form-janela">
+    <button type="submit" name="janela" value="semana" class="janela-pill <%= janelaAgendamento === 'semana' ? 'ativo' : '' %>">Esta semana</button>
+    <button type="submit" name="janela" value="duas_semanas" class="janela-pill <%= janelaAgendamento === 'duas_semanas' ? 'ativo' : '' %>">Esta e a próxima</button>
+    <button type="submit" name="janela" value="sem_limite" class="janela-pill <%= janelaAgendamento === 'sem_limite' ? 'ativo' : '' %>">Sem limite</button>
+  </form>
+
   <span class="dash-rotulo texto-sutil">JORNADA SEMANAL</span>
-  <div class="lista-rows mt-16 mb-16">
+  <div class="linha-simples-lista mt-16 mb-24">
     <% barbeirosComJornada.forEach(function (bj) { %>
-      <a href="#" class="row" onclick="abrirModal(<%= bj.barbeiro.id %>);return false;">
-        <span class="avatar" style="width:34px;height:34px;font-size:11.5px"><%= bj.barbeiro.nome.split(' ').length > 1 ? (bj.barbeiro.nome[0] + bj.barbeiro.nome.split(' ').slice(-1)[0][0]).toUpperCase() : bj.barbeiro.nome.slice(0, 2).toUpperCase() %></span>
-        <span class="row-info">
-          <span class="row-title"><%= bj.barbeiro.nome %></span>
-          <span class="row-sub"><%= bj.resumo %></span>
+      <a href="#" class="linha-simples" onclick="abrirModal(<%= bj.barbeiro.id %>);return false;">
+        <span class="linha-simples-info">
+          <span class="linha-simples-titulo"><%= bj.barbeiro.nome %></span>
+        </span>
+        <span class="linha-simples-valor"><%= bj.resumo %></span>
+        <span class="linha-simples-editar">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
         </span>
       </a>
     <% }) %>
   </div>
 
-  <span class="dash-rotulo texto-sutil">BLOQUEIOS MANUAIS</span>
-  <div class="lista-rows mt-16">
+  <div class="flex-fim" style="justify-content:space-between;">
+    <span class="dash-rotulo texto-sutil">BLOQUEIOS MANUAIS</span>
+    <button type="button" class="texto-secundario" style="font-size:12px;background:none;border:none;cursor:pointer;" onclick="abrirModal('bloqueio')">+ Adicionar</button>
+  </div>
+  <div class="linha-simples-lista mt-16">
     <% if (bloqueios.length === 0) { %>
       <p class="texto-secundario">Nenhum bloqueio futuro.</p>
     <% } else { %>
       <% bloqueios.forEach(function (bl) { %>
-        <div class="row row-bloq">
-          <span class="row-info">
-            <span class="row-title"><%= fmtData(bl.data) %> · <%= bl.horaInicio %>–<%= bl.horaFim %></span>
-            <span class="row-sub"><%= bl.motivo || 'Bloqueado' %> · <%= bl.usuario.nome %></span>
+        <div class="linha-simples">
+          <span class="linha-simples-info">
+            <span class="linha-simples-titulo"><%= fmtData(bl.data) %> · <%= bl.horaInicio %>–<%= bl.horaFim %></span>
+            <span class="linha-simples-sub"><%= bl.motivo || 'Bloqueado' %> · <%= bl.usuario.nome %></span>
           </span>
-          <form method="POST" action="/painel/horarios/bloqueios/<%= bl.id %>/remover" class="row-x" onsubmit="return confirm('Remover este bloqueio?')">
+          <form method="POST" action="/painel/horarios/bloqueios/<%= bl.id %>/remover" class="linha-simples-x" onsubmit="return confirm('Remover este bloqueio?')">
             <button title="Remover bloqueio" type="submit">×</button>
           </form>
         </div>
       <% }) %>
     <% } %>
-  </div>
-
-  <!-- Botão flutuante: bloquear horário (só nesta tela) -->
-  <div class="agenda-fab-wrap">
-    <button type="button" class="agenda-fab" onclick="abrirModal('bloqueio')" aria-label="Bloquear horário">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    </button>
   </div>
 
   <!-- Pop-up: bloquear horário -->

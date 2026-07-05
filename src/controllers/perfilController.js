@@ -2,6 +2,25 @@
 const fs = require('fs');
 const path = require('path');
 const prisma = require('../config/db');
+const { resumoJornada } = require('./horarioController');
+
+// GET /painel/mais — cartão de perfil do usuário logado.
+async function ver(req, res) {
+  const usuario = req.session.usuario;
+  let atendimentos = 0;
+  let horarioTrabalho = null;
+
+  if (usuario.barbeariaId) {
+    atendimentos = await prisma.agendamentoItem.count({
+      where: { agendamento: { usuarioId: usuario.id, status: 'concluido' } },
+    }).catch(() => 0);
+
+    const jornada = await prisma.horarioTrabalho.findMany({ where: { usuarioId: usuario.id } });
+    horarioTrabalho = resumoJornada(jornada);
+  }
+
+  res.render('painel/mais', { titulo: 'Perfil', atendimentos, horarioTrabalho });
+}
 
 // POST /painel/perfil/foto — o próprio usuário logado troca sua foto.
 async function salvarFoto(req, res) {
@@ -19,4 +38,4 @@ async function salvarFoto(req, res) {
   res.redirect(destino);
 }
 
-module.exports = { salvarFoto };
+module.exports = { ver, salvarFoto };

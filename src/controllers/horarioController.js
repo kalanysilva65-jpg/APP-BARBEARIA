@@ -34,6 +34,16 @@ function resumoJornada(jornada) {
     .join(' · ');
 }
 
+// Janela de agendamento do cliente: até quando ele pode marcar pelo app.
+const JANELA_PADRAO = 'sem_limite';
+
+async function lerJanelaAgendamento(barbeariaId) {
+  const cfg = await prisma.configuracao.findUnique({
+    where: { barbeariaId_chave: { barbeariaId, chave: 'janelaAgendamento' } },
+  }).catch(() => null);
+  return (cfg && cfg.valor) || JANELA_PADRAO;
+}
+
 // GET /painel/horarios — jornada de todos os barbeiros + bloqueios manuais (todos)
 async function ver(req, res) {
   const b = req.barbeariaId;
@@ -54,13 +64,28 @@ async function ver(req, res) {
     orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
   });
 
+  const janelaAgendamento = await lerJanelaAgendamento(b);
+
   res.render('painel/horarios', {
     titulo: 'Horários',
     barbeirosComJornada,
     barbeiros,
     bloqueios,
     DIAS_SEMANA,
+    janelaAgendamento,
   });
+}
+
+// POST /painel/horarios/janela — salva até quando o cliente pode marcar pelo app
+async function salvarJanela(req, res) {
+  const b = req.barbeariaId;
+  const valor = ['semana', 'duas_semanas', 'sem_limite'].includes(req.body.janela) ? req.body.janela : JANELA_PADRAO;
+  await prisma.configuracao.upsert({
+    where: { barbeariaId_chave: { barbeariaId: b, chave: 'janelaAgendamento' } },
+    update: { valor },
+    create: { barbeariaId: b, chave: 'janelaAgendamento', valor },
+  });
+  res.redirect('/painel/horarios');
 }
 
 // Confere se o barbeiro pertence à barbearia do contexto.
@@ -126,4 +151,4 @@ async function removerBloqueio(req, res) {
   res.redirect('/painel/horarios');
 }
 
-module.exports = { ver, salvarJornada, adicionarBloqueio, removerBloqueio };
+module.exports = { ver, salvarJornada, adicionarBloqueio, removerBloqueio, salvarJanela, resumoJornada };

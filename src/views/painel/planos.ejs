@@ -1,11 +1,19 @@
-<div class="lista-rows">
+<div class="cards-grid" style="grid-template-columns:1fr;gap:10px;">
   <% planos.forEach(function (p) { %>
-    <div class="row" <% if (ehAdmin) { %>onclick="abrirModal(<%= p.id %>)" style="cursor:pointer"<% } %>>
-      <span class="row-info">
-        <span class="row-title"><%= p.nome %> <span class="texto-sutil">· <%= p.tipo %></span><% if (!p.ativo) { %> <span class="status status-cancelado">inativo</span><% } %></span>
-        <span class="row-sub"><%= p.tipo === 'limitado' ? p.usos + ' uso(s)' : 'ilimitado · só seg–qui' %> · validade <%= p.validadeDias %> dias · <%= p.servico ? p.servico.nome : 'qualquer serviço' %></span>
-      </span>
-      <span class="item-preco"><%= fmtBRL(p.valor) %></span>
+    <div class="item-card plano-card" <% if (ehAdmin) { %>onclick="abrirModal(<%= p.id %>)" style="cursor:pointer"<% } %>>
+      <% if (ehAdmin) { %>
+        <button type="button" class="plano-card-editar" title="Editar" onclick="event.stopPropagation();abrirModal(<%= p.id %>)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+      <% } %>
+      <div class="plano-card-topo">
+        <span class="plano-card-nome"><%= p.nome %></span>
+        <span class="plano-badge <%= p.tipo === 'ilimitado' ? 'plano-badge--ilimitado' : 'plano-badge--limitado' %>"><%= p.tipo %></span>
+      </div>
+      <div class="plano-card-preco"><span class="n"><%= fmtBRL(p.valor) %></span><span class="u">/mês</span></div>
+      <div class="plano-card-desc">
+        <%= p.tipo === 'limitado' ? p.usos + ' uso(s)' : 'Todos os dias · Uso ilimitado' %> · <%= p.servico ? p.servico.nome : 'qualquer serviço' %><% if (!p.ativo) { %> · <span class="status status-cancelado">inativo</span><% } %>
+      </div>
     </div>
   <% }) %>
 

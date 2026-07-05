@@ -32,7 +32,7 @@
 </div>
 
 <!-- Entrou / Saiu / Lucro do período -->
-<div class="card caixa-resumo-hoje mb-16">
+<div class="caixa-resumo-hoje mb-16">
   <div class="resumo-linha"><span class="texto-sutil">Entrou</span><span class="valor-entrada">+<%= fmtBRL(resumoPeriodo.entrou) %></span></div>
   <div class="resumo-linha"><span class="texto-sutil">Saiu</span><span class="valor-saida">−<%= fmtBRL(resumoPeriodo.saiu) %></span></div>
   <div class="resumo-linha total"><span>Lucro</span><span><%= fmtBRL(resumoPeriodo.saldo) %></span></div>
@@ -44,15 +44,15 @@
     <span class="caixa-saldo-label">Saldo do dia</span>
     <span class="caixa-saldo-valor"><%= fmtBRL(resumoHoje.saldo) %></span>
   </div>
-  <div class="caixa-saldo">
+  <div class="caixa-saldo caixa-saldo--mes">
     <span class="caixa-saldo-label">Saldo do mês</span>
     <span class="caixa-saldo-valor"><%= fmtBRL(resumoMesAtual.saldo) %></span>
   </div>
 </div>
 
 <!-- Movimentações do período -->
-<div class="card mt-16">
-  <h2>Movimentações · <%= nomePeriodoSel %></h2>
+<div class="mt-24">
+  <span class="dash-rotulo texto-sutil">MOVIMENTAÇÕES</span>
 
   <% if (lancamentos.length === 0) { %>
     <p class="texto-secundario mt-16">Nenhum lançamento neste período.</p>

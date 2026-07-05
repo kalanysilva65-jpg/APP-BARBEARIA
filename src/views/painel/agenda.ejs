@@ -3,6 +3,9 @@
     var p = String(nome).trim().split(/\s+/);
     return p.length > 1 ? (p[0][0] + p[p.length - 1][0]).toUpperCase() : p[0].slice(0, 2).toUpperCase();
   }
+  function _rotuloStatus(s) {
+    return { concluido: 'Concluído', agendado: 'Agendado', cancelado: 'Cancelado' }[s] || s;
+  }
 %>
 
 <!-- Navegação de data -->
@@ -253,18 +256,20 @@
     eventos.sort(function (a, b) { return a.ini - b.ini; });
   %>
 
-  <div class="card lista-rows">
+  <div class="lista-rows">
     <% eventos.forEach(function (e) { %>
       <div class="agenda-linha">
+        <span class="agenda-linha-dot"></span>
         <span class="agenda-linha-hora"><%= e.tipo === 'ag' ? e.ag.horaInicio : e.bl.horaInicio %></span>
         <% if (e.tipo === 'ag') { var ag = e.ag; %>
           <a href="#" class="row" onclick="abrirModal(<%= ag.id %>);return false;">
             <span class="avatar"><%= _iniciais(ag.usuario.nome) %></span>
+            <span class="ag-dot dot-<%= ag.status %>"></span>
             <span class="row-info">
               <span class="row-title"><%= ag.clienteNome %></span>
               <span class="row-sub"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %></span>
             </span>
-            <span class="ag-dot dot-<%= ag.status %>"></span>
+            <span class="row-status"><%= _rotuloStatus(ag.status) %></span>
           </a>
         <% } else { var bl = e.bl; %>
           <div class="row row-bloq">

@@ -90,7 +90,7 @@ router.get('/', dashboardController.ver);
 router.post('/perfil/foto', uploadFotoPerfil, perfilController.salvarFoto);
 
 // "Mais" — menu com as demais seções (acesso pela navegação inferior).
-router.get('/mais', (req, res) => res.render('painel/mais', { titulo: 'Perfil' }));
+router.get('/mais', perfilController.ver);
 
 // --- Agenda (todos: funcionário vê a sua, admin vê todas) -----------------
 router.get('/agenda', agendaController.verAgenda);
@@ -134,6 +134,7 @@ router.get('/horarios', exigeAdmin, horarioController.ver);
 router.post('/horarios/jornada', exigeAdmin, horarioController.salvarJornada);
 router.post('/horarios/bloqueios', exigeAdmin, horarioController.adicionarBloqueio);
 router.post('/horarios/bloqueios/:id/remover', exigeAdmin, horarioController.removerBloqueio);
+router.post('/horarios/janela', exigeAdmin, horarioController.salvarJanela);
 
 // --- Serviços & Produtos (somente admin) ----------------------------------
 // IMPORTANTE: rotas específicas (/novo, /categorias) vêm ANTES das paramétricas (/:id).

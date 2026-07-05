@@ -1,36 +1,36 @@
 /* =========================================================================
-   PAINEL DO BARBEIRO — visual "app" escuro (redesign "Kavynn").
+   PAINEL DO BARBEIRO — visual "app" escuro (redesign "Dunaro").
    Escopado em .app-painel para não afetar o agendamento público nem o mestre.
-   Só existe em modo escuro — sem alternância de tema aqui (decisão do dono).
+   Só existe em modo escuro — sem alternância de tema aqui (decisão do dono,
+   mantida mesmo o mockup Dunaro trazendo um toggle de tema no menu do avatar).
    ========================================================================= */
 .app-painel {
-  --azul: #2f6bff;
-  --azul-hover: #235ce0;
-  --azul-barra: rgba(47, 107, 255, 0.30);
-  /* Sobrescreve os tokens neutros do tema (claro/escuro) com o visual escuro
-     único do redesign — cartões em "vidro" translúcido sobre o degradê. */
-  --fundo: #0a0d16;
-  --superficie: rgba(255, 255, 255, 0.043);
-  --secao-alt: rgba(255, 255, 255, 0.06);
-  --borda: rgba(255, 255, 255, 0.08);
+  --azul: #ffffff;
+  --azul-hover: rgba(255, 255, 255, 0.85);
+  --azul-barra: rgba(255, 255, 255, 0.12);
+  --fundo: #080a10;
+  --superficie: rgba(255, 255, 255, 0.035);
+  --secao-alt: rgba(255, 255, 255, 0.024);
+  --borda: rgba(255, 255, 255, 0.07);
   --texto: #ffffff;
   --texto-secundario: rgba(255, 255, 255, 0.55);
-  --texto-sutil: rgba(255, 255, 255, 0.42);
+  --texto-sutil: rgba(255, 255, 255, 0.36);
   --sucesso: #4ade80;
   --erro: #f87171;
   --aviso: #fbbf24;
+  --agendado: #7f92cf;
   --sombra: none;
   background: var(--fundo);
   color: var(--texto);
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   position: relative;
 }
-/* Degradê de fundo fixo (não distorce ao rolar a página). */
 .app-painel::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: radial-gradient(140% 80% at 30% -10%, #16234f 0%, #0a0d16 55%, #08090d 100%);
+  background: var(--fundo);
 }
 
 /* Cabeçalho + nav ficam juntos, fixos no topo, como um único bloco. */
@@ -38,7 +38,7 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(10, 13, 22, 0.75);
+  background: rgba(8, 10, 16, 0.85);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -51,37 +51,43 @@
 }
 .app-hero { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0 8px; }
 .app-hero-marca { display: flex; align-items: baseline; gap: 2px; text-decoration: none; }
-.app-hero-marca img { height: 22px; width: auto; display: block; }
-.app-hero-marca--texto { font-size: 15px; font-weight: 700; color: var(--texto); }
-.app-hero-marca--texto span { color: #e8a030; }
+.app-hero-marca img { height: 20px; width: auto; display: block; }
+.app-hero-marca--texto {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--texto);
+}
+.app-hero-marca--texto span { color: rgba(255, 255, 255, 0.5); }
 .app-hero-foto-form { margin: 0; }
 .app-hero-foto {
   position: relative;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 0.8px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+  border: 0.8px solid rgba(255, 255, 255, 0.14);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
 }
-.app-hero-foto img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
-.app-hero-foto-inicial { font-size: 12px; font-weight: 700; color: var(--texto); }
+.app-hero-foto img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.app-hero-foto-inicial { font-size: 11px; font-weight: 600; color: var(--texto); }
 
 .app-hero-titulo { padding-bottom: 14px; }
-.app-hero-titulo h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--texto); margin: 0; }
-.app-hero-sub { font-size: 12px; color: var(--texto-sutil); margin-top: 4px; }
+.app-hero-titulo h1 { font-size: 23px; font-weight: 400; letter-spacing: -0.01em; color: var(--texto); margin: 0; }
+.app-hero-sub { font-size: 11.5px; color: var(--texto-sutil); margin-top: 4px; }
 .app-hero-alerta { color: var(--aviso); }
 
-/* Botão primário azul dentro do painel. */
-.app-painel .btn-primario { background: var(--azul); color: #fff; }
+/* Botão primário: branco sólido, sem azul em nenhum lugar do redesign Dunaro. */
+.app-painel .btn-primario { background: var(--azul); color: #111; font-weight: 600; }
 .app-painel .btn-primario:hover { background: var(--azul-hover); }
 
-/* Cards do painel: vidro translúcido sobre o degradê. */
-.app-painel .card { border-radius: 18px; box-shadow: none; }
+/* Cards do painel: vidro translúcido sobre o fundo escuro sólido. */
+.app-painel .card { border-radius: 20px; box-shadow: none; }
 
 /* Inputs: tema-minimal.css fixa um fundo claro (#fafafa) — sobrescreve aqui
    pros campos usarem o mesmo vidro translúcido dos cards. */
@@ -96,10 +102,10 @@
 .app-painel textarea::placeholder { color: var(--texto-sutil); }
 .app-painel input:focus,
 .app-painel select:focus,
-.app-painel textarea:focus { border-color: var(--azul); }
+.app-painel textarea:focus { border-color: rgba(255, 255, 255, 0.3); }
 
-/* ----- Navegação: pills roláveis no topo (substitui a barra inferior) --- */
-.nav-topo-area { padding-bottom: 12px; }
+/* ----- Navegação: abas roláveis com sublinhado (não são mais pills) ------ */
+.nav-topo-area { padding-bottom: 0; }
 .nav-topo-scroll {
   overflow-x: auto;
   overflow-y: hidden;
@@ -110,41 +116,39 @@
 .nav-topo-scroll::-webkit-scrollbar { display: none; }
 .nav-topo-pills {
   display: inline-flex;
-  gap: 5px;
-  background: var(--superficie);
-  border: 0.8px solid var(--borda);
-  border-radius: 999px;
-  padding: 4px;
+  gap: 18px;
+  padding: 0 2px;
 }
 .nav-topo-pill {
   flex-shrink: 0;
-  padding: 7px 13px;
-  border-radius: 999px;
+  padding: 9px 2px;
+  border-bottom: 0.8px solid transparent;
   font-size: 12.5px;
-  font-weight: 500;
-  color: var(--texto-sutil);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.34);
   text-decoration: none;
   white-space: nowrap;
 }
-.nav-topo-pill.ativo { background: rgba(255, 255, 255, 0.14); color: #fff; font-weight: 600; }
+.nav-topo-pill.ativo { border-bottom-color: #fff; color: #fff; font-weight: 500; }
 
-/* ----- Card de destaque: agenda de hoje ---------------------------------- */
+/* ----- Cards em destaque (Faturamento hoje / Agenda de hoje) ------------- */
 .dash-azul {
   display: block;
-  background: var(--azul);
-  color: #fff;
-  border-radius: 20px;
-  padding: 18px 20px;
+  background: rgb(42, 44, 49);
+  color: var(--texto);
+  border: 0.8px solid rgba(255, 255, 255, 0.06);
+  border-radius: 19px;
+  padding: 16px;
   margin-bottom: 12px;
   text-decoration: none;
 }
-.dash-azul-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255, 255, 255, 0.85); }
-.dash-azul-num { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
-.dash-azul-num .n { font-size: clamp(26px, 8vw, 46px); font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
-.dash-azul-num .u { font-size: 15px; color: rgba(255, 255, 255, 0.9); }
+.dash-azul-label { font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: var(--texto); }
+.dash-azul-num { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; }
+.dash-azul-num .n { font-size: clamp(22px, 7vw, 27px); font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
+.dash-azul-num .u { font-size: 13px; color: rgba(255, 255, 255, 0.7); }
 .dash-azul-rodape {
   margin-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  border-top: 0.8px solid rgba(255, 255, 255, 0.1);
   padding-top: 10px;
   display: flex;
   justify-content: space-between;
@@ -152,46 +156,50 @@
   gap: 8px;
   flex-wrap: wrap;
 }
-.dash-azul-prox { font-size: 12px; color: rgba(255, 255, 255, 0.85); }
-.dash-azul-cliente { font-size: 13px; font-weight: 600; }
+.dash-azul-prox { font-size: 10.5px; color: var(--texto); }
+.dash-azul-cliente { font-size: 10.5px; font-weight: 600; color: var(--texto); }
 
 /* ----- Textos reaproveitados (usado em Perfil/Mais) ---------------------- */
 .dash-card-titulo { font-size: 13px; font-weight: 600; color: var(--texto); }
 .dash-card-sub { font-size: 11px; color: var(--texto-sutil); margin-top: 2px; }
 
-.barra-prog { height: 6px; background: var(--secao-alt); border-radius: 99px; overflow: hidden; }
-.barra-prog-fill { height: 100%; background: var(--azul); border-radius: 99px; }
+.barra-prog { height: 3px; background: rgba(255, 255, 255, 0.12); border-radius: 99px; overflow: hidden; }
+.barra-prog-fill { height: 100%; background: #fff; border-radius: 99px; }
 
 .dash-card-linha { display: flex; align-items: center; justify-content: space-between; }
-.dash-novos { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+.dash-novos { font-size: 30px; font-weight: 500; letter-spacing: -0.02em; }
 
 /* Duas lado a lado (ex.: Faturamento hoje + Agenda de hoje) ---------------- */
 .dash-hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
 .dash-hero-grid--1 { grid-template-columns: 1fr; }
-.dash-hero-grid .dash-azul--mini { margin-bottom: 0; padding: 16px; }
-.dash-hero-grid .dash-azul-rodape { gap: 4px; }
+.dash-hero-grid .dash-azul--mini { margin-bottom: 0; }
 
-/* Rótulo pequeno uppercase acima das seções do painel (Kavynn) ------------ */
-.dash-rotulo { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; }
+/* Rótulo pequeno uppercase acima das seções do painel --------------------- */
+.dash-rotulo { font-size: 10px; font-weight: 600; letter-spacing: 0.16em; color: rgba(255, 255, 255, 0.32) !important; }
 
-/* Métricas (Ocupação/Retenção) --------------------------------------------- */
-.dash-metrica-topo { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-.dash-metrica-topo strong { font-size: 16px; }
-.dash-metrica-legenda { display: block; font-size: 11px; color: var(--texto-sutil); margin-top: 6px; }
+/* Métricas (Ocupação/Ticket médio) ------------------------------------------ */
+.dash-metrica-topo { display: flex; flex-direction: column; gap: 2px; margin-bottom: 0; }
+.dash-metrica-topo span { font-size: 11.5px; color: var(--texto-sutil); order: 2; }
+.dash-metrica-topo strong { font-size: 30px; font-weight: 500; letter-spacing: -0.02em; order: 1; }
+.dash-metrica-legenda { display: none; }
+.dash-metrica { display: flex; flex-direction: column; gap: 6px; }
 
 /* Próximos atendimentos ---------------------------------------------------- */
-.dash-proximos-lista { display: flex; flex-direction: column; gap: 8px; }
-.dash-proximo-item { padding: 10px 12px; border-radius: 12px; background: var(--secao-alt); }
+.dash-proximos-lista { display: flex; flex-direction: column; }
+.dash-proximo-item { display: flex; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 0.8px solid rgba(255, 255, 255, 0.06); }
+.dash-proximo-item:last-child { border-bottom: none; padding-bottom: 0; }
+.dash-proximo-hora { flex-shrink: 0; font-size: 12px; font-weight: 500; color: var(--texto-secundario); }
 .dash-proximo-info { display: flex; flex-direction: column; gap: 2px; }
-.dash-proximo-nome { font-size: 13.5px; font-weight: 600; }
+.dash-proximo-nome { font-size: 13px; font-weight: 500; }
 
 /* ----- Barras da semana (reaproveitado no Painel e no Caixa) ------------- */
 .semana { display: flex; align-items: flex-end; gap: 8px; height: 92px; margin-top: 16px; }
 .semana-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; justify-content: flex-end; }
-.semana-bar { width: 100%; background: var(--azul-barra); border-radius: 5px; }
-.semana-bar.hoje { background: var(--azul); }
-.semana-rot { font-size: 10px; color: var(--texto-sutil); }
-.semana-rot.hoje { color: var(--texto); font-weight: 600; }
+.semana-bar { width: 100%; background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+.semana-bar.hoje { background: #fff; }
+.semana-rot { font-size: 10px; color: rgba(255, 255, 255, 0.3); }
+.semana-rot.hoje { color: rgba(255, 255, 255, 0.85); font-weight: 500; }
+.semana-rot-dot { display: block; width: 3px; height: 3px; border-radius: 50%; margin: 3px auto 0; }
 
 /* ----- Caixa: toggle compacto ---------------------------------------------*/
 .caixa-auto { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
@@ -203,81 +211,82 @@
   flex: 1;
   display: flex;
   gap: 4px;
-  background: var(--secao-alt);
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.8px solid rgba(255, 255, 255, 0.06);
   border-radius: 999px;
   padding: 4px;
 }
 .periodo-pill {
   flex: 1;
   text-align: center;
-  padding: 8px 0;
+  padding: 9px 0;
   border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--texto-secundario);
+  font-size: 12.5px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.44);
   text-decoration: none;
 }
-.periodo-pill.ativo { background: var(--superficie); color: var(--texto); box-shadow: var(--sombra); }
+.periodo-pill.ativo { background: #fff; color: #111; font-weight: 500; }
 .periodo-cal-btn {
   flex-shrink: 0;
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: var(--secao-alt);
-  border: 1px solid var(--borda);
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.8px solid rgba(255, 255, 255, 0.06);
   color: var(--texto-secundario);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
 }
-.periodo-cal-btn.ativo { background: var(--azul); border-color: var(--azul); color: #fff; }
+.periodo-cal-btn.ativo { background: #fff; border-color: #fff; color: #111; }
 
 /* Card do gráfico + resumo do período ------------------------------------- */
 .caixa-ganhos {
   background: var(--superficie);
-  border: 1px solid var(--borda);
+  border: 0.8px solid var(--borda);
   border-radius: 20px;
   padding: 18px 20px;
 }
-.caixa-ganhos-rotulo { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; }
+.caixa-ganhos-rotulo { font-size: 10px; font-weight: 600; letter-spacing: 0.16em; color: rgba(255, 255, 255, 0.32); }
 .caixa-semana { margin-top: 16px; }
 
-.caixa-resumo-hoje { background: var(--superficie); }
+.caixa-resumo-hoje { background: transparent; border: none; padding: 4px 0 0; }
+.caixa-resumo-hoje .resumo-linha { border-bottom: 0.8px solid rgba(255, 255, 255, 0.06); padding: 12px 0; font-size: 13px; color: rgba(255, 255, 255, 0.5); }
+.caixa-resumo-hoje .resumo-linha span:last-child { font-size: 14px; font-weight: 500; color: var(--texto); }
+.caixa-resumo-hoje .resumo-linha.total { padding-top: 12px; font-size: 13px; color: rgba(255, 255, 255, 0.85); }
+.caixa-resumo-hoje .resumo-linha.total span:last-child { font-size: 19px; font-weight: 500; color: var(--texto); }
+.caixa-resumo-hoje .valor-entrada,
+.caixa-resumo-hoje .valor-saida { font-size: 14px !important; font-weight: 500 !important; color: var(--texto) !important; }
 
-/* Saldo do dia + saldo do mês (dois cards fixos) -------------------------- */
-.caixa-saldos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.caixa-saldo {
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: 16px;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.caixa-saldo-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--texto-sutil); }
-.caixa-saldo-valor { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-.caixa-saldo--destaque { background: var(--azul); border-color: var(--azul); }
-.caixa-saldo--destaque .caixa-saldo-label { color: rgba(255, 255, 255, 0.85); }
-.caixa-saldo--destaque .caixa-saldo-valor { color: #fff; }
+/* Saldo do dia + saldo do mês (texto simples lado a lado) ----------------- */
+.caixa-saldos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 8px; }
+.caixa-saldo { display: flex; flex-direction: column; gap: 4px; }
+.caixa-saldo-label { font-size: 11px; color: var(--texto-sutil); }
+.caixa-saldo-valor { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; color: var(--texto); }
+.caixa-saldo--destaque .caixa-saldo-valor { color: var(--texto); }
+.caixa-saldo--mes .caixa-saldo-valor,
+.caixa-saldo--mes .caixa-saldo-label { color: rgba(255, 255, 255, 0.55); }
 
-/* Lista de movimentações (cards, não tabela) ------------------------------ */
-.caixa-mov-lista { display: flex; flex-direction: column; gap: 8px; }
+/* Lista de movimentações (linhas simples com divisor, sem cartão) --------- */
+.caixa-mov-lista { display: flex; flex-direction: column; }
 .caixa-mov-item {
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  padding: 12px 34px 12px 14px;
-  border-radius: 14px;
-  background: var(--secao-alt);
+  padding: 14px 0;
+  border-bottom: 0.8px solid rgba(255, 255, 255, 0.06);
 }
-.caixa-mov-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.caixa-mov-titulo { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.caixa-mov-sub { font-size: 11.5px; color: var(--texto-sutil); }
-.caixa-mov-valor { font-size: 13.5px; font-weight: 700; flex-shrink: 0; }
-.caixa-mov-x { position: absolute; top: 8px; right: 6px; margin: 0; }
+.caixa-mov-lista .caixa-mov-item:last-child { border-bottom: none; }
+.caixa-mov-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.caixa-mov-titulo { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--texto); }
+.caixa-mov-sub { font-size: 10px; color: var(--texto-sutil); text-transform: uppercase; letter-spacing: 0.04em; }
+.caixa-mov-valor { font-size: 13.5px; font-weight: 500; flex-shrink: 0; color: var(--sucesso); }
+.caixa-mov-valor.saida { color: var(--erro); }
+.caixa-mov-x { margin: 0; flex-shrink: 0; }
 .caixa-mov-x button {
   background: none; border: none; cursor: pointer; padding: 2px 5px;
   font-size: 16px; line-height: 1; color: var(--texto-sutil);
@@ -315,12 +324,12 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--azul);
-  color: #fff;
+  background: #fff;
+  color: #111;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--superficie);
+  border: 2px solid var(--fundo);
 }
 
 .equipe-metricas { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
@@ -340,19 +349,56 @@
 
 .equipe-metrica-legenda { display: block; font-size: 10.5px; color: var(--texto-sutil); margin-top: 5px; }
 
-/* ----- Card compacto (lista) — clicável, abre o detalhe em pop-up -------- */
-.equipe-mini { cursor: pointer; }
+/* ----- Campo de busca simples (Clientes) --------------------------------- */
+.app-painel .input-busca {
+  background: transparent;
+  border: none;
+  border-bottom: 0.8px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  padding: 8px 2px 12px;
+  font-size: 13px;
+}
+
+/* ----- Linha simples (Comissões, Clientes, Horários — sem cartão) -------- */
+.linha-simples-lista { display: flex; flex-direction: column; }
+.linha-simples {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 0;
+  border-bottom: 0.8px solid rgba(255, 255, 255, 0.055);
+  text-decoration: none;
+  color: var(--texto);
+}
+.linha-simples-lista .linha-simples:last-child { border-bottom: none; }
+.linha-simples-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.linha-simples-titulo { font-size: 13px; font-weight: 500; color: var(--texto); }
+.linha-simples-sub { font-size: 11px; color: var(--texto-sutil); }
+.linha-simples-valor { font-size: 12.5px; font-weight: 500; color: var(--texto); flex-shrink: 0; }
+.linha-simples-x { margin: 0; flex-shrink: 0; }
+.linha-simples-x button { background: none; border: none; cursor: pointer; padding: 0 3px; font-size: 16px; line-height: 1; color: var(--texto-sutil); }
+.linha-simples-x button:hover { color: var(--erro); }
+.linha-simples-editar { flex-shrink: 0; color: var(--texto-secundario); display: flex; }
+
+/* ----- Linha compacta (lista) — clicável, abre o detalhe em pop-up ------- */
+.equipe-mini-lista { display: flex; flex-direction: column; }
+.equipe-mini {
+  cursor: pointer;
+  padding: 18px 0;
+  border-bottom: 0.8px solid rgba(255, 255, 255, 0.06);
+}
+.equipe-mini-lista .equipe-mini:last-child { border-bottom: none; }
 .equipe-mini-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .equipe-mini-topo h2 { margin: 0; font-size: 22px; line-height: 1.15; }
 .equipe-foto--view { width: 52px; height: 52px; cursor: default; }
 .equipe-foto--view img,
 .equipe-foto--view .equipe-foto-inicial { width: 52px; height: 52px; }
 
-.equipe-mini-topo2 { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.equipe-mini-topo2 { display: flex; align-items: center; gap: 10px; margin-bottom: 0; }
 .equipe-mini-info { flex: 1; min-width: 0; }
 .equipe-mini-comissao { text-align: right; flex-shrink: 0; }
-.equipe-mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.equipe-mini-stat { background: var(--secao-alt); border-radius: 8px; padding: 9px 10px; text-align: center; }
+.equipe-mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.equipe-mini-stat { text-align: left; }
 
 /* ----- Pop-up de detalhe do barbeiro -------------------------------------- */
 .equipe-modal-topo { align-items: flex-start; gap: 12px; }
@@ -380,8 +426,8 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--secao-alt);
-  border: 0.8px solid var(--borda);
+  background: rgba(255, 255, 255, 0.04);
+  border: 0.8px solid rgba(255, 255, 255, 0.08);
   color: var(--texto);
   display: flex;
   align-items: center;
@@ -392,50 +438,81 @@
 .agenda-data-input {
   width: 100%;
   text-align: center;
-  background: var(--superficie);
-  border: 0.8px solid var(--borda);
+  background: transparent;
+  border: none;
   border-radius: 10px;
-  padding: 8px 14px;
-  font-size: 13.5px;
+  padding: 4px 14px;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--texto);
 }
 
 .agenda-barbeiros-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .agenda-barbeiros-scroll::-webkit-scrollbar { display: none; }
-.agenda-barbeiros { display: inline-flex; gap: 14px; padding-bottom: 2px; }
-.agenda-barbeiro-chip { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; flex-shrink: 0; }
+.agenda-barbeiros { display: inline-flex; gap: 8px; padding-bottom: 2px; }
+.agenda-barbeiro-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.02);
+  border: 0.8px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  padding: 6px 14px 6px 6px;
+}
+.agenda-barbeiro-chip.ativo { background: #fff; border-color: #fff; padding-right: 14px; }
 .avatar {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: rgba(47, 107, 255, 0.2);
-  color: #7ea3ff;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
   flex-shrink: 0;
 }
-.avatar--lg { width: 44px; height: 44px; font-size: 13px; }
+.avatar--lg { width: 36px; height: 36px; font-size: 12px; }
+.avatar--xl { width: 64px; height: 64px; font-size: 20px; font-weight: 500; }
 .avatar--lg.ativo,
-.avatar.ativo { background: var(--azul); color: #fff; }
-.avatar--bloq { background: var(--secao-alt); color: var(--texto-sutil); }
-.agenda-barbeiro-nome { font-size: 11px; color: var(--texto-sutil); }
-.agenda-barbeiro-nome.ativo { color: var(--texto); font-weight: 600; }
+.avatar.ativo { background: #fff; color: #111; }
+.avatar--bloq { background: rgba(255, 255, 255, 0.06); color: var(--texto-sutil); }
+.agenda-barbeiro-nome { font-size: 12px; color: rgba(255, 255, 255, 0.45); font-weight: 400; }
+.agenda-barbeiro-chip.ativo .agenda-barbeiro-nome { color: #111; font-weight: 600; }
 
-/* ----- Agenda: lista do dia (linhas simples, sem escala de horário) ------ */
-.lista-rows { display: flex; flex-direction: column; gap: 10px; }
-.agenda-linha { display: flex; align-items: center; gap: 10px; }
-.agenda-linha-hora { flex-shrink: 0; width: 40px; font-size: 11px; font-weight: 600; color: var(--texto-sutil); }
+/* ----- Agenda: lista do dia com linha do tempo (bolinhas conectadas) ----- */
+.lista-rows { display: flex; flex-direction: column; gap: 10px; position: relative; }
+.agenda-linha { display: flex; align-items: center; gap: 14px; position: relative; }
+.agenda-linha::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 22px;
+  bottom: -22px;
+  width: 0.8px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.agenda-linha:last-child::before { display: none; }
+.agenda-linha-dot {
+  flex-shrink: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--fundo);
+  border: 0.8px solid rgba(255, 255, 255, 0.35);
+}
+.agenda-linha-hora { flex-shrink: 0; width: 32px; font-size: 12px; font-weight: 500; color: rgba(255, 255, 255, 0.4); }
 .row {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--secao-alt);
-  border: 0.8px solid var(--borda);
+  background: rgba(255, 255, 255, 0.024);
+  border: 0.8px solid rgba(255, 255, 255, 0.06);
   border-radius: 10px;
   padding: 10px 12px;
   text-decoration: none;
@@ -443,12 +520,13 @@
   position: relative;
 }
 .row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.row-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row-sub { font-size: 11px; color: var(--texto-sutil); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row-bloq .row-title { color: var(--texto-secundario); }
 .row-x { margin: 0; flex-shrink: 0; }
 .row-x button { background: none; border: none; cursor: pointer; padding: 0 3px; font-size: 16px; line-height: 1; color: var(--texto-sutil); }
 .row-x button:hover { color: var(--erro); }
+.row-status { font-size: 10px; font-weight: 500; color: rgba(255, 255, 255, 0.35); flex-shrink: 0; }
 
 /* ----- Grid de cards (Serviços, Estoque) --------------------------------- */
 .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -456,15 +534,24 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background: var(--secao-alt);
-  border: 0.8px solid var(--borda);
-  border-radius: 10px;
-  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.024);
+  border: 0.8px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  overflow: hidden;
   text-decoration: none;
   color: var(--texto);
 }
-.item-card--baixo { border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.06); }
+.item-card--baixo { border-color: rgba(251, 191, 36, 0.3); }
+.item-status-dot {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sucesso);
+  z-index: 1;
+}
 .item-edit-btn {
   position: absolute;
   top: 8px;
@@ -472,8 +559,8 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  border: 0.8px solid rgba(255, 255, 255, 0.14);
   color: #fff;
   display: flex;
   align-items: center;
@@ -482,34 +569,51 @@
 }
 .item-thumb {
   width: 100%;
-  height: 56px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.07);
+  height: 140px;
+  background: rgba(255, 255, 255, 0.015);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.25);
   overflow: hidden;
+  flex-shrink: 0;
 }
 .item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.item-info { padding: 10px 12px 12px; }
 .item-bottom { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.item-preco { font-size: 13px; font-weight: 700; color: var(--texto); }
+.item-preco { font-size: 12.5px; font-weight: 500; color: rgba(255, 255, 255, 0.85); }
 .item-numero { font-size: 15px; font-weight: 700; color: var(--texto); }
+.item-categoria { font-size: 11px; color: var(--texto-sutil); margin-top: 2px; }
 .badge-repor {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--aviso);
   background: rgba(251, 191, 36, 0.14);
-  padding: 2px 7px;
+  padding: 4px 9px;
   border-radius: 999px;
   flex-shrink: 0;
 }
 
 /* Bolinha de status */
-.ag-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sucesso); flex-shrink: 0; }
+.ag-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sucesso); flex-shrink: 0; margin-left: -4px; }
 .dot-concluido { background: var(--sucesso); }
-.dot-agendado { background: #7ea3ff; }
-.dot-cancelado { background: var(--texto-sutil); }
+.dot-agendado { background: var(--agendado); }
+.dot-cancelado { background: var(--erro); }
+
+/* ----- Cartões de plano (Planos) — mesma linguagem do item-card ---------- */
+.plano-card { padding: 16px; }
+.plano-card-topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.plano-card-nome { font-size: 13px; font-weight: 500; }
+.plano-badge { font-size: 9.5px; font-weight: 500; padding: 3px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.02em; }
+.plano-badge--ilimitado { background: rgba(74, 222, 128, 0.14); color: var(--sucesso); }
+.plano-badge--limitado { background: rgba(251, 191, 36, 0.14); color: var(--aviso); }
+.plano-card-preco { display: flex; align-items: baseline; gap: 4px; margin-top: 12px; }
+.plano-card-preco .n { font-size: 20px; font-weight: 500; }
+.plano-card-preco .u { font-size: 12px; color: rgba(255, 255, 255, 0.4); }
+.plano-card-desc { font-size: 11px; color: var(--texto-sutil); margin-top: 8px; }
+.plano-card-editar { position: absolute; top: 16px; right: 16px; width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, 0.05); border: none; color: var(--texto-secundario); display: flex; align-items: center; justify-content: center; }
 
 /* ----- Pop-up de detalhe do agendamento ---------------------------------- */
 .ag-overlay {
@@ -517,14 +621,12 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.6);
   align-items: flex-end;
   justify-content: center;
 }
 .ag-modal-box {
-  /* Precisa ser praticamente opaco — var(--superficie) é translúcido (vidro sobre
-     o degradê) e deixaria o conteúdo de trás vazando/ilegível dentro do modal. */
-  background: linear-gradient(rgba(20, 26, 46, 0.98), rgba(20, 26, 46, 0.98)), var(--fundo);
+  background: linear-gradient(rgba(18, 20, 26, 0.98), rgba(18, 20, 26, 0.98)), var(--fundo);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 0.8px solid var(--borda);
@@ -541,12 +643,12 @@
 }
 body.modal-aberto { overflow: hidden; }
 .ag-modal-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
-.ag-modal-hora { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-.ag-modal-nome { font-size: 16px; font-weight: 600; }
+.ag-modal-hora { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.ag-modal-nome { font-size: 16px; font-weight: 500; }
 .ag-modal-fechar { background: none; border: none; font-size: 26px; line-height: 1; color: var(--texto-sutil); cursor: pointer; padding: 0 4px; }
 .ag-modal-fechar:hover { color: var(--texto); }
 
-/* Botão flutuante da agenda (novo agendamento / bloquear horário) --------- */
+/* Botão flutuante (novo agendamento / bloquear horário / + item) ---------- */
 .agenda-fab-wrap {
   position: fixed;
   right: 20px;
@@ -558,13 +660,13 @@ body.modal-aberto { overflow: hidden; }
   gap: 10px;
 }
 .agenda-fab {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: var(--azul);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.9);
+  color: #111;
   border: none;
-  box-shadow: 0 6px 18px rgba(47, 107, 255, 0.45);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -586,8 +688,8 @@ body.modal-aberto { overflow: hidden; }
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  background: var(--azul);
-  color: #fff;
+  background: #fff;
+  color: #111;
   border: none;
   border-radius: 14px;
   padding: 12px 16px;
@@ -596,7 +698,31 @@ body.modal-aberto { overflow: hidden; }
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(47, 107, 255, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 .agenda-fab-opcao svg { flex-shrink: 0; }
 
+/* ----- Horários: janela de agendamento do cliente (pills) ---------------- */
+.janela-desc { font-size: 12px; color: var(--texto-sutil); margin-top: 4px; margin-bottom: 14px; }
+.janela-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.janela-pill {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 0.8px solid rgba(255, 255, 255, 0.16);
+  background: transparent;
+  color: var(--texto);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.janela-pill.ativo { background: #fff; color: #111; border-color: #fff; }
+
+/* ----- Perfil: cartão de resumo + ações ---------------------------------- */
+.perfil-topo { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 4px 0 20px; text-align: center; }
+.perfil-nome { font-size: 17px; font-weight: 500; letter-spacing: -0.005em; color: var(--texto); }
+.perfil-cargo { font-size: 11px; color: var(--texto-sutil); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
+.perfil-linha { display: flex; align-items: center; justify-content: space-between; padding: 15px 0; border-bottom: 0.8px solid rgba(255, 255, 255, 0.07); }
+.perfil-linha:first-of-type { border-top: 0.8px solid rgba(255, 255, 255, 0.07); }
+.perfil-linha-label { font-size: 12.5px; color: rgba(255, 255, 255, 0.55); }
+.perfil-linha-valor { font-size: 12.5px; font-weight: 500; color: var(--texto); }
+.perfil-sair { background: none; border: none; color: rgba(248, 113, 113, 0.85); font-size: 13.5px; font-weight: 500; cursor: pointer; padding: 18px 0 0; text-align: left; width: 100%; }
