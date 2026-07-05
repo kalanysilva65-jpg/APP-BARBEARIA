@@ -224,6 +224,7 @@ async function ver(req, res) {
     presetHoje,
     presetSemana,
     presetMes,
+    hojeIdx: (new Date().getDay() + 6) % 7, // 0 = segunda, usado p/ destacar o dia atual no gráfico
   });
 }
 

@@ -90,120 +90,80 @@
 </div>
 
 <!-- Pop-up de detalhe por barbeiro -->
+<%
+  var rotuloPeriodo = { hoje: 'HOJE', semana: 'SEMANA', mes: 'MÊS', custom: 'PERÍODO' }[periodoAtivo];
+%>
 <% grupos.forEach(function (g) { %>
   <div class="ag-overlay" id="equipe-modal-<%= g.barbeiro.id %>" onclick="if(event.target===this)fecharModal(this)">
     <div class="ag-modal-box">
-      <div class="ag-modal-topo equipe-modal-topo">
-        <div class="equipe-modal-nome">
-          <div class="ag-modal-nome"><%= g.barbeiro.nome %></div>
-          <span class="texto-sutil"><%= g.qtd %> atendimento(s) concluído(s)</span>
-        </div>
+      <div class="ag-modal-topo equipe-modal-topo" style="align-items:center;">
         <form method="POST" action="/painel/comissoes/<%= g.barbeiro.id %>/foto" enctype="multipart/form-data" class="equipe-foto-form">
           <input type="hidden" name="inicio" value="<%= inicioStr %>" />
           <input type="hidden" name="fim" value="<%= fimStr %>" />
           <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
-          <label class="equipe-foto" title="Adicionar/trocar foto">
+          <label class="equipe-foto" style="width:36px;height:36px;" title="Adicionar/trocar foto">
             <% if (g.barbeiro.fotoUrl) { %>
-              <img src="<%= g.barbeiro.fotoUrl %>" alt="Foto de <%= g.barbeiro.nome %>" />
+              <img src="<%= g.barbeiro.fotoUrl %>" alt="Foto de <%= g.barbeiro.nome %>" style="width:36px;height:36px;" />
             <% } else { %>
-              <span class="equipe-foto-inicial"><%= g.barbeiro.nome.charAt(0).toUpperCase() %></span>
+              <span class="equipe-foto-inicial" style="font-size:12px;"><%= g.barbeiro.nome.charAt(0).toUpperCase() %></span>
             <% } %>
-            <span class="equipe-foto-cam" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            </span>
             <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
           </label>
         </form>
-        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-      </div>
-
-      <div class="equipe-metricas mt-16">
-        <div class="equipe-metrica">
-          <div class="equipe-metrica-topo">
-            <span class="texto-sutil">Ticket médio</span>
-            <strong><%= fmtBRL(g.ticketMedio) %></strong>
-          </div>
-          <div class="barra-prog"><div class="barra-prog-fill" style="width:<%= Math.round((g.ticketMedio / maxTicket) * 100) %>%"></div></div>
-        </div>
-        <div class="equipe-metrica">
-          <div class="equipe-metrica-topo">
-            <span class="texto-sutil">Ocupação</span>
-            <strong><%= g.ocupacaoPct === null ? '—' : g.ocupacaoPct + '%' %></strong>
-          </div>
-          <div class="barra-prog"><div class="barra-prog-fill" style="width:<%= g.ocupacaoPct || 0 %>%"></div></div>
+        <div class="equipe-modal-nome">
+          <div class="ag-modal-nome"><%= g.barbeiro.nome %></div>
+          <span class="row-sub">Faturado <%= fmtBRL(g.faturadoTotal) %> · Comissão <%= fmtBRL(g.comissao) %></span>
         </div>
       </div>
 
-      <!-- Vendas do período: faturamento + comissão + gráfico por dia da semana -->
-      <div class="equipe-vendas mt-16">
-        <div class="equipe-vendas-topo">
-          <span class="texto-sutil">Vendas · período selecionado</span>
-        </div>
-        <div class="equipe-subcards">
-          <div class="equipe-sub">
-            <span class="texto-sutil">Faturamento</span>
-            <strong><%= fmtBRL(g.faturadoTotal) %></strong>
+      <span class="dash-rotulo texto-sutil mt-16">FATURAMENTO POR DIA</span>
+      <div class="semana equipe-semana">
+        <% g.barsSemana.forEach(function (d, i) { %>
+          <div class="semana-col">
+            <div class="semana-bar <%= i === hojeIdx ? 'hoje' : '' %>" style="height:<%= Math.max(4, Math.round((d.valor / g.maxBarSemana) * 72)) %>px" title="<%= fmtBRL(d.valor) %>"></div>
+            <span class="semana-rot <%= i === hojeIdx ? 'hoje' : '' %>"><%= d.rotulo %></span>
           </div>
-          <div class="equipe-sub">
-            <span class="texto-sutil">Comissão</span>
-            <strong class="valor-entrada"><%= fmtBRL(g.comissao) %></strong>
-          </div>
-        </div>
-        <div class="semana equipe-semana">
-          <% g.barsSemana.forEach(function (d) { %>
-            <div class="semana-col">
-              <div class="semana-bar" style="height:<%= Math.max(4, Math.round((d.valor / g.maxBarSemana) * 72)) %>px" title="<%= fmtBRL(d.valor) %>"></div>
-              <span class="semana-rot"><%= d.rotulo %></span>
-            </div>
-          <% }) %>
-        </div>
+        <% }) %>
       </div>
 
-      <form method="POST" action="/painel/comissoes/percentual/<%= g.barbeiro.id %>" class="form-percentual mt-16">
+      <form method="POST" action="/painel/comissoes/percentual/<%= g.barbeiro.id %>">
         <input type="hidden" name="inicio" value="<%= inicioStr %>" />
         <input type="hidden" name="fim" value="<%= fimStr %>" />
         <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
-        <label for="perc-<%= g.barbeiro.id %>">Comissão serviços (%)</label>
-        <input id="perc-<%= g.barbeiro.id %>" type="number" name="percentual" step="0.5" min="0" max="100"
-               value="<%= g.barbeiro.comissaoPercentual %>" />
-        <button class="btn btn-secundario btn-sm">Salvar %</button>
-        <span class="texto-sutil">Produtos: <%= comissaoProdutoPct %>% (fixo)</span>
-      </form>
 
-      <% if (g.atendimentos.length === 0) { %>
-        <p class="texto-secundario mt-16">Nenhum atendimento concluído neste período.</p>
-      <% } else { %>
-        <details class="equipe-detalhes mt-16">
-          <summary>Ver atendimentos (<%= g.atendimentos.length %>)</summary>
-          <div class="tabela-rolagem">
-            <table class="tabela mt-16">
-              <thead>
-                <tr>
-                  <th>Data</th><th>Cliente</th><th>Itens</th>
-                  <th class="col-valor">Serviços</th><th class="col-valor">Produtos</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% g.atendimentos.forEach(function (a) { %>
-                  <tr>
-                    <td><%= fmtData(a.ag.data) %></td>
-                    <td><%= a.ag.clienteNome %><% if (a.viaPlano) { %> <span class="status">plano</span><% } %></td>
-                    <td>
-                      <% a.itens.forEach(function (it) { %>
-                        <span class="<%= it.ehProduto ? 'item-produto' : '' %>">
-                          <%= it.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %><%= it.ehProduto ? ' (produto)' : '' %>
-                        </span><br />
-                      <% }) %>
-                    </td>
-                    <td class="col-valor"><%= a.servicosSub > 0 ? fmtBRL(a.servicosSub) : '—' %></td>
-                    <td class="col-valor"><%= a.produtosSub > 0 ? fmtBRL(a.produtosSub) : '—' %></td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            </table>
+        <span class="dash-rotulo texto-sutil mt-24">COMISSÃO POR CATEGORIA</span>
+        <div class="linha-simples-lista mt-16">
+          <div class="linha-simples">
+            <span class="linha-simples-titulo">Serviços</span>
+            <span class="pill-percent">
+              <input type="number" name="percentual" step="0.5" min="0" max="100" value="<%= g.barbeiro.comissaoPercentual %>" />%
+            </span>
           </div>
-        </details>
-      <% } %>
+          <div class="linha-simples">
+            <span class="linha-simples-titulo">Produtos</span>
+            <span class="pill-opcao pill-opcao--estatico"><%= comissaoProdutoPct %>%</span>
+          </div>
+        </div>
+
+        <span class="dash-rotulo texto-sutil mt-24">ATENDIMENTOS (<%= rotuloPeriodo %>)</span>
+        <% if (g.atendimentos.length === 0) { %>
+          <p class="texto-secundario mt-16">Nenhum atendimento concluído neste período.</p>
+        <% } else { %>
+          <div class="linha-simples-lista mt-16">
+            <% g.atendimentos.forEach(function (a) { %>
+              <div class="linha-simples">
+                <span class="linha-simples-info">
+                  <span class="linha-simples-titulo"><%= a.ag.clienteNome %></span>
+                  <span class="linha-simples-sub"><%= a.itens.map(function (it) { return it.nome; }).join(' + ') %> · <%= a.ag.horaInicio %></span>
+                </span>
+                <span class="linha-simples-valor"><%= fmtBRL(a.servicosSub + a.produtosSub) %></span>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+
+        <button class="btn btn-primario btn-bloco mt-24" type="submit">Salvar</button>
+      </form>
     </div>
   </div>
 <% }) %>
