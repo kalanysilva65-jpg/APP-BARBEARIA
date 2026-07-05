@@ -4,7 +4,7 @@
 //  - Admin (e o dono operando a barbearia) vê a agenda de todos e altera qualquer um.
 // Tudo é escopado pela barbearia do contexto (req.barbeariaId).
 const prisma = require('../config/db');
-const { dataLocal, paraMinutos, duracaoEfetiva } = require('../services/disponibilidade');
+const { dataLocal, paraMinutos, duracaoEfetiva, todosHorarios } = require('../services/disponibilidade');
 const { DIAS_SEMANA, INTERVALO_SLOT_MIN } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const caixaServ = require('../services/caixa');
@@ -244,6 +244,24 @@ async function dadosForm(req) {
   return { ehAdmin, barbeiros, servicos, clientes };
 }
 
+// GET /painel/agenda/horarios — JSON com o grid de horários (livres e ocupados)
+// de um barbeiro numa data, para um serviço. Usado pelo pop-up "Novo agendamento"
+// pra atualizar as pílulas de horário quando o barbeiro/serviço mudam.
+async function horariosJson(req, res) {
+  const b = req.barbeariaId;
+  const barbeiroId = Number(req.query.barbeiroId);
+  const data = req.query.data;
+  const servicoId = Number(req.query.servicoId);
+
+  const barbeiro = await prisma.usuario.findFirst({ where: { id: barbeiroId, barbeariaId: b, ativo: true } });
+  if (!req.ehAdmin && barbeiro && barbeiro.id !== req.session.usuario.id) return res.json({ horarios: [] });
+  if (!barbeiro || !data) return res.json({ horarios: [] });
+
+  const servico = servicoId ? await prisma.servico.findFirst({ where: { id: servicoId, barbeariaId: b } }) : null;
+  const horarios = await todosHorarios(barbeiroId, data, servico ? servico.duracaoMin : 0);
+  res.json({ horarios });
+}
+
 // GET /painel/agenda/novo — formulário de agendamento manual
 async function formNovo(req, res) {
   const dados = await dadosForm(req);
@@ -373,4 +391,4 @@ async function removerBloqueio(req, res) {
   res.redirect('/painel/agenda' + (s ? '?' + s : ''));
 }
 
-module.exports = { verAgenda, adicionarItem, removerItem, mudarStatus, excluir, formNovo, criarManual, criarBloqueio, removerBloqueio };
+module.exports = { verAgenda, adicionarItem, removerItem, mudarStatus, excluir, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson };

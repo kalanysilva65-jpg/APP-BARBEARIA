@@ -111,41 +111,8 @@
       <div class="ag-modal-nome">Novo agendamento</div>
       <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
     </div>
-    <form method="POST" action="/painel/agenda/novo" class="form mt-16">
-      <% if (ehAdmin) { %>
-        <div class="campo">
-          <label for="barbeiroId-novo">Barbeiro</label>
-          <select id="barbeiroId-novo" name="barbeiroId" required>
-            <option value="">Selecione…</option>
-            <% barbeiros.forEach(function (b) { %>
-              <option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
-            <% }) %>
-          </select>
-        </div>
-      <% } else { %>
-        <p class="texto-secundario mb-16">Agendamento para você (<%= usuario.nome %>).</p>
-      <% } %>
-
-      <div class="campo">
-        <label for="servicoId-novo">Serviço</label>
-        <select id="servicoId-novo" name="servicoId" required>
-          <option value="">Selecione…</option>
-          <% servicos.forEach(function (s) { %>
-            <option value="<%= s.id %>"><%= s.nome %> — <%= fmtBRL(s.valor) %><%= s.duracaoMin > 0 ? ' (' + s.duracaoMin + ' min)' : '' %></option>
-          <% }) %>
-        </select>
-      </div>
-
-      <div class="grid-2">
-        <div class="campo">
-          <label for="data-novo">Data</label>
-          <input id="data-novo" type="date" name="data" required value="<%= dataStr %>" />
-        </div>
-        <div class="campo">
-          <label for="hora-novo">Horário</label>
-          <input id="hora-novo" type="time" name="hora" required />
-        </div>
-      </div>
+    <form method="POST" action="/painel/agenda/novo" class="form mt-16" id="form-novo-agendamento">
+      <input type="hidden" name="data" value="<%= dataStr %>" />
 
       <div class="campo autocomplete">
         <label for="cliente_nome-novo">Cliente</label>
@@ -153,16 +120,43 @@
         <div id="sugestoes-cliente-novo" class="sugestoes"></div>
       </div>
 
-      <div class="grid-2">
-        <div class="campo">
-          <label for="cliente_telefone-novo">Telefone</label>
-          <input id="cliente_telefone-novo" name="cliente_telefone" inputmode="tel" placeholder="(51) 99999-9999" required />
-        </div>
-        <div class="campo">
-          <label for="cliente_email-novo">E-mail (opcional)</label>
-          <input id="cliente_email-novo" type="email" name="cliente_email" />
+      <div class="campo">
+        <label for="cliente_telefone-novo">Telefone</label>
+        <input id="cliente_telefone-novo" name="cliente_telefone" inputmode="tel" placeholder="(51) 99999-9999" required />
+      </div>
+
+      <div class="campo">
+        <label>Serviço</label>
+        <input type="hidden" name="servicoId" id="servicoId-novo" required />
+        <div class="pill-group" id="pills-servico">
+          <% servicos.forEach(function (s) { %>
+            <button type="button" class="pill-opcao" data-id="<%= s.id %>" data-duracao="<%= s.duracaoMin %>"><%= s.nome %></button>
+          <% }) %>
         </div>
       </div>
+
+      <div class="campo">
+        <label>Horário disponível <%= dataStr === hojeIso ? 'hoje' : '' %></label>
+        <input type="hidden" name="hora" id="hora-novo" required />
+        <div class="pill-group" id="pills-horario">
+          <span class="texto-sutil">Selecione o serviço<%= ehAdmin ? ' e o barbeiro' : '' %>.</span>
+        </div>
+      </div>
+
+      <% if (ehAdmin) { %>
+        <div class="campo">
+          <label>Barbeiro</label>
+          <input type="hidden" name="barbeiroId" id="barbeiroId-novo" required value="<%= barbeiroSelecionado !== 'todos' ? barbeiroSelecionado : '' %>" />
+          <div class="pill-group" id="pills-barbeiro">
+            <% barbeiros.forEach(function (b) { %>
+              <button type="button" class="pill-opcao <%= barbeiroSelecionado === String(b.id) ? 'ativo' : '' %>" data-id="<%= b.id %>"><%= b.nome %></button>
+            <% }) %>
+          </div>
+        </div>
+      <% } else { %>
+        <input type="hidden" name="barbeiroId" id="barbeiroId-novo" value="<%= usuario.id %>" />
+        <p class="texto-secundario">Agendamento para você (<%= usuario.nome %>).</p>
+      <% } %>
 
       <div class="modal-acoes">
         <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
@@ -223,6 +217,77 @@
     document.addEventListener('click', function (e) {
       if (!box.contains(e.target) && e.target !== inputNome) fechar();
     });
+  })();
+</script>
+
+<script>
+  // Pop-up "Novo agendamento": seleção por pílulas (serviço/barbeiro) em vez de
+  // <select>, e o grid de horários é buscado do servidor sempre que o serviço
+  // ou o barbeiro mudam (a duração do serviço afeta quais horários cabem).
+  (function () {
+    var form = document.getElementById('form-novo-agendamento');
+    if (!form) return;
+    var dataStr = '<%= dataStr %>';
+    var servicoInput = document.getElementById('servicoId-novo');
+    var barbeiroInput = document.getElementById('barbeiroId-novo');
+    var horaInput = document.getElementById('hora-novo');
+    var pillsHorario = document.getElementById('pills-horario');
+
+    function ligarGrupo(containerId, hiddenInput, aoMudar) {
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      container.addEventListener('click', function (e) {
+        var btn = e.target.closest('.pill-opcao');
+        if (!btn || btn.classList.contains('indisponivel')) return;
+        Array.prototype.forEach.call(container.querySelectorAll('.pill-opcao'), function (b) {
+          b.classList.remove('ativo');
+        });
+        btn.classList.add('ativo');
+        hiddenInput.value = btn.getAttribute('data-id');
+        if (aoMudar) aoMudar();
+      });
+    }
+
+    function buscarHorarios() {
+      horaInput.value = '';
+      if (!servicoInput.value || !barbeiroInput || !barbeiroInput.value) {
+        pillsHorario.innerHTML = '<span class="texto-sutil">Selecione o serviço<%= ehAdmin ? " e o barbeiro" : "" %>.</span>';
+        return;
+      }
+      var qs = new URLSearchParams({ barbeiroId: barbeiroInput.value, data: dataStr, servicoId: servicoInput.value });
+      fetch('/painel/agenda/horarios?' + qs.toString())
+        .then(function (r) { return r.json(); })
+        .then(function (json) {
+          var horarios = json.horarios || [];
+          if (!horarios.length) {
+            pillsHorario.innerHTML = '<span class="texto-sutil">Sem horários livres nesse dia.</span>';
+            return;
+          }
+          pillsHorario.innerHTML = horarios.map(function (h) {
+            return '<button type="button" class="pill-opcao' + (h.livre ? '' : ' indisponivel') + '" data-hora="' + h.hora + '">' + h.hora + '</button>';
+          }).join('');
+        })
+        .catch(function () {
+          pillsHorario.innerHTML = '<span class="texto-sutil">Não foi possível carregar os horários.</span>';
+        });
+    }
+
+    pillsHorario.addEventListener('click', function (e) {
+      var btn = e.target.closest('.pill-opcao');
+      if (!btn || btn.classList.contains('indisponivel')) return;
+      Array.prototype.forEach.call(pillsHorario.querySelectorAll('.pill-opcao'), function (b) {
+        b.classList.remove('ativo');
+      });
+      btn.classList.add('ativo');
+      horaInput.value = btn.getAttribute('data-hora');
+    });
+
+    ligarGrupo('pills-servico', servicoInput, buscarHorarios);
+    if (barbeiroInput) ligarGrupo('pills-barbeiro', barbeiroInput, buscarHorarios);
+
+    // Se já há um barbeiro pré-selecionado (funcionário, ou admin filtrando um
+    // barbeiro específico na Agenda), já carrega os horários ao abrir.
+    if (barbeiroInput && barbeiroInput.value) buscarHorarios();
   })();
 </script>
 

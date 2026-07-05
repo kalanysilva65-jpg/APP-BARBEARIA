@@ -94,6 +94,7 @@ router.get('/mais', perfilController.ver);
 
 // --- Agenda (todos: funcionário vê a sua, admin vê todas) -----------------
 router.get('/agenda', agendaController.verAgenda);
+router.get('/agenda/horarios', agendaController.horariosJson); // JSON p/ o pop-up "Novo agendamento"
 router.get('/agenda/novo', agendaController.formNovo); // agendamento manual
 router.post('/agenda/novo', agendaController.criarManual);
 router.post('/agenda/:id/itens', agendaController.adicionarItem);

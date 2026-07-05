@@ -28,23 +28,9 @@ function duracaoEfetiva(duracaoMin) {
   return duracaoMin && duracaoMin > 0 ? duracaoMin : INTERVALO_SLOT_MIN;
 }
 
-// Calcula os horários (slots) livres de um barbeiro numa data, para um serviço.
-// Retorna um array de strings "HH:MM".
-async function horariosDisponiveis(barbeiroId, dataStr, duracaoServico) {
-  const data = dataLocal(dataStr);
-  const diaSemana = data.getDay(); // 0 = domingo
-
-  // Jornada do barbeiro nesse dia da semana
-  const jornada = await prisma.horarioTrabalho.findFirst({
-    where: { usuarioId: barbeiroId, diaSemana },
-  });
-  if (!jornada || !jornada.trabalha) return [];
-
-  const inicioExpediente = paraMinutos(jornada.horaInicio);
-  const fimExpediente = paraMinutos(jornada.horaFim);
-  const duracao = duracaoEfetiva(duracaoServico);
-
-  // Intervalos já ocupados: agendamentos ativos + bloqueios manuais
+// Intervalos [inicio, fim] (em minutos) já ocupados pelo barbeiro nessa data:
+// agendamentos ativos (soma da duração dos itens) + bloqueios manuais.
+async function intervalosOcupados(barbeiroId, data) {
   const ocupados = [];
 
   const agendamentos = await prisma.agendamento.findMany({
@@ -53,7 +39,6 @@ async function horariosDisponiveis(barbeiroId, dataStr, duracaoServico) {
   });
   for (const ag of agendamentos) {
     const ini = paraMinutos(ag.horaInicio);
-    // duração do agendamento = soma das durações dos seus itens
     const dur =
       ag.itens.reduce((s, it) => s + duracaoEfetiva(it.servico.duracaoMin) * it.quantidade, 0) ||
       INTERVALO_SLOT_MIN;
@@ -67,7 +52,33 @@ async function horariosDisponiveis(barbeiroId, dataStr, duracaoServico) {
     ocupados.push([paraMinutos(b.horaInicio), paraMinutos(b.horaFim)]);
   }
 
-  // Se a data for hoje, escondemos horários que já passaram
+  return ocupados;
+}
+
+// Calcula os horários (slots) livres de um barbeiro numa data, para um serviço.
+// Retorna um array de strings "HH:MM".
+async function horariosDisponiveis(barbeiroId, dataStr, duracaoServico) {
+  const todos = await todosHorarios(barbeiroId, dataStr, duracaoServico);
+  return todos.filter((s) => s.livre).map((s) => s.hora);
+}
+
+// Igual ao acima, mas retorna TODOS os horários do expediente (livres e ocupados),
+// cada um com a flag `livre` — usado no pop-up "Novo agendamento" para mostrar o
+// grid completo de horários, riscando os que já estão ocupados.
+async function todosHorarios(barbeiroId, dataStr, duracaoServico) {
+  const data = dataLocal(dataStr);
+  const diaSemana = data.getDay(); // 0 = domingo
+
+  const jornada = await prisma.horarioTrabalho.findFirst({
+    where: { usuarioId: barbeiroId, diaSemana },
+  });
+  if (!jornada || !jornada.trabalha) return [];
+
+  const inicioExpediente = paraMinutos(jornada.horaInicio);
+  const fimExpediente = paraMinutos(jornada.horaFim);
+  const duracao = duracaoEfetiva(duracaoServico);
+  const ocupados = await intervalosOcupados(barbeiroId, data);
+
   const agora = new Date();
   const ehHoje = data.toDateString() === agora.toDateString();
   const minutoAgora = agora.getHours() * 60 + agora.getMinutes();
@@ -75,14 +86,11 @@ async function horariosDisponiveis(barbeiroId, dataStr, duracaoServico) {
   const slots = [];
   for (let t = inicioExpediente; t + duracao <= fimExpediente; t += INTERVALO_SLOT_MIN) {
     const fim = t + duracao;
-    // não pode sobrepor nenhum intervalo ocupado
     const conflita = ocupados.some(([oIni, oFim]) => t < oFim && oIni < fim);
-    if (conflita) continue;
-    // se hoje, só horários futuros
-    if (ehHoje && t <= minutoAgora) continue;
-    slots.push(paraHHMM(t));
+    const passou = ehHoje && t <= minutoAgora;
+    slots.push({ hora: paraHHMM(t), livre: !conflita && !passou });
   }
   return slots;
 }
 
-module.exports = { horariosDisponiveis, dataLocal, paraMinutos, paraHHMM, duracaoEfetiva };
+module.exports = { horariosDisponiveis, todosHorarios, dataLocal, paraMinutos, paraHHMM, duracaoEfetiva };
