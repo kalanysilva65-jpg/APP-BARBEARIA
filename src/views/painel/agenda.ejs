@@ -139,7 +139,7 @@
         <label>Horário disponível <%= dataStr === hojeIso ? 'hoje' : '' %></label>
         <input type="hidden" name="hora" id="hora-novo" required />
         <div class="pill-group" id="pills-horario">
-          <span class="texto-sutil">Selecione o serviço<%= ehAdmin ? ' e o barbeiro' : '' %>.</span>
+          <span class="texto-sutil"><%= ehAdmin ? 'Selecione o barbeiro.' : 'Carregando horários…' %></span>
         </div>
       </div>
 
@@ -250,11 +250,14 @@
 
     function buscarHorarios() {
       horaInput.value = '';
-      if (!servicoInput.value || !barbeiroInput || !barbeiroInput.value) {
-        pillsHorario.innerHTML = '<span class="texto-sutil">Selecione o serviço<%= ehAdmin ? " e o barbeiro" : "" %>.</span>';
+      if (!barbeiroInput || !barbeiroInput.value) {
+        pillsHorario.innerHTML = '<span class="texto-sutil">Selecione o barbeiro.</span>';
         return;
       }
-      var qs = new URLSearchParams({ barbeiroId: barbeiroInput.value, data: dataStr, servicoId: servicoInput.value });
+      // O serviço é opcional aqui: sem ele, mostra o grid com a duração
+      // mínima (o servidor usa 0 = intervalo padrão); ao escolher o
+      // serviço, o grid é refeito considerando a duração real dele.
+      var qs = new URLSearchParams({ barbeiroId: barbeiroInput.value, data: dataStr, servicoId: servicoInput.value || '' });
       fetch('/painel/agenda/horarios?' + qs.toString())
         .then(function (r) { return r.json(); })
         .then(function (json) {
