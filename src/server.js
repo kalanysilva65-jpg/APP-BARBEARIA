@@ -161,4 +161,15 @@ process.on('uncaughtException', (erro) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✓ Barbearia rodando em http://localhost:${PORT}`);
+
+  // Autoteste do banco no boot: roda a PRIMEIRA query Prisma logo na subida,
+  // para diagnosticar se o motor do Prisma consegue consultar o SQLite em
+  // produção. Se o processo morrer aqui sem imprimir [DBCHECK], é crash nativo
+  // do Prisma/SQLite (não aparece como erro JS).
+  console.log('[DBCHECK] iniciando consulta de teste...');
+  const prisma = require('./config/db');
+  prisma.usuario
+    .count()
+    .then((n) => console.log('[DBCHECK] OK — usuarios no banco =', n))
+    .catch((e) => console.log('[DBCHECK] FALHOU —', (e && e.stack) || e));
 });
