@@ -15,3 +15,10 @@ uploads/*
 # Logs
 *.log
 npm-debug.log*
+
+# Banco e sessoes SQLite em ambiente local/producao
+data/*.db
+data/*.sqlite
+data/*.db-journal
+data/*.sqlite-journal
+!data/.gitkeep

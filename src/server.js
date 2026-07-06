@@ -1,12 +1,21 @@
 // Ponto de entrada do app: configura o Express, a sessão, as views e as rotas.
 require('dotenv').config();
+require('express-async-errors');
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
+const SQLiteStore = require('connect-sqlite3')(session);
 const expressLayouts = require('express-ejs-layouts');
 const methodOverride = require('method-override');
 
 const app = express();
+app.set('trust proxy', 1);
+
+const dataDir = process.env.APP_DATA_DIR
+  ? path.resolve(process.env.APP_DATA_DIR)
+  : path.join(__dirname, '..', 'data');
+fs.mkdirSync(dataDir, { recursive: true });
 
 // --- Views: EJS + layouts -------------------------------------------------
 app.set('view engine', 'ejs');
@@ -26,10 +35,20 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // --- Sessão ---------------------------------------------------------------
 app.use(
   session({
+    store: new SQLiteStore({
+      db: 'sessions.sqlite',
+      dir: dataDir,
+    }),
+    name: 'barbearia.sid',
     secret: process.env.SESSION_SECRET || 'troque-este-segredo',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 1000 * 60 * 60 * 8 }, // 8 horas
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 8, // 8 horas
+    },
   })
 );
 
@@ -117,6 +136,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`✓ Barbearia rodando em http://localhost:${PORT}`);
 });
