@@ -17,16 +17,38 @@ const SUBDOMINIOS_RESERVADOS = new Set(['www', 'admin', 'painel', 'app', 'api', 
 // aparelhos na mesma rede local. Não tem subdomínio de verdade.
 const REGEX_IPV4 = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
 
+// Domínio raiz da aplicação em produção (ex.: "cortavo.com.br"). Necessário
+// porque TLDs compostos (.com.br, .co.uk...) já têm 3 partes no domínio raiz,
+// então "contar partes" confundiria o domínio raiz com um subdomínio.
+const APP_DOMAIN = (process.env.APP_DOMAIN || '').toLowerCase().replace(/^www\./, '');
+
 // Extrai o slug da barbearia a partir do hostname.
 // Ex.: "barbearia1.seuapp.com" -> "barbearia1"; "barbearia1.localhost" -> "barbearia1".
-// localhost puro / IP não têm subdomínio utilizável -> null.
+// localhost puro / IP / domínio raiz não têm subdomínio utilizável -> null.
 function extrairSlug(req) {
   const host = (req.hostname || '').toLowerCase();
   if (REGEX_IPV4.test(host)) return null; // ex.: acesso via IP da rede local (celular/PC de teste)
+
   const partes = host.split('.');
   const ehLocalhost = partes[partes.length - 1] === 'localhost';
-  const minPartes = ehLocalhost ? 2 : 3; // sub.localhost (2) ou sub.dominio.tld (3)
-  if (partes.length >= minPartes && !SUBDOMINIOS_RESERVADOS.has(partes[0])) {
+  if (ehLocalhost) {
+    if (partes.length >= 2 && !SUBDOMINIOS_RESERVADOS.has(partes[0])) return partes[0];
+    return null;
+  }
+
+  if (APP_DOMAIN) {
+    const semWww = host.replace(/^www\./, '');
+    if (semWww === APP_DOMAIN) return null; // domínio raiz: sem barbearia
+    if (semWww.endsWith('.' + APP_DOMAIN)) {
+      const prefixo = semWww.slice(0, semWww.length - ('.' + APP_DOMAIN).length);
+      const primeiroRotulo = prefixo.split('.')[0];
+      return SUBDOMINIOS_RESERVADOS.has(primeiroRotulo) ? null : primeiroRotulo;
+    }
+    return null;
+  }
+
+  // Sem APP_DOMAIN configurado (ex.: ambiente não previsto): heurística antiga.
+  if (partes.length >= 3 && !SUBDOMINIOS_RESERVADOS.has(partes[0])) {
     return partes[0];
   }
   return null;
