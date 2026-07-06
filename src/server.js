@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
-const SQLiteStore = require('connect-sqlite3')(session);
+const FileStore = require('session-file-store')(session);
 const expressLayouts = require('express-ejs-layouts');
 const methodOverride = require('method-override');
 
@@ -35,9 +35,12 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // --- Sessão ---------------------------------------------------------------
 app.use(
   session({
-    store: new SQLiteStore({
-      db: 'sessions.sqlite',
-      dir: dataDir,
+    store: new FileStore({
+      path: path.join(dataDir, 'sessions'),
+      ttl: 60 * 60 * 8, // 8 horas, igual ao maxAge do cookie
+      retries: 2,
+      reapInterval: 60 * 60, // limpa sessões expiradas a cada hora
+      logFn: () => {}, // silencia os logs verbosos do store
     }),
     name: 'barbearia.sid',
     secret: process.env.SESSION_SECRET || 'troque-este-segredo',
