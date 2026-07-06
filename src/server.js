@@ -69,8 +69,10 @@ app.use((req, res, next) => {
 });
 
 // --- Manifesto PWA (dinâmico por barbearia) -------------------------------
-// Cada subdomínio serve um manifesto com o nome/logo da sua barbearia e abre
-// direto no login. O logo enviado (se houver) vira o ícone do app.
+// Cada subdomínio serve um manifesto com o nome/logo da sua barbearia. Abre
+// direto no painel — se a sessão expirou, o próprio /painel redireciona pro
+// login (e o login, já logado, redireciona de volta pro painel). O logo
+// enviado (se houver) vira o ícone do app.
 app.get('/manifest.webmanifest', (req, res) => {
   const nome = req.barbearia ? req.barbearia.nome : 'Barbearia';
   const icones = [{ src: '/app-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }];
@@ -80,7 +82,7 @@ app.get('/manifest.webmanifest', (req, res) => {
   res.type('application/manifest+json').json({
     name: nome,
     short_name: nome.length > 12 ? nome.slice(0, 12) : nome,
-    start_url: '/login',
+    start_url: '/painel',
     scope: '/',
     display: 'standalone',
     background_color: '#111111',
