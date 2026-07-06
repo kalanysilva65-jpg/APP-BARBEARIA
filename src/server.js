@@ -127,12 +127,32 @@ app.use((req, res) => {
 
 // --- Tratamento de erros --------------------------------------------------
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).render('erro', {
-    layout: 'layouts/blank',
-    titulo: 'Erro',
-    mensagem: 'Ocorreu um erro inesperado.',
-  });
+  // Loga no stdout (não só stderr) para aparecer no painel de logs da Hostinger,
+  // com marcador para facilitar a busca. Inclui rota e método para contexto.
+  console.log('[ERRO500]', req.method, req.originalUrl, '\n', (err && err.stack) || err);
+
+  // Se a resposta já começou a ser enviada, não dá para renderizar a página de
+  // erro — apenas encerra a conexão para não estourar outra exceção.
+  if (res.headersSent) return next(err);
+
+  try {
+    res.status(500).render('erro', {
+      layout: 'layouts/blank',
+      titulo: 'Erro',
+      mensagem: 'Ocorreu um erro inesperado.',
+    });
+  } catch (e) {
+    console.log('[ERRO500-RENDER]', (e && e.stack) || e);
+    res.status(500).type('text').send('Erro inesperado.');
+  }
+});
+
+// Captura falhas fora do ciclo de request (promessas sem catch, etc.) no stdout.
+process.on('unhandledRejection', (motivo) => {
+  console.log('[unhandledRejection]', (motivo && motivo.stack) || motivo);
+});
+process.on('uncaughtException', (erro) => {
+  console.log('[uncaughtException]', (erro && erro.stack) || erro);
 });
 
 const PORT = process.env.PORT || 3000;
