@@ -1,8 +1,8 @@
 <div class="card auth-card">
   <div class="auth-cabecalho">
-    <% if (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) { %>
-      <img src="<%= marcaLogoUrl %>" alt="Logo" class="logo-marca-img" style="max-height:64px;margin-bottom:8px;" />
-    <% } else if (barbearia) { %>
+    <%/* A logo configurada (marcaLogoUrl) só aparece no agendamento público —
+       aqui no login da equipe é sempre a marca em texto. */%>
+    <% if (barbearia) { %>
       <div class="logo-flowbarber logo-flowbarber--lg" style="justify-content:center;margin-bottom:4px;"><span class="lf"><%= barbearia.nome %></span></div>
     <% } else { %>
       <div class="logo-flowbarber logo-flowbarber--lg" style="justify-content:center;margin-bottom:4px;"><span class="lf">navio</span><span class="ld">.</span></div>
