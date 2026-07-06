@@ -2,15 +2,17 @@
   <div class="card"><p class="texto-secundario">Nenhum barbeiro ativo.</p></div>
 <% } else { %>
 
-  <span class="dash-rotulo texto-sutil">JANELA DE AGENDAMENTO DO CLIENTE</span>
-  <p class="janela-desc">Controla até quando os clientes podem marcar horários pelo app.</p>
-  <form method="POST" action="/painel/horarios/janela" class="janela-pills mb-24" id="form-janela">
-    <button type="submit" name="janela" value="semana" class="janela-pill <%= janelaAgendamento === 'semana' ? 'ativo' : '' %>">Esta semana</button>
-    <button type="submit" name="janela" value="duas_semanas" class="janela-pill <%= janelaAgendamento === 'duas_semanas' ? 'ativo' : '' %>">Esta e a próxima</button>
-    <button type="submit" name="janela" value="sem_limite" class="janela-pill <%= janelaAgendamento === 'sem_limite' ? 'ativo' : '' %>">Sem limite</button>
-  </form>
+  <% if (ehAdmin) { %>
+    <span class="dash-rotulo texto-sutil">JANELA DE AGENDAMENTO DO CLIENTE</span>
+    <p class="janela-desc">Controla até quando os clientes podem marcar horários pelo app.</p>
+    <form method="POST" action="/painel/horarios/janela" class="janela-pills mb-24" id="form-janela">
+      <button type="submit" name="janela" value="semana" class="janela-pill <%= janelaAgendamento === 'semana' ? 'ativo' : '' %>">Esta semana</button>
+      <button type="submit" name="janela" value="duas_semanas" class="janela-pill <%= janelaAgendamento === 'duas_semanas' ? 'ativo' : '' %>">Esta e a próxima</button>
+      <button type="submit" name="janela" value="sem_limite" class="janela-pill <%= janelaAgendamento === 'sem_limite' ? 'ativo' : '' %>">Sem limite</button>
+    </form>
+  <% } %>
 
-  <span class="dash-rotulo texto-sutil">JORNADA SEMANAL</span>
+  <span class="dash-rotulo texto-sutil"><%= ehAdmin ? 'JORNADA SEMANAL' : 'MEUS DIAS DE TRABALHO' %></span>
   <div class="linha-simples-lista mt-16 mb-24">
     <% barbeirosComJornada.forEach(function (bj) { %>
       <a href="#" class="linha-simples" onclick="abrirModal(<%= bj.barbeiro.id %>);return false;">
@@ -55,14 +57,16 @@
         <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
       </div>
       <form method="POST" action="/painel/horarios/bloqueios" class="form mt-16">
-        <div class="campo">
-          <label for="barbeiroId">Barbeiro</label>
-          <select id="barbeiroId" name="barbeiroId" required>
-            <% barbeiros.forEach(function (b) { %>
-              <option value="<%= b.id %>"><%= b.nome %></option>
-            <% }) %>
-          </select>
-        </div>
+        <% if (ehAdmin) { %>
+          <div class="campo">
+            <label for="barbeiroId">Barbeiro</label>
+            <select id="barbeiroId" name="barbeiroId" required>
+              <% barbeiros.forEach(function (b) { %>
+                <option value="<%= b.id %>"><%= b.nome %></option>
+              <% }) %>
+            </select>
+          </div>
+        <% } %>
         <div class="campo">
           <label for="data">Data</label>
           <input id="data" type="date" name="data" required />

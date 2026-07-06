@@ -17,15 +17,19 @@
       <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
     </div>
     <form method="GET" action="/painel/comissoes" class="form mt-16">
-      <div class="campo">
-        <label for="barbeiro">Barbeiro</label>
-        <select id="barbeiro" name="barbeiro">
-          <option value="todos" <%= barbeiroSelecionado === 'todos' ? 'selected' : '' %>>Todos os barbeiros</option>
-          <% barbeiros.forEach(function (b) { %>
-            <option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
-          <% }) %>
-        </select>
-      </div>
+      <% if (ehAdmin) { %>
+        <div class="campo">
+          <label for="barbeiro">Barbeiro</label>
+          <select id="barbeiro" name="barbeiro">
+            <option value="todos" <%= barbeiroSelecionado === 'todos' ? 'selected' : '' %>>Todos os barbeiros</option>
+            <% barbeiros.forEach(function (b) { %>
+              <option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
+            <% }) %>
+          </select>
+        </div>
+      <% } else { %>
+        <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
+      <% } %>
       <div class="grid-2">
         <div class="campo">
           <label for="inicio">De</label>
@@ -97,19 +101,29 @@
   <div class="ag-overlay" id="equipe-modal-<%= g.barbeiro.id %>" onclick="if(event.target===this)fecharModal(this)">
     <div class="ag-modal-box">
       <div class="ag-modal-topo equipe-modal-topo" style="align-items:center;">
-        <form method="POST" action="/painel/comissoes/<%= g.barbeiro.id %>/foto" enctype="multipart/form-data" class="equipe-foto-form">
-          <input type="hidden" name="inicio" value="<%= inicioStr %>" />
-          <input type="hidden" name="fim" value="<%= fimStr %>" />
-          <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
-          <label class="equipe-foto" style="width:36px;height:36px;" title="Adicionar/trocar foto">
+        <% if (ehAdmin) { %>
+          <form method="POST" action="/painel/comissoes/<%= g.barbeiro.id %>/foto" enctype="multipart/form-data" class="equipe-foto-form">
+            <input type="hidden" name="inicio" value="<%= inicioStr %>" />
+            <input type="hidden" name="fim" value="<%= fimStr %>" />
+            <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
+            <label class="equipe-foto" style="width:36px;height:36px;" title="Adicionar/trocar foto">
+              <% if (g.barbeiro.fotoUrl) { %>
+                <img src="<%= g.barbeiro.fotoUrl %>" alt="Foto de <%= g.barbeiro.nome %>" style="width:36px;height:36px;" />
+              <% } else { %>
+                <span class="equipe-foto-inicial" style="font-size:12px;"><%= g.barbeiro.nome.charAt(0).toUpperCase() %></span>
+              <% } %>
+              <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
+            </label>
+          </form>
+        <% } else { %>
+          <span class="equipe-foto equipe-foto--view" style="width:36px;height:36px;">
             <% if (g.barbeiro.fotoUrl) { %>
               <img src="<%= g.barbeiro.fotoUrl %>" alt="Foto de <%= g.barbeiro.nome %>" style="width:36px;height:36px;" />
             <% } else { %>
               <span class="equipe-foto-inicial" style="font-size:12px;"><%= g.barbeiro.nome.charAt(0).toUpperCase() %></span>
             <% } %>
-            <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
-          </label>
-        </form>
+          </span>
+        <% } %>
         <div class="equipe-modal-nome">
           <div class="ag-modal-nome"><%= g.barbeiro.nome %></div>
           <span class="row-sub">Faturado <%= fmtBRL(g.faturadoTotal) %> · Comissão <%= fmtBRL(g.comissao) %></span>
@@ -135,9 +149,13 @@
         <div class="linha-simples-lista mt-16">
           <div class="linha-simples">
             <span class="linha-simples-titulo">Serviços</span>
-            <span class="pill-percent">
-              <input type="number" name="percentual" step="0.5" min="0" max="100" value="<%= g.barbeiro.comissaoPercentual %>" />%
-            </span>
+            <% if (ehAdmin) { %>
+              <span class="pill-percent">
+                <input type="number" name="percentual" step="0.5" min="0" max="100" value="<%= g.barbeiro.comissaoPercentual %>" />%
+              </span>
+            <% } else { %>
+              <span class="pill-opcao pill-opcao--estatico"><%= g.barbeiro.comissaoPercentual %>%</span>
+            <% } %>
           </div>
           <div class="linha-simples">
             <span class="linha-simples-titulo">Produtos</span>
@@ -162,7 +180,9 @@
           </div>
         <% } %>
 
-        <button class="btn btn-primario btn-bloco mt-24" type="submit">Salvar</button>
+        <% if (ehAdmin) { %>
+          <button class="btn btn-primario btn-bloco mt-24" type="submit">Salvar</button>
+        <% } %>
       </form>
     </div>
   </div>

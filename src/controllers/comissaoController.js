@@ -175,9 +175,14 @@ async function ver(req, res) {
     };
   });
 
-  // Filtro de barbeiro: 'todos' (padrão) ou um id específico.
-  const barbeiroSelecionado =
-    req.query.barbeiro && /^\d+$/.test(req.query.barbeiro) ? req.query.barbeiro : 'todos';
+  // Filtro de barbeiro:
+  //  - Funcionário: sempre o próprio (só vê a comissão dele, ignora a query).
+  //  - Admin: 'todos' (padrão) ou um id específico.
+  const barbeiroSelecionado = !req.ehAdmin
+    ? String(req.session.usuario.id)
+    : req.query.barbeiro && /^\d+$/.test(req.query.barbeiro)
+      ? req.query.barbeiro
+      : 'todos';
 
   const grupos =
     barbeiroSelecionado === 'todos'

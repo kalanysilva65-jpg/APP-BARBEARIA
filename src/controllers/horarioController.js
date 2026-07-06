@@ -44,10 +44,16 @@ async function lerJanelaAgendamento(barbeariaId) {
   return (cfg && cfg.valor) || JANELA_PADRAO;
 }
 
-// GET /painel/horarios — jornada de todos os barbeiros + bloqueios manuais (todos)
+// GET /painel/horarios
+//  - Admin: jornada + bloqueios de todos os barbeiros, e a janela de agendamento.
+//  - Funcionário: só a PRÓPRIA jornada e os PRÓPRIOS bloqueios (sem a janela).
 async function ver(req, res) {
   const b = req.barbeariaId;
-  const barbeiros = await prisma.usuario.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { id: 'asc' } });
+  const ehAdmin = req.ehAdmin;
+
+  const whereBarb = { barbeariaId: b, ativo: true };
+  if (!ehAdmin) whereBarb.id = req.session.usuario.id;
+  const barbeiros = await prisma.usuario.findMany({ where: whereBarb, orderBy: { id: 'asc' } });
 
   const todaJornada = await prisma.horarioTrabalho.findMany({ where: { barbeariaId: b } });
   const barbeirosComJornada = barbeiros.map((barbeiro) => {
@@ -55,11 +61,13 @@ async function ver(req, res) {
     return { barbeiro, jornada, resumo: resumoJornada(jornada) };
   });
 
-  // Bloqueios manuais de hoje em diante (todos os barbeiros).
+  // Bloqueios manuais de hoje em diante (só os próprios, se funcionário).
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
+  const whereBloq = { barbeariaId: b, data: { gte: hoje } };
+  if (!ehAdmin) whereBloq.usuarioId = req.session.usuario.id;
   const bloqueios = await prisma.bloqueio.findMany({
-    where: { barbeariaId: b, data: { gte: hoje } },
+    where: whereBloq,
     include: { usuario: true },
     orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
   });
@@ -68,6 +76,7 @@ async function ver(req, res) {
 
   res.render('painel/horarios', {
     titulo: 'Horários',
+    ehAdmin,
     barbeirosComJornada,
     barbeiros,
     bloqueios,
@@ -94,10 +103,11 @@ async function barbeiroDaBarbearia(barbeiroId, barbeariaId) {
   return prisma.usuario.findFirst({ where: { id: barbeiroId, barbeariaId } });
 }
 
-// POST /painel/horarios/jornada — salva a jornada semanal do barbeiro
+// POST /painel/horarios/jornada — salva a jornada semanal do barbeiro.
+// Funcionário só edita a própria jornada (ignora o barbeiroId do formulário).
 async function salvarJornada(req, res) {
   const b = req.barbeariaId;
-  const barbeiroId = Number(req.body.barbeiroId);
+  const barbeiroId = req.ehAdmin ? Number(req.body.barbeiroId) : req.session.usuario.id;
   if (!(await barbeiroDaBarbearia(barbeiroId, b))) return res.redirect('/painel/horarios');
 
   for (let dia = 0; dia <= 6; dia++) {
@@ -124,10 +134,11 @@ async function salvarJornada(req, res) {
   res.redirect('/painel/horarios');
 }
 
-// POST /painel/horarios/bloqueios — adiciona um bloqueio
+// POST /painel/horarios/bloqueios — adiciona um bloqueio.
+// Funcionário bloqueia sempre a PRÓPRIA agenda.
 async function adicionarBloqueio(req, res) {
   const b = req.barbeariaId;
-  const barbeiroId = Number(req.body.barbeiroId);
+  const barbeiroId = req.ehAdmin ? Number(req.body.barbeiroId) : req.session.usuario.id;
   const data = req.body.data;
   const horaInicio = req.body.horaInicio;
   const horaFim = req.body.horaFim;
@@ -144,9 +155,12 @@ async function adicionarBloqueio(req, res) {
   res.redirect('/painel/horarios');
 }
 
-// POST /painel/horarios/bloqueios/:id/remover — remove um bloqueio
+// POST /painel/horarios/bloqueios/:id/remover — remove um bloqueio.
+// Funcionário só remove os próprios bloqueios.
 async function removerBloqueio(req, res) {
-  await prisma.bloqueio.deleteMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } }).catch(() => {});
+  const where = { id: Number(req.params.id), barbeariaId: req.barbeariaId };
+  if (!req.ehAdmin) where.usuarioId = req.session.usuario.id;
+  await prisma.bloqueio.deleteMany({ where }).catch(() => {});
   req.session.flash = { tipo: 'sucesso', texto: 'Bloqueio removido.' };
   res.redirect('/painel/horarios');
 }

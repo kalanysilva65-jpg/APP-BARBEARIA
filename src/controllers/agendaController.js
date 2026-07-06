@@ -356,10 +356,11 @@ async function criarManual(req, res) {
   res.redirect('/painel/agenda?data=' + data + (ehAdmin ? '&barbeiro=' + usuarioId : ''));
 }
 
-// POST /painel/agenda/bloqueios — cria um bloqueio direto da agenda (admin).
+// POST /painel/agenda/bloqueios — cria um bloqueio direto da agenda.
+// Admin escolhe o barbeiro; funcionário bloqueia sempre a PRÓPRIA agenda.
 async function criarBloqueio(req, res) {
   const b = req.barbeariaId;
-  const barbeiroId = Number(req.body.barbeiroId);
+  const barbeiroId = req.ehAdmin ? Number(req.body.barbeiroId) : req.session.usuario.id;
   const data = req.body.data;
   const horaInicio = req.body.horaInicio;
   const horaFim = req.body.horaFim;
@@ -378,11 +379,12 @@ async function criarBloqueio(req, res) {
   res.redirect('/painel/agenda?data=' + (data || '') + '&barbeiro=' + barbeiroRet);
 }
 
-// POST /painel/agenda/bloqueios/:id/remover — remove um bloqueio (admin).
+// POST /painel/agenda/bloqueios/:id/remover — remove um bloqueio.
+// Funcionário só remove os PRÓPRIOS bloqueios; admin remove qualquer um.
 async function removerBloqueio(req, res) {
-  await prisma.bloqueio
-    .deleteMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } })
-    .catch(() => {});
+  const where = { id: Number(req.params.id), barbeariaId: req.barbeariaId };
+  if (!req.ehAdmin) where.usuarioId = req.session.usuario.id;
+  await prisma.bloqueio.deleteMany({ where }).catch(() => {});
   req.session.flash = { tipo: 'sucesso', texto: 'Bloqueio removido.' };
   const qs = new URLSearchParams();
   if (req.body.retornoData) qs.set('data', req.body.retornoData);
