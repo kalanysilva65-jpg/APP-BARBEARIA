@@ -156,7 +156,7 @@ label {
   font-size: 28px;
 }
 
-/* Logo navio. */
+/* Logo Cortavo. */
 .logo-flowbarber {
   display: inline-flex;
   align-items: baseline;
@@ -165,7 +165,7 @@ label {
   text-decoration: none;
 }
 
-.logo-flowbarber .lf { font-weight: 700; color: var(--texto); letter-spacing: -0.02em; }
+.logo-flowbarber .lf { font-weight: 500; color: var(--texto); letter-spacing: 0.14em; text-transform: uppercase; }
 .logo-flowbarber .lb { display: none; }
 .logo-flowbarber .ld { color: #e8a030; font-weight: 700; }
 .logo-flowbarber .li {
@@ -183,9 +183,9 @@ label {
 
 .rodape-publico-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .logo-flowbarber--xs { font-size: 14px; }
-.powered-by-navio { display: inline-flex; align-items: baseline; gap: 4px; font-size: 11px; opacity: 0.45; font-weight: 500; letter-spacing: 0.02em; }
-.powered-by-navio .logo-flowbarber { font-size: 13px; }
-.powered-by-navio .ld { color: #e8a030; }
+.powered-by-marca { display: inline-flex; align-items: baseline; gap: 4px; font-size: 11px; opacity: 0.45; font-weight: 500; letter-spacing: 0.02em; }
+.powered-by-marca .logo-flowbarber { font-size: 13px; }
+.powered-by-marca .ld { color: #e8a030; }
 
 .topo-usuario {
   display: flex;
