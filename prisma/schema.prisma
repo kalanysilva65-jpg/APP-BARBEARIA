@@ -9,6 +9,11 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Gera os motores de query para as plataformas Linux mais prováveis em
+  // produção (Hostinger/CloudLinux é RHEL; cobrimos Debian e musl por garantia).
+  // Sem isso, o motor gerado no build pode ser incompatível com o runtime e
+  // crashar nativamente na primeira query. "native" mantém o dev local.
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "rhel-openssl-1.1.x", "debian-openssl-3.0.x", "debian-openssl-1.1.x", "linux-musl-openssl-3.0.x", "linux-musl"]
 }
 
 datasource db {
