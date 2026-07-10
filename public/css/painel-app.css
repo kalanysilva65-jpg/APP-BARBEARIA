@@ -117,13 +117,19 @@
 
 /* ----- Navegação: barra flutuante de ícones, fixa no rodapé --------------
    Estilo Cosmos: pílula estreita e centralizada, mostrando ~3 ícones por vez.
-   As larguras abaixo dependem uma da outra — mexer numa exige refazer a conta:
-   3 itens (3 x 44) + 2 espaços (2 x 12) + padding (2 x 6) = 168px.           */
+
+   Não há `gap` entre os ícones de propósito: o vão viraria uma faixa morta
+   entre dois alvos de toque. Cada item carrega o próprio respiro (é mais largo
+   que o ícone), então a barra inteira é clicável e o espaçamento visual
+   continua sendo --nav-item menos o tamanho do ícone.
+
+   As medidas dependem uma da outra — mexer numa exige refazer a conta:
+   3 itens (3 x 56) + padding (2 x 6) = 180px.                                */
 .nav-inf {
-  --nav-item: 44px;
-  --nav-gap: 12px;
+  --nav-item: 56px;   /* alvo de toque na horizontal (min. recomendado: 44px) */
+  --nav-alt: 48px;    /* alvo de toque na vertical                            */
   --nav-pad: 6px;
-  --nav-w: calc(3 * var(--nav-item) + 2 * var(--nav-gap) + 2 * var(--nav-pad));
+  --nav-w: calc(3 * var(--nav-item) + 2 * var(--nav-pad));
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
@@ -139,7 +145,6 @@
 .nav-inf-scroll {
   display: flex;
   align-items: center;
-  gap: var(--nav-gap);
   /* O respiro lateral é o que permite a PRIMEIRA e a ÚLTIMA aba chegarem ao
      centro. Sem ele o scroll trava antes, e a aba ativa nas pontas (Início,
      Perfil) fica na borda — logo debaixo do fade, apagada justamente quando
@@ -159,11 +164,12 @@
 .nav-inf-scroll::-webkit-scrollbar { display: none; }
 .nav-inf-item {
   flex: 0 0 var(--nav-item);
-  height: var(--nav-item);
+  height: var(--nav-alt);
   display: flex;
   align-items: center;
   justify-content: center;
   scroll-snap-align: center;
+  -webkit-tap-highlight-color: transparent;
   color: rgba(255, 255, 255, 0.3);
   text-decoration: none;
   transition: color 0.18s ease, transform 0.18s ease;
@@ -849,6 +855,14 @@ body.modal-aberto { overflow: hidden; }
   flex-direction: column;
   align-items: flex-end;
   gap: 10px;
+}
+/* O botão fica ao LADO da barra de navegação (que é centralizada). Numa tela
+   estreita os dois quase se encostam — aí ele sobe para cima dela.
+   16px (base da barra) + 60px (altura) + 12px de respiro = 88px. */
+@media (max-width: 380px) {
+  .agenda-fab-wrap {
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
 }
 .agenda-fab {
   width: 44px;
