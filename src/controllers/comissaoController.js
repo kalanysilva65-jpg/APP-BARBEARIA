@@ -4,7 +4,7 @@
 // agendamentos CONCLUÍDOS no período.
 const prisma = require('../config/db');
 const fs = require('fs');
-const path = require('path');
+const { caminhoDoUpload } = require('../config/paths');
 const { COMISSAO_PRODUTO_PERCENTUAL } = require('../config/constantes');
 const { paraMinutos } = require('../services/disponibilidade');
 
@@ -264,14 +264,13 @@ async function salvarFoto(req, res) {
   const destino = '/painel/comissoes' + (qs.toString() ? '?' + qs.toString() : '');
 
   if (!barbeiro || !req.file) {
-    if (req.file) fs.unlink(path.join(__dirname, '..', '..', 'uploads', req.file.filename), () => {});
+    if (req.file) fs.unlink(caminhoDoUpload('/uploads/' + req.file.filename), () => {});
     return res.redirect(destino);
   }
 
   // Apaga a foto anterior, se houver.
-  if (barbeiro.fotoUrl) {
-    fs.unlink(path.join(__dirname, '..', '..', barbeiro.fotoUrl.replace(/^\//, '')), () => {});
-  }
+  const anterior = caminhoDoUpload(barbeiro.fotoUrl);
+  if (anterior) fs.unlink(anterior, () => {});
   await prisma.usuario.update({ where: { id }, data: { fotoUrl: '/uploads/' + req.file.filename } });
   req.session.flash = { tipo: 'sucesso', texto: 'Foto atualizada.' };
   res.redirect(destino);

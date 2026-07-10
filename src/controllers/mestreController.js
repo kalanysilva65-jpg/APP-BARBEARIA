@@ -2,9 +2,9 @@
 // Gerencia as barbearias assinantes: criar/editar, equipe (barbeiros + e-mail/senha),
 // marca (logo/powered-by) e a operação (impersonação) de cada uma.
 const bcrypt = require('bcryptjs');
-const path = require('path');
 const fs = require('fs');
 const prisma = require('../config/db');
+const { caminhoDoUpload } = require('../config/paths');
 
 // Normaliza um slug de subdomínio: minúsculas, sem acentos, só [a-z0-9-].
 function normalizarSlug(s) {
@@ -271,9 +271,8 @@ async function salvarMarca(req, res) {
     const atual = await prisma.configuracao.findUnique({
       where: { barbeariaId_chave: { barbeariaId, chave: 'logo_url' } },
     });
-    if (atual && atual.valor) {
-      fs.unlink(path.join(__dirname, '..', '..', atual.valor.replace(/^\//, '')), () => {});
-    }
+    const anterior = atual && caminhoDoUpload(atual.valor);
+    if (anterior) fs.unlink(anterior, () => {});
     const novoUrl = '/uploads/' + req.file.filename;
     await prisma.configuracao.upsert({
       where: { barbeariaId_chave: { barbeariaId, chave: 'logo_url' } },

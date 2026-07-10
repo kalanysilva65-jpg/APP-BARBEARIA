@@ -25,7 +25,16 @@ async function garantirDono() {
 }
 
 // Cria/garante uma barbearia pelo slug.
-async function garantirBarbearia(nome, slug) {
+// Se o e-mail do admin já existe em ALGUMA barbearia, é ela — mesmo que o slug
+// tenha sido renomeado depois (pelo painel-mestre). Sem isso, um redeploy
+// recriaria uma barbearia duplicada com o slug antigo.
+async function garantirBarbearia(nome, slug, emailAdmin) {
+  const porAdmin = await prisma.usuario.findFirst({
+    where: { email: emailAdmin, barbeariaId: { not: null } },
+    include: { barbearia: true },
+  });
+  if (porAdmin && porAdmin.barbearia) return porAdmin.barbearia;
+
   return prisma.barbearia.upsert({
     where: { slug },
     update: {},
@@ -68,10 +77,11 @@ async function main() {
   const dono = await garantirDono();
 
   // --- Barbearia: Andrade (só o admin Bruno; sem catálogo de demonstração) --
-  const andrade = await garantirBarbearia('Andrade Barbearia', 'andrade');
+  const EMAIL_BRUNO = 'andradebarbearia@gmail.com';
+  const andrade = await garantirBarbearia('Andrade Barbearia', 'andrade', EMAIL_BRUNO);
   const bruno = await garantirUsuario(andrade.id, {
     nome: 'Bruno Andrade',
-    email: 'andradebarbearia@gmail.com',
+    email: EMAIL_BRUNO,
     senha: 'admin123',
     papel: 'admin',
   });
@@ -87,8 +97,8 @@ async function main() {
   console.log('  DONO (painel-mestre):');
   console.log('   ' + dono.email + ' / dono123');
   console.log('');
-  console.log('  Barbearia "andrade" (subdomínio andrade / dev: ?b=andrade):');
-  console.log('   andradebarbearia@gmail.com / admin123  (Admin — Bruno)');
+  console.log(`  Barbearia "${andrade.slug}" (subdomínio ${andrade.slug} / dev: ?b=${andrade.slug}):`);
+  console.log('   ' + EMAIL_BRUNO + ' / admin123  (Admin — Bruno)');
 }
 
 main()

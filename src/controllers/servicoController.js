@@ -2,7 +2,7 @@
 // Acesso exclusivo do admin (garantido pelas rotas com exigeAdmin).
 const prisma = require('../config/db');
 const fs = require('fs');
-const path = require('path');
+const { caminhoDoUpload } = require('../config/paths');
 
 // "40.50" / "40" -> 4050 (centavos). Retorna null se inválido.
 function reaisParaCentavos(valorStr) {
@@ -13,9 +13,8 @@ function reaisParaCentavos(valorStr) {
 
 // Apaga um arquivo de foto do disco (silencioso se não existir).
 function apagarFoto(fotoUrl) {
-  if (!fotoUrl) return;
-  const caminho = path.join(__dirname, '..', '..', fotoUrl.replace(/^\//, ''));
-  fs.unlink(caminho, () => {});
+  const caminho = caminhoDoUpload(fotoUrl);
+  if (caminho) fs.unlink(caminho, () => {});
 }
 
 // GET /painel/servicos — lista o catálogo + categorias

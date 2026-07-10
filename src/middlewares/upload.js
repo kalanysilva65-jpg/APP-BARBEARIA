@@ -2,12 +2,7 @@
 // (Usado a partir da Fase 4 — cadastro de serviços/produtos.)
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
-
-const pastaUploads = path.join(__dirname, '..', '..', 'uploads');
-if (!fs.existsSync(pastaUploads)) {
-  fs.mkdirSync(pastaUploads, { recursive: true });
-}
+const { uploadsDir: pastaUploads } = require('../config/paths');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, pastaUploads),

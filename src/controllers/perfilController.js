@@ -1,7 +1,7 @@
 // Perfil do usuário logado (usado no hero do painel: foto + nome).
 const fs = require('fs');
-const path = require('path');
 const prisma = require('../config/db');
+const { caminhoDoUpload } = require('../config/paths');
 const { resumoJornada } = require('./horarioController');
 
 // GET /painel/mais — cartão de perfil do usuário logado.
@@ -30,9 +30,8 @@ async function salvarFoto(req, res) {
   if (!req.file) return res.redirect(destino);
 
   const atual = await prisma.usuario.findUnique({ where: { id } });
-  if (atual && atual.fotoUrl) {
-    fs.unlink(path.join(__dirname, '..', '..', atual.fotoUrl.replace(/^\//, '')), () => {});
-  }
+  const anterior = atual && caminhoDoUpload(atual.fotoUrl);
+  if (anterior) fs.unlink(anterior, () => {});
   await prisma.usuario.update({ where: { id }, data: { fotoUrl: '/uploads/' + req.file.filename } });
   req.session.flash = { tipo: 'sucesso', texto: 'Foto atualizada.' };
   res.redirect(destino);

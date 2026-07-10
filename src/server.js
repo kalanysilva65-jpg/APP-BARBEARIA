@@ -9,13 +9,10 @@ const FileStore = require('session-file-store')(session);
 const expressLayouts = require('express-ejs-layouts');
 const methodOverride = require('method-override');
 
+const { uploadsDir, sessionsDir } = require('./config/paths');
+
 const app = express();
 app.set('trust proxy', 1);
-
-const dataDir = process.env.APP_DATA_DIR
-  ? path.resolve(process.env.APP_DATA_DIR)
-  : path.join(__dirname, '..', 'data');
-fs.mkdirSync(dataDir, { recursive: true });
 
 // --- Views: EJS + layouts -------------------------------------------------
 app.set('view engine', 'ejs');
@@ -30,13 +27,13 @@ app.use(methodOverride('_method')); // permite PUT/DELETE em formulários
 
 // --- Arquivos estáticos ---------------------------------------------------
 app.use(express.static(path.join(__dirname, '..', 'public')));
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 // --- Sessão ---------------------------------------------------------------
 app.use(
   session({
     store: new FileStore({
-      path: path.join(dataDir, 'sessions'),
+      path: sessionsDir,
       ttl: 60 * 60 * 8, // 8 horas, igual ao maxAge do cookie
       retries: 2,
       reapInterval: 60 * 60, // limpa sessões expiradas a cada hora
