@@ -1,7 +1,7 @@
 <%
   // Abas do painel. `admin: true` = só o dono/admin enxerga.
-  // Os ícones não têm rótulo visível, então `title` (tooltip) e `aria-label`
-  // são a única forma de descobrir o destino — nunca remova os dois.
+  // Os ícones não têm rótulo visível, então `title` e `aria-label` são a única
+  // forma de descobrir o destino — nunca remova os dois.
   var abas = [
     { href: '/painel',           nome: 'Início',     exato: true },
     { href: '/painel/agenda',    nome: 'Agenda' },
@@ -15,17 +15,57 @@
     { href: '/painel/mais',      nome: 'Perfil' },
   ];
 
+  // Ícones sólidos. Os que têm "furos" (Agenda, Planos, Financeiro, Horários)
+  // usam <mask> em vez de pintar o furo com a cor do fundo: a barra é
+  // translúcida, então um furo opaco apareceria como uma mancha sobre o
+  // conteúdo que passa por trás.
+  function comFuro(id, corpo, furos) {
+    return (
+      '<mask id="ic-' + id + '" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">' +
+      '<g fill="#fff" stroke="#fff">' + corpo + '</g>' +
+      '<g fill="#000" stroke="#000">' + furos + '</g>' +
+      '</mask>' +
+      '<rect width="24" height="24" fill="currentColor" mask="url(#ic-' + id + ')"/>'
+    );
+  }
+
   var icones = {
-    'Início':     '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
-    'Agenda':     '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>',
-    'Serviços':   '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12"/>',
-    'Estoque':    '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
-    'Planos':     '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
-    'Financeiro': '<path d="M12 2v20"/><path d="M17 6.5c0-2-2.2-3-5-3s-5 .9-5 2.9c0 4.3 10 2 10 6.2 0 2.1-2.2 3.1-5 3.1s-5-1-5-3"/>',
-    'Comissões':  '<path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
-    'Horários':   '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-    'Clientes':   '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>',
-    'Perfil':     '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+    'Início': '<path d="M12 3.2l8 6.4v10.4a1 1 0 0 1-1 1h-4.5v-6.5h-5V21H5a1 1 0 0 1-1-1V9.6l8-6.4z"/>',
+
+    'Agenda': comFuro('agenda',
+      '<rect x="3.5" y="5.5" width="17" height="15" rx="4" stroke="none"/>',
+      '<circle cx="8" cy="12.5" r="1.3" stroke="none"/><circle cx="12" cy="12.5" r="1.3" stroke="none"/><circle cx="16" cy="12.5" r="1.3" stroke="none"/>'),
+
+    'Serviços': '<circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/>' +
+      '<path d="M7.8 7.6L18 17.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+      '<path d="M7.8 16.4L18 6.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>',
+
+    'Estoque': '<path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4L12 2.5z"/>',
+
+    'Planos': comFuro('planos',
+      '<rect x="3" y="6.5" width="18" height="11" rx="3" stroke="none"/>',
+      '<rect x="6" y="10" width="6" height="2" rx="1" stroke="none"/>'),
+
+    'Financeiro': comFuro('financeiro',
+      '<circle cx="12" cy="12" r="9" stroke="none"/>',
+      '<path d="M12 7.2v9.6M15 9.6c-.7-.6-1.9-1-3-1-2 0-3.2.9-3.2 2.1 0 3 6.4 1.3 6.4 4.2 0 1.3-1.3 2.1-3.2 2.1-1.2 0-2.4-.4-3.2-1.1" stroke-width="1.6" fill="none" stroke-linecap="round"/>'),
+
+    // O desenho enviado para Comissões era a MESMA pessoa do Perfil (diferença
+    // de 0,5px). Sem rótulo os dois seriam indistinguíveis — aqui vai o símbolo
+    // de porcentagem, que é o que a tela mostra.
+    'Comissões': '<circle cx="6.6" cy="6.6" r="2.9"/><circle cx="17.4" cy="17.4" r="2.9"/>' +
+      '<path d="M18.4 4.5L5.6 19.5" stroke="currentColor" stroke-width="2.1" fill="none" stroke-linecap="round"/>',
+
+    'Horários': comFuro('horarios',
+      '<circle cx="12" cy="12" r="9" stroke="none"/>',
+      '<path d="M12 7v5.3l3.6 2.1" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'),
+
+    'Clientes': '<circle cx="8.5" cy="8" r="3.5"/>' +
+      '<path d="M2 21c0-4 2.9-6.3 6.5-6.3S15 17 15 21a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/>' +
+      '<circle cx="17" cy="8.5" r="2.8" opacity="0.55"/>' +
+      '<path d="M15.7 14.9c2.6.5 4.3 2.5 4.3 5.6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.55"/>',
+
+    'Perfil': '<circle cx="12" cy="8" r="4.3"/><path d="M4 21.5c0-4.7 3.6-7.5 8-7.5s8 2.8 8 7.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>',
   };
 
   function ativa(aba) {
@@ -43,7 +83,7 @@
           aria-label="<%= aba.nome %>"
           <%= ativa(aba) ? 'aria-current="page"' : '' %>
         >
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><%- icones[aba.nome] %></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><%- icones[aba.nome] %></svg>
         </a>
       <% } %>
     <% }) %>
@@ -51,16 +91,19 @@
 </nav>
 
 <script>
-  // A barra rola na horizontal (não cabem 10 ícones na largura de um celular).
-  // Cada página é um carregamento novo, então a barra nasceria sempre no início:
-  // centraliza a aba ativa já na primeira renderização.
+  // A barra mostra ~3 ícones por vez. Cada página é um carregamento novo, então
+  // ela nasceria sempre no início: centraliza a aba ativa já na 1ª renderização.
   (function () {
     var el = document.querySelector('.nav-inf-scroll');
     if (!el) return;
     var ativa = el.querySelector('.nav-inf-item.ativo');
-    if (ativa) {
-      var alvo = ativa.offsetLeft - (el.clientWidth - ativa.offsetWidth) / 2;
-      el.scrollLeft = Math.max(0, alvo);
-    }
+    if (!ativa) return;
+    var alvo = ativa.offsetLeft - (el.clientWidth - ativa.offsetWidth) / 2;
+    // Sem 'auto' o scroll-snap disputa com o ajuste inicial e a aba ativa
+    // desliza para o lado assim que a página abre.
+    var antes = el.style.scrollSnapType;
+    el.style.scrollSnapType = 'none';
+    el.scrollLeft = Math.max(0, Math.min(alvo, el.scrollWidth - el.clientWidth));
+    requestAnimationFrame(function () { el.style.scrollSnapType = antes || ''; });
   })();
 </script>

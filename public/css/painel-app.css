@@ -115,52 +115,63 @@
 .app-painel select:focus,
 .app-painel textarea:focus { border-color: rgba(255, 255, 255, 0.3); }
 
-/* ----- Navegação: barra flutuante de ícones, fixa no rodapé -------------- */
+/* ----- Navegação: barra flutuante de ícones, fixa no rodapé --------------
+   Estilo Cosmos: pílula estreita e centralizada, mostrando ~3 ícones por vez.
+   As larguras abaixo dependem uma da outra — mexer numa exige refazer a conta:
+   3 itens (3 x 44) + 2 espaços (2 x 12) + padding (2 x 6) = 168px.           */
 .nav-inf {
+  --nav-item: 44px;
+  --nav-gap: 12px;
+  --nav-pad: 6px;
+  --nav-w: calc(3 * var(--nav-item) + 2 * var(--nav-gap) + 2 * var(--nav-pad));
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   z-index: 30;
-  max-width: min(calc(100vw - 32px), 460px);
+  width: var(--nav-w);
   background: rgba(28, 28, 30, 0.88);
   backdrop-filter: blur(18px) saturate(1.6);
   -webkit-backdrop-filter: blur(18px) saturate(1.6);
   border-radius: 999px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
 }
 .nav-inf-scroll {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 5px;
+  gap: var(--nav-gap);
+  /* O respiro lateral é o que permite a PRIMEIRA e a ÚLTIMA aba chegarem ao
+     centro. Sem ele o scroll trava antes, e a aba ativa nas pontas (Início,
+     Perfil) fica na borda — logo debaixo do fade, apagada justamente quando
+     é a atual. */
+  padding: var(--nav-pad) calc((var(--nav-w) - var(--nav-item)) / 2);
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
   scrollbar-width: none;
+  scroll-snap-type: x mandatory;
   border-radius: inherit;
+  /* Desbota as pontas: sinaliza que a barra continua para os lados. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
 }
 .nav-inf-scroll::-webkit-scrollbar { display: none; }
 .nav-inf-item {
-  flex: 0 0 auto;
-  width: 38px;
-  height: 38px;
+  flex: 0 0 var(--nav-item);
+  height: var(--nav-item);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  color: rgba(255, 255, 255, 0.42);
+  scroll-snap-align: center;
+  color: rgba(255, 255, 255, 0.3);
   text-decoration: none;
-  transition: background 0.15s, color 0.15s;
+  transition: color 0.18s ease, transform 0.18s ease;
 }
-.nav-inf-item:active { transform: scale(0.94); }
-.nav-inf-item.ativo {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-}
+.nav-inf-item.ativo { color: #fff; }
+.nav-inf-item:active { transform: scale(0.9); }
 @media (hover: hover) {
-  .nav-inf-item:hover { color: rgba(255, 255, 255, 0.75); }
+  .nav-inf-item:hover { color: rgba(255, 255, 255, 0.7); }
 }
 /* Sem isto, a barra flutuante cobre o fim do conteúdo (e o último item de
    cada lista fica inalcançável). */
