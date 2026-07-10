@@ -31,8 +31,17 @@ async function localizarUsuario(email, req) {
       where: { barbeariaId_email: { barbeariaId: req.barbearia.id, email } },
     });
   }
-  // Sem barbearia no contexto: só o dono do sistema.
-  return prisma.usuario.findFirst({ where: { barbeariaId: null, email } });
+
+  // Sem barbearia no contexto (domínio raiz): primeiro o dono do sistema.
+  const dono = await prisma.usuario.findFirst({ where: { barbeariaId: null, email } });
+  if (dono) return dono;
+
+  // A equipe das barbearias também precisa entrar pelo domínio raiz enquanto os
+  // subdomínios não estiverem no ar. O e-mail é único por barbearia, não global:
+  // se o mesmo e-mail existir em mais de uma, o contexto é ambíguo e o login só
+  // pode ser feito pelo subdomínio da barbearia.
+  const candidatos = await prisma.usuario.findMany({ where: { email, ativo: true }, take: 2 });
+  return candidatos.length === 1 ? candidatos[0] : null;
 }
 
 // Processa o login.
