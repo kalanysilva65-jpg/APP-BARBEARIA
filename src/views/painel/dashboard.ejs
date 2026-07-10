@@ -45,14 +45,16 @@
 <!-- Métricas -->
 <div class="card mb-16">
   <span class="dash-rotulo texto-sutil">MÉTRICAS</span>
-  <div class="dash-hero-grid" style="margin:12px 0 0;">
-    <div class="dash-metrica-topo">
+  <div class="dash-metricas">
+    <div class="dash-metrica">
       <strong><%= produtividade %>%</strong>
       <span>Ocupação</span>
+      <div class="dash-metrica-barra"><div style="width:<%= Math.min(100, produtividade) %>%"></div></div>
     </div>
-    <div class="dash-metrica-topo">
+    <div class="dash-metrica">
       <strong><%= retencao %>%</strong>
       <span>Retenção</span>
+      <div class="dash-metrica-barra"><div style="width:<%= Math.min(100, retencao) %>%"></div></div>
     </div>
   </div>
 </div>

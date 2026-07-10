@@ -1,17 +1,6 @@
 {
   "version": "0.0.1",
   "configurations": [
-    {
-      "name": "barbearia",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["src/server.js"],
-      "port": 3000
-    },
-    {
-      "name": "redesign-preview",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["--yes", "serve", "-l", "4173", "C:\\Users\\kalan\\Downloads"],
-      "port": 4173
-    }
+    { "name": "cortavo", "runtimeExecutable": "node", "runtimeArgs": ["src/server.js"], "port": 3000 }
   ]
 }

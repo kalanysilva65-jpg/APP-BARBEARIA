@@ -24,3 +24,6 @@ data/*.sqlite-journal
 # Sessoes gravadas em arquivo (session-file-store)
 data/sessions/
 !data/.gitkeep
+
+# Config local do preview (dev server)
+.claude/

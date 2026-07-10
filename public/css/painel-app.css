@@ -115,34 +115,58 @@
 .app-painel select:focus,
 .app-painel textarea:focus { border-color: rgba(255, 255, 255, 0.3); }
 
-/* ----- Navegação: abas roláveis com sublinhado (não são mais pills) ------ */
-.nav-topo-area { padding-bottom: 0; }
-.nav-topo-scroll {
+/* ----- Navegação: barra flutuante de ícones, fixa no rodapé -------------- */
+.nav-inf {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  max-width: min(calc(100vw - 32px), 460px);
+  background: rgba(28, 28, 30, 0.88);
+  backdrop-filter: blur(18px) saturate(1.6);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  border-radius: 999px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+.nav-inf-scroll {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
   scrollbar-width: none;
-  cursor: grab;
-  user-select: none;
+  border-radius: inherit;
 }
-.nav-topo-scroll::-webkit-scrollbar { display: none; }
-.nav-topo-pills {
-  display: inline-flex;
-  gap: 18px;
-  padding: 0 2px;
-}
-.nav-topo-pill {
-  flex-shrink: 0;
-  padding: 9px 2px;
-  border-bottom: 0.8px solid transparent;
-  font-size: 12.5px;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.34);
+.nav-inf-scroll::-webkit-scrollbar { display: none; }
+.nav-inf-item {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.42);
   text-decoration: none;
-  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
 }
-.nav-topo-pill.ativo { border-bottom-color: #fff; color: #fff; font-weight: 500; }
+.nav-inf-item:active { transform: scale(0.94); }
+.nav-inf-item.ativo {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+@media (hover: hover) {
+  .nav-inf-item:hover { color: rgba(255, 255, 255, 0.75); }
+}
+/* Sem isto, a barra flutuante cobre o fim do conteúdo (e o último item de
+   cada lista fica inalcançável). */
+.app-painel .conteudo {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
 
 /* ----- Cards em destaque (Faturamento hoje / Agenda de hoje) ------------- */
 .dash-azul {
@@ -190,12 +214,22 @@
 /* Rótulo pequeno uppercase acima das seções do painel --------------------- */
 .dash-rotulo { font-size: 10px; font-weight: 600; letter-spacing: 0.16em; color: rgba(255, 255, 255, 0.32) !important; }
 
-/* Métricas (Ocupação/Ticket médio) ------------------------------------------ */
+/* Métricas (Ocupação/Retenção) ---------------------------------------------- */
+.dash-metricas { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 12px; }
+.dash-metrica { display: flex; flex-direction: column; }
+.dash-metrica strong { font-size: 30px; font-weight: 500; line-height: 1; letter-spacing: -0.02em; }
+.dash-metrica span { font-size: 11.5px; color: var(--texto-sutil); margin-top: 8px; }
+.dash-metrica-barra {
+  height: 2px;
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+}
+.dash-metrica-barra > div { height: 100%; background: #fff; border-radius: 2px; }
 .dash-metrica-topo { display: flex; flex-direction: column; gap: 2px; margin-bottom: 0; }
 .dash-metrica-topo span { font-size: 11.5px; color: var(--texto-sutil); order: 2; }
 .dash-metrica-topo strong { font-size: 30px; font-weight: 500; letter-spacing: -0.02em; order: 1; }
 .dash-metrica-legenda { display: none; }
-.dash-metrica { display: flex; flex-direction: column; gap: 6px; }
 
 /* Próximos atendimentos ---------------------------------------------------- */
 .dash-proximos-lista { display: flex; flex-direction: column; }
