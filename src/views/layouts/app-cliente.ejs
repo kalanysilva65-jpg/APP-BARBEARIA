@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %>Cortavo</title>
+    <link rel="stylesheet" href="/css/app-cliente.css" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0d0d0f" />
+    <link rel="apple-touch-icon" href="/app-icon.svg" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  </head>
+  <body class="ac-body">
+    <% if (typeof flash !== 'undefined' && flash) { %>
+      <div class="ac-flash ac-flash--<%= flash.tipo %>"><%= flash.texto %></div>
+    <% } %>
+    <%- body %>
+
+    <% if (typeof abaAtiva !== 'undefined' && abaAtiva) { %>
+      <%
+        var abas = [
+          { chave: 'home', label: 'Home', href: '/conta' },
+          { chave: 'busca', label: 'Busca', href: '/conta/busca' },
+          { chave: 'agenda', label: 'Agenda', href: '/conta/agendamentos' },
+          { chave: 'perfil', label: 'Perfil', href: '/conta/perfil' },
+        ];
+      %>
+      <nav class="ac-tabbar <%= typeof tabbarDark !== 'undefined' && tabbarDark ? 'ac-tabbar--dark' : '' %>" aria-label="Navegação do app">
+        <% abas.forEach(function (aba) { %>
+          <a href="<%= aba.href %>" class="ac-tabbar-item <%= abaAtiva === aba.chave ? 'ativo' : '' %>">
+            <div class="ac-tabbar-label"><%= aba.label %></div>
+            <div class="ac-tabbar-underline"></div>
+          </a>
+        <% }) %>
+      </nav>
+    <% } %>
+  </body>
+</html>

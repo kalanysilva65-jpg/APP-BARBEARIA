@@ -86,10 +86,4 @@ function logout(req, res) {
   res.redirect('/conta/entrar');
 }
 
-// GET /conta — placeholder da Fase 0: prova que a sessão funciona. Na Fase 1
-// isto vira a home/marketplace do app do cliente.
-function inicio(req, res) {
-  res.render('conta/inicio', { layout: 'layouts/blank', titulo: 'Minha conta', conta: req.session.contaCliente });
-}
-
-module.exports = { mostrarLogin, mostrarCadastro, cadastrar, login, logout, inicio };
+module.exports = { mostrarLogin, mostrarCadastro, cadastrar, login, logout };

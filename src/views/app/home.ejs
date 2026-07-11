@@ -1,0 +1,45 @@
+<div class="ac-screen">
+  <div class="ac-pad" style="padding-top:24px;">
+    <div class="ac-wordmark">CORTAVO</div>
+  </div>
+
+  <% if (busca) { %>
+    <div class="ac-pad" style="padding-top:28px;">
+      <form method="GET" action="/conta/busca">
+        <input class="ac-search" type="search" name="q" value="<%= termo %>"
+          placeholder="Buscar barbearia" autofocus
+          style="width:100%;padding:14px 16px;border:1px solid var(--line-light);font:400 14px var(--font-ui);background:none;color:var(--ink-light);" />
+      </form>
+      <div class="ac-meta" style="margin-top:20px;"><%= barbearias.length %> <%= barbearias.length === 1 ? 'resultado' : 'resultados' %></div>
+    </div>
+  <% } else { %>
+    <div class="ac-pad" style="padding:44px 20px 30px;">
+      <div class="ac-eyebrow" style="margin-bottom:16px;">SÃO PAULO</div>
+      <div class="ac-display">Barbearias<br />perto de você</div>
+    </div>
+  <% } %>
+
+  <hr class="ac-hr" />
+
+  <% if (barbearias.length === 0) { %>
+    <div class="ac-pad" style="padding-top:40px;">
+      <p class="ac-body-text">Nenhuma barbearia encontrada.</p>
+    </div>
+  <% } %>
+
+  <% barbearias.forEach(function (b) { %>
+    <a class="ac-shop" href="/conta/b/<%= b.slug %>">
+      <div class="ac-shop-img" style="background:#1c1c1f;"></div>
+      <div class="ac-shop-row">
+        <span class="ac-shop-name"><%= b.nome %></span>
+        <span class="ac-shop-dist"><%= b.local %></span>
+      </div>
+      <div style="margin-top:8px;">
+        <span class="ac-live <%= b.abertaHoje ? 'ac-live--on' : 'ac-live--off' %>">
+          <span class="ac-live-dot"></span>
+          <span class="ac-live-label"><%= b.abertaHoje ? 'Aberta hoje' : 'Fechada hoje' %></span>
+        </span>
+      </div>
+    </a>
+  <% }) %>
+</div>

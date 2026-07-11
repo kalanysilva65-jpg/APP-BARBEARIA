@@ -1,0 +1,18 @@
+<div class="ac-screen">
+  <div class="ac-pad" style="padding-top:44px;text-align:center;">
+    <div style="width:84px;height:84px;border-radius:50%;background:var(--dn-gray-200);margin:0 auto;display:flex;align-items:center;justify-content:center;font:400 30px var(--font-display);color:var(--ink-light);">
+      <%= conta.nome.charAt(0).toUpperCase() %>
+    </div>
+    <div style="font:400 22px var(--font-display);margin-top:18px;"><%= conta.nome %></div>
+    <div class="ac-meta" style="margin-top:8px;"><%= conta.email %></div>
+  </div>
+
+  <div class="ac-pad" style="padding-top:36px;">
+    <a class="ac-list-row" href="/conta/agendamentos"><span style="font:400 14px var(--font-ui);">Meus agendamentos</span><span style="color:var(--ink-soft-light);">›</span></a>
+    <form method="POST" action="/conta/sair">
+      <button type="submit" class="ac-list-row" style="width:100%;background:none;border:none;border-bottom:1px solid var(--line-light);cursor:pointer;">
+        <span style="font:400 14px var(--font-ui);color:var(--ink-soft-light);">Sair</span>
+      </button>
+    </form>
+  </div>
+</div>

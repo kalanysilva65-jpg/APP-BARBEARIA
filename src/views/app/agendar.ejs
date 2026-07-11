@@ -1,0 +1,112 @@
+<%
+  function urlCom(over) {
+    var q = { servicos: servicosStr, barbeiro: barbeiro ? barbeiro.id : '', data: dataSel || '' };
+    Object.assign(q, over);
+    return '/conta/b/' + barbearia.slug + '/agendar?' + new URLSearchParams(q).toString();
+  }
+%>
+<div class="ac-screen">
+  <div class="ac-pad" style="padding-top:20px;">
+    <a class="ac-icon-btn" href="/conta/b/<%= barbearia.slug %>" aria-label="Voltar">←</a>
+  </div>
+
+  <div class="ac-pad" style="padding-top:24px;">
+    <div class="ac-eyebrow" style="margin-bottom:12px;">Agendar horário</div>
+    <div class="ac-item-title"><%= servicos.map(function (s) { return s.nome; }).join(' + ') %></div>
+  </div>
+
+  <div class="ac-pad" style="display:flex;justify-content:space-between;padding:16px 20px;margin-top:10px;border-top:1px solid var(--line-light);border-bottom:1px solid var(--line-light);">
+    <span style="font:400 14px var(--font-ui);"><%= duracaoTotal %> min</span>
+    <span style="font:400 15px var(--font-ui);"><%= fmtBRL(valorTotal) %></span>
+  </div>
+
+  <!-- Profissional -->
+  <div class="ac-pad" style="padding-top:26px;">
+    <div class="ac-eyebrow" style="margin-bottom:16px;">Profissional</div>
+    <div class="ac-people">
+      <% barbeiros.forEach(function (b) { %>
+        <a class="ac-person <%= barbeiro && b.id === barbeiro.id ? 'sel' : '' %>" href="<%= urlCom({ barbeiro: b.id, data: '' }) %>">
+          <span class="ac-person-ring">
+            <span class="ac-person-face">
+              <% if (b.fotoUrl) { %><img src="<%= b.fotoUrl %>" alt="<%= b.nome %>" /><% } %>
+            </span>
+          </span>
+          <span class="ac-person-name"><%= b.nome %></span>
+        </a>
+      <% }) %>
+    </div>
+  </div>
+
+  <% if (!barbeiro) { %>
+    <div class="ac-pad" style="padding-top:26px;"><p class="ac-body-text">Esta barbearia ainda não tem profissionais disponíveis.</p></div>
+  <% } else if (datas.length === 0) { %>
+    <div class="ac-pad" style="padding-top:26px;"><p class="ac-body-text">Sem dias disponíveis para agendar com <%= barbeiro.nome %>.</p></div>
+  <% } else { %>
+    <!-- Dias -->
+    <div class="ac-pad" style="padding-top:26px;">
+      <div class="ac-eyebrow" style="margin-bottom:16px;"><%= mesLabel %></div>
+      <div class="ac-days">
+        <% datas.forEach(function (d) { %>
+          <a class="ac-day <%= d.iso === dataSel ? 'sel' : '' %>" href="<%= urlCom({ data: d.iso }) %>">
+            <div class="ac-day-dow"><%= d.dow %></div>
+            <div class="ac-day-n"><%= d.n %></div>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Horários -->
+    <form method="POST" action="/conta/b/<%= barbearia.slug %>/agendar" id="form-hora">
+      <input type="hidden" name="servicos" value="<%= servicosStr %>" />
+      <input type="hidden" name="barbeiro" value="<%= barbeiro.id %>" />
+      <input type="hidden" name="data" value="<%= dataSel %>" />
+      <input type="hidden" name="hora" id="hora-input" />
+
+      <% function grade(titulo, lista) { %>
+        <% if (lista.length) { %>
+          <div class="ac-pad" style="padding-top:26px;">
+            <div class="ac-eyebrow" style="margin-bottom:16px;"><%= titulo %></div>
+            <div class="ac-slots">
+              <% lista.forEach(function (h) { %>
+                <% if (h.livre) { %>
+                  <button type="button" class="ac-slot" data-hora="<%= h.hora %>"><%= h.hora %></button>
+                <% } else { %>
+                  <button type="button" class="ac-slot off" disabled><%= h.hora %></button>
+                <% } %>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+      <% } %>
+      <%- grade('Manhã', manha) %>
+      <%- grade('Tarde', tarde) %>
+    </form>
+  <% } %>
+</div>
+
+<% if (barbeiro && datas.length) { %>
+  <div class="ac-actionbar">
+    <div>
+      <div class="ac-meta" id="quando-label">Escolha um horário</div>
+      <div class="ac-actionbar-total"><%= fmtBRL(valorTotal) %></div>
+    </div>
+    <button type="submit" form="form-hora" class="ac-btn" id="btn-confirmar" aria-disabled="true">Confirmar</button>
+  </div>
+
+  <script>
+    // Delegação: qualquer clique num horário livre (.ac-slot sem [disabled])
+    // seleciona-o. Evita gerar `onclick` inline no EJS — que escaparia as aspas.
+    document.querySelectorAll('.ac-slot:not([disabled])').forEach(function (el) {
+      el.addEventListener('click', function () {
+        document.querySelectorAll('.ac-slot.sel').forEach(function (e) { e.classList.remove('sel'); });
+        el.classList.add('sel');
+        document.getElementById('hora-input').value = el.dataset.hora;
+        document.getElementById('quando-label').textContent = 'Às ' + el.dataset.hora;
+        document.getElementById('btn-confirmar').setAttribute('aria-disabled', 'false');
+      });
+    });
+    document.getElementById('form-hora').addEventListener('submit', function (e) {
+      if (!document.getElementById('hora-input').value) e.preventDefault();
+    });
+  </script>
+<% } %>

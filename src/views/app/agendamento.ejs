@@ -1,0 +1,25 @@
+<div class="ac-screen">
+  <div class="ac-pad" style="padding-top:20px;">
+    <a class="ac-icon-btn" href="/conta/agendamentos" aria-label="Voltar">←</a>
+  </div>
+
+  <div class="ac-pad" style="padding-top:44px;">
+    <div class="ac-live ac-live--on" style="margin-bottom:18px;">
+      <span class="ac-live-dot"></span>
+      <span class="ac-live-label">Agendamento confirmado</span>
+    </div>
+    <div class="ac-page-title"><%= ag.itens.map(function (i) { return i.servico.nome; }).join(' + ') %></div>
+  </div>
+
+  <div class="ac-pad" style="padding-top:30px;">
+    <div class="ac-list-row"><span class="ac-meta">Barbearia</span><span style="font:400 14px var(--font-ui);"><%= ag.barbearia.nome %></span></div>
+    <div class="ac-list-row"><span class="ac-meta">Profissional</span><span style="font:400 14px var(--font-ui);"><%= ag.usuario.nome %></span></div>
+    <div class="ac-list-row"><span class="ac-meta">Quando</span><span style="font:400 14px var(--font-ui);"><%= dataExtenso %> · <%= ag.horaInicio %></span></div>
+    <div class="ac-list-row"><span class="ac-meta">Pagamento</span><span style="font:400 14px var(--font-ui);">Na barbearia</span></div>
+    <div class="ac-list-row" style="border-bottom:none;"><span class="ac-meta">Total</span><span style="font:400 17px var(--font-ui);"><%= fmtBRL(ag.valorTotal) %></span></div>
+  </div>
+
+  <div class="ac-pad" style="padding-top:30px;">
+    <a href="/conta/agendamentos" class="ac-btn ac-btn--block">Ver meus agendamentos</a>
+  </div>
+</div>

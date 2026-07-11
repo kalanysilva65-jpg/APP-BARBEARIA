@@ -1,0 +1,68 @@
+<div class="ac-screen">
+  <div class="ac-pad" style="padding-top:20px;">
+    <a class="ac-icon-btn" href="/conta" aria-label="Voltar">←</a>
+  </div>
+
+  <div class="ac-shop-img" style="background:#1c1c1f;margin-top:18px;"></div>
+
+  <div class="ac-pad" style="padding-top:26px;">
+    <div class="ac-eyebrow" style="margin-bottom:10px;"><%= local %></div>
+    <div class="ac-page-title"><%= barbearia.nome %></div>
+  </div>
+
+  <div class="ac-pad" style="padding-top:20px;">
+    <div class="ac-tabs"><span class="ac-tab ativo">Serviços</span></div>
+  </div>
+
+  <% if (servicos.length === 0) { %>
+    <div class="ac-pad" style="padding-top:24px;"><p class="ac-body-text">Esta barbearia ainda não cadastrou serviços.</p></div>
+  <% } else { %>
+    <div class="ac-pad" style="padding-top:24px;">
+      <div class="ac-meta">Toque para selecionar — pode escolher mais de um</div>
+    </div>
+
+    <form method="GET" action="/conta/b/<%= barbearia.slug %>/agendar" id="form-svc">
+      <div class="ac-pad ac-svc-grid" style="padding-top:12px;">
+        <% servicos.forEach(function (s) { %>
+          <button type="button" class="ac-svc" data-id="<%= s.id %>" data-valor="<%= s.valor %>" onclick="toggleSvc(this)">
+            <span class="ac-svc-mono"><%= s.iniciais %></span>
+            <span class="ac-svc-name"><%= s.nome %></span>
+            <span class="ac-svc-meta"><%= fmtBRL(s.valor) %> · <%= s.duracaoMin %> MIN</span>
+            <span class="ac-svc-check" style="display:none;"><span></span></span>
+          </button>
+        <% }) %>
+      </div>
+      <input type="hidden" name="servicos" id="servicos-input" />
+    </form>
+  <% } %>
+</div>
+
+<div class="ac-actionbar" id="actionbar" style="display:none;">
+  <div>
+    <div class="ac-meta" id="sel-count">0 serviços</div>
+    <div class="ac-actionbar-total" id="sel-total">R$ 0,00</div>
+  </div>
+  <button type="submit" form="form-svc" class="ac-btn" onclick="prepararEnvio()">Agendar horário</button>
+</div>
+
+<script>
+  var selecionados = [];
+  function brl(c) { return (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+  function toggleSvc(el) {
+    var id = el.dataset.id;
+    var i = selecionados.indexOf(id);
+    if (i >= 0) { selecionados.splice(i, 1); el.classList.remove('sel'); el.querySelector('.ac-svc-check').style.display = 'none'; }
+    else { selecionados.push(id); el.classList.add('sel'); el.querySelector('.ac-svc-check').style.display = 'flex'; }
+    atualizar();
+  }
+  function atualizar() {
+    var bar = document.getElementById('actionbar');
+    if (!selecionados.length) { bar.style.display = 'none'; return; }
+    var total = 0;
+    document.querySelectorAll('.ac-svc.sel').forEach(function (e) { total += Number(e.dataset.valor); });
+    document.getElementById('sel-count').textContent = selecionados.length + (selecionados.length === 1 ? ' serviço' : ' serviços');
+    document.getElementById('sel-total').textContent = brl(total);
+    bar.style.display = 'flex';
+  }
+  function prepararEnvio() { document.getElementById('servicos-input').value = selecionados.join(','); }
+</script>
