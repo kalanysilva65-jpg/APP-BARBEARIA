@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const prisma = require('../config/db');
 const { caminhoDoUpload } = require('../config/paths');
+const { geocodificar } = require('../services/geocodificacao');
 
 // Normaliza um slug de subdomínio: minúsculas, sem acentos, só [a-z0-9-].
 function normalizarSlug(s) {
@@ -132,7 +133,7 @@ async function detalhe(req, res) {
   });
 }
 
-// POST /mestre/barbearias/:id — atualiza nome/slug/ativo.
+// POST /mestre/barbearias/:id — atualiza nome/slug/ativo/endereço.
 async function atualizarBarbearia(req, res) {
   const barbearia = await carregarBarbearia(req, res);
   if (!barbearia) return;
@@ -140,6 +141,7 @@ async function atualizarBarbearia(req, res) {
   const nome = (req.body.nome || '').trim();
   const slug = normalizarSlug(req.body.slug || nome);
   const ativo = req.body.ativo === 'on';
+  const endereco = (req.body.endereco || '').trim() || null;
 
   if (!nome || !slug) {
     req.session.flash = { tipo: 'erro', texto: 'Nome e subdomínio são obrigatórios.' };
@@ -151,8 +153,31 @@ async function atualizarBarbearia(req, res) {
     return res.redirect('/mestre/barbearias/' + barbearia.id);
   }
 
-  await prisma.barbearia.update({ where: { id: barbearia.id }, data: { nome, slug, ativo } });
-  req.session.flash = { tipo: 'sucesso', texto: 'Barbearia atualizada.' };
+  const dados = { nome, slug, ativo, endereco };
+
+  // Só geocodifica quando o endereço muda (evita bater no Nominatim à toa e
+  // preserva as coordenadas se o texto continuou igual). Endereço apagado zera
+  // as coordenadas — a barbearia sai da busca "perto de você".
+  let avisoGeo = '';
+  if (endereco !== barbearia.endereco) {
+    if (!endereco) {
+      dados.latitude = null;
+      dados.longitude = null;
+    } else {
+      const geo = await geocodificar(endereco);
+      if (geo) {
+        dados.latitude = geo.latitude;
+        dados.longitude = geo.longitude;
+      } else {
+        dados.latitude = null;
+        dados.longitude = null;
+        avisoGeo = ' Não consegui localizar esse endereço no mapa — confira e salve de novo para aparecer na busca do app.';
+      }
+    }
+  }
+
+  await prisma.barbearia.update({ where: { id: barbearia.id }, data: dados });
+  req.session.flash = { tipo: avisoGeo ? 'erro' : 'sucesso', texto: 'Barbearia atualizada.' + avisoGeo };
   res.redirect('/mestre/barbearias/' + barbearia.id);
 }
 

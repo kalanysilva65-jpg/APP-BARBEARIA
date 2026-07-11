@@ -112,6 +112,7 @@ app.get('/manifest.webmanifest', (req, res) => {
 
 // --- Rotas ----------------------------------------------------------------
 app.use('/', require('./routes/auth'));
+app.use('/conta', require('./routes/conta')); // conta de cliente (app do marketplace)
 app.use('/agendar', require('./routes/agendar')); // área pública do cliente
 app.use('/painel', require('./routes/painel'));
 app.use('/mestre', require('./routes/mestre')); // painel-mestre (dono do sistema)

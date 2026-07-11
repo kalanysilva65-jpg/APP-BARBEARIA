@@ -27,6 +27,11 @@ model Barbearia {
   nome     String
   slug     String   @unique // subdomínio: <slug>.seuapp.com
   ativo    Boolean  @default(true)
+  // Endereço e coordenadas (para a busca "perto de você" no app do cliente).
+  // lat/lng são preenchidos automaticamente ao salvar o endereço (geocodificação).
+  endereco  String?
+  latitude  Float?
+  longitude Float?
   criadoEm DateTime @default(now()) @map("criado_em")
 
   usuarios           Usuario[]
@@ -150,18 +155,40 @@ model Agendamento {
   horaInicio      String   @map("hora_inicio")
   status          String   @default("agendado") // agendado | concluido | cancelado
   valorTotal      Int      @default(0) @map("valor_total") // centavos, recalculado pelos itens
-  clienteId       Int?     @map("cliente_id") // vínculo opcional ao cadastro de clientes
+  clienteId       Int?     @map("cliente_id") // vínculo opcional ao cadastro LOCAL (CRM) da barbearia
+  contaClienteId  Int?     @map("conta_cliente_id") // conta GLOBAL do app do cliente (marketplace)
   clientePlanoId  Int?     @map("cliente_plano_id") // assinatura usada (agendamento via plano)
   criadoEm        DateTime @default(now()) @map("criado_em")
 
   barbearia    Barbearia         @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   usuario      Usuario           @relation(fields: [usuarioId], references: [id])
   cliente      Cliente?          @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  contaCliente ContaCliente?     @relation(fields: [contaClienteId], references: [id], onDelete: SetNull)
   clientePlano ClientePlano?     @relation(fields: [clientePlanoId], references: [id], onDelete: SetNull)
   itens        AgendamentoItem[]
   caixa        Caixa[]
 
   @@map("agendamentos")
+}
+
+/// Conta de cliente do MARKETPLACE (app do cliente). GLOBAL: um login por e-mail
+/// funciona em QUALQUER barbearia. NÃO confundir com `Cliente`, que é o cadastro
+/// LOCAL (CRM) de cada barbearia, chaveado por telefone. Ao agendar por uma conta,
+/// o sistema garante um `Cliente` local correspondente para o painel/planos daquela
+/// barbearia continuarem funcionando (o `Agendamento` guarda os dois vínculos).
+model ContaCliente {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  email     String   @unique // único no sistema inteiro (não por barbearia)
+  senhaHash String   @map("senha_hash")
+  telefone  String? // normalizado: apenas dígitos
+  fotoUrl   String?  @map("foto_url")
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  agendamentos Agendamento[]
+
+  @@map("contas_cliente")
 }
 
 /// Cadastro de clientes. Telefone guardado normalizado (só dígitos), único por barbearia.

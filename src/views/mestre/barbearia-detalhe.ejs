@@ -25,6 +25,17 @@
         <input id="slug" name="slug" value="<%= barbearia.slug %>" required />
       </div>
     </div>
+    <div class="campo mt-16">
+      <label for="endereco">Endereço</label>
+      <input id="endereco" name="endereco" value="<%= barbearia.endereco || '' %>" placeholder="Rua, número, bairro, cidade — SP" />
+      <small class="texto-sutil">Usado na busca "perto de você" do app do cliente. Ao salvar, localizamos no mapa automaticamente.
+        <% if (barbearia.latitude && barbearia.longitude) { %>
+          <span style="color:var(--verde,#22c55e)">✓ Localizada no mapa.</span>
+        <% } else if (barbearia.endereco) { %>
+          <span style="color:#e5a">Ainda não localizada — confira o endereço.</span>
+        <% } %>
+      </small>
+    </div>
     <label class="flex gap-8" style="align-items:center;margin-top:8px;">
       <input type="checkbox" name="ativo" <%= barbearia.ativo ? 'checked' : '' %> />
       <span>Barbearia ativa (desmarcada, o login e o agendamento ficam bloqueados)</span>

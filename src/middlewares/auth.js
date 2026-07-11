@@ -44,4 +44,17 @@ function exigeDono(req, res, next) {
   next();
 }
 
-module.exports = { exigeLogin, exigeAdmin, exigeDono };
+// --- Conta de cliente (app do marketplace) --------------------------------
+// A conta de cliente é uma sessão SEPARADA da equipe: vive em
+// `req.session.contaCliente`, nunca em `req.session.usuario`. Assim um cliente
+// e um membro da equipe podem estar logados no mesmo navegador sem se misturar,
+// e nenhuma rota de cliente concede acesso ao painel (e vice-versa).
+function exigeContaCliente(req, res, next) {
+  if (!req.session.contaCliente) {
+    req.session.flash = { tipo: 'erro', texto: 'Entre na sua conta para continuar.' };
+    return res.redirect('/conta/entrar');
+  }
+  next();
+}
+
+module.exports = { exigeLogin, exigeAdmin, exigeDono, exigeContaCliente };
