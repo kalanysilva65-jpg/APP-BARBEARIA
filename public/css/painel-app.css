@@ -205,11 +205,15 @@
   height: 38px;
   padding: 0 14px 0 10px;
   border-radius: 999px;
-  /* Cinza claro em vez do branco puro do botão primário — mais suave, como na
-     referência (lá era um chip escuro sobre barra clara; aqui invertemos as
-     superfícies, mas mantemos o mesmo espírito "chip macio", não estridente). */
-  background: #dcdce0;
-  color: #111;
+  /* "Vidro" claro e quase transparente sobre a barra escura — mesma linguagem
+     das outras superfícies translúcidas do app (cards, ícone-botão etc.), em
+     vez de um bloco sólido de cor. Como o fundo mal se vê, o texto/ícone
+     precisa ficar BRANCO (não #111) para continuar legível — um cinza sólido
+     clarinho teria contraste suficiente para texto escuro, um vidro quase
+     transparente não tem. */
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
   white-space: nowrap;
 }
 .nav-inf-pill svg { flex: none; }
