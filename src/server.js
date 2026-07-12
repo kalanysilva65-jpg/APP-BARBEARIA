@@ -94,10 +94,14 @@ app.use((req, res, next) => {
 // enviado (se houver) vira o ícone do app.
 app.get('/manifest.webmanifest', (req, res) => {
   const nome = req.barbearia ? req.barbearia.nome : 'Barbearia';
-  const icones = [{ src: '/app-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }];
-  if (res.locals.marcaLogoUrl) {
-    icones.unshift({ src: res.locals.marcaLogoUrl, sizes: '512x512', type: 'image/png', purpose: 'any' });
-  }
+  // Ícones PNG reais (192 e 512) são obrigatórios para o app ser instalável no
+  // Android; o "maskable" evita o corte feio no ícone adaptativo. O SVG não vale
+  // como ícone de instalação (Android ignora; iOS usa o apple-touch-icon PNG).
+  const icones = [
+    { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+    { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+  ];
   res.type('application/manifest+json').json({
     name: nome,
     short_name: nome.length > 12 ? nome.slice(0, 12) : nome,

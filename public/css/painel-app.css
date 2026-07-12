@@ -41,6 +41,11 @@
   background: rgba(13, 13, 15, 0.85);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  /* Instalado (standalone), a status bar sobrepõe o conteúdo (black-translucent).
+     Sem isto o "CORTAVO" e a foto colam na borda de cima / no notch. O inset é 0
+     no navegador comum, então não muda nada lá. O +8px garante um respiro mínimo
+     mesmo em telas sem notch. */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
 }
 
 /* ----- Cabeçalho: marca + avatar, depois título da página --------------- */
