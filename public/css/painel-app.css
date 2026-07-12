@@ -123,10 +123,8 @@
 /* ----- Navegação: barra flutuante de ícones, fixa no rodapé --------------
    Pílula escura e translúcida, rolável na horizontal (temos até 10 abas — não
    cabem todas de uma vez, diferente de uma barra de 4 itens fixos). A aba
-   ATIVA ganha uma pílula clara com ícone + nome; as inativas são só o ícone.
-   A cor de preenchimento da pílula ativa é a MESMA do botão primário do app
-   (--azul: #ffffff, texto #111) — não é uma cor nova, é o padrão que o app
-   já usa em todo lugar para "elemento preenchido/em destaque".
+   ATIVA ganha uma pílula clara (cinza claro, não branco puro) com ícone +
+   nome; as inativas são só o ícone.
 
    Não há `gap` entre os ícones inativos de propósito: o vão viraria uma faixa
    morta entre dois alvos de toque. Cada item carrega o próprio respiro (é
@@ -153,11 +151,15 @@
 .nav-inf-scroll {
   display: flex;
   align-items: center;
-  /* O respiro lateral é o que permite a PRIMEIRA e a ÚLTIMA aba chegarem ao
-     centro. Sem ele o scroll trava antes, e a aba ativa nas pontas (Início,
-     Perfil) fica na borda — logo debaixo do fade, apagada justamente quando
-     é a atual. */
-  padding: var(--nav-pad) calc((var(--nav-w) - var(--nav-item)) / 2);
+  /* Respiro lateral pequeno — só o bastante pra sair da região de fade abaixo
+     (22px). Um respiro do tamanho de "meia barra" (como era antes, para
+     permitir centralizar QUALQUER aba, inclusive as das pontas) sobra como
+     vazio visível quando a aba ativa é a primeira ou a última: o scroll trava
+     em 0 (ou no máximo) e aquele respiro grande fica exposto como um buraco
+     na barra — é o que acontecia ao abrir direto no Início. Abas do meio
+     continuam centralizando normalmente: o respiro das pontas não entra na
+     conta delas, só limita o quanto as abas-ponta se afastam da borda. */
+  padding: var(--nav-pad) 22px;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
@@ -201,7 +203,10 @@
   height: 38px;
   padding: 0 16px 0 12px;
   border-radius: 999px;
-  background: var(--azul);
+  /* Cinza claro em vez do branco puro do botão primário — mais suave, como na
+     referência (lá era um chip escuro sobre barra clara; aqui invertemos as
+     superfícies, mas mantemos o mesmo espírito "chip macio", não estridente). */
+  background: #dcdce0;
   color: #111;
   white-space: nowrap;
 }
