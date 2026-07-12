@@ -121,24 +121,27 @@
 .app-painel textarea:focus { border-color: rgba(255, 255, 255, 0.3); }
 
 /* ----- Navegação: barra flutuante de ícones, fixa no rodapé --------------
-   Estilo Cosmos: pílula estreita e centralizada, mostrando ~3 ícones por vez.
+   Pílula escura e translúcida, rolável na horizontal (temos até 10 abas — não
+   cabem todas de uma vez, diferente de uma barra de 4 itens fixos). A aba
+   ATIVA ganha uma pílula clara com ícone + nome; as inativas são só o ícone.
+   A cor de preenchimento da pílula ativa é a MESMA do botão primário do app
+   (--azul: #ffffff, texto #111) — não é uma cor nova, é o padrão que o app
+   já usa em todo lugar para "elemento preenchido/em destaque".
 
-   Não há `gap` entre os ícones de propósito: o vão viraria uma faixa morta
-   entre dois alvos de toque. Cada item carrega o próprio respiro (é mais largo
-   que o ícone), então a barra inteira é clicável e o espaçamento visual
-   continua sendo --nav-item menos o tamanho do ícone.
-
-   As medidas dependem uma da outra — mexer numa exige refazer a conta:
-   3 itens (3 x 56) + padding (2 x 6) = 180px.                                */
+   Não há `gap` entre os ícones inativos de propósito: o vão viraria uma faixa
+   morta entre dois alvos de toque. Cada item carrega o próprio respiro (é
+   mais largo que o ícone), então a barra inteira é clicável.                */
 .nav-inf {
-  --nav-item: 56px;   /* alvo de toque na horizontal (min. recomendado: 44px) */
-  --nav-alt: 48px;    /* alvo de toque na vertical                            */
+  --nav-item: 56px;   /* alvo de toque dos ícones inativos (mín. recomendado: 44px) */
+  --nav-alt: 48px;    /* altura do alvo de toque */
   --nav-pad: 6px;
-  --nav-w: calc(3 * var(--nav-item) + 2 * var(--nav-pad));
+  --nav-w: calc(3.4 * var(--nav-item) + 2 * var(--nav-pad));
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  /* Mais perto da borda inferior (era 16px) — a safe-area já cuida da faixa
+     de gestos do celular, então não precisa de respiro extra por cima dela. */
+  bottom: calc(6px + env(safe-area-inset-bottom, 0px));
   z-index: 30;
   width: var(--nav-w);
   background: rgba(28, 28, 30, 0.88);
@@ -175,19 +178,43 @@
   justify-content: center;
   scroll-snap-align: center;
   -webkit-tap-highlight-color: transparent;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.45);
   text-decoration: none;
   transition: color 0.18s ease, transform 0.18s ease;
 }
-.nav-inf-item.ativo { color: #fff; }
-.nav-inf-item:active { transform: scale(0.9); }
+.nav-inf-item:active { transform: scale(0.94); }
 @media (hover: hover) {
-  .nav-inf-item:hover { color: rgba(255, 255, 255, 0.7); }
+  .nav-inf-item:hover { color: rgba(255, 255, 255, 0.75); }
+}
+/* A aba ativa cresce para caber o rótulo — largura livre (auto), não mais o
+   --nav-item fixo dos ícones sozinhos. flex:none junto com min-width evita
+   que ela encolha abaixo do alvo de toque mínimo. */
+.nav-inf-item.ativo {
+  flex: none;
+  min-width: var(--nav-item);
+  padding: 0 4px;
+}
+.nav-inf-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 16px 0 12px;
+  border-radius: 999px;
+  background: var(--azul);
+  color: #111;
+  white-space: nowrap;
+}
+.nav-inf-pill svg { flex: none; }
+.nav-inf-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 /* Sem isto, a barra flutuante cobre o fim do conteúdo (e o último item de
    cada lista fica inalcançável). */
 .app-painel .conteudo {
-  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
 }
 
 /* ----- Cards em destaque (Faturamento hoje / Agenda de hoje) ------------- */

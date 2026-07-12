@@ -76,14 +76,22 @@
   <div class="nav-inf-scroll">
     <% abas.forEach(function (aba) { %>
       <% if (!aba.admin || ehAdmin) { %>
+        <%
+          var ehAtiva = ativa(aba);
+          var svg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + icones[aba.nome] + '</svg>';
+        %>
         <a
           href="<%= aba.href %>"
-          class="nav-inf-item <%= ativa(aba) ? 'ativo' : '' %>"
+          class="nav-inf-item <%= ehAtiva ? 'ativo' : '' %>"
           title="<%= aba.nome %>"
           aria-label="<%= aba.nome %>"
-          <%= ativa(aba) ? 'aria-current="page"' : '' %>
+          <%= ehAtiva ? 'aria-current="page"' : '' %>
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><%- icones[aba.nome] %></svg>
+          <% if (ehAtiva) { %>
+            <span class="nav-inf-pill"><%- svg %><span class="nav-inf-label"><%= aba.nome %></span></span>
+          <% } else { %>
+            <%- svg %>
+          <% } %>
         </a>
       <% } %>
     <% }) %>
