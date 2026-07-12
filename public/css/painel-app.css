@@ -151,15 +151,16 @@
 .nav-inf-scroll {
   display: flex;
   align-items: center;
-  /* Respiro lateral pequeno — só o bastante pra sair da região de fade abaixo
-     (22px). Um respiro do tamanho de "meia barra" (como era antes, para
-     permitir centralizar QUALQUER aba, inclusive as das pontas) sobra como
-     vazio visível quando a aba ativa é a primeira ou a última: o scroll trava
-     em 0 (ou no máximo) e aquele respiro grande fica exposto como um buraco
-     na barra — é o que acontecia ao abrir direto no Início. Abas do meio
+  /* Respiro lateral mínimo — só para o dedo não tocar exatamente na borda
+     arredondada da barra. Um respiro maior (testado: 73px, depois 22px) sobra
+     como vazio visível quando a aba ativa é a primeira ou a última: o scroll
+     trava em 0 (ou no máximo) e aquele respiro fica exposto como um buraco na
+     barra — é o que acontecia ao abrir direto no Início. Abas do meio
      continuam centralizando normalmente: o respiro das pontas não entra na
-     conta delas, só limita o quanto as abas-ponta se afastam da borda. */
-  padding: var(--nav-pad) 22px;
+     conta delas, só limita o quanto as abas-ponta se afastam da borda. A
+     borda do ícone/pílula da ponta fica sob um fiapo do fade (abaixo) — é
+     preferível a deixar um vazio. */
+  padding: var(--nav-pad) 8px;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
@@ -167,9 +168,11 @@
   scrollbar-width: none;
   scroll-snap-type: x mandatory;
   border-radius: inherit;
-  /* Desbota as pontas: sinaliza que a barra continua para os lados. */
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 22px, #000 calc(100% - 22px), transparent 100%);
+  /* Desbota as pontas: sinaliza que a barra continua para os lados. Curto de
+     propósito (10px) — com o respiro lateral pequeno (8px), um fade largo
+     apagaria o próprio ícone da aba-ponta quando ela é a ativa. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 10px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 10px), transparent 100%);
 }
 .nav-inf-scroll::-webkit-scrollbar { display: none; }
 .nav-inf-item {
@@ -194,14 +197,13 @@
 .nav-inf-item.ativo {
   flex: none;
   min-width: var(--nav-item);
-  padding: 0 4px;
 }
 .nav-inf-pill {
   display: flex;
   align-items: center;
   gap: 7px;
   height: 38px;
-  padding: 0 16px 0 12px;
+  padding: 0 14px 0 10px;
   border-radius: 999px;
   /* Cinza claro em vez do branco puro do botão primário — mais suave, como na
      referência (lá era um chip escuro sobre barra clara; aqui invertemos as
