@@ -33,6 +33,51 @@
   background: var(--fundo);
 }
 
+/* ----- Animações "estilo Zara": discretas, lentas, sem bounce -------------
+   Três camadas independentes:
+   1) Transição entre páginas: usa o @view-transition nativo do navegador
+      (Chrome/Edge 126+; nos demais navegadores cai sem erro, sem transição —
+      progressive enhancement, não precisa de JS nem quebra nada). Cada troca
+      de tela vira um crossfade suave em vez do corte seco padrão.
+   2) Conteúdo entrando: o miolo da página (.conteudo) nasce com fade + leve
+      subida, tanto no primeiro carregamento quanto (via 1) na troca de tela.
+   3) Toque em cards/links: leve "afundar" ao tocar/clicar — só em elementos
+      de fato clicáveis (âncora/botão), nunca em divs estáticas.
+   `prefers-reduced-motion` desliga tudo isto para quem pediu menos movimento. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.45s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes appConteudoIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .app-painel .conteudo {
+    animation: appConteudoIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  a.card:active,
+  a.dash-azul:active,
+  a.linha-simples:active,
+  a.dash-card-linha:active,
+  button.card:active {
+    transform: scale(0.985);
+  }
+}
+a.card,
+a.dash-azul,
+a.linha-simples,
+a.dash-card-linha,
+button.card {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Cabeçalho + nav ficam juntos, fixos no topo, como um único bloco. */
 .app-topo-fixo {
   position: sticky;
