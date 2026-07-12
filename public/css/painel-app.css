@@ -55,7 +55,11 @@
   border-bottom: none;
   box-shadow: none;
 }
-.app-hero { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0 8px; }
+/* padding-top/bottom (não o shorthand `padding: 18px 0 8px`): o shorthand
+   zerava padding-left/right, sobrescrevendo os 16px que o .container (também
+   presente neste elemento) já define — CORTAVO e a foto ficavam colados na
+   borda enquanto "Olá, Bruno" (sem essa regra) mantinha a margem certa. */
+.app-hero { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 18px; padding-bottom: 8px; }
 .app-hero-marca { display: flex; align-items: baseline; gap: 2px; text-decoration: none; }
 .app-hero-marca img { height: 20px; width: auto; display: block; }
 .app-hero-marca--texto {
