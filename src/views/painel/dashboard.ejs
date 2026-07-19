@@ -1,92 +1,114 @@
-<!-- Cards de destaque: faturamento (admin) + agenda de hoje -->
-<div class="dash-hero-grid <%= ehAdmin ? '' : 'dash-hero-grid--1' %>">
-  <% if (ehAdmin) { %>
-    <a href="/painel/caixa" class="dash-azul dash-azul--mini">
-      <div class="dash-azul-label">Faturamento hoje</div>
-      <div class="dash-azul-num"><span class="n"><%= fmtBRL(ganhoHoje) %></span></div>
-      <div class="dash-azul-rodape">
-        <span class="dash-azul-prox"><%= concluidosHoje %> atendimento<%= concluidosHoje === 1 ? '' : 's' %></span>
-        <span class="dash-azul-cliente">
-          <% if (variacaoHojeOntem === null) { %>
-            — vs ontem
-          <% } else { %>
-            <%= variacaoHojeOntem >= 0 ? '+' : '' %><%= variacaoHojeOntem %>% vs ontem
-          <% } %>
-        </span>
-      </div>
-    </a>
+<%
+  var barbeariaNome = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
+  var capaUrl = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.capaUrl : null;
+  var papelLabel = ehAdmin ? 'Gestor' : 'Barbeiro';
+%>
+
+<!-- Hero com foto de capa + saudação -->
+<div class="home-hero">
+  <% if (capaUrl) { %>
+    <img class="home-hero-img" src="<%= capaUrl %>" alt="Capa de <%= barbeariaNome %>" />
   <% } %>
-  <a href="/painel/agenda" class="dash-azul dash-azul--mini">
-    <div class="dash-azul-label">Agenda de hoje</div>
-    <div class="dash-azul-num"><span class="n"><%= totalHoje %></span></div>
-    <div class="dash-azul-rodape">
-      <span class="dash-azul-prox"><%= concluidosHoje %> concluído<%= concluidosHoje === 1 ? '' : 's' %></span>
-      <span class="dash-azul-cliente"><%= restantesHoje %> restante<%= restantesHoje === 1 ? '' : 's' %></span>
-    </div>
-  </a>
+  <div class="home-hero-sombra"></div>
+
+  <div class="home-hero-avatar">
+    <form method="POST" action="/painel/perfil/foto" enctype="multipart/form-data" class="app-hero-foto-form">
+      <label class="app-hero-foto" title="Trocar sua foto">
+        <% if (typeof usuarioFotoUrl !== 'undefined' && usuarioFotoUrl) { %>
+          <img src="<%= usuarioFotoUrl %>" alt="Foto de <%= usuario.nome %>" />
+        <% } else { %>
+          <span class="app-hero-foto-inicial"><%= usuario.nome.charAt(0).toUpperCase() %></span>
+        <% } %>
+        <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
+      </label>
+    </form>
+  </div>
+
+  <div class="home-hero-texto">
+    <span class="home-hero-badge"><%= saudacao %> · <%= hojeFormatado %></span>
+    <div class="home-hero-nome"><%= usuario.nome %></div>
+    <div class="home-hero-sub"><%= papelLabel %> · <%= barbeariaNome %></div>
+  </div>
 </div>
 
-<!-- Semana atual (faturamento, admin) -->
-<% if (ehAdmin) { %>
-  <a href="/painel/caixa" class="card mb-16">
-    <span class="dash-rotulo texto-sutil">SEMANA ATUAL</span>
-    <div class="semana mt-16">
-      <% barras.forEach(function (d) { %>
-        <div class="semana-col">
-          <div class="semana-bar <%= d.hoje ? 'hoje' : '' %>" style="height:<%= Math.max(4, Math.round((d.valor / maxBarra) * 72)) %>px" title="<%= fmtBRL(d.valor) %>"></div>
-          <span class="semana-rot <%= d.hoje ? 'hoje' : '' %>"><%= d.rotulo %></span>
-          <% if (d.hoje) { %><span class="semana-rot-dot" style="background:#fff"></span><% } %>
+<div class="home-corpo">
+  <div class="home-bento">
+    <% if (ehAdmin) { %>
+      <!-- Faturamento (card escuro, ocupa 2 linhas) -->
+      <a href="/painel/caixa" class="home-card home-card--fat">
+        <div class="home-card-eyebrow">
+          Hoje<% if (variacaoHojeOntem !== null) { %> · <%= variacaoHojeOntem >= 0 ? '+' : '' %><%= variacaoHojeOntem %>%<% } %>
         </div>
-      <% }) %>
-    </div>
-  </a>
-<% } %>
+        <svg class="home-fat-spark" viewBox="0 0 140 30" preserveAspectRatio="none" aria-hidden="true">
+          <path d="<%= sparkPath %>" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <div>
+          <div class="home-fat-num"><%= fmtBRL(ganhoHoje) %></div>
+          <div class="home-fat-legenda">Faturamento hoje</div>
+        </div>
+      </a>
 
-<!-- Métricas -->
-<div class="card mb-16">
-  <span class="dash-rotulo texto-sutil">MÉTRICAS</span>
-  <div class="dash-metricas">
-    <div class="dash-metrica">
-      <strong><%= produtividade %>%</strong>
-      <span>Ocupação</span>
-      <div class="dash-metrica-barra"><div style="width:<%= Math.min(100, produtividade) %>%"></div></div>
-    </div>
-    <div class="dash-metrica">
-      <strong><%= retencao %>%</strong>
-      <span>Retenção</span>
-      <div class="dash-metrica-barra"><div style="width:<%= Math.min(100, retencao) %>%"></div></div>
-    </div>
-  </div>
-</div>
+      <!-- Ocupação (card branco) -->
+      <a href="/painel/comissoes" class="home-card home-card--branco">
+        <div class="home-card-topo">
+          <span class="home-card-label">Ocupação</span>
+          <span class="home-card-icone"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+        </div>
+        <div class="home-card-num"><%= produtividade %>%</div>
+        <div class="home-bar"><div style="width:<%= Math.min(100, produtividade) %>%"></div></div>
+      </a>
 
-<!-- Próximos atendimentos -->
-<div class="card mb-16">
-  <div class="flex-fim" style="justify-content:space-between;">
-    <span class="dash-rotulo texto-sutil">PRÓXIMOS</span>
-    <a href="/painel/agenda" class="texto-secundario" style="font-size:12px;">Ver agenda</a>
-  </div>
-  <% if (proximosLista.length === 0) { %>
-    <p class="texto-secundario mt-16">Sem próximos atendimentos hoje.</p>
-  <% } else { %>
-    <div class="dash-proximos-lista mt-16">
-      <% proximosLista.forEach(function (p) { %>
-        <div class="dash-proximo-item">
-          <span class="dash-proximo-hora"><%= p.hora %></span>
-          <div class="dash-proximo-info">
-            <span class="dash-proximo-nome"><%= p.nome %></span>
-            <span class="texto-sutil"><%= p.servico %></span>
+      <!-- Cortes hoje + Ticket médio (card branco empilhado) -->
+      <div class="home-card home-card--stack">
+        <a href="/painel/agenda" class="home-stack-item" style="display:block;text-decoration:none;color:inherit;">
+          <div class="home-card-topo">
+            <span class="home-card-label">Cortes hoje</span>
+            <span class="home-card-icone"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
           </div>
+          <div class="home-card-num"><%= concluidosHoje %></div>
+        </a>
+        <div class="home-stack-item">
+          <div class="home-card-topo">
+            <span class="home-card-label">Ticket médio</span>
+          </div>
+          <div class="home-card-num"><%= fmtBRL(ticketMedioHoje) %></div>
         </div>
+      </div>
+    <% } else { %>
+      <!-- Funcionário: sem faturamento. Cortes hoje ocupa o card grande. -->
+      <a href="/painel/agenda" class="home-card home-card--fat">
+        <div class="home-card-eyebrow">Hoje</div>
+        <div>
+          <div class="home-fat-num"><%= totalHoje %></div>
+          <div class="home-fat-legenda">Agendamentos hoje</div>
+        </div>
+      </a>
+      <div class="home-card home-card--branco">
+        <div class="home-card-topo"><span class="home-card-label">Concluídos</span></div>
+        <div class="home-card-num"><%= concluidosHoje %></div>
+      </div>
+      <div class="home-card home-card--branco">
+        <div class="home-card-topo"><span class="home-card-label">Restantes</span></div>
+        <div class="home-card-num"><%= restantesHoje %></div>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Próximos cortes -->
+  <div class="home-secao-titulo">Próximos cortes</div>
+  <% if (proximosLista.length === 0) { %>
+    <div class="home-proximos"><div class="home-vazio">Sem próximos atendimentos hoje.</div></div>
+  <% } else { %>
+    <div class="home-proximos">
+      <% proximosLista.forEach(function (p) { %>
+        <a href="/painel/agenda" class="home-prox-item">
+          <span class="home-prox-hora"><%= p.hora %></span>
+          <span class="home-prox-info">
+            <span class="home-prox-cliente"><%= p.nome %></span>
+            <span class="home-prox-servico"><%= p.servico %></span>
+          </span>
+        </a>
       <% }) %>
     </div>
   <% } %>
 </div>
-
-<!-- Novos clientes -->
-<a href="/painel/clientes" class="card dash-card-linha">
-  <div>
-    <span class="dash-rotulo texto-sutil">NOVOS CLIENTES</span>
-    <div class="texto-sutil mt-16">Últimos 90 dias</div>
-  </div>
-  <div class="dash-novos"><%= novosClientes %></div>
-</a>

@@ -74,6 +74,31 @@
   </form>
 </div>
 
+<!-- Foto de capa (hero da Home do painel) -->
+<div class="card mb-16">
+  <h2>Foto de capa</h2>
+  <p class="texto-secundario">Aparece no topo da Home do painel, atrás da saudação. Sem foto, mostra um fundo escuro padrão.</p>
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/capa" enctype="multipart/form-data" class="form mt-16">
+    <% if (barbearia.capaUrl) { %>
+      <div class="mb-16">
+        <img src="<%= barbearia.capaUrl %>" alt="Capa atual" style="width:100%;max-height:140px;object-fit:cover;border-radius:12px;" />
+      </div>
+    <% } %>
+    <div class="campo">
+      <label for="capa">Imagem (JPG, PNG ou WEBP · máx. 4 MB)</label>
+      <input id="capa" type="file" name="foto" accept="image/*" />
+    </div>
+    <div class="flex gap-8 mt-16">
+      <button class="btn btn-primario btn-sm" type="submit">Salvar capa</button>
+      <% if (barbearia.capaUrl) { %>
+        <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/capa/remover" class="inline">
+          <button class="btn btn-secundario btn-sm" type="submit">Remover capa</button>
+        </form>
+      <% } %>
+    </div>
+  </form>
+</div>
+
 <!-- Equipe -->
 <div class="card mb-16">
   <h2>Equipe (<%= equipe.length %>)</h2>

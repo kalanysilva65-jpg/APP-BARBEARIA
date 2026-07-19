@@ -7,11 +7,11 @@ const upload = require('../middlewares/upload');
 
 router.use(exigeDono);
 
-// Envolve o upload do logo tratando erros com mensagem amigável (volta ao detalhe).
-function uploadLogo(req, res, next) {
+// Envolve o upload de imagem (logo ou capa) tratando erros com mensagem amigável.
+function uploadImagem(req, res, next) {
   upload.single('foto')(req, res, (err) => {
     if (err) {
-      req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload do logo.' };
+      req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload da imagem.' };
       return res.redirect('/mestre/barbearias/' + req.params.id);
     }
     next();
@@ -39,7 +39,11 @@ router.post('/barbearias/:id/equipe/:uid', mestreController.atualizarBarbeiro);
 router.post('/barbearias/:id/equipe/:uid/toggle', mestreController.toggleBarbeiro);
 
 // Marca (logo + powered-by) da barbearia
-router.post('/barbearias/:id/marca', uploadLogo, mestreController.salvarMarca);
+router.post('/barbearias/:id/marca', uploadImagem, mestreController.salvarMarca);
 router.post('/barbearias/:id/marca/remover-logo', mestreController.removerLogo);
+
+// Foto de capa (hero da Home)
+router.post('/barbearias/:id/capa', uploadImagem, mestreController.salvarCapa);
+router.post('/barbearias/:id/capa/remover', mestreController.removerCapa);
 
 module.exports = router;

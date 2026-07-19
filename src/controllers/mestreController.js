@@ -328,6 +328,33 @@ async function removerLogo(req, res) {
   res.redirect('/mestre/barbearias/' + barbearia.id);
 }
 
+// POST /mestre/barbearias/:id/capa — envia/troca a foto de capa (hero da Home).
+async function salvarCapa(req, res) {
+  const barbearia = await carregarBarbearia(req, res);
+  if (!barbearia) return;
+  if (req.file) {
+    const anterior = caminhoDoUpload(barbearia.capaUrl);
+    if (anterior) fs.unlink(anterior, () => {});
+    await prisma.barbearia.update({
+      where: { id: barbearia.id },
+      data: { capaUrl: '/uploads/' + req.file.filename },
+    });
+    req.session.flash = { tipo: 'sucesso', texto: 'Foto de capa atualizada.' };
+  }
+  res.redirect('/mestre/barbearias/' + barbearia.id);
+}
+
+// POST /mestre/barbearias/:id/capa/remover — remove a foto de capa.
+async function removerCapa(req, res) {
+  const barbearia = await carregarBarbearia(req, res);
+  if (!barbearia) return;
+  const anterior = caminhoDoUpload(barbearia.capaUrl);
+  if (anterior) fs.unlink(anterior, () => {});
+  await prisma.barbearia.update({ where: { id: barbearia.id }, data: { capaUrl: null } });
+  req.session.flash = { tipo: 'sucesso', texto: 'Foto de capa removida.' };
+  res.redirect('/mestre/barbearias/' + barbearia.id);
+}
+
 // POST /mestre/entrar/:id — o dono passa a operar uma barbearia (impersonação).
 async function entrar(req, res) {
   const id = Number(req.params.id);
@@ -359,6 +386,8 @@ module.exports = {
   toggleBarbeiro,
   salvarMarca,
   removerLogo,
+  salvarCapa,
+  removerCapa,
   entrar,
   sair,
 };

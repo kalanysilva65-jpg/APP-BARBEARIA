@@ -32,6 +32,7 @@ model Barbearia {
   endereco  String?
   latitude  Float?
   longitude Float?
+  capaUrl   String?  @map("capa_url") // foto de capa do hero da Home (em /uploads)
   criadoEm DateTime @default(now()) @map("criado_em")
 
   usuarios           Usuario[]

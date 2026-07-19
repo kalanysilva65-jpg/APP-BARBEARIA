@@ -132,6 +132,29 @@ async function ver(req, res) {
   // --- Produtividade / ocupação (90 dias) ----------------------------------
   const produtividade = await calcularOcupacao(b, barbeiroIds, d90, amanha0);
 
+  // --- Ticket médio de hoje (faturado ÷ atendimentos concluídos) -----------
+  const ticketMedioHoje = concluidosHoje > 0 ? Math.round(ganhoHoje / concluidosHoje) : 0;
+
+  // --- Saudação pela hora do dia (Bom dia / Boa tarde / Boa noite) ---------
+  const hora = new Date().getHours();
+  const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+
+  // --- Mini-gráfico do faturamento da semana (sparkline) -------------------
+  // Caminho SVG de 0..140 x 0..30 (mesma viewBox do design) a partir das
+  // barras da semana; escala pelo maior valor. Sem dados vira uma linha reta.
+  let sparkPath = 'M0 15 L140 15';
+  if (barras.length > 1) {
+    const maxSpark = Math.max(1, ...barras.map((x) => x.valor));
+    const passo = 140 / (barras.length - 1);
+    sparkPath = barras
+      .map((x, i) => {
+        const px = Math.round(i * passo);
+        const py = Math.round(28 - (x.valor / maxSpark) * 26); // 2..28, invertido (svg y cresce p/ baixo)
+        return `${i === 0 ? 'M' : 'L'}${px} ${py}`;
+      })
+      .join(' ');
+  }
+
   res.render('painel/dashboard', {
     titulo: 'Painel',
     totalHoje,
@@ -146,6 +169,9 @@ async function ver(req, res) {
     novosClientes,
     retencao,
     produtividade,
+    ticketMedioHoje,
+    saudacao,
+    sparkPath,
   });
 }
 
