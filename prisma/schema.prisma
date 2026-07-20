@@ -201,6 +201,7 @@ model Cliente {
   nome           String
   telefone       String // normalizado: apenas dígitos
   dataNascimento DateTime? @map("data_nascimento") // opcional
+  observacoes    String? // nota livre do admin/barbeiro sobre o cliente
   criadoEm       DateTime  @default(now()) @map("criado_em")
 
   barbearia    Barbearia      @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)

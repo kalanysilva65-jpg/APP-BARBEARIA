@@ -1,59 +1,160 @@
-<input type="search" id="busca-cliente" placeholder="Buscar cliente…" class="mb-16 input-busca" oninput="filtrarClientes(this.value)" />
+<%
+  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
+  function _labelVisita(dias) {
+    if (dias === null) return 'sem visitas';
+    if (dias === 0) return 'hoje';
+    if (dias === 1) return 'ontem';
+    return 'há ' + dias + ' dias';
+  }
+%>
 
-<% if (clientes.length === 0) { %>
-  <p class="texto-secundario">Nenhum cliente cadastrado ainda.</p>
-<% } else { %>
-  <div class="linha-simples-lista" id="lista-clientes">
-    <% clientes.forEach(function (c) { %>
-      <a href="/painel/clientes/<%= c.id %>" class="linha-simples" data-nome="<%= c.nome.toLowerCase() %>">
-        <span class="avatar" style="width:32px;height:32px;font-size:11px"><%= c.nome.split(' ').length > 1 ? (c.nome[0] + c.nome.split(' ').slice(-1)[0][0]).toUpperCase() : c.nome.slice(0, 2).toUpperCase() %></span>
-        <span class="linha-simples-info">
-          <span class="linha-simples-titulo"><%= c.nome %></span>
-          <span class="linha-simples-sub"><%= fmtTelefone(c.telefone) %></span>
-        </span>
-      </a>
-    <% }) %>
+<!-- Cabeçalho: aqui a marca vem com um ícone pequeno na frente do nome — é
+     assim no HTML original (diferente das outras telas, que só têm o texto). -->
+<div class="ag2-topo">
+  <div class="ag2-marca-linha">
+    <span class="ag2-avatar-deco"></span>
+    <span class="ag2-marca cl-marca">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8a8a85" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20a6 6 0 0 1 12 0M15.5 20a5 5 0 0 1 5.5-5"/></svg>
+      <%= nomeBarbearia %>
+    </span>
+    <button type="button" class="ag2-add" onclick="toggleNovoCliente()" aria-label="Novo cliente">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
   </div>
-<% } %>
-
-<!-- Botão flutuante: Novo cliente (só nesta tela) -->
-<div class="agenda-fab-wrap">
-  <button type="button" class="agenda-fab" onclick="abrirModal('cliente')" aria-label="Novo cliente">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  </button>
+  <div class="ag2-titulo">Clientes</div>
 </div>
 
-<div class="ag-overlay" id="agm-cliente" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
-    <div class="ag-modal-topo">
-      <div class="ag-modal-nome"><%= editando ? 'Editar cliente' : 'Novo cliente' %></div>
-      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-    </div>
-    <form method="POST" class="form mt-16"
-          action="<%= editando ? '/painel/clientes/' + editando.id : '/painel/clientes' %>">
-      <div class="campo">
-        <label for="nome">Nome</label>
-        <input id="nome" name="nome" value="<%= editando ? editando.nome : '' %>" required />
-      </div>
-      <div class="campo">
-        <label for="telefone">Telefone</label>
-        <input id="telefone" name="telefone" inputmode="tel" placeholder="(51) 99999-9999"
-               value="<%= editando ? fmtTelefone(editando.telefone) : '' %>" required />
-      </div>
-      <div class="campo">
-        <label for="dataNascimento">Data de nascimento (opcional)</label>
-        <input id="dataNascimento" type="date" name="dataNascimento"
-               value="<%= editando && editando.dataNascimento ? new Date(editando.dataNascimento).toISOString().slice(0, 10) : '' %>" />
-      </div>
-      <div class="modal-acoes">
-        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-        <button class="btn btn-primario" type="submit">
-          <%= editando ? 'Salvar' : 'Cadastrar' %>
-        </button>
-      </div>
+<div class="ag2-corpo">
+  <!-- Busca: pílula branca com sombra, é assim no HTML original (não o
+       campo com linha embaixo usado nas outras telas). -->
+  <div class="cl-busca">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#575755" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+    <input type="search" id="cl-busca-input" placeholder="Buscar cliente" oninput="filtrarClientes(this.value)" />
+  </div>
+
+  <!-- Novo cliente: painel que nasce embaixo da busca (não é um pop-up),
+       é assim no HTML original. -->
+  <div class="cl-novo-painel" id="cl-novo-painel" hidden>
+    <div class="cl-novo-titulo">Novo cliente</div>
+    <form method="POST" action="/painel/clientes" class="cl-novo-form">
+      <input name="nome" placeholder="Nome" required />
+      <input name="telefone" inputmode="tel" placeholder="Telefone" required />
+      <button type="submit" class="cl-novo-btn">Adicionar</button>
     </form>
   </div>
+
+  <% if (clientes.length === 0) { %>
+    <div class="ag2-vazio">Nenhum cliente cadastrado ainda.</div>
+  <% } else { %>
+    <div class="cl-grid" id="cl-grid">
+      <% clientes.forEach(function (c) { %>
+        <div class="cl-card" data-nome="<%= c.nome.toLowerCase() %>" onclick="abrirModal(<%= c.id %>)">
+          <span class="cl-avatar"><%= c.iniciais %></span>
+          <span class="cl-info">
+            <span class="cl-nome"><%= c.nome %></span>
+            <span class="cl-sub"><%= c.stats.servicoFavorito || 'sem histórico' %></span>
+            <span class="cl-visita <%= c.stats.sumido ? 'cl-visita--sumido' : '' %>"><%= _labelVisita(c.stats.diasDesdeUltima) %></span>
+          </span>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
 </div>
+
+<!-- Pop-up de detalhe: um por cliente, fundo transparente (igual Estoque/Produtos). -->
+<% clientes.forEach(function (c) { %>
+  <div class="ag-overlay" id="agm-<%= c.id %>" onclick="if(event.target===this)fecharModal(this)">
+    <div class="ag-modal-box cl-modal-box">
+      <div class="cl-modal-topo">
+        <span class="cl-avatar cl-avatar--grande"><%= c.iniciais %></span>
+        <span class="ag-modal-nome"><%= c.nome %></span>
+        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+      </div>
+
+      <div class="cl-stats-grid">
+        <div class="cl-stat">
+          <div class="cl-stat-label">Gasto total</div>
+          <div class="cl-stat-valor"><%= fmtBRL(c.stats.totalGasto) %></div>
+        </div>
+        <div class="cl-stat">
+          <div class="cl-stat-label">Frequência</div>
+          <div class="cl-stat-valor"><%= c.stats.frequenciaDias !== null ? '~' + c.stats.frequenciaDias + ' dias' : '—' %></div>
+        </div>
+        <div class="cl-stat">
+          <div class="cl-stat-label">Serviço favorito</div>
+          <div class="cl-stat-valor"><%= c.stats.servicoFavorito || '—' %></div>
+        </div>
+        <div class="cl-stat">
+          <div class="cl-stat-label">Barbeiro</div>
+          <div class="cl-stat-valor"><%= c.stats.barbeiroFavorito || '—' %></div>
+        </div>
+      </div>
+
+      <form method="POST" action="/painel/clientes/<%= c.id %>" class="form mt-16">
+        <div class="campo">
+          <label for="telefone-<%= c.id %>">Telefone</label>
+          <input id="telefone-<%= c.id %>" name="telefone" value="<%= fmtTelefone(c.telefone) %>" required />
+        </div>
+        <div class="campo">
+          <label for="nascimento-<%= c.id %>">Data de nascimento</label>
+          <input id="nascimento-<%= c.id %>" name="dataNascimento" type="date" value="<%= c.dataNascimento ? new Date(c.dataNascimento).toISOString().slice(0, 10) : '' %>" />
+        </div>
+        <div class="campo">
+          <label for="obs-<%= c.id %>">Observações</label>
+          <input id="obs-<%= c.id %>" name="observacoes" placeholder="Adicionar observação" value="<%= c.observacoes || '' %>" />
+        </div>
+        <div class="modal-acoes">
+          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Fechar</button>
+          <button class="btn btn-primario" type="submit">Salvar</button>
+        </div>
+      </form>
+
+      <% if (c.agendamentos.length > 0) { %>
+        <div class="cl-hist">
+          <div class="cl-hist-titulo">Histórico</div>
+          <% c.agendamentos.slice(0, 8).forEach(function (ag) { %>
+            <div class="cl-hist-linha">
+              <span><%= fmtData(ag.data) %> · <%= ag.itens.length ? ag.itens.map(function (it) { return it.servico.nome; }).join(', ') : '—' %></span>
+              <span class="cl-hist-valor"><%= fmtBRL(ag.valorTotal) %></span>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <div class="cl-planos">
+        <div class="cl-hist-titulo">Plano</div>
+        <% if (c.assinaturas.length > 0) { %>
+          <% c.assinaturas.forEach(function (a) { %>
+            <div class="cl-plano-linha">
+              <span><%= a.plano.nome %> <span class="status <%= a.vigente ? 'status-concluido' : 'status-cancelado' %>"><%= a.vigente ? 'ativo' : 'inativo' %></span></span>
+              <form method="POST" action="/painel/clientes/planos/<%= a.id %>/remover" class="inline" onsubmit="return confirm('Remover este plano do cliente?')">
+                <button class="est-cat-x" title="Remover">×</button>
+              </form>
+            </div>
+          <% }) %>
+        <% } %>
+        <% if (planosDisponiveis.length > 0) { %>
+          <form method="POST" action="/painel/clientes/<%= c.id %>/planos" class="cl-add-plano-form">
+            <select name="planoId" required>
+              <option value="">Adicionar plano…</option>
+              <% planosDisponiveis.forEach(function (p) { %>
+                <option value="<%= p.id %>"><%= p.nome %> — <%= fmtBRL(p.valor) %></option>
+              <% }) %>
+            </select>
+            <input type="hidden" name="dataInicio" value="<%= hojeIso %>" />
+            <button type="submit" class="est-cat-btn est-cat-btn--claro">Adicionar</button>
+          </form>
+        <% } %>
+      </div>
+
+      <div class="flex gap-8 mt-16">
+        <form method="POST" action="/painel/clientes/<%= c.id %>/remover" class="inline" onsubmit="return confirm('Excluir este cliente?')">
+          <button class="btn btn-perigo btn-sm">Excluir cliente</button>
+        </form>
+      </div>
+    </div>
+  </div>
+<% }) %>
 
 <script>
   function abrirModal(id) {
@@ -63,10 +164,16 @@
   function fecharModal(o) {
     if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
   }
+  function toggleNovoCliente() {
+    var p = document.getElementById('cl-novo-painel');
+    if (p) p.hidden = !p.hidden;
+  }
   function filtrarClientes(termo) {
     var t = termo.trim().toLowerCase();
-    document.querySelectorAll('#lista-clientes .linha-simples').forEach(function (r) {
-      r.style.display = r.dataset.nome.indexOf(t) === -1 ? 'none' : 'flex';
+    var grid = document.getElementById('cl-grid');
+    if (!grid) return;
+    Array.prototype.forEach.call(grid.querySelectorAll('.cl-card'), function (card) {
+      card.style.display = card.dataset.nome.indexOf(t) === -1 ? 'none' : '';
     });
   }
   document.addEventListener('keydown', function (e) {
@@ -75,5 +182,4 @@
       document.body.classList.remove('modal-aberto');
     }
   });
-  <% if (editando) { %>abrirModal('cliente');<% } %>
 </script>

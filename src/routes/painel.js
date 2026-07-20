@@ -108,8 +108,6 @@ router.post('/agenda/bloqueios/:id/remover', agendaController.removerBloqueio);
 // --- Clientes (admin + funcionários) --------------------------------------
 // Específicas (/:id/editar, /:id/remover) antes da paramétrica de update (/:id).
 router.get('/clientes', clienteController.listar);
-router.get('/clientes/:id/editar', clienteController.formEditar);
-router.get('/clientes/:id', clienteController.detalhe); // histórico do cliente
 router.post('/clientes/planos/:id/remover', clienteController.removerPlano);
 router.post('/clientes/:id/planos', clienteController.adicionarPlano);
 router.post('/clientes', clienteController.criar);

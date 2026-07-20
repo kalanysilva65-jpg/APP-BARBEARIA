@@ -617,6 +617,9 @@
    Precisa vir DEPOIS da regra genérica acima para ganhar por especificidade. */
 .pg-estoque #agm-novo.ag-overlay, .pg-produtos #agm-novo.ag-overlay, .pg-planos #agm-novo.ag-overlay { background: rgba(10, 10, 10, 0.4); }
 .pg-estoque .ag-overlay:not(#agm-novo), .pg-produtos .ag-overlay:not(#agm-novo), .pg-planos .ag-overlay:not(#agm-novo) { background: transparent; }
+/* Clientes não tem pop-up "novo" (o cadastro é um painel inline, não modal)
+   — todo pop-up aqui é o de detalhe, sempre transparente atrás. */
+.pg-clientes .ag-overlay { background: transparent; }
 
 /* O painel aplica text-transform:uppercase em labels; nas pílulas de pagamento
    o design usa capitalização normal ("Pix", "Crédito"). */
@@ -893,3 +896,133 @@
   font-weight: 600;
 }
 .nav-novo-mais-item:active { background: rgba(255, 255, 255, 0.15); }
+
+/* =========================================================================
+   CLIENTES (.pg-clientes) — marca no cabeçalho tem um ícone junto do nome
+   (só aqui); busca é uma pílula branca com sombra (não o campo com linha
+   embaixo das outras telas); cadastro é um painel que nasce ABAIXO da busca
+   (não um pop-up); grade de 2 colunas com cards QUADRADOS (aspect-ratio:1);
+   pop-up de detalhe é sempre transparente atrás (sem "novo" pra escurecer).
+   ========================================================================= */
+.cl-marca { gap: 6px; }
+
+.cl-busca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 12px 18px;
+  box-shadow: 0 4px 12px rgba(10, 10, 10, 0.05);
+  margin-bottom: 12px;
+}
+.cl-busca input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: #0a0a0a;
+  flex: 1;
+  font-family: inherit;
+}
+.cl-busca input::placeholder { color: #8a8a85; }
+
+.cl-novo-painel {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: homeRiseIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.cl-novo-painel[hidden] { display: none; }
+.cl-novo-titulo { font-size: 13px; font-weight: 700; color: #0a0a0a; }
+.cl-novo-form { display: flex; flex-direction: column; gap: 10px; }
+.cl-novo-form input {
+  font-size: 14px;
+  border: none;
+  background: transparent;
+  border-bottom: 1px solid rgba(10, 10, 10, 0.15);
+  padding-bottom: 6px;
+  font-family: inherit;
+  color: #0a0a0a;
+}
+.cl-novo-btn {
+  text-align: center;
+  background: linear-gradient(135deg, #3a3a40, #111114);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.cl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cl-card {
+  position: relative;
+  background: #fff;
+  border-radius: 18px;
+  padding: 14px 16px;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  animation: homeRiseIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.cl-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #3a3a40, #111114);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-shadow: 0 3px 8px rgba(10, 10, 10, 0.15);
+}
+.cl-info { display: flex; flex-direction: column; }
+.cl-nome { font-size: 17px; font-weight: 700; color: #0a0a0a; letter-spacing: -0.2px; line-height: 1.2; }
+.cl-sub { font-size: 11px; color: #0a0a0a; opacity: 0.6; margin-top: 3px; }
+.cl-visita { font-size: 10px; color: #0a0a0a; opacity: 0.55; margin-top: 6px; }
+.cl-visita--sumido { color: #e36b6b; opacity: 1; font-weight: 700; }
+
+/* Pop-up de detalhe */
+.cl-modal-box { max-height: 80vh; overflow: auto; }
+.cl-modal-topo { display: flex; align-items: center; gap: 12px; }
+.cl-avatar--grande { width: 46px; height: 46px; font-size: 16px; }
+.cl-modal-topo .ag-modal-nome { flex: 1; }
+.cl-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.cl-stat { background: rgba(10, 10, 10, 0.04); border-radius: 12px; padding: 10px 12px; }
+.cl-stat-label { font-size: 10px; color: #8a8a85; }
+.cl-stat-valor { font-size: 14px; font-weight: 700; color: #0a0a0a; margin-top: 2px; }
+.cl-hist,
+.cl-planos { margin-top: 16px; }
+.cl-hist-titulo { font-size: 11px; font-weight: 600; color: #8a8a85; margin-bottom: 6px; }
+.cl-hist-linha { display: flex; justify-content: space-between; font-size: 13px; color: #0a0a0a; margin-top: 6px; }
+.cl-hist-valor { font-weight: 600; }
+.cl-plano-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #0a0a0a;
+  padding: 6px 0;
+}
+.cl-add-plano-form { display: flex; gap: 8px; margin-top: 8px; }
+.cl-add-plano-form select {
+  flex: 1;
+  font-size: 13px;
+  border: none;
+  border-bottom: 1px solid rgba(10, 10, 10, 0.15);
+  background: transparent;
+  color: #0a0a0a;
+  font-family: inherit;
+}
