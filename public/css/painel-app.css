@@ -20,9 +20,13 @@
   --aviso: #fbbf24;
   --agendado: #7f92cf;
   --sombra: none;
+  /* Fonte do sistema (decisão do dono, 2026-07-20): nada de webfont no painel.
+     Sobrescreve também o --fonte do tema-minimal (Plus Jakarta), que vários
+     elementos herdam via var(--fonte) — senão sobrariam trechos na fonte antiga. */
+  --fonte: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--fundo);
   color: var(--texto);
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--fonte);
   position: relative;
 }
 .app-painel::before {

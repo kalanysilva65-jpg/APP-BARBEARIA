@@ -4,12 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Painel' %></title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <%/* O painel usa a fonte do SISTEMA (-apple-system/system-ui) — sem webfont.
+         Além do visual nativo, some uma dependência externa: a tela não depende
+         mais do Google Fonts carregar para renderizar com a tipografia certa. */%>
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/tema-minimal.css" />
     <link rel="stylesheet" href="/css/painel-app.css" />
