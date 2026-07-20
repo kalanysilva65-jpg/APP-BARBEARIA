@@ -243,10 +243,17 @@
       render();
     }
 
+    var cardAlvo = null; // card sob o dedo/cursor no pointerdown (o toque, não o arrasto)
+
     wrap.addEventListener('pointerdown', function (e) {
       startX = e.clientX;
       dragging = true;
       dragX = 0;
+      cardAlvo = e.target.closest('.eq-swipe-card');
+      // setPointerCapture redireciona os eventos seguintes (inclusive o
+      // "click" sintético) pro próprio wrap — então o toque (abrir/trocar de
+      // card) é tratado aqui no pointerup, e NÃO com um listener de "click"
+      // nos cards (nunca dispararia: o alvo do evento vira o wrap).
       wrap.setPointerCapture(e.pointerId);
     });
     wrap.addEventListener('pointermove', function (e) {
@@ -261,19 +268,19 @@
       dragging = false;
       if (delta < -40) irPara(activeIdx + 1);
       else if (delta > 40) irPara(activeIdx - 1);
+      else if (Math.abs(delta) <= 5 && cardAlvo) {
+        // Foi um toque, não um arrasto: abre o card ativo, ou troca pro
+        // card lateral que foi tocado.
+        var i = cards.indexOf(cardAlvo);
+        if (i === activeIdx) abrirModal(cardAlvo.dataset.id);
+        else if (i !== -1) irPara(i);
+      }
       dragX = 0;
+      cardAlvo = null;
       render();
     }
     wrap.addEventListener('pointerup', terminarArrasto);
     wrap.addEventListener('pointercancel', terminarArrasto);
-
-    cards.forEach(function (card, i) {
-      card.addEventListener('click', function () {
-        if (Math.abs(dragX) > 5) return; // era arrasto, não toque
-        if (i === activeIdx) abrirModal(card.dataset.id);
-        else irPara(i);
-      });
-    });
 
     render();
   })();
