@@ -106,9 +106,31 @@ async function verAgenda(req, res) {
   const next = new Date(dataObj);
   next.setDate(next.getDate() + 1);
 
+  // Faixa de dias (design novo): a semana do dia selecionado, de domingo a
+  // sábado, para trocar de data com um toque em vez de setinhas.
+  const MESES_EXT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  const hoje0 = new Date();
+  hoje0.setHours(0, 0, 0, 0);
+  const inicioSemana = new Date(dataObj);
+  inicioSemana.setDate(dataObj.getDate() - dataObj.getDay()); // volta ao domingo
+  const faixaDias = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(inicioSemana);
+    d.setDate(inicioSemana.getDate() + i);
+    faixaDias.push({
+      iso: iso(d),
+      num: d.getDate(),
+      rotulo: DIAS_SEMANA[d.getDay()].slice(0, 3),
+      selecionado: iso(d) === iso(dataObj),
+      ehHoje: d.getTime() === hoje0.getTime(),
+    });
+  }
+
   res.render('painel/agenda', {
     titulo: 'Agenda',
     ehAdmin,
+    faixaDias,
+    mesLabel: MESES_EXT[dataObj.getMonth()],
     agendamentos,
     bloqueios,
     barbeiros,

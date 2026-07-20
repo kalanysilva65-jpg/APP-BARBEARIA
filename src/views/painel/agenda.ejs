@@ -8,39 +8,48 @@
   }
 %>
 
-<!-- Navegação de data -->
-<div class="agenda-data-nav mb-16">
-  <a class="icon-btn" title="Dia anterior"
-     href="/painel/agenda?data=<%= dataPrev %><%= ehAdmin ? '&barbeiro=' + barbeiroSelecionado : '' %>">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-  </a>
-  <form method="GET" action="/painel/agenda" class="agenda-data-form">
-    <% if (ehAdmin) { %><input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" /><% } %>
-    <input type="date" name="data" value="<%= dataStr %>" onchange="this.form.submit()" class="agenda-data-input" />
-  </form>
-  <a class="icon-btn" title="Próximo dia"
-     href="/painel/agenda?data=<%= dataNext %><%= ehAdmin ? '&barbeiro=' + barbeiroSelecionado : '' %>">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-  </a>
-</div>
+<%
+  var qsBarbeiro = ehAdmin ? '&barbeiro=' + barbeiroSelecionado : '';
+%>
 
-<!-- Seletor de barbeiro (avatares) -->
-<% if (ehAdmin) { %>
-  <div class="agenda-barbeiros-scroll mb-16">
-    <div class="agenda-barbeiros">
-      <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=todos" class="agenda-barbeiro-chip">
-        <span class="avatar avatar--lg <%= barbeiroSelecionado === 'todos' ? 'ativo' : '' %>">T</span>
-        <span class="agenda-barbeiro-nome <%= barbeiroSelecionado === 'todos' ? 'ativo' : '' %>">Todos</span>
-      </a>
-      <% barbeiros.forEach(function (b) { %>
-        <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=<%= b.id %>" class="agenda-barbeiro-chip">
-          <span class="avatar avatar--lg <%= barbeiroSelecionado === String(b.id) ? 'ativo' : '' %>"><%= _iniciais(b.nome) %></span>
-          <span class="agenda-barbeiro-nome <%= barbeiroSelecionado === String(b.id) ? 'ativo' : '' %>"><%= b.nome.split(' ')[0] %></span>
-        </a>
-      <% }) %>
+<!-- Cabeçalho: mês + ação, e a semana do dia selecionado -->
+<div class="ag2-topo">
+  <div class="ag2-titulo">Agenda</div>
+  <div class="ag2-topo-linha">
+    <span class="ag2-mes"><%= mesLabel %></span>
+    <%/* Um "+" só: abre o menu com as ações da tela. Antes havia este botão E o
+         flutuante antigo — dois "+" na mesma tela fazendo quase a mesma coisa. */%>
+    <div class="ag2-acoes">
+      <button type="button" class="ag2-add" onclick="this.parentNode.classList.toggle('aberto')" aria-label="Nova ação">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <div class="ag2-menu">
+        <button type="button" onclick="this.closest('.ag2-acoes').classList.remove('aberto');abrirModal('novo')">Novo agendamento</button>
+        <% if (ehAdmin) { %>
+          <button type="button" onclick="this.closest('.ag2-acoes').classList.remove('aberto');abrirModal('bloqueio')">Bloquear horário</button>
+        <% } %>
+      </div>
     </div>
   </div>
-<% } %>
+
+  <div class="ag2-dias">
+    <% faixaDias.forEach(function (d) { %>
+      <a href="/painel/agenda?data=<%= d.iso %><%= qsBarbeiro %>" class="ag2-dia <%= d.selecionado ? 'sel' : '' %>">
+        <span class="ag2-dia-rot"><%= d.rotulo %></span>
+        <span class="ag2-dia-num <%= d.ehHoje && !d.selecionado ? 'hoje' : '' %>"><%= d.num %></span>
+      </a>
+    <% }) %>
+  </div>
+
+  <% if (ehAdmin) { %>
+    <div class="ag2-barbeiros">
+      <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=todos" class="ag2-chip <%= barbeiroSelecionado === 'todos' ? 'sel' : '' %>">Todos</a>
+      <% barbeiros.forEach(function (b) { %>
+        <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=<%= b.id %>" class="ag2-chip <%= barbeiroSelecionado === String(b.id) ? 'sel' : '' %>"><%= b.nome.split(' ')[0] %></a>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
 
 <!-- Botão flutuante: Novo agendamento / Bloquear horário (só nesta tela) -->
 <div class="agenda-fab-wrap">
@@ -319,8 +328,9 @@
   });
 </script>
 
+<div class="ag2-corpo">
 <% if (agendamentos.length === 0 && bloqueios.length === 0) { %>
-  <div class="card"><p class="texto-secundario">Nada agendado para esta data.</p></div>
+  <div class="ag2-vazio">Nada agendado para esta data.</div>
 <% } else { %>
   <%
     function _min(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
@@ -330,44 +340,45 @@
     eventos.sort(function (a, b) { return a.ini - b.ini; });
   %>
 
-  <div class="lista-rows">
+  <div class="ag2-lista">
     <% eventos.forEach(function (e) { %>
-      <div class="agenda-linha">
-        <span class="agenda-linha-dot"></span>
-        <span class="agenda-linha-hora"><%= e.tipo === 'ag' ? e.ag.horaInicio : e.bl.horaInicio %></span>
-        <% if (e.tipo === 'ag') { var ag = e.ag; %>
-          <a href="#" class="row" onclick="abrirModal(<%= ag.id %>);return false;">
-            <span class="avatar"><%= _iniciais(ag.usuario.nome) %></span>
-            <span class="ag-dot dot-<%= ag.status %>"></span>
-            <span class="row-info">
-              <span class="row-title"><%= ag.clienteNome %></span>
-              <span class="row-sub"><%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %></span>
+      <% if (e.tipo === 'ag') { var ag = e.ag; %>
+        <a href="#" class="ag2-card ag2-card--<%= ag.status %>" onclick="abrirModal(<%= ag.id %>);return false;">
+          <span class="ag2-card-icone">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
+          </span>
+          <% if (ag.status === 'concluido') { %>
+            <span class="ag2-card-selo" title="Concluído">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             </span>
-            <span class="row-status"><%= _rotuloStatus(ag.status) %></span>
-          </a>
-        <% } else { var bl = e.bl; %>
-          <div class="row row-bloq">
-            <span class="avatar avatar--bloq">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-            </span>
-            <span class="row-info">
-              <span class="row-title"><%= bl.motivo || 'Bloqueado' %></span>
-              <span class="row-sub"><%= bl.horaInicio %>–<%= bl.horaFim %><% if (mostrarBarbeiroNoCard) { %> · <%= bl.usuario.nome %><% } %></span>
-            </span>
+          <% } %>
+          <span class="ag2-card-meta"><%= ag.horaInicio %> · <%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %></span>
+          <span class="ag2-card-linha">
+            <span class="ag2-card-cliente"><%= ag.clienteNome %></span>
+            <% if (mostrarBarbeiroNoCard) { %><span class="ag2-card-barbeiro"><%= ag.usuario.nome.split(' ')[0] %></span><% } %>
+          </span>
+        </a>
+      <% } else { var bl = e.bl; %>
+        <div class="ag2-card ag2-card--bloqueio">
+          <span class="ag2-card-icone">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          </span>
+          <span class="ag2-card-meta"><%= bl.horaInicio %>–<%= bl.horaFim %><% if (mostrarBarbeiroNoCard) { %> · <%= bl.usuario.nome.split(' ')[0] %><% } %></span>
+          <span class="ag2-card-linha">
+            <span class="ag2-card-cliente"><%= bl.motivo || 'Bloqueado' %></span>
             <% if (ehAdmin) { %>
-              <form method="POST" action="/painel/agenda/bloqueios/<%= bl.id %>/remover" class="row-x" onsubmit="return confirm('Remover este bloqueio?')">
+              <form method="POST" action="/painel/agenda/bloqueios/<%= bl.id %>/remover" class="ag2-card-x" onsubmit="return confirm('Remover este bloqueio?')">
                 <input type="hidden" name="retornoData" value="<%= dataStr %>" />
                 <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
                 <button title="Remover bloqueio" type="submit">×</button>
               </form>
             <% } %>
-          </div>
-        <% } %>
-      </div>
+          </span>
+        </div>
+      <% } %>
     <% }) %>
   </div>
 
-  <p class="texto-sutil mt-16 mb-16">Toque num atendimento para ver os detalhes.</p>
 
   <% agendamentos.forEach(function (ag) { %>
     <div class="ag-overlay" id="agm-<%= ag.id %>" onclick="if(event.target===this)fecharModal(this)">
@@ -461,3 +472,4 @@
     </div>
   <% }) %>
 <% } %>
+</div>

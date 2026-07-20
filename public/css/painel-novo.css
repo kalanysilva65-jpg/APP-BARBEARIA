@@ -1,7 +1,7 @@
 /* =========================================================================
-   HOME do painel — novo design "Turno 6" (bento + hero com foto).
-   Escopado em .pg-home (classe posta no <body> só na rota /painel) para não
-   afetar as outras telas do painel, que seguem no visual atual.
+   Telas no novo design "Turno 6". Cada tela e escopada por uma classe no <body>
+   (.pg-home, .pg-agenda...) — as telas ainda nao convertidas seguem no visual
+   antigo, sem risco de regressao.
    Diferente do resto do app: abaixo do hero a superfície é CLARA (#EAEAEA)
    com cards brancos e texto escuro — é assim no design.
    ========================================================================= */
@@ -198,3 +198,216 @@
 .home-prox-servico { font-size: 12px; color: #8a8a85; margin-top: 1px; }
 .home-vazio { padding: 20px 16px; font-size: 13px; color: #8a8a85; }
 
+
+/* =========================================================================
+   AGENDA (.pg-agenda) — mesma linguagem da Home: superfície clara, cards
+   brancos arredondados. O cabeçalho padrão dá lugar ao cabeçalho próprio
+   (título + mês + ação), como no design.
+   ========================================================================= */
+.pg-agenda .app-topo-fixo { display: none; }
+.pg-agenda .conteudo {
+  max-width: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  background: #eaeaea; /* atrás dos cantos arredondados do topo */
+  animation: none;
+}
+.pg-agenda .conteudo > .alerta {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: 16px;
+  right: 16px;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.96);
+  color: #0a0a0a;
+  border-color: rgba(10, 10, 10, 0.12);
+}
+
+/* ---- Cabeçalho ---- */
+.ag2-topo {
+  flex: none;
+  background: #fff;
+  border-radius: 0 0 22px 22px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 16px 16px;
+}
+.ag2-titulo {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  color: #0a0a0a;
+  text-align: center;
+}
+.ag2-topo-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+.ag2-mes { font-size: 28px; font-weight: 600; letter-spacing: -0.6px; color: #0a0a0a; }
+.ag2-add {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #0a0a0a;
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+}
+
+/* ---- Faixa da semana ---- */
+.ag2-dias { display: flex; justify-content: space-between; gap: 4px; margin-top: 16px; }
+.ag2-dia {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  min-width: 0;
+}
+.ag2-dia-rot { font-size: 11px; color: #8a8a85; }
+.ag2-dia-num {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0a0a0a;
+}
+/* Hoje (quando não é o dia aberto): só um contorno, para não competir com a seleção. */
+.ag2-dia-num.hoje { box-shadow: inset 0 0 0 1.5px rgba(10, 10, 10, 0.25); }
+.ag2-dia.sel .ag2-dia-num { background: #0a0a0a; color: #fff; }
+
+/* ---- Chips de barbeiro ---- */
+.ag2-barbeiros {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ag2-barbeiros::-webkit-scrollbar { display: none; }
+.ag2-chip {
+  flex: none;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: #eaeaea;
+  color: #0a0a0a;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ag2-chip.sel { background: #0a0a0a; color: #fff; }
+
+/* ---- Corpo / lista ---- */
+.ag2-corpo {
+  flex: 1;
+  padding: 14px 16px calc(96px + env(safe-area-inset-bottom, 0px));
+}
+.ag2-vazio {
+  background: #fff;
+  border-radius: 22px;
+  padding: 22px 18px;
+  font-size: 13px;
+  color: #8a8a85;
+}
+.ag2-lista { display: flex; flex-direction: column; gap: 10px; }
+.ag2-card {
+  position: relative;
+  display: block;
+  background: #fff;
+  border-radius: 22px;
+  padding: 16px 18px;
+  text-decoration: none;
+  color: inherit;
+  animation: homeRiseIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.ag2-card-icone {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #eaeaea;
+  color: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ag2-card-meta { display: block; font-size: 12px; font-weight: 500; color: #8a8a85; margin-top: 12px; }
+.ag2-card-linha { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 3px; }
+.ag2-card-cliente { font-size: 20px; font-weight: 700; color: #0a0a0a; letter-spacing: -0.3px; }
+.ag2-card-barbeiro { font-size: 14px; font-weight: 600; color: #8a8a85; flex: none; }
+/* Selo de concluído */
+.ag2-card-selo {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: #27ae60;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Concluído: card em tom mais apagado, já que a ação ali acabou. */
+.ag2-card--concluido { background: #f4f4f2; }
+.ag2-card--concluido .ag2-card-cliente { color: #5a5a55; }
+.ag2-card--cancelado { opacity: 0.55; }
+.ag2-card--cancelado .ag2-card-cliente { text-decoration: line-through; }
+/* Bloqueio: visual neutro e listrado, para não parecer um atendimento. */
+.ag2-card--bloqueio { background: #e4e4e1; }
+.ag2-card--bloqueio .ag2-card-cliente { font-size: 16px; font-weight: 600; color: #5a5a55; }
+.ag2-card-x { margin: 0; flex: none; }
+.ag2-card-x button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  color: #8a8a85;
+  padding: 0 2px;
+}
+
+/* Menu de ações ancorado no "+" do cabeçalho (substitui o botão flutuante,
+   que duplicava o "+" na mesma tela). */
+.pg-agenda .agenda-fab-wrap { display: none; }
+.ag2-acoes { position: relative; flex: none; }
+.ag2-menu {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  z-index: 30;
+  min-width: 190px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(10, 10, 10, 0.22);
+  padding: 6px;
+  display: none;
+  flex-direction: column;
+}
+.ag2-acoes.aberto .ag2-menu { display: flex; }
+.ag2-menu button {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 11px 12px;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 14px;
+  color: #0a0a0a;
+  cursor: pointer;
+}
+.ag2-menu button:active { background: #eaeaea; }
