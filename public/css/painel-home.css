@@ -11,19 +11,50 @@
 .pg-home .app-topo-fixo { display: none; }
 .pg-home .conteudo {
   max-width: none;
-  padding: 0 0 calc(88px + env(safe-area-inset-bottom, 0px));
+  padding: 0;
+  /* Coluna que ocupa a tela toda: assim a superfície clara (.home-corpo, com
+     flex:1) preenche até embaixo. Sem isto ela terminava junto com o conteúdo
+     e sobrava uma faixa escura do body até o rodapé — parecia um bloco cortado
+     no meio da tela. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative; /* âncora do flash flutuante (abaixo) */
   /* O hero fica fixo no topo; quem anima a entrada são os cards (homeRiseIn).
      Sem isto, a animação global .conteudo (translateY 14px) empurraria o hero
      pra baixo do topo durante o fade. */
   animation: none;
 }
 
+/* A mensagem (flash) é o primeiro filho do .conteudo. Em fluxo normal ela
+   empurraria o hero pra baixo e apareceria numa faixa escura acima da foto —
+   o que acontece direto na Home, já que a troca de foto é feita aqui. Flutua
+   sobre o hero, com fundo sólido pra ler por cima da imagem. */
+.pg-home .conteudo > .alerta {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: 16px;
+  right: 16px;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.94);
+  color: #0a0a0a;
+  border-color: rgba(10, 10, 10, 0.12);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
 /* ---- Hero com foto de capa ---- */
 .home-hero {
   position: relative;
-  height: clamp(210px, 40vh, 300px);
-  background: linear-gradient(135deg, #2a2a2f, #111114); /* fallback sem foto */
+  flex: none; /* dentro da coluna flex: não estica nem encolhe */
+  height: clamp(190px, 32vh, 260px);
   overflow: hidden;
+  /* Fallback sem foto: gradiente com um brilho quente no canto, para parecer
+     um fundo escolhido e não uma imagem que falhou ao carregar. Enquanto a
+     barbearia não envia a capa, é este estado que aparece. */
+  background:
+    radial-gradient(120% 90% at 85% 0%, rgba(198, 67, 46, 0.28) 0%, rgba(198, 67, 46, 0) 55%),
+    linear-gradient(160deg, #34343a 0%, #17171b 55%, #0f0f12 100%);
 }
 .home-hero-img {
   position: absolute;
@@ -76,7 +107,11 @@
 /* ---- Área de conteúdo (superfície clara) ---- */
 .home-corpo {
   background: #eaeaea;
-  padding: 14px 16px;
+  /* flex:1 = ocupa toda a altura que sobra abaixo do hero, então o claro vai
+     até o rodapé. O padding-bottom reserva o espaço da barra flutuante DENTRO
+     da área clara (antes esse espaço era padding do .conteudo, e ficava escuro). */
+  flex: 1;
+  padding: 14px 16px calc(96px + env(safe-area-inset-bottom, 0px));
   font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
