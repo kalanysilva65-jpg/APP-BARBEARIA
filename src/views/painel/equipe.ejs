@@ -60,11 +60,6 @@
         </div>
       <% }) %>
     </div>
-    <% if (membros.length > 1) { %>
-      <div class="eq-swipe-dots">
-        <% membros.forEach(function (m, i) { %><span class="eq-swipe-dot" data-idx="<%= i %>"></span><% }) %>
-      </div>
-    <% } %>
   <% } %>
 </div>
 
@@ -210,7 +205,6 @@
     var wrap = document.getElementById('eq-swipe-wrap');
     if (!wrap) return;
     var cards = Array.prototype.slice.call(wrap.querySelectorAll('.eq-swipe-card'));
-    var dots = Array.prototype.slice.call(document.querySelectorAll('.eq-swipe-dot'));
     var n = cards.length;
     var activeIdx = 0;
     var dragging = false;
@@ -242,7 +236,6 @@
         card.style.pointerEvents = pointerEvents;
         card.style.transition = dragging ? 'none' : 'transform 0.45s cubic-bezier(.2,.9,.25,1.4), opacity 0.35s ease';
       });
-      dots.forEach(function (d, i) { d.classList.toggle('ativo', i === activeIdx); });
     }
 
     function irPara(i) {
@@ -281,7 +274,6 @@
         else irPara(i);
       });
     });
-    dots.forEach(function (d, i) { d.addEventListener('click', function () { irPara(i); }); });
 
     render();
   })();

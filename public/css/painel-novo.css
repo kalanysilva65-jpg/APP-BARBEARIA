@@ -1107,9 +1107,6 @@
   font-weight: 600;
   color: #0a0a0a;
 }
-.eq-swipe-dots { display: flex; justify-content: center; gap: 6px; padding: 12px 0 4px; }
-.eq-swipe-dot { width: 6px; height: 6px; border-radius: 999px; background: rgba(10, 10, 10, 0.18); cursor: pointer; }
-.eq-swipe-dot.ativo { background: #0a0a0a; width: 16px; }
 
 /* Pop-up de edição: mais translúcido que o padrão (.7 em vez de .97) e sem
    header com título/X — é assim no HTML original. */
