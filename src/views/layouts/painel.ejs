@@ -20,7 +20,7 @@
   </head>
   <%/* Cada tela já convertida para o design novo ganha sua classe (.pg-*); as
        demais seguem no visual antigo. */%>
-  <body class="app-painel <%= currentPath === '/painel' ? 'pg-home' : '' %> <%= currentPath === '/painel/agenda' ? 'pg-agenda' : '' %>">
+  <body class="app-painel <%= currentPath === '/painel' ? 'pg-home' : '' %> <%= currentPath === '/painel/agenda' ? 'pg-agenda' : '' %> <%= currentPath === '/painel/estoque' ? 'pg-estoque' : '' %>">
     <div class="app-topo-fixo">
       <%- include('../partials/header-painel') %>
     </div>

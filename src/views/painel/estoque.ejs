@@ -1,75 +1,84 @@
-<% if (baixoEstoque.length > 0) { %>
-  <div class="alerta alerta-aviso mb-16">
-    <strong>Reposição:</strong> <%= baixoEstoque.length %> item(ns) no mínimo ou abaixo —
-    <%= baixoEstoque.map(function (i) { return i.nome + ' (' + i.quantidade + ')'; }).join(', ') %>.
+<%
+  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
+%>
+
+<!-- Cabeçalho: mesmo padrão da Agenda — sem cartão atrás, flutua no cinza
+     contínuo da tela (descoberto relendo o style do próprio container do
+     HTML: não havia background nenhum ali). -->
+<div class="ag2-topo">
+  <div class="ag2-marca-linha">
+    <span class="ag2-avatar-deco"></span>
+    <span class="ag2-marca"><%= nomeBarbearia %></span>
+    <button type="button" class="ag2-add" onclick="abrirModal('novo')" aria-label="Novo item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
   </div>
-<% } %>
-
-<div class="cards-grid">
-  <% itens.forEach(function (i) { var baixo = i.quantidade <= i.quantidadeMinima; %>
-    <div class="item-card <%= baixo ? 'item-card--baixo' : '' %>">
-      <% if (baixo) { %><span class="badge-repor" style="position:absolute;top:10px;left:10px;z-index:1;">REPOR</span><% } %>
-      <button type="button" class="item-edit-btn" title="Editar" onclick="abrirModal(<%= i.id %>)">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-      </button>
-      <div class="item-thumb">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-      </div>
-      <div class="item-info">
-        <div class="item-bottom">
-          <span class="row-title"><%= i.nome %></span>
-          <span class="item-numero"><%= i.quantidade %></span>
-        </div>
-        <div class="item-categoria"><%= i.categoria ? i.categoria.nome : 'Sem categoria' %> · Mín. <%= i.quantidadeMinima %></div>
-      </div>
-    </div>
-  <% }) %>
-
-  <% if (itens.length === 0) { %>
-    <div class="card"><p class="texto-secundario">Nenhum item no estoque ainda.</p></div>
-  <% } %>
-</div>
-
-<!-- Categorias -->
-<div class="card mt-24">
-  <h2>Categorias de estoque</h2>
-  <p class="texto-secundario mb-16">
-    Remover uma categoria não apaga os itens — eles ficam "sem categoria".
-  </p>
-
-  <form method="POST" action="/painel/estoque/categorias" class="form-inline-cat">
-    <input name="nome" placeholder="Nova categoria" required />
-    <button class="btn btn-secundario btn-sm">Adicionar</button>
-  </form>
-
-  <ul class="lista-categorias mt-16">
-    <% categorias.forEach(function (c) { %>
-      <li>
-        <form method="POST" action="/painel/estoque/categorias/<%= c.id %>" class="form-inline-cat">
-          <input name="nome" value="<%= c.nome %>" />
-          <span class="texto-sutil"><%= c._count.itens %> item(ns)</span>
-          <button class="btn btn-secundario btn-sm">Salvar</button>
-        </form>
-        <form method="POST" action="/painel/estoque/categorias/<%= c.id %>/remover" class="inline"
-              onsubmit="return confirm('Remover esta categoria?')">
-          <button class="btn-x" title="Remover categoria">×</button>
-        </form>
-      </li>
-    <% }) %>
-    <% if (categorias.length === 0) { %>
-      <li class="texto-secundario">Nenhuma categoria.</li>
+  <div class="ag2-titulo">
+    Estoque
+    <% if (baixoEstoque.length > 0) { %>
+      <span class="ag2-badge-alerta">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        Estoque baixo
+      </span>
     <% } %>
-  </ul>
+  </div>
 </div>
 
-<!-- Botão flutuante: Novo item (só nesta tela) -->
-<div class="agenda-fab-wrap">
-  <button type="button" class="agenda-fab" onclick="abrirModal('novo')" aria-label="Novo item de estoque">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  </button>
+<!-- Lista: cada item abre um POP-UP de vidro com os campos (diferente da
+     Agenda, cujo detalhe expande dentro do próprio card — aqui é sempre um
+     pop-up flutuante, como no HTML original). -->
+<div class="ag2-corpo">
+  <% if (itens.length === 0) { %>
+    <div class="ag2-vazio">Nenhum item no estoque ainda.</div>
+  <% } else { %>
+    <div class="est-lista">
+      <% itens.forEach(function (i) { var baixo = i.quantidade <= i.quantidadeMinima; %>
+        <button type="button" class="est-item" onclick="abrirModal(<%= i.id %>)">
+          <span class="est-avatar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </span>
+          <span class="est-info">
+            <span class="est-nome-linha">
+              <span class="est-nome"><%= i.nome %></span>
+              <% if (baixo) { %>
+                <span class="est-badge-mini">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+                  Estoque baixo
+                </span>
+              <% } %>
+            </span>
+            <span class="est-sub"><%= i.quantidade %> un. · <%= i.categoria ? i.categoria.nome : 'Sem categoria' %></span>
+          </span>
+        </button>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <!-- Categorias -->
+  <div class="est-categorias">
+    <div class="est-categorias-titulo">Categorias de estoque</div>
+    <p class="est-categorias-sub">Remover uma categoria não apaga os itens — eles ficam "sem categoria".</p>
+    <form method="POST" action="/painel/estoque/categorias" class="est-cat-form">
+      <input name="nome" placeholder="Nova categoria" required />
+      <button class="est-cat-btn" type="submit">Adicionar</button>
+    </form>
+    <% categorias.forEach(function (c) { %>
+      <div class="est-cat-linha">
+        <form method="POST" action="/painel/estoque/categorias/<%= c.id %>" class="est-cat-form">
+          <input name="nome" value="<%= c.nome %>" />
+          <span class="est-cat-count"><%= c._count.itens %></span>
+          <button class="est-cat-btn est-cat-btn--claro" type="submit">Salvar</button>
+        </form>
+        <form method="POST" action="/painel/estoque/categorias/<%= c.id %>/remover" onsubmit="return confirm('Remover esta categoria?')">
+          <button class="est-cat-x" title="Remover categoria">×</button>
+        </form>
+      </div>
+    <% }) %>
+    <% if (categorias.length === 0) { %><p class="est-categorias-sub">Nenhuma categoria.</p><% } %>
+  </div>
 </div>
 
-<!-- Pop-up: novo item -->
+<!-- Pop-up: novo item (vidro, mesmo padrão dos pop-ups da Agenda) -->
 <div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
   <div class="ag-modal-box">
     <div class="ag-modal-topo">
@@ -101,6 +110,9 @@
         </div>
       </div>
       <div class="campo">
+        <%/* O mockup chama esse campo de "Preço", mas o model não tem preço de
+             venda — só o custo da compra. Rotulado como o app já usa, pra não
+             sugerir que o item é vendido por esse valor. */%>
         <label for="valorGasto-novo">Valor gasto na compra (R$)</label>
         <input id="valorGasto-novo" name="valorGasto" type="number" step="0.01" min="0" />
       </div>

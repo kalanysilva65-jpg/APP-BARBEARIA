@@ -229,12 +229,16 @@
 
 
 /* =========================================================================
-   AGENDA (.pg-agenda) — mesma linguagem da Home: superfície clara, cards
-   brancos arredondados. O cabeçalho padrão dá lugar ao cabeçalho próprio
-   (título + mês + ação), como no design.
+   Telas de LISTA (.pg-agenda, .pg-estoque, ...) — mesma linguagem da Home:
+   superfície clara, cards brancos arredondados. O cabeçalho padrão dá lugar
+   ao cabeçalho próprio (marca + título + ação), como no design. As classes
+   `.ag2-*` são compartilhadas por todas — apesar do prefixo (nasceram na
+   Agenda), não são exclusivas dela.
    ========================================================================= */
-.pg-agenda .app-topo-fixo { display: none; }
-.pg-agenda .conteudo {
+.pg-agenda .app-topo-fixo,
+.pg-estoque .app-topo-fixo { display: none; }
+.pg-agenda .conteudo,
+.pg-estoque .conteudo {
   max-width: none;
   padding: 0;
   display: flex;
@@ -242,10 +246,11 @@
   min-height: 100vh;
   min-height: 100dvh;
   position: relative;
-  background: #eaeaea; /* atrás dos cantos arredondados do topo */
+  background: #eaeaea; /* mesmo cinza contínuo por trás de tudo */
   animation: none;
 }
-.pg-agenda .conteudo > .alerta {
+.pg-agenda .conteudo > .alerta,
+.pg-estoque .conteudo > .alerta {
   position: absolute;
   top: calc(12px + env(safe-area-inset-top, 0px));
   left: 16px;
@@ -545,9 +550,13 @@
   align-self: flex-start;
 }
 
-/* ---- Pop-ups no visual do design: claros, arredondados, com blur ---- */
-.pg-agenda .ag-overlay { background: rgba(10, 10, 10, 0.4); padding: 0 24px; }
-.pg-agenda .ag-modal-box {
+/* ---- Pop-ups no visual do design: claros, arredondados, com blur ----
+   Vale para toda tela convertida (.pg-agenda, .pg-estoque, ...) — não é
+   exclusivo da Agenda, apesar do nome das classes .ag-*. */
+.pg-agenda .ag-overlay,
+.pg-estoque .ag-overlay { background: rgba(10, 10, 10, 0.4); padding: 0 24px; }
+.pg-agenda .ag-modal-box,
+.pg-estoque .ag-modal-box {
   width: 100%;
   max-width: 340px;
   background: rgba(255, 255, 255, 0.97);
@@ -564,17 +573,17 @@
   from { opacity: 0; transform: scale(0.94) translateY(10px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
-.pg-agenda .ag-modal-nome,
-.pg-agenda .ag-modal-hora { color: #0a0a0a; }
-.pg-agenda .ag-modal-nome { font-size: 18px; font-weight: 700; }
-.pg-agenda .ag-modal-fechar { color: #8a8a85; }
-.pg-agenda .ag-modal-box label,
-.pg-agenda .ag-modal-box .texto-secundario,
-.pg-agenda .ag-modal-box .texto-sutil { color: #8a8a85; }
+.pg-agenda .ag-modal-nome, .pg-estoque .ag-modal-nome,
+.pg-agenda .ag-modal-hora, .pg-estoque .ag-modal-hora { color: #0a0a0a; }
+.pg-agenda .ag-modal-nome, .pg-estoque .ag-modal-nome { font-size: 18px; font-weight: 700; }
+.pg-agenda .ag-modal-fechar, .pg-estoque .ag-modal-fechar { color: #8a8a85; }
+.pg-agenda .ag-modal-box label, .pg-estoque .ag-modal-box label,
+.pg-agenda .ag-modal-box .texto-secundario, .pg-estoque .ag-modal-box .texto-secundario,
+.pg-agenda .ag-modal-box .texto-sutil, .pg-estoque .ag-modal-box .texto-sutil { color: #8a8a85; }
 /* Campos sem caixa: só a linha de baixo, como no design. */
-.pg-agenda .ag-modal-box input,
-.pg-agenda .ag-modal-box select,
-.pg-agenda .ag-modal-box textarea {
+.pg-agenda .ag-modal-box input, .pg-estoque .ag-modal-box input,
+.pg-agenda .ag-modal-box select, .pg-estoque .ag-modal-box select,
+.pg-agenda .ag-modal-box textarea, .pg-estoque .ag-modal-box textarea {
   background: transparent;
   border: none;
   border-bottom: 1px solid rgba(10, 10, 10, 0.15);
@@ -582,18 +591,24 @@
   color: #0a0a0a;
   padding: 0 0 6px;
 }
-.pg-agenda .ag-modal-box input::placeholder { color: rgba(10, 10, 10, 0.35); }
-.pg-agenda .ag-modal-box .pill-opcao {
+.pg-agenda .ag-modal-box input::placeholder, .pg-estoque .ag-modal-box input::placeholder { color: rgba(10, 10, 10, 0.35); }
+.pg-agenda .ag-modal-box .pill-opcao, .pg-estoque .ag-modal-box .pill-opcao {
   background: rgba(10, 10, 10, 0.06);
   color: #5a5a55;
   border: none;
   border-radius: 999px;
 }
-.pg-agenda .ag-modal-box .pill-opcao.ativo { background: #0a0a0a; color: #fff; }
-.pg-agenda .ag-modal-box .btn-primario { background: #0a0a0a; color: #fff; border-radius: 12px; }
-.pg-agenda .ag-modal-box .modal-cancelar { color: #8a8a85; }
-.pg-agenda .ag-modal-box .row,
-.pg-agenda .ag-modal-box .linha-simples { color: #0a0a0a; }
+.pg-agenda .ag-modal-box .pill-opcao.ativo, .pg-estoque .ag-modal-box .pill-opcao.ativo { background: #0a0a0a; color: #fff; }
+.pg-agenda .ag-modal-box .btn-primario, .pg-estoque .ag-modal-box .btn-primario { background: #0a0a0a; color: #fff; border-radius: 12px; }
+.pg-agenda .ag-modal-box .modal-cancelar, .pg-estoque .ag-modal-box .modal-cancelar { color: #8a8a85; }
+.pg-agenda .ag-modal-box .row, .pg-estoque .ag-modal-box .row,
+.pg-agenda .ag-modal-box .linha-simples, .pg-estoque .ag-modal-box .linha-simples { color: #0a0a0a; }
+/* Pop-up de item (não o "novo"): sem escurecer a lista atrás, como no HTML
+   original (background:transparent especificamente para estes). Precisa vir
+   DEPOIS da regra genérica acima para ganhar por ordem no empate de
+   especificidade. */
+.pg-estoque #agm-novo.ag-overlay { background: rgba(10, 10, 10, 0.4); }
+.pg-estoque .ag-overlay:not(#agm-novo) { background: transparent; }
 
 /* O painel aplica text-transform:uppercase em labels; nas pílulas de pagamento
    o design usa capitalização normal ("Pix", "Crédito"). */
@@ -601,3 +616,111 @@
 /* Destaque acompanha o clique (o radio fica dentro do label). Sem isto só o
    estado vindo do servidor ficava marcado, e trocar de forma não dava retorno. */
 .ag2-pag:has(input:checked) { background: #0a0a0a; color: #fff; }
+
+/* =========================================================================
+   ESTOQUE (.pg-estoque) — cabeçalho igual ao padrão de lista (avatar+marca+
+   ação numa linha só, sem o dia da semana da Agenda). Itens abrem em POP-UP
+   de vidro (diferente da Agenda, cujo detalhe expande dentro do card) — é
+   assim no HTML original para Produtos/Estoque.
+   ========================================================================= */
+.ag2-badge-alerta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #c6432e;
+  background: #fce4e1;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-top: 8px;
+  vertical-align: middle;
+}
+.ag2-titulo { display: flex; flex-direction: column; align-items: center; gap: 0; }
+
+.est-lista { display: flex; flex-direction: column; gap: 12px; }
+.est-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 14px 16px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  animation: homeRiseIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.est-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #d7dbdc;
+  color: #5a5a55;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.est-info { min-width: 0; flex: 1; }
+.est-nome-linha { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.est-nome { font-size: 16px; font-weight: 600; color: #0a0a0a; }
+.est-badge-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #fce4e1;
+  color: #c6432e;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.est-sub { display: block; font-size: 12px; color: #8a8a85; margin-top: 2px; }
+
+/* Categorias: não existe no HTML do design (é funcionalidade que o app já
+   tinha) — estilizada na mesma linguagem clara, sem inventar comportamento. */
+.est-categorias { margin-top: 24px; background: #fff; border-radius: 20px; padding: 18px 16px; }
+.est-categorias-titulo { font: 600 17px/1.2 var(--fonte); color: #0a0a0a; }
+.est-categorias-sub { font-size: 12px; color: #8a8a85; margin-top: 6px; }
+.est-cat-form { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
+.est-cat-form input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-bottom: 1px solid rgba(10, 10, 10, 0.15);
+  background: transparent;
+  padding: 0 0 6px;
+  font-size: 14px;
+  color: #0a0a0a;
+  font-family: inherit;
+}
+.est-cat-btn {
+  flex: none;
+  background: #0a0a0a;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.est-cat-btn--claro { background: rgba(10, 10, 10, 0.08); color: #0a0a0a; }
+.est-cat-linha { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.est-cat-count { font-size: 11px; color: #8a8a85; flex: none; }
+.est-cat-x {
+  flex: none;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #8a8a85;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+/* Pop-up de item x "novo item": ver regra correspondente no bloco de pop-ups
+   acima (perto de .ag-modal-box) — precisa vir depois dela por especificidade. */
