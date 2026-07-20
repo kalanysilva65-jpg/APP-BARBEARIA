@@ -204,7 +204,17 @@ async function mudarStatus(req, res) {
 
   const novo = req.body.status;
   if (['agendado', 'concluido', 'cancelado'].includes(novo)) {
-    await prisma.agendamento.update({ where: { id: agendamento.id }, data: { status: novo } });
+    // Forma de pagamento: registrada junto ao concluir (é quando o cliente paga).
+    // Reabrir/cancelar limpa o registro, senão ficaria uma forma de pagamento
+    // pendurada num atendimento que não aconteceu.
+    const FORMAS = ['pix', 'credito', 'debito', 'dinheiro'];
+    const dados = { status: novo };
+    if (novo === 'concluido') {
+      if (FORMAS.includes(req.body.formaPagamento)) dados.formaPagamento = req.body.formaPagamento;
+    } else {
+      dados.formaPagamento = null;
+    }
+    await prisma.agendamento.update({ where: { id: agendamento.id }, data: dados });
 
     // Integração com o caixa (toggle "caixa automático"):
     if (novo === 'concluido') {

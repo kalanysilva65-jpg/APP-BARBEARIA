@@ -411,3 +411,139 @@
   cursor: pointer;
 }
 .ag2-menu button:active { background: #eaeaea; }
+
+/* ---- Card: cabeçalho tocável + detalhe INLINE (não é pop-up) ---- */
+.ag2-card-topo {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.ag2-det { display: none; }
+.ag2-card.aberto .ag2-det {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(10, 10, 10, 0.1);
+}
+.ag2-det-campo { display: flex; flex-direction: column; }
+.ag2-det-rot { font-size: 10px; color: #8a8a85; }
+.ag2-det-val {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0a0a0a;
+  border-bottom: 1px solid rgba(10, 10, 10, 0.12);
+  padding-bottom: 4px;
+  margin-top: 2px;
+}
+.ag2-det-form { display: flex; flex-direction: column; gap: 12px; margin: 0; }
+/* Pílulas de forma de pagamento (radio escondido: o label é o alvo). */
+.ag2-pags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.ag2-pag {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(10, 10, 10, 0.06);
+  color: #5a5a55;
+  user-select: none;
+}
+.ag2-pag.sel { background: #0a0a0a; color: #fff; }
+.ag2-det-ok {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #27ae60;
+}
+.ag2-det-cta {
+  text-align: center;
+  background: #0a0a0a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.ag2-det-cta:active { transform: scale(0.97); }
+.ag2-det-cta--claro { background: rgba(10, 10, 10, 0.08); color: #0a0a0a; }
+.ag2-det-mais {
+  background: none;
+  border: none;
+  padding: 2px;
+  font: inherit;
+  font-size: 12px;
+  color: #8a8a85;
+  text-decoration: underline;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+/* ---- Pop-ups no visual do design: claros, arredondados, com blur ---- */
+.pg-agenda .ag-overlay { background: rgba(10, 10, 10, 0.4); padding: 0 24px; }
+.pg-agenda .ag-modal-box {
+  width: 100%;
+  max-width: 340px;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 26px;
+  box-shadow: 0 20px 50px rgba(10, 10, 10, 0.25);
+  padding: 24px 22px;
+  color: #0a0a0a;
+  animation: ag2ModalIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+@keyframes ag2ModalIn {
+  from { opacity: 0; transform: scale(0.94) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.pg-agenda .ag-modal-nome,
+.pg-agenda .ag-modal-hora { color: #0a0a0a; }
+.pg-agenda .ag-modal-nome { font-size: 18px; font-weight: 700; }
+.pg-agenda .ag-modal-fechar { color: #8a8a85; }
+.pg-agenda .ag-modal-box label,
+.pg-agenda .ag-modal-box .texto-secundario,
+.pg-agenda .ag-modal-box .texto-sutil { color: #8a8a85; }
+/* Campos sem caixa: só a linha de baixo, como no design. */
+.pg-agenda .ag-modal-box input,
+.pg-agenda .ag-modal-box select,
+.pg-agenda .ag-modal-box textarea {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(10, 10, 10, 0.15);
+  border-radius: 0;
+  color: #0a0a0a;
+  padding: 0 0 6px;
+}
+.pg-agenda .ag-modal-box input::placeholder { color: rgba(10, 10, 10, 0.35); }
+.pg-agenda .ag-modal-box .pill-opcao {
+  background: rgba(10, 10, 10, 0.06);
+  color: #5a5a55;
+  border: none;
+  border-radius: 999px;
+}
+.pg-agenda .ag-modal-box .pill-opcao.ativo { background: #0a0a0a; color: #fff; }
+.pg-agenda .ag-modal-box .btn-primario { background: #0a0a0a; color: #fff; border-radius: 12px; }
+.pg-agenda .ag-modal-box .modal-cancelar { color: #8a8a85; }
+.pg-agenda .ag-modal-box .row,
+.pg-agenda .ag-modal-box .linha-simples { color: #0a0a0a; }
+
+/* O painel aplica text-transform:uppercase em labels; nas pílulas de pagamento
+   o design usa capitalização normal ("Pix", "Crédito"). */
+.ag2-pag { text-transform: none; letter-spacing: 0; }
+/* Destaque acompanha o clique (o radio fica dentro do label). Sem isto só o
+   estado vindo do servidor ficava marcado, e trocar de forma não dava retorno. */
+.ag2-pag:has(input:checked) { background: #0a0a0a; color: #fff; }

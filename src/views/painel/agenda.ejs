@@ -343,21 +343,68 @@
   <div class="ag2-lista">
     <% eventos.forEach(function (e) { %>
       <% if (e.tipo === 'ag') { var ag = e.ag; %>
-        <a href="#" class="ag2-card ag2-card--<%= ag.status %>" onclick="abrirModal(<%= ag.id %>);return false;">
-          <span class="ag2-card-icone">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
-          </span>
-          <% if (ag.status === 'concluido') { %>
-            <span class="ag2-card-selo" title="Concluído">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <%
+          var servicosLabel = ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento';
+          var formas = [['pix', 'Pix'], ['credito', 'Crédito'], ['debito', 'Débito'], ['dinheiro', 'Dinheiro']];
+        %>
+        <div class="ag2-card ag2-card--<%= ag.status %>" id="card-<%= ag.id %>">
+          <%/* Toque no cabeçalho expande o próprio card (o detalhe é inline,
+               como no design — não abre pop-up). */%>
+          <button type="button" class="ag2-card-topo" onclick="document.getElementById('card-<%= ag.id %>').classList.toggle('aberto')">
+            <span class="ag2-card-icone">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg>
             </span>
-          <% } %>
-          <span class="ag2-card-meta"><%= ag.horaInicio %> · <%= ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento' %></span>
-          <span class="ag2-card-linha">
-            <span class="ag2-card-cliente"><%= ag.clienteNome %></span>
-            <% if (mostrarBarbeiroNoCard) { %><span class="ag2-card-barbeiro"><%= ag.usuario.nome.split(' ')[0] %></span><% } %>
-          </span>
-        </a>
+            <% if (ag.status === 'concluido') { %>
+              <span class="ag2-card-selo" title="Concluído">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </span>
+            <% } %>
+            <span class="ag2-card-meta"><%= ag.horaInicio %> · <%= servicosLabel %></span>
+            <span class="ag2-card-linha">
+              <span class="ag2-card-cliente"><%= ag.clienteNome %></span>
+              <% if (mostrarBarbeiroNoCard) { %><span class="ag2-card-barbeiro"><%= ag.usuario.nome.split(' ')[0] %></span><% } %>
+            </span>
+          </button>
+
+          <div class="ag2-det">
+            <div class="ag2-det-campo"><span class="ag2-det-rot">Cliente</span><span class="ag2-det-val"><%= ag.clienteNome %></span></div>
+            <div class="ag2-det-campo"><span class="ag2-det-rot">Serviço</span><span class="ag2-det-val"><%= servicosLabel %></span></div>
+            <div class="ag2-det-campo"><span class="ag2-det-rot">Barbeiro</span><span class="ag2-det-val"><%= ag.usuario.nome %></span></div>
+            <div class="ag2-det-campo"><span class="ag2-det-rot">Valor</span><span class="ag2-det-val"><%= fmtBRL(ag.valorTotal) %></span></div>
+
+            <form method="POST" action="/painel/agenda/<%= ag.id %>/status" class="ag2-det-form">
+              <input type="hidden" name="status" value="concluido" />
+              <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+              <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+
+              <div class="ag2-det-campo">
+                <span class="ag2-det-rot">Forma de pagamento</span>
+                <div class="ag2-pags">
+                  <% formas.forEach(function (f) { %>
+                    <label class="ag2-pag <%= ag.formaPagamento === f[0] ? 'sel' : '' %>">
+                      <input type="radio" name="formaPagamento" value="<%= f[0] %>" <%= ag.formaPagamento === f[0] ? 'checked' : '' %> hidden />
+                      <%= f[1] %>
+                    </label>
+                  <% }) %>
+                </div>
+              </div>
+
+              <% if (ag.status === 'concluido') { %>
+                <div class="ag2-det-ok">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  Concluído
+                </div>
+                <button type="submit" class="ag2-det-cta ag2-det-cta--claro">Atualizar pagamento</button>
+              <% } else { %>
+                <button type="submit" class="ag2-det-cta">Marcar como concluído</button>
+              <% } %>
+            </form>
+
+            <%/* Itens, status e exclusão continuam no pop-up completo — não cabem
+                 na expansão sem poluí-la. */%>
+            <button type="button" class="ag2-det-mais" onclick="abrirModal(<%= ag.id %>)">Mais opções</button>
+          </div>
+        </div>
       <% } else { var bl = e.bl; %>
         <div class="ag2-card ag2-card--bloqueio">
           <span class="ag2-card-icone">

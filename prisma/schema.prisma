@@ -156,6 +156,8 @@ model Agendamento {
   horaInicio      String   @map("hora_inicio")
   status          String   @default("agendado") // agendado | concluido | cancelado
   valorTotal      Int      @default(0) @map("valor_total") // centavos, recalculado pelos itens
+  // Como o cliente pagou (registrado ao concluir): pix | credito | debito | dinheiro.
+  formaPagamento  String?  @map("forma_pagamento")
   clienteId       Int?     @map("cliente_id") // vínculo opcional ao cadastro LOCAL (CRM) da barbearia
   contaClienteId  Int?     @map("conta_cliente_id") // conta GLOBAL do app do cliente (marketplace)
   clientePlanoId  Int?     @map("cliente_plano_id") // assinatura usada (agendamento via plano)
