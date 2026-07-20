@@ -554,7 +554,13 @@
    Vale para toda tela convertida (.pg-agenda, .pg-estoque, ...) — não é
    exclusivo da Agenda, apesar do nome das classes .ag-*. */
 .pg-agenda .ag-overlay,
-.pg-estoque .ag-overlay { background: rgba(10, 10, 10, 0.4); padding: 0 24px; }
+.pg-estoque .ag-overlay {
+  background: rgba(10, 10, 10, 0.4);
+  padding: 0 24px;
+  /* O app base usa align-items:flex-end (pop-up "grudado" embaixo, estilo
+     bottom-sheet) — o design novo centraliza o cartão no meio da tela. */
+  align-items: center;
+}
 .pg-agenda .ag-modal-box,
 .pg-estoque .ag-modal-box {
   width: 100%;
