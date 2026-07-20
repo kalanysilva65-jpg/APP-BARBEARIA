@@ -14,6 +14,18 @@
 
 <!-- Cabeçalho: mês + ação, e a semana do dia selecionado -->
 <div class="ag2-topo">
+  <%/* Faixa que faltava na primeira conversão: círculo decorativo (sem função
+       clicável no HTML original) + marca da barbearia + espaçador simétrico.
+       "NAVALHA" no protótipo era só o exemplo — aqui mostra a barbearia real,
+       igual a Home já faz no hero. */%>
+  <div class="ag2-marca-linha">
+    <span class="ag2-avatar-deco"></span>
+    <span class="ag2-marca">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+      <%= (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia' %>
+    </span>
+    <span class="ag2-avatar-deco ag2-avatar-deco--fantasma"></span>
+  </div>
   <div class="ag2-titulo">Agenda</div>
   <div class="ag2-topo-linha">
     <span class="ag2-mes"><%= mesLabel %></span>

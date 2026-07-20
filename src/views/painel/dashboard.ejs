@@ -83,21 +83,29 @@
     <% } %>
   </div>
 
-  <!-- Próximos cortes -->
-  <div class="home-secao-titulo">Próximos cortes</div>
-  <% if (proximosLista.length === 0) { %>
-    <div class="home-proximos"><div class="home-vazio">Sem próximos atendimentos hoje.</div></div>
-  <% } else { %>
-    <div class="home-proximos">
-      <% proximosLista.forEach(function (p) { %>
-        <a href="/painel/agenda" class="home-prox-item">
-          <span class="home-prox-hora"><%= p.hora %></span>
-          <span class="home-prox-info">
+  <!-- Próximos cortes: cartão de vidro (translúcido, com blur) — não é um
+       card branco sólido como o resto do bento. -->
+  <div class="home-proximos">
+    <div class="home-proximos-topo">
+      <span class="home-secao-titulo">Próximos cortes</span>
+      <a href="/painel/agenda" class="home-proximos-ir" aria-label="Ver agenda">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M7 17 17 7M9 7h8v8"/></svg>
+      </a>
+    </div>
+    <% if (proximosLista.length === 0) { %>
+      <div class="home-vazio">Sem próximos atendimentos hoje.</div>
+    <% } else { %>
+      <%/* Lado a lado (flex, cada item ocupa espaço igual) — não é uma lista
+           empilhada com divisórias. */%>
+      <div class="home-prox-linha">
+        <% proximosLista.forEach(function (p) { %>
+          <a href="/painel/agenda" class="home-prox-item">
+            <span class="home-prox-hora"><%= p.hora %></span>
             <span class="home-prox-cliente"><%= p.nome %></span>
             <span class="home-prox-servico"><%= p.servico %></span>
-          </span>
-        </a>
-      <% }) %>
-    </div>
-  <% } %>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
 </div>

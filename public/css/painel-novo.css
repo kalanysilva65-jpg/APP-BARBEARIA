@@ -46,14 +46,17 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
-/* ---- Hero com foto de capa ---- */
+/* ---- Hero com foto de capa ----
+   No HTML original: height:380px fixo, border-radius 0 0 28px 28px, e um
+   zoom lento contínuo na foto (Ken Burns). 380px fixo é alto demais em
+   celulares baixos (ex.: iPhone SE, 667px de altura — quase 60% da tela só
+   de hero); o clamp mantém a intenção em telas normais/altas e encolhe com
+   segurança nas baixas, em vez de fatiar o conteúdo de baixo. */
 .home-hero {
   position: relative;
   flex: none; /* dentro da coluna flex: não estica nem encolhe */
-  height: clamp(190px, 32vh, 260px);
-  /* Base arredondada: o hero é um "cartão" apoiado sobre a superfície clara.
-     O overflow:hidden é o que faz a foto e a sombra respeitarem esse recorte. */
-  border-radius: 0 0 22px 22px;
+  height: clamp(240px, 48vh, 380px);
+  border-radius: 0 0 28px 28px;
   overflow: hidden;
   /* Fallback sem foto: gradiente com um brilho quente no canto, para parecer
      um fundo escolhido e não uma imagem que falhou ao carregar. Enquanto a
@@ -62,6 +65,15 @@
     radial-gradient(120% 90% at 85% 0%, rgba(198, 67, 46, 0.28) 0%, rgba(198, 67, 46, 0) 55%),
     linear-gradient(160deg, #34343a 0%, #17171b 55%, #0f0f12 100%);
 }
+@media (prefers-reduced-motion: no-preference) {
+  .home-hero { animation: homeHeroIn 0.7s cubic-bezier(0.2, 0.8, 0.25, 1.1) both; }
+  .home-hero-img {
+    /* Zoom lento e contínuo (Ken Burns) — dá vida à foto parada. */
+    animation: homeKenBurns 12s ease-in-out infinite alternate;
+  }
+}
+@keyframes homeHeroIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+@keyframes homeKenBurns { from { transform: scale(1); } to { transform: scale(1.08); } }
 .home-hero-img {
   position: absolute;
   inset: 0;
@@ -169,34 +181,51 @@
 .home-stack-item { padding: 14px 16px; }
 .home-stack-item + .home-stack-item { border-top: 1px solid rgba(10, 10, 10, 0.06); }
 
-/* ---- Próximos cortes ---- */
-.home-secao-titulo {
-  font: 600 19px/1.2 var(--fonte);
-  color: #0a0a0a;
-  margin: 24px 0 12px;
+/* ---- Próximos cortes: cartão de VIDRO (não branco sólido) ----
+   No HTML original: background rgba(255,255,255,.65) + blur(20px), raio 24,
+   sombra própria e borda clara — se destaca dos outros cards do bento, que
+   são brancos opacos. */
+.home-proximos {
+  margin-top: 14px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 14px 34px rgba(10, 10, 10, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  padding: 18px 0 16px 18px;
 }
-.home-proximos { background: #fff; border-radius: 22px; overflow: hidden; }
-.home-prox-item {
+.home-proximos-topo { display: flex; align-items: center; justify-content: space-between; padding-right: 18px; }
+.home-secao-titulo { font: 600 19px/1.2 var(--fonte); color: #0a0a0a; }
+/* Atalho pra Agenda: botão circular escuro com seta — existe no HTML e
+   tinha ficado de fora da primeira conversão. */
+.home-proximos-ir {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: #0a0a0a;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  text-decoration: none;
-  color: inherit;
-}
-.home-prox-item + .home-prox-item { border-top: 1px solid rgba(10, 10, 10, 0.06); }
-.home-prox-hora {
-  font: 600 13px/1 var(--fonte);
-  color: #0a0a0a;
-  background: #eaeaea;
-  padding: 6px 8px;
-  border-radius: 8px;
+  justify-content: center;
   flex: none;
 }
-.home-prox-info { min-width: 0; flex: 1; }
-.home-prox-cliente { font-size: 14px; font-weight: 600; color: #0a0a0a; }
-.home-prox-servico { font-size: 12px; color: #8a8a85; margin-top: 1px; }
-.home-vazio { padding: 20px 16px; font-size: 13px; color: #8a8a85; }
+/* Lado a lado (flex, largura igual) — não é uma lista empilhada com
+   divisórias como o resto do app costuma fazer. */
+.home-prox-linha { display: flex; gap: 2px; margin-top: 16px; padding-right: 18px; }
+.home-prox-item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 14px;
+}
+.home-prox-hora { font-size: 11px; color: #8a8a85; }
+.home-prox-cliente { font-size: 15px; font-weight: 700; color: #0a0a0a; margin-top: 6px; }
+.home-prox-servico { font-size: 11px; color: #8a8a85; margin-top: 2px; }
+.home-vazio { padding: 4px 18px 2px 0; font-size: 13px; color: #8a8a85; }
 
 
 /* =========================================================================
@@ -229,10 +258,34 @@
 
 /* ---- Cabeçalho ---- */
 .ag2-topo {
+  /* Sem fundo/raio: no HTML original o cabeçalho não é um cartão — ele flutua
+     direto sobre o mesmo cinza contínuo da tela (.conteudo já é #eaeaea).
+     Descoberto ao reler o style do próprio container (`animation:tabSlideIn...;
+     padding:58px 20px 0`, sem background) — a primeira conversão tinha
+     inventado um painel branco aqui. */
   flex: none;
-  background: #fff;
-  border-radius: 0 0 22px 22px;
-  padding: calc(18px + env(safe-area-inset-top, 0px)) 16px 16px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 16px 0;
+}
+/* Faixa da marca: círculo decorativo (simétrico, sem função) + nome da
+   barbearia + espaçador-fantasma do mesmo tamanho, para o texto central
+   ficar de fato centralizado. */
+.ag2-marca-linha { display: flex; align-items: center; justify-content: space-between; }
+.ag2-avatar-deco {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #3a3a40, #111114);
+  flex: none;
+}
+.ag2-avatar-deco--fantasma { background: none; }
+.ag2-marca {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #8a8a85;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 .ag2-titulo {
   font-size: 26px;
@@ -240,6 +293,7 @@
   letter-spacing: -0.4px;
   color: #0a0a0a;
   text-align: center;
+  margin-top: 4px;
 }
 .ag2-topo-linha {
   display: flex;
