@@ -304,12 +304,15 @@
   margin-top: 14px;
 }
 .ag2-mes { font-size: 28px; font-weight: 600; letter-spacing: -0.6px; color: #0a0a0a; }
+/* Só o ícone, sem o quadrado preto de fundo — pedido do dono (2026-07-20):
+   o quadrado ficava pesado do lado das outras ações, sem fundo (Agenda,
+   Estoque, Clientes, Equipe, Produtos). */
 .ag2-add {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: #0a0a0a;
-  color: #fff;
+  background: none;
+  color: #0a0a0a;
   border: none;
   display: flex;
   align-items: center;
@@ -366,6 +369,31 @@
   white-space: nowrap;
 }
 .ag2-chip.sel { background: #0a0a0a; color: #fff; }
+
+/* Período mostrado (Dia/Semana/Mês) — não existe no HTML original, pedido
+   do dono pra poder ver vários dias de agendamentos de uma vez. Mesmo
+   padrão visual das pílulas de período do Financeiro. */
+.ag2-periodo-linha { display: flex; justify-content: center; margin-top: 14px; }
+.ag2-periodo-pills { display: flex; gap: 4px; background: #fff; border-radius: 999px; padding: 4px; }
+.ag2-periodo-pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0a0a0a;
+  text-decoration: none;
+}
+.ag2-periodo-pill.ativo { background: #0a0a0a; color: #fff; }
+/* Cabeçalho de data quando a lista mostra vários dias (Semana/Mês). */
+.ag2-data-cabecalho {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8a8a85;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  margin: 18px 0 8px;
+}
+.ag2-data-cabecalho:first-child { margin-top: 0; }
 
 /* ---- Corpo / lista ---- */
 .ag2-corpo {
@@ -748,11 +776,11 @@
    cima. O pop-up de detalhe leva com uma foto RETANGULAR (16:9), não um
    avatar circular.
    ========================================================================= */
-/* Cabeçalho de Serviços usa um avatar mais claro e o "+" sem círculo de
-   fundo (só o ícone) — diferentes do padrão escuro/sólido das outras telas. */
+/* Cabeçalho de Serviços usa um avatar mais claro — diferente do padrão
+   escuro/sólido das outras telas. (O "+" sem fundo agora é o padrão em
+   todas as telas, ver .ag2-add.) */
 .ag2-avatar-deco--clara { background: rgba(10, 10, 10, 0.06); }
 .ag2-marca--sutil { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #8a8a85; text-transform: uppercase; }
-.ag2-add--claro { background: none; color: #0a0a0a; }
 
 .sv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .sv-tile {

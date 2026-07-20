@@ -44,6 +44,7 @@ function urlRetorno(req) {
   const qs = new URLSearchParams();
   if (req.body.retornoData) qs.set('data', req.body.retornoData);
   if (req.body.retornoBarbeiro) qs.set('barbeiro', req.body.retornoBarbeiro);
+  if (req.body.retornoPeriodo) qs.set('periodo', req.body.retornoPeriodo);
   const s = qs.toString();
   return '/painel/agenda' + (s ? '?' + s : '');
 }
@@ -58,6 +59,21 @@ async function verAgenda(req, res) {
   const dataStr = req.query.data || iso(new Date());
   const dataObj = dataLocal(dataStr);
 
+  // Período mostrado: um dia só (padrão, igual sempre foi), a semana ou o mês
+  // da data selecionada — pedido do dono pra poder ver vários dias de uma vez.
+  const periodo = ['dia', 'semana', 'mes'].includes(req.query.periodo) ? req.query.periodo : 'dia';
+  let periodoInicio = new Date(dataObj);
+  let periodoFimExcl = new Date(dataObj);
+  periodoFimExcl.setDate(periodoFimExcl.getDate() + 1);
+  if (periodo === 'semana') {
+    periodoInicio.setDate(dataObj.getDate() - dataObj.getDay()); // domingo
+    periodoFimExcl = new Date(periodoInicio);
+    periodoFimExcl.setDate(periodoInicio.getDate() + 7);
+  } else if (periodo === 'mes') {
+    periodoInicio = new Date(dataObj.getFullYear(), dataObj.getMonth(), 1);
+    periodoFimExcl = new Date(dataObj.getFullYear(), dataObj.getMonth() + 1, 1);
+  }
+
   // Filtro de barbeiro:
   //  - Funcionário: sempre o próprio (ignora a query).
   //  - Admin: 'todos' ou um id específico; padrão = a própria agenda.
@@ -71,13 +87,13 @@ async function verAgenda(req, res) {
     filtroBarbeiro = usuario.id;
   }
 
-  const where = { barbeariaId: b, data: dataObj };
+  const where = { barbeariaId: b, data: { gte: periodoInicio, lt: periodoFimExcl } };
   if (filtroBarbeiro) where.usuarioId = filtroBarbeiro;
 
   const agendamentos = await prisma.agendamento.findMany({
     where,
     include: { usuario: true, itens: { include: { servico: true } } },
-    orderBy: [{ horaInicio: 'asc' }],
+    orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
   });
 
   const barbeiros = ehAdmin
@@ -91,13 +107,13 @@ async function verAgenda(req, res) {
     orderBy: { nome: 'asc' },
   });
 
-  // Bloqueios do dia (mesmo filtro de barbeiro) — aparecem na linha do tempo.
-  const whereBloq = { barbeariaId: b, data: dataObj };
+  // Bloqueios do período (mesmo filtro de barbeiro) — aparecem na linha do tempo.
+  const whereBloq = { barbeariaId: b, data: { gte: periodoInicio, lt: periodoFimExcl } };
   if (filtroBarbeiro) whereBloq.usuarioId = filtroBarbeiro;
   const bloqueios = await prisma.bloqueio.findMany({
     where: whereBloq,
     include: { usuario: true },
-    orderBy: { horaInicio: 'asc' },
+    orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
   });
 
   // Navegação de datas (dia anterior / seguinte)
@@ -143,6 +159,7 @@ async function verAgenda(req, res) {
     dataNext: iso(next),
     dataHoje: iso(new Date()),
     hojeIso: iso(new Date()),
+    periodo,
     mostrarBarbeiroNoCard: !filtroBarbeiro, // mostra o nome do barbeiro quando vê "todos"
   });
 }
@@ -421,6 +438,7 @@ async function removerBloqueio(req, res) {
   const qs = new URLSearchParams();
   if (req.body.retornoData) qs.set('data', req.body.retornoData);
   if (req.body.retornoBarbeiro) qs.set('barbeiro', req.body.retornoBarbeiro);
+  if (req.body.retornoPeriodo) qs.set('periodo', req.body.retornoPeriodo);
   const s = qs.toString();
   res.redirect('/painel/agenda' + (s ? '?' + s : ''));
 }

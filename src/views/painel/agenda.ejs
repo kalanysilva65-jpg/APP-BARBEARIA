@@ -10,6 +10,7 @@
 
 <%
   var qsBarbeiro = ehAdmin ? '&barbeiro=' + barbeiroSelecionado : '';
+  var qsPeriodo = periodo !== 'dia' ? '&periodo=' + periodo : '';
 %>
 
 <!-- Cabeçalho: mês + ação, e a semana do dia selecionado -->
@@ -46,7 +47,7 @@
 
   <div class="ag2-dias">
     <% faixaDias.forEach(function (d) { %>
-      <a href="/painel/agenda?data=<%= d.iso %><%= qsBarbeiro %>" class="ag2-dia <%= d.selecionado ? 'sel' : '' %>">
+      <a href="/painel/agenda?data=<%= d.iso %><%= qsBarbeiro %><%= qsPeriodo %>" class="ag2-dia <%= d.selecionado ? 'sel' : '' %>">
         <span class="ag2-dia-rot"><%= d.rotulo %></span>
         <span class="ag2-dia-num <%= d.ehHoje && !d.selecionado ? 'hoje' : '' %>"><%= d.num %></span>
       </a>
@@ -55,12 +56,22 @@
 
   <% if (ehAdmin) { %>
     <div class="ag2-barbeiros">
-      <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=todos" class="ag2-chip <%= barbeiroSelecionado === 'todos' ? 'sel' : '' %>">Todos</a>
+      <a href="/painel/agenda?data=<%= dataStr %><%= qsPeriodo %>&barbeiro=todos" class="ag2-chip <%= barbeiroSelecionado === 'todos' ? 'sel' : '' %>">Todos</a>
       <% barbeiros.forEach(function (b) { %>
-        <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=<%= b.id %>" class="ag2-chip <%= barbeiroSelecionado === String(b.id) ? 'sel' : '' %>"><%= b.nome.split(' ')[0] %></a>
+        <a href="/painel/agenda?data=<%= dataStr %><%= qsPeriodo %>&barbeiro=<%= b.id %>" class="ag2-chip <%= barbeiroSelecionado === String(b.id) ? 'sel' : '' %>"><%= b.nome.split(' ')[0] %></a>
       <% }) %>
     </div>
   <% } %>
+
+  <!-- Período mostrado: um dia (padrão), a semana ou o mês da data
+       selecionada — pedido do dono, não existe no HTML original. -->
+  <div class="ag2-periodo-linha">
+    <div class="ag2-periodo-pills">
+      <a class="ag2-periodo-pill <%= periodo === 'dia' ? 'ativo' : '' %>" href="/painel/agenda?data=<%= dataStr %><%= qsBarbeiro %>">Dia</a>
+      <a class="ag2-periodo-pill <%= periodo === 'semana' ? 'ativo' : '' %>" href="/painel/agenda?data=<%= dataStr %><%= qsBarbeiro %>&periodo=semana">Semana</a>
+      <a class="ag2-periodo-pill <%= periodo === 'mes' ? 'ativo' : '' %>" href="/painel/agenda?data=<%= dataStr %><%= qsBarbeiro %>&periodo=mes">Mês</a>
+    </div>
+  </div>
 </div>
 
 <!-- Botão flutuante: Novo agendamento / Bloquear horário (só nesta tela) -->
@@ -340,20 +351,44 @@
   });
 </script>
 
+<%
+  var DIAS_SEMANA_ABR = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  function _dataKey(d) { var dt = new Date(d); return dt.getFullYear() + '-' + dt.getMonth() + '-' + dt.getDate(); }
+  function _dataRotulo(d) {
+    var dt = new Date(d);
+    return DIAS_SEMANA_ABR[dt.getDay()] + ', ' + fmtData(dt);
+  }
+%>
 <div class="ag2-corpo">
 <% if (agendamentos.length === 0 && bloqueios.length === 0) { %>
-  <div class="ag2-vazio">Nada agendado para esta data.</div>
+  <div class="ag2-vazio">Nada agendado para <%= periodo === 'dia' ? 'esta data' : 'este período' %>.</div>
 <% } else { %>
   <%
     function _min(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
     var eventos = [];
     agendamentos.forEach(function (ag) { eventos.push({ tipo: 'ag', ag: ag, ini: _min(ag.horaInicio) }); });
     bloqueios.forEach(function (bl) { eventos.push({ tipo: 'bloq', bl: bl, ini: _min(bl.horaInicio) }); });
-    eventos.sort(function (a, b) { return a.ini - b.ini; });
+    // Fora do modo "Dia": agrupado por data primeiro, hora dentro do dia.
+    eventos.sort(function (a, b) {
+      var da = a.tipo === 'ag' ? a.ag.data : a.bl.data;
+      var db = b.tipo === 'ag' ? b.ag.data : b.bl.data;
+      if (periodo !== 'dia' && da.getTime() !== db.getTime()) return da - db;
+      return a.ini - b.ini;
+    });
+    var dataKeyAnterior = null;
   %>
 
   <div class="ag2-lista">
     <% eventos.forEach(function (e) { %>
+      <%
+        var dataEvento = e.tipo === 'ag' ? e.ag.data : e.bl.data;
+        var dataKeyAtual = _dataKey(dataEvento);
+        var mostrarCabecalhoData = periodo !== 'dia' && dataKeyAtual !== dataKeyAnterior;
+        dataKeyAnterior = dataKeyAtual;
+      %>
+      <% if (mostrarCabecalhoData) { %>
+        <div class="ag2-data-cabecalho"><%= _dataRotulo(dataEvento) %></div>
+      <% } %>
       <% if (e.tipo === 'ag') { var ag = e.ag; %>
         <%
           var servicosLabel = ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento';
@@ -388,6 +423,7 @@
               <input type="hidden" name="status" value="concluido" />
               <input type="hidden" name="retornoData" value="<%= dataStr %>" />
               <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+              <input type="hidden" name="retornoPeriodo" value="<%= periodo %>" />
 
               <div class="ag2-det-campo">
                 <span class="ag2-det-rot">Forma de pagamento</span>
@@ -429,6 +465,7 @@
               <form method="POST" action="/painel/agenda/bloqueios/<%= bl.id %>/remover" class="ag2-card-x" onsubmit="return confirm('Remover este bloqueio?')">
                 <input type="hidden" name="retornoData" value="<%= dataStr %>" />
                 <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+                <input type="hidden" name="retornoPeriodo" value="<%= periodo %>" />
                 <button title="Remover bloqueio" type="submit">×</button>
               </form>
             <% } %>
@@ -466,6 +503,7 @@
                 <form method="POST" action="/painel/agenda/itens/<%= it.id %>/remover" class="inline">
                   <input type="hidden" name="retornoData" value="<%= dataStr %>" />
                   <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+                  <input type="hidden" name="retornoPeriodo" value="<%= periodo %>" />
                   <button class="btn-x" title="Remover item">×</button>
                 </form>
               </span>
@@ -484,6 +522,7 @@
         <form method="POST" action="/painel/agenda/<%= ag.id %>/itens" class="form-add-item">
           <input type="hidden" name="retornoData" value="<%= dataStr %>" />
           <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+          <input type="hidden" name="retornoPeriodo" value="<%= periodo %>" />
           <select name="servicoId" required>
             <option value="">Adicionar corte/produto…</option>
             <% servicos.forEach(function (s) { %>
@@ -499,6 +538,7 @@
             <form method="POST" action="/painel/agenda/<%= ag.id %>/status" class="inline">
               <input type="hidden" name="retornoData" value="<%= dataStr %>" />
               <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+              <input type="hidden" name="retornoPeriodo" value="<%= periodo %>" />
               <input type="hidden" name="status" value="concluido" />
               <button class="btn btn-secundario btn-sm">Concluir</button>
             </form>
@@ -507,6 +547,7 @@
             <form method="POST" action="/painel/agenda/<%= ag.id %>/status" class="inline">
               <input type="hidden" name="retornoData" value="<%= dataStr %>" />
               <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+              <input type="hidden" name="retornoPeriodo" value="<%= periodo %>" />
               <input type="hidden" name="status" value="cancelado" />
               <button class="btn btn-perigo btn-sm">Cancelar</button>
             </form>
@@ -515,6 +556,7 @@
             <form method="POST" action="/painel/agenda/<%= ag.id %>/status" class="inline">
               <input type="hidden" name="retornoData" value="<%= dataStr %>" />
               <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+              <input type="hidden" name="retornoPeriodo" value="<%= periodo %>" />
               <input type="hidden" name="status" value="agendado" />
               <button class="btn btn-secundario btn-sm">Reabrir</button>
             </form>
@@ -524,6 +566,7 @@
                 onsubmit="return confirm('Excluir este agendamento? Esta ação não pode ser desfeita.')">
             <input type="hidden" name="retornoData" value="<%= dataStr %>" />
             <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+            <input type="hidden" name="retornoPeriodo" value="<%= periodo %>" />
             <button class="btn btn-perigo btn-sm">Excluir</button>
           </form>
         </div>
