@@ -954,6 +954,8 @@
   font-family: inherit;
   color: #0a0a0a;
 }
+.cl-novo-form input::placeholder { color: rgba(10, 10, 10, 0.35); }
+.cl-novo-form label { font-size: 10px; color: #8a8a85; }
 .cl-novo-btn {
   text-align: center;
   background: linear-gradient(135deg, #3a3a40, #111114);

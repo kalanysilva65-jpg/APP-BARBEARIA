@@ -39,6 +39,10 @@
     <form method="POST" action="/painel/clientes" class="cl-novo-form">
       <input name="nome" placeholder="Nome" required />
       <input name="telefone" inputmode="tel" placeholder="Telefone" required />
+      <div>
+        <label for="cl-novo-nascimento">Data de nascimento (opcional)</label>
+        <input id="cl-novo-nascimento" name="dataNascimento" type="date" />
+      </div>
       <button type="submit" class="cl-novo-btn">Adicionar</button>
     </form>
   </div>

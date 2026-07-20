@@ -108,7 +108,8 @@ async function criar(req, res) {
     return res.redirect('/painel/clientes');
   }
 
-  await prisma.cliente.create({ data: { barbeariaId: b, nome, telefone } });
+  const dataNascimento = req.body.dataNascimento ? new Date(req.body.dataNascimento + 'T12:00:00') : null;
+  await prisma.cliente.create({ data: { barbeariaId: b, nome, telefone, dataNascimento } });
   req.session.flash = { tipo: 'sucesso', texto: 'Cliente cadastrado.' };
   res.redirect('/painel/clientes');
 }
