@@ -1,57 +1,75 @@
 <%
-  var DIAS_ABREV = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  var DIAS_LETRA = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
+
+  // diasSemana grava 0=Dom..6=Sáb, mas o HTML original mostra as pílulas/
+  // bolinhas na ordem Seg→Dom — a ORDEM abaixo só afeta a exibição.
+  var ORDEM_SEMANA = [1, 2, 3, 4, 5, 6, 0];
+  var NOME_DIA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  var LETRA_DIA = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
   function _diasArr(diasStr) {
     return String(diasStr || '0,1,2,3,4,5,6').split(',').map(Number).filter(function (n) { return !isNaN(n); });
   }
-  function _diasLabel(diasStr) {
-    var dias = _diasArr(diasStr).slice().sort(function (a, b) { return a - b; });
-    if (dias.length === 7) return 'Todos os dias';
-    return dias.map(function (d) { return DIAS_ABREV[d]; }).join(', ');
-  }
 %>
 
-<div class="cards-grid" style="grid-template-columns:1fr;gap:10px;">
-  <% planos.forEach(function (p) { %>
-    <div class="item-card plano-card" <% if (ehAdmin) { %>onclick="abrirModal(<%= p.id %>)" style="cursor:pointer"<% } %>>
-      <% if (ehAdmin) { %>
-        <button type="button" class="plano-card-editar" title="Editar" onclick="event.stopPropagation();abrirModal(<%= p.id %>)">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-        </button>
-      <% } %>
-      <div class="plano-card-topo">
-        <span class="plano-card-nome"><%= p.nome %></span>
-        <span class="plano-badge <%= p.tipo === 'ilimitado' ? 'plano-badge--ilimitado' : 'plano-badge--limitado' %>"><%= p.tipo %></span>
-      </div>
-      <div class="plano-card-preco"><span class="n"><%= fmtBRL(p.valor) %></span><span class="u">/mês</span></div>
-      <div class="plano-card-desc">
-        <%= _diasLabel(p.diasSemana) %> · <%= p.tipo === 'limitado' ? p.usos + 'x por mês' : 'Uso ilimitado' %> · <%= p.servico ? p.servico.nome : 'qualquer serviço' %><% if (!p.ativo) { %> · <span class="status status-cancelado">inativo</span><% } %>
-      </div>
-    </div>
-  <% }) %>
+<!-- Cabeçalho: título + subtítulo centralizados (só aqui) e "+" sem círculo
+     de fundo, igual ao de Serviços — é assim no HTML original. -->
+<div class="ag2-topo">
+  <div class="ag2-marca-linha">
+    <span class="ag2-avatar-deco"></span>
+    <span class="ag2-marca ag2-marca--escura"><%= nomeBarbearia %></span>
+    <% if (ehAdmin) { %>
+      <button type="button" class="ag2-add ag2-add--claro" onclick="abrirModal('novo')" aria-label="Novo plano">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    <% } else { %>
+      <span class="ag2-avatar-deco ag2-avatar-deco--fantasma"></span>
+    <% } %>
+  </div>
+  <div class="ag2-titulo">Planos</div>
+  <div class="ag2-subtitulo">Assinaturas e pacotes para clientes</div>
+</div>
 
+<div class="ag2-corpo">
   <% if (planos.length === 0) { %>
-    <div class="card">
-      <p class="texto-secundario">
-        Nenhum plano cadastrado<%= ehAdmin ? ' ainda. Toque no + para criar.' : '.' %>
-      </p>
+    <div class="ag2-vazio">Nenhum plano cadastrado<%= ehAdmin ? ' ainda.' : '.' %></div>
+  <% } else { %>
+    <div class="pl-lista">
+      <% planos.forEach(function (p) { %>
+        <%
+          var ilimitado = p.tipo === 'ilimitado';
+          var badgeBg = ilimitado ? '#0a0a0a' : 'rgba(10,10,10,0.06)';
+          var badgeCor = ilimitado ? '#fff' : '#0a0a0a';
+          var diasAtivos = _diasArr(p.diasSemana);
+        %>
+        <div class="pl-card" <% if (ehAdmin) { %>onclick="abrirModal(<%= p.id %>)" style="cursor:pointer"<% } %>>
+          <div class="pl-card-topo">
+            <span class="pl-nome"><%= p.nome %></span>
+            <span class="pl-badge" style="background:<%= badgeBg %>;color:<%= badgeCor %>"><%= ilimitado ? 'Ilimitado' : 'Limitado' %></span>
+          </div>
+          <div class="pl-preco-linha">
+            <span class="pl-preco"><%= fmtBRL(p.valor) %></span>
+            <span class="pl-preco-sub">/mês · <%= ilimitado ? 'Usos ilimitados' : (p.usos || 0) + 'x por mês' %></span>
+          </div>
+          <div class="pl-desc"><%= p.servico ? p.servico.nome : 'Qualquer serviço' %><% if (!p.ativo) { %> · <span class="status status-cancelado">inativo</span><% } %></div>
+          <div class="pl-dias">
+            <% ORDEM_SEMANA.forEach(function (i) { %>
+              <% var ativo = diasAtivos.indexOf(i) !== -1; %>
+              <span class="pl-dia-dot" style="background:<%= ativo ? '#0a0a0a' : '#efefef' %>;color:<%= ativo ? '#fff' : '#8a8a85' %>"><%= LETRA_DIA[i] %></span>
+            <% }) %>
+          </div>
+        </div>
+      <% }) %>
     </div>
   <% } %>
 </div>
 
 <% if (ehAdmin) { %>
-  <!-- Botão flutuante: Novo plano (só nesta tela) -->
-  <div class="agenda-fab-wrap">
-    <button type="button" class="agenda-fab" onclick="abrirModal('novo')" aria-label="Novo plano">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    </button>
-  </div>
-
   <!-- Pop-up: novo plano -->
   <div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
     <div class="ag-modal-box">
       <div class="ag-modal-topo">
         <div class="ag-modal-nome">Novo plano</div>
+        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
       </div>
       <form method="POST" class="form mt-16" action="/painel/planos">
         <div class="campo">
@@ -67,13 +85,13 @@
           <label>Tipo de uso</label>
           <input type="hidden" name="tipo" id="tipo-novo" value="limitado" />
           <div class="pill-group">
-            <button type="button" class="pill-opcao" data-valor="ilimitado" onclick="selecionarTipo(this,'novo')">Ilimitado</button>
             <button type="button" class="pill-opcao ativo" data-valor="limitado" onclick="selecionarTipo(this,'novo')">Limitado</button>
+            <button type="button" class="pill-opcao" data-valor="ilimitado" onclick="selecionarTipo(this,'novo')">Ilimitado</button>
           </div>
         </div>
 
         <div class="campo" id="campo-usos-novo">
-          <label for="usos-novo">Nº de usos por mês</label>
+          <label for="usos-novo">Usos por mês</label>
           <input id="usos-novo" name="usos" type="number" min="1" value="1" />
         </div>
 
@@ -81,8 +99,8 @@
           <label>Dias disponíveis</label>
           <input type="hidden" name="diasSemana" id="dias-novo" value="0,1,2,3,4,5,6" />
           <div class="dias-semana-group" id="dias-group-novo">
-            <% DIAS_LETRA.forEach(function (letra, i) { %>
-              <button type="button" class="dia-pill ativo" data-dia="<%= i %>" onclick="alternarDia(this,'novo')"><%= letra %></button>
+            <% ORDEM_SEMANA.forEach(function (i) { %>
+              <button type="button" class="dia-pill ativo" data-dia="<%= i %>" onclick="alternarDia(this,'novo')"><%= NOME_DIA[i] %></button>
             <% }) %>
           </div>
         </div>
@@ -103,18 +121,20 @@
 
         <div class="modal-acoes">
           <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-          <button class="btn btn-primario" type="submit">Criar plano</button>
+          <button class="btn btn-primario" type="submit">Adicionar</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Pop-up de edição: um por plano -->
+  <!-- Pop-up de edição: um por plano (fundo transparente, igual Estoque/Produtos) -->
   <% planos.forEach(function (p) { %>
+    <% var diasAtivosEdit = _diasArr(p.diasSemana); %>
     <div class="ag-overlay" id="agm-<%= p.id %>" onclick="if(event.target===this)fecharModal(this)">
       <div class="ag-modal-box">
         <div class="ag-modal-topo">
-          <div class="ag-modal-nome">Editar plano</div>
+          <div class="ag-modal-nome"><%= p.nome %></div>
+          <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
         </div>
         <form method="POST" class="form mt-16" action="/painel/planos/<%= p.id %>">
           <div class="campo">
@@ -130,13 +150,13 @@
             <label>Tipo de uso</label>
             <input type="hidden" name="tipo" id="tipo-<%= p.id %>" value="<%= p.tipo %>" />
             <div class="pill-group">
-              <button type="button" class="pill-opcao <%= p.tipo === 'ilimitado' ? 'ativo' : '' %>" data-valor="ilimitado" onclick="selecionarTipo(this,'<%= p.id %>')">Ilimitado</button>
               <button type="button" class="pill-opcao <%= p.tipo === 'limitado' ? 'ativo' : '' %>" data-valor="limitado" onclick="selecionarTipo(this,'<%= p.id %>')">Limitado</button>
+              <button type="button" class="pill-opcao <%= p.tipo === 'ilimitado' ? 'ativo' : '' %>" data-valor="ilimitado" onclick="selecionarTipo(this,'<%= p.id %>')">Ilimitado</button>
             </div>
           </div>
 
           <div class="campo" id="campo-usos-<%= p.id %>" style="display:<%= p.tipo === 'ilimitado' ? 'none' : '' %>">
-            <label for="usos-<%= p.id %>">Nº de usos por mês</label>
+            <label for="usos-<%= p.id %>">Usos por mês</label>
             <input id="usos-<%= p.id %>" name="usos" type="number" min="1" value="<%= p.usos || 1 %>" />
           </div>
 
@@ -144,9 +164,8 @@
             <label>Dias disponíveis</label>
             <input type="hidden" name="diasSemana" id="dias-<%= p.id %>" value="<%= p.diasSemana %>" />
             <div class="dias-semana-group" id="dias-group-<%= p.id %>">
-              <% var diasAtivos = _diasArr(p.diasSemana); %>
-              <% DIAS_LETRA.forEach(function (letra, i) { %>
-                <button type="button" class="dia-pill <%= diasAtivos.indexOf(i) !== -1 ? 'ativo' : '' %>" data-dia="<%= i %>" onclick="alternarDia(this,'<%= p.id %>')"><%= letra %></button>
+              <% ORDEM_SEMANA.forEach(function (i) { %>
+                <button type="button" class="dia-pill <%= diasAtivosEdit.indexOf(i) !== -1 ? 'ativo' : '' %>" data-dia="<%= i %>" onclick="alternarDia(this,'<%= p.id %>')"><%= NOME_DIA[i] %></button>
               <% }) %>
             </div>
           </div>
@@ -167,7 +186,7 @@
 
           <div class="modal-acoes">
             <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-            <button class="btn btn-primario" type="submit">Salvar</button>
+            <button class="btn btn-primario" type="submit">Salvar alterações</button>
           </div>
         </form>
         <div class="flex gap-8 mt-16">
@@ -191,7 +210,7 @@
     function fecharModal(o) {
       if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
     }
-    // Tipo de uso: seleção única (Ilimitado/Limitado) — mostra/esconde "Nº de usos".
+    // Tipo de uso: seleção única (Limitado/Ilimitado) — mostra/esconde "Usos por mês".
     function selecionarTipo(btn, id) {
       var grupo = btn.parentElement;
       Array.prototype.forEach.call(grupo.querySelectorAll('.pill-opcao'), function (b) { b.classList.remove('ativo'); });

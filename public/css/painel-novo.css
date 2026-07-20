@@ -600,6 +600,12 @@
   border-radius: 999px;
 }
 .pg-novo .ag-modal-box .pill-opcao.ativo { background: #0a0a0a; color: #fff; }
+.pg-novo .ag-modal-box .dia-pill {
+  background: rgba(10, 10, 10, 0.06);
+  border: none;
+  color: #0a0a0a;
+}
+.pg-novo .ag-modal-box .dia-pill.ativo { background: #0a0a0a; border-color: #0a0a0a; color: #fff; }
 .pg-novo .ag-modal-box .btn-primario { background: #0a0a0a; color: #fff; border-radius: 12px; }
 .pg-novo .ag-modal-box .modal-cancelar { color: #8a8a85; }
 .pg-novo .ag-modal-box .row,
@@ -609,8 +615,8 @@
    para estes). Serviços NÃO entra aqui — o mockup usa fundo escuro tanto
    para "novo serviço" quanto para o detalhe de um serviço existente.
    Precisa vir DEPOIS da regra genérica acima para ganhar por especificidade. */
-.pg-estoque #agm-novo.ag-overlay, .pg-produtos #agm-novo.ag-overlay { background: rgba(10, 10, 10, 0.4); }
-.pg-estoque .ag-overlay:not(#agm-novo), .pg-produtos .ag-overlay:not(#agm-novo) { background: transparent; }
+.pg-estoque #agm-novo.ag-overlay, .pg-produtos #agm-novo.ag-overlay, .pg-planos #agm-novo.ag-overlay { background: rgba(10, 10, 10, 0.4); }
+.pg-estoque .ag-overlay:not(#agm-novo), .pg-produtos .ag-overlay:not(#agm-novo), .pg-planos .ag-overlay:not(#agm-novo) { background: transparent; }
 
 /* O painel aplica text-transform:uppercase em labels; nas pílulas de pagamento
    o design usa capitalização normal ("Pix", "Crédito"). */
@@ -775,3 +781,36 @@
    baixo", que é especificamente um alerta. */
 .est-badge-mini--neutro { background: rgba(10, 10, 10, 0.08); color: #5a5a55; }
 .est-item--inativo { opacity: 0.5; }
+
+/* =========================================================================
+   PLANOS (.pg-planos) — cabeçalho com título+subtítulo centralizados (só
+   aqui, nas outras telas o título vem sozinho); "+" sem círculo de fundo,
+   igual ao de Serviços. Lista de cards brancos com badge de tipo, preço,
+   descrição e uma fileira de "bolinhas" dos dias disponíveis (Seg→Dom, é
+   assim no HTML original — diferente da ordem Dom→Sáb usada internamente
+   pro campo diasSemana). Pop-up de edição é transparente atrás (igual
+   Estoque/Produtos); o de "novo plano" escurece, como em toda outra tela.
+   ========================================================================= */
+.ag2-marca--escura { color: #0a0a0a; font-weight: 700; }
+.ag2-subtitulo { font-size: 12px; color: #8a8a85; text-align: center; margin-top: 4px; }
+
+.pl-lista { display: flex; flex-direction: column; gap: 12px; }
+.pl-card { background: #fff; border-radius: 20px; padding: 16px 18px; }
+.pl-card-topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pl-nome { font-size: 16px; font-weight: 700; color: #0a0a0a; }
+.pl-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; flex: none; }
+.pl-preco-linha { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
+.pl-preco { font-size: 20px; font-weight: 700; color: #0a0a0a; }
+.pl-preco-sub { font-size: 12px; color: #8a8a85; }
+.pl-desc { font-size: 13px; color: #6b6b68; margin-top: 8px; line-height: 1.4; }
+.pl-dias { display: flex; gap: 5px; margin-top: 12px; }
+.pl-dia-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
