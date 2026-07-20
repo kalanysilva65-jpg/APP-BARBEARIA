@@ -21,6 +21,9 @@
   min-height: 100vh;
   min-height: 100dvh;
   position: relative; /* âncora do flash flutuante (abaixo) */
+  /* Claro também aqui: é o que aparece ATRÁS dos cantos arredondados da base
+     do hero. Com o fundo escuro do body, os cantos revelariam preto. */
+  background: #eaeaea;
   /* O hero fica fixo no topo; quem anima a entrada são os cards (homeRiseIn).
      Sem isto, a animação global .conteudo (translateY 14px) empurraria o hero
      pra baixo do topo durante o fade. */
@@ -48,6 +51,9 @@
   position: relative;
   flex: none; /* dentro da coluna flex: não estica nem encolhe */
   height: clamp(190px, 32vh, 260px);
+  /* Base arredondada: o hero é um "cartão" apoiado sobre a superfície clara.
+     O overflow:hidden é o que faz a foto e a sombra respeitarem esse recorte. */
+  border-radius: 0 0 22px 22px;
   overflow: hidden;
   /* Fallback sem foto: gradiente com um brilho quente no canto, para parecer
      um fundo escolhido e não uma imagem que falhou ao carregar. Enquanto a
@@ -97,11 +103,6 @@
   font: 400 13px/1.3 var(--fonte);
   color: rgba(255, 255, 255, 0.75);
   margin-top: 2px;
-}
-.pg-home .home-hero-avatar {
-  position: absolute;
-  top: calc(16px + env(safe-area-inset-top, 0px));
-  right: 16px;
 }
 
 /* ---- Área de conteúdo (superfície clara) ---- */
@@ -197,6 +198,3 @@
 .home-prox-servico { font-size: 12px; color: #8a8a85; margin-top: 1px; }
 .home-vazio { padding: 20px 16px; font-size: 13px; color: #8a8a85; }
 
-/* Avatar no hero (inicial do usuário), caso não haja foto de perfil. */
-.home-hero-avatar .app-hero-foto { background: rgba(255, 255, 255, 0.2); border-color: rgba(255, 255, 255, 0.3); }
-.home-hero-avatar .app-hero-foto-inicial { color: #fff; }

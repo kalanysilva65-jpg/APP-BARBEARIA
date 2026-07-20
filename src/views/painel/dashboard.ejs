@@ -11,19 +11,8 @@
   <% } %>
   <div class="home-hero-sombra"></div>
 
-  <div class="home-hero-avatar">
-    <form method="POST" action="/painel/perfil/foto" enctype="multipart/form-data" class="app-hero-foto-form">
-      <label class="app-hero-foto" title="Trocar sua foto">
-        <% if (typeof usuarioFotoUrl !== 'undefined' && usuarioFotoUrl) { %>
-          <img src="<%= usuarioFotoUrl %>" alt="Foto de <%= usuario.nome %>" />
-        <% } else { %>
-          <span class="app-hero-foto-inicial"><%= usuario.nome.charAt(0).toUpperCase() %></span>
-        <% } %>
-        <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
-      </label>
-    </form>
-  </div>
-
+  <%/* Sem avatar aqui: o hero é só a foto de capa + a saudação. A troca da foto
+       de perfil segue no cabeçalho das demais telas do painel. */%>
   <div class="home-hero-texto">
     <span class="home-hero-badge"><%= saudacao %> · <%= hojeFormatado %></span>
     <div class="home-hero-nome"><%= usuario.nome %></div>
