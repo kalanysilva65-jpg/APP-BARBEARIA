@@ -18,9 +18,24 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
   </head>
-  <%/* Cada tela já convertida para o design novo ganha sua classe (.pg-*); as
-       demais seguem no visual antigo. */%>
-  <body class="app-painel <%= currentPath === '/painel' ? 'pg-home' : '' %> <%= currentPath === '/painel/agenda' ? 'pg-agenda' : '' %> <%= currentPath === '/painel/estoque' ? 'pg-estoque' : '' %>">
+  <%
+    // Cada tela já convertida para o design novo ganha sua classe (.pg-*); as
+    // demais seguem no visual antigo.
+    var TELAS_NOVAS = {
+      '/painel': 'pg-home',
+      '/painel/agenda': 'pg-agenda',
+      '/painel/estoque': 'pg-estoque',
+      '/painel/servicos': 'pg-servicos',
+      '/painel/produtos': 'pg-produtos',
+    };
+    var classeTela = TELAS_NOVAS[currentPath] || '';
+  %>
+  <%/* pg-novo: marcador compartilhado por TODA tela no design novo — evita ter
+       que listar .pg-home, .pg-agenda, .pg-estoque... em cada regra genérica
+       do painel-novo.css (cabeçalho sem cartão, pop-ups de vidro etc). As
+       classes .pg-<tela> continuam existindo para o que É específico de
+       cada uma (o hero só existe na Home, por exemplo). */%>
+  <body class="app-painel <%= classeTela %> <%= classeTela ? 'pg-novo' : '' %>">
     <div class="app-topo-fixo">
       <%- include('../partials/header-painel') %>
     </div>

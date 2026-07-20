@@ -141,16 +141,21 @@ router.post('/horarios/bloqueios', horarioController.adicionarBloqueio);
 router.post('/horarios/bloqueios/:id/remover', horarioController.removerBloqueio);
 router.post('/horarios/janela', exigeAdmin, horarioController.salvarJanela);
 
-// --- Serviços & Produtos (admin + barbeiros) ------------------------------
-// IMPORTANTE: rotas específicas (/novo, /categorias) vêm ANTES das paramétricas (/:id).
+// --- Serviços e Produtos (admin + barbeiros) ------------------------------
+// Duas telas separadas (decisão do dono, 2026-07-20 — antes eram uma só com
+// abas). Mesma tabela/controller por trás (Servico.ehProduto distingue);
+// só a listagem filtra por tipo. IMPORTANTE: específicas (/novo, /categorias)
+// vêm ANTES das paramétricas (/:id).
 router.get('/servicos', servicoController.listar);
+router.get('/produtos', servicoController.listarProdutos);
 router.get('/servicos/novo', servicoController.formNovo);
 router.post('/servicos', uploadFoto, servicoController.criar);
-// Categorias do catálogo
+// Categorias do catálogo (compartilhadas entre serviços e produtos)
 router.post('/servicos/categorias', servicoController.criarCategoria);
 router.post('/servicos/categorias/:id/remover', servicoController.removerCategoria);
 router.post('/servicos/categorias/:id', servicoController.renomearCategoria);
-// Serviço específico
+// Item específico (serviço ou produto — o redirect depois de salvar volta
+// para a tela certa, conforme o ehProduto do registro)
 router.get('/servicos/:id/editar', servicoController.formEditar);
 router.post('/servicos/:id/toggle', servicoController.alternarAtivo);
 router.post('/servicos/:id/remover', servicoController.remover);

@@ -17,11 +17,17 @@ function apagarFoto(fotoUrl) {
   if (caminho) fs.unlink(caminho, () => {});
 }
 
-// GET /painel/servicos — lista o catálogo + categorias
+// Serviços e Produtos são telas separadas, mas a mesma tabela/registro por
+// trás — o redirect volta para a tela certa conforme o ehProduto do item.
+function destino(ehProduto) {
+  return ehProduto ? '/painel/produtos' : '/painel/servicos';
+}
+
+// GET /painel/servicos — lista só os serviços (ehProduto:false)
 async function listar(req, res) {
   const b = req.barbeariaId;
   const servicos = await prisma.servico.findMany({
-    where: { barbeariaId: b },
+    where: { barbeariaId: b, ehProduto: false },
     include: { categoria: true },
     orderBy: [{ ativo: 'desc' }, { nome: 'asc' }],
   });
@@ -30,7 +36,23 @@ async function listar(req, res) {
     orderBy: { nome: 'asc' },
     include: { _count: { select: { servicos: true } } },
   });
-  res.render('painel/servicos', { titulo: 'Serviços & Produtos', servicos, categorias });
+  res.render('painel/servicos', { titulo: 'Serviços', servicos, categorias });
+}
+
+// GET /painel/produtos — lista só os produtos (ehProduto:true)
+async function listarProdutos(req, res) {
+  const b = req.barbeariaId;
+  const produtos = await prisma.servico.findMany({
+    where: { barbeariaId: b, ehProduto: true },
+    include: { categoria: true },
+    orderBy: [{ ativo: 'desc' }, { nome: 'asc' }],
+  });
+  const categorias = await prisma.categoriaServico.findMany({
+    where: { barbeariaId: b },
+    orderBy: { nome: 'asc' },
+    include: { _count: { select: { servicos: true } } },
+  });
+  res.render('painel/produtos', { titulo: 'Produtos', produtos, categorias });
 }
 
 // GET /painel/servicos/novo — formulário de criação
@@ -53,12 +75,12 @@ async function criar(req, res) {
   if (!nome || valor === null) {
     if (fotoUrl) apagarFoto(fotoUrl);
     req.session.flash = { tipo: 'erro', texto: 'Informe ao menos nome e um valor válido.' };
-    return res.redirect('/painel/servicos/novo');
+    return res.redirect(destino(ehProduto));
   }
 
   await prisma.servico.create({ data: { barbeariaId: req.barbeariaId, nome, descricao, valor, duracaoMin, categoriaId, ehProduto, comissaoPercentual, fotoUrl } });
-  req.session.flash = { tipo: 'sucesso', texto: 'Serviço criado.' };
-  res.redirect('/painel/servicos');
+  req.session.flash = { tipo: 'sucesso', texto: ehProduto ? 'Produto criado.' : 'Serviço criado.' };
+  res.redirect(destino(ehProduto));
 }
 
 // GET /painel/servicos/:id/editar — formulário de edição
@@ -89,7 +111,7 @@ async function atualizar(req, res) {
   if (!nome || valor === null) {
     if (req.file) apagarFoto('/uploads/' + req.file.filename);
     req.session.flash = { tipo: 'erro', texto: 'Informe ao menos nome e um valor válido.' };
-    return res.redirect('/painel/servicos/' + id + '/editar');
+    return res.redirect(destino(servico.ehProduto));
   }
 
   const data = { nome, descricao, valor, duracaoMin, categoriaId, ehProduto, comissaoPercentual };
@@ -99,8 +121,8 @@ async function atualizar(req, res) {
   }
 
   await prisma.servico.update({ where: { id }, data });
-  req.session.flash = { tipo: 'sucesso', texto: 'Serviço atualizado.' };
-  res.redirect('/painel/servicos');
+  req.session.flash = { tipo: 'sucesso', texto: ehProduto ? 'Produto atualizado.' : 'Serviço atualizado.' };
+  res.redirect(destino(ehProduto));
 }
 
 // POST /painel/servicos/:id/toggle — ativa/desativa
@@ -108,7 +130,7 @@ async function alternarAtivo(req, res) {
   const id = Number(req.params.id);
   const s = await prisma.servico.findFirst({ where: { id, barbeariaId: req.barbeariaId } });
   if (s) await prisma.servico.update({ where: { id }, data: { ativo: !s.ativo } });
-  res.redirect('/painel/servicos');
+  res.redirect(destino(s && s.ehProduto));
 }
 
 // POST /painel/servicos/:id/remover — exclui (ou desativa se tiver histórico)
@@ -120,7 +142,7 @@ async function remover(req, res) {
   try {
     await prisma.servico.delete({ where: { id } });
     apagarFoto(s.fotoUrl);
-    req.session.flash = { tipo: 'sucesso', texto: 'Serviço excluído.' };
+    req.session.flash = { tipo: 'sucesso', texto: s.ehProduto ? 'Produto excluído.' : 'Serviço excluído.' };
   } catch (e) {
     // Está referenciado em agendamentos: desativa em vez de excluir.
     await prisma.servico.update({ where: { id }, data: { ativo: false } });
@@ -129,30 +151,38 @@ async function remover(req, res) {
       texto: 'Esse item tem histórico em agendamentos, então foi desativado em vez de excluído.',
     };
   }
-  res.redirect('/painel/servicos');
+  res.redirect(destino(s.ehProduto));
 }
 
-// --- Categorias -----------------------------------------------------------
+// --- Categorias -------------------------------------------------------------
+// Compartilhadas entre Serviços e Produtos (mesmo CategoriaServico) — o
+// redirect volta para a tela de onde veio o formulário via campo `retorno`.
+function destinoCategoria(req) {
+  const retorno = req.body.retorno || req.query.retorno;
+  return retorno === 'produtos' ? '/painel/produtos' : '/painel/servicos';
+}
+
 async function criarCategoria(req, res) {
   const nome = (req.body.nome || '').trim();
   if (nome) await prisma.categoriaServico.create({ data: { barbeariaId: req.barbeariaId, nome } });
-  res.redirect('/painel/servicos');
+  res.redirect(destinoCategoria(req));
 }
 
 async function renomearCategoria(req, res) {
   const nome = (req.body.nome || '').trim();
   if (nome) await prisma.categoriaServico.updateMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId }, data: { nome } });
-  res.redirect('/painel/servicos');
+  res.redirect(destinoCategoria(req));
 }
 
 async function removerCategoria(req, res) {
   // Os serviços da categoria não são apagados: ficam "sem categoria" (SetNull).
   await prisma.categoriaServico.deleteMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } }).catch(() => {});
-  res.redirect('/painel/servicos');
+  res.redirect(destinoCategoria(req));
 }
 
 module.exports = {
   listar,
+  listarProdutos,
   formNovo,
   criar,
   formEditar,

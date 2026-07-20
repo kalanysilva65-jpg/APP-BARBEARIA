@@ -1,0 +1,188 @@
+<%
+  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
+%>
+
+<!-- Cabeçalho: mesmo padrão de lista das outras telas — sem cartão atrás. -->
+<div class="ag2-topo">
+  <div class="ag2-marca-linha">
+    <span class="ag2-avatar-deco"></span>
+    <span class="ag2-marca"><%= nomeBarbearia %></span>
+    <button type="button" class="ag2-add" onclick="abrirModal('novo')" aria-label="Novo produto">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+  <div class="ag2-titulo">Produtos</div>
+</div>
+
+<%/* Mesmo padrão de lista + pop-up de vidro do Estoque (avatar circular,
+     pop-up transparente atrás). O mockup mostra um campo "Estoque" (quantidade)
+     editável aqui, que NÃO existe no model Servico — só Estoque (insumos
+     internos) tem contagem. Fica de fora por ora; ver memória do redesign. */%>
+<div class="ag2-corpo">
+  <% if (produtos.length === 0) { %>
+    <div class="ag2-vazio">Nenhum produto cadastrado ainda.</div>
+  <% } else { %>
+    <div class="est-lista">
+      <% produtos.forEach(function (p) { %>
+        <button type="button" class="est-item <%= p.ativo ? '' : 'est-item--inativo' %>" onclick="abrirModal(<%= p.id %>)">
+          <span class="est-avatar">
+            <% if (p.fotoUrl) { %>
+              <img src="<%= p.fotoUrl %>" alt="<%= p.nome %>" />
+            <% } else { %>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12.17V2h10.17l8.42 8.42a2 2 0 0 1 0 2.99z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            <% } %>
+          </span>
+          <span class="est-info">
+            <span class="est-nome-linha">
+              <span class="est-nome"><%= p.nome %></span>
+              <% if (!p.ativo) { %><span class="est-badge-mini est-badge-mini--neutro">Inativo</span><% } %>
+            </span>
+            <span class="est-sub"><%= fmtBRL(p.valor) %> · <%= p.categoria ? p.categoria.nome : 'Sem categoria' %></span>
+          </span>
+        </button>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <!-- Categorias (compartilhadas com Serviços) -->
+  <div class="est-categorias">
+    <div class="est-categorias-titulo">Categorias</div>
+    <p class="est-categorias-sub">Remover uma categoria não apaga os itens — eles ficam "sem categoria".</p>
+    <form method="POST" action="/painel/servicos/categorias" class="est-cat-form">
+      <input type="hidden" name="retorno" value="produtos" />
+      <input name="nome" placeholder="Nova categoria" required />
+      <button class="est-cat-btn" type="submit">Adicionar</button>
+    </form>
+    <% categorias.forEach(function (c) { %>
+      <div class="est-cat-linha">
+        <form method="POST" action="/painel/servicos/categorias/<%= c.id %>" class="est-cat-form">
+          <input type="hidden" name="retorno" value="produtos" />
+          <input name="nome" value="<%= c.nome %>" />
+          <span class="est-cat-count"><%= c._count.servicos %></span>
+          <button class="est-cat-btn est-cat-btn--claro" type="submit">Salvar</button>
+        </form>
+        <form method="POST" action="/painel/servicos/categorias/<%= c.id %>/remover?retorno=produtos" onsubmit="return confirm('Remover esta categoria?')">
+          <button class="est-cat-x" title="Remover categoria">×</button>
+        </form>
+      </div>
+    <% }) %>
+    <% if (categorias.length === 0) { %><p class="est-categorias-sub">Nenhuma categoria.</p><% } %>
+  </div>
+</div>
+
+<!-- Pop-up: novo produto (ehProduto vai fixo via campo oculto — aqui já
+     sabemos que é produto, sem precisar de toggle). -->
+<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Novo produto</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
+    <form method="POST" enctype="multipart/form-data" class="form mt-16" action="/painel/servicos">
+      <input type="hidden" name="ehProduto" value="on" />
+      <div class="campo">
+        <label for="nome-novo">Nome</label>
+        <input id="nome-novo" name="nome" required />
+      </div>
+      <div class="campo">
+        <label for="valor-novo">Valor (R$)</label>
+        <input id="valor-novo" name="valor" type="number" step="0.01" min="0" required />
+      </div>
+      <div class="campo">
+        <label for="comissaoPercentual-novo">Comissão do produto (%)</label>
+        <input id="comissaoPercentual-novo" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="10" />
+      </div>
+      <div class="campo">
+        <label for="categoriaId-novo">Categoria</label>
+        <select id="categoriaId-novo" name="categoriaId">
+          <option value="">Sem categoria</option>
+          <% categorias.forEach(function (c) { %>
+            <option value="<%= c.id %>"><%= c.nome %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="foto-novo">Foto</label>
+        <input id="foto-novo" name="foto" type="file" accept="image/*" />
+        <span class="texto-sutil">JPG, PNG ou WEBP, até 4 MB.</span>
+      </div>
+      <div class="modal-acoes">
+        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+        <button class="btn btn-primario" type="submit">Adicionar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Pop-up de edição: um por produto -->
+<% produtos.forEach(function (p) { %>
+  <div class="ag-overlay" id="agm-<%= p.id %>" onclick="if(event.target===this)fecharModal(this)">
+    <div class="ag-modal-box">
+      <div class="ag-modal-topo">
+        <div class="ag-modal-nome"><%= p.nome %></div>
+        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+      </div>
+      <form method="POST" enctype="multipart/form-data" class="form mt-16" action="/painel/servicos/<%= p.id %>">
+        <input type="hidden" name="ehProduto" value="on" />
+        <div class="campo">
+          <label for="nome-<%= p.id %>">Nome</label>
+          <input id="nome-<%= p.id %>" name="nome" value="<%= p.nome %>" required />
+        </div>
+        <div class="campo">
+          <label for="valor-<%= p.id %>">Valor (R$)</label>
+          <input id="valor-<%= p.id %>" name="valor" type="number" step="0.01" min="0" value="<%= (p.valor / 100).toFixed(2) %>" required />
+        </div>
+        <div class="campo">
+          <label for="comissaoPercentual-<%= p.id %>">Comissão do produto (%)</label>
+          <input id="comissaoPercentual-<%= p.id %>" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="<%= p.comissaoPercentual %>" />
+        </div>
+        <div class="campo">
+          <label for="categoriaId-<%= p.id %>">Categoria</label>
+          <select id="categoriaId-<%= p.id %>" name="categoriaId">
+            <option value="">Sem categoria</option>
+            <% categorias.forEach(function (c) { %>
+              <option value="<%= c.id %>" <%= p.categoriaId === c.id ? 'selected' : '' %>><%= c.nome %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="foto-<%= p.id %>">Foto</label>
+          <% if (p.fotoUrl) { %>
+            <div class="preview-foto"><img src="<%= p.fotoUrl %>" alt="Foto atual" /></div>
+          <% } %>
+          <input id="foto-<%= p.id %>" name="foto" type="file" accept="image/*" />
+          <span class="texto-sutil">JPG, PNG ou WEBP, até 4 MB.<%= p.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %></span>
+        </div>
+        <div class="modal-acoes">
+          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+          <button class="btn btn-primario" type="submit">Salvar alterações</button>
+        </div>
+      </form>
+      <div class="flex gap-8 mt-16">
+        <form method="POST" action="/painel/servicos/<%= p.id %>/toggle" class="inline">
+          <button class="btn btn-secundario btn-sm"><%= p.ativo ? 'Desativar' : 'Ativar' %></button>
+        </form>
+        <form method="POST" action="/painel/servicos/<%= p.id %>/remover" class="inline"
+              onsubmit="return confirm('Excluir este produto?')">
+          <button class="btn btn-perigo btn-sm">Excluir</button>
+        </form>
+      </div>
+    </div>
+  </div>
+<% }) %>
+
+<script>
+  function abrirModal(id) {
+    var o = document.getElementById('agm-' + id);
+    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+  }
+  function fecharModal(o) {
+    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
+      document.body.classList.remove('modal-aberto');
+    }
+  });
+</script>

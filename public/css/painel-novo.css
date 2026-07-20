@@ -235,10 +235,8 @@
    `.ag2-*` são compartilhadas por todas — apesar do prefixo (nasceram na
    Agenda), não são exclusivas dela.
    ========================================================================= */
-.pg-agenda .app-topo-fixo,
-.pg-estoque .app-topo-fixo { display: none; }
-.pg-agenda .conteudo,
-.pg-estoque .conteudo {
+.pg-novo .app-topo-fixo { display: none; }
+.pg-novo .conteudo {
   max-width: none;
   padding: 0;
   display: flex;
@@ -249,8 +247,7 @@
   background: #eaeaea; /* mesmo cinza contínuo por trás de tudo */
   animation: none;
 }
-.pg-agenda .conteudo > .alerta,
-.pg-estoque .conteudo > .alerta {
+.pg-novo .conteudo > .alerta {
   position: absolute;
   top: calc(12px + env(safe-area-inset-top, 0px));
   left: 16px;
@@ -551,18 +548,16 @@
 }
 
 /* ---- Pop-ups no visual do design: claros, arredondados, com blur ----
-   Vale para toda tela convertida (.pg-agenda, .pg-estoque, ...) — não é
-   exclusivo da Agenda, apesar do nome das classes .ag-*. */
-.pg-agenda .ag-overlay,
-.pg-estoque .ag-overlay {
+   Vale para TODA tela do design novo (.pg-novo) — não é exclusivo da Agenda,
+   apesar do nome das classes .ag-*. */
+.pg-novo .ag-overlay {
   background: rgba(10, 10, 10, 0.4);
   padding: 0 24px;
   /* O app base usa align-items:flex-end (pop-up "grudado" embaixo, estilo
      bottom-sheet) — o design novo centraliza o cartão no meio da tela. */
   align-items: center;
 }
-.pg-agenda .ag-modal-box,
-.pg-estoque .ag-modal-box {
+.pg-novo .ag-modal-box {
   width: 100%;
   max-width: 340px;
   background: rgba(255, 255, 255, 0.97);
@@ -579,17 +574,17 @@
   from { opacity: 0; transform: scale(0.94) translateY(10px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
-.pg-agenda .ag-modal-nome, .pg-estoque .ag-modal-nome,
-.pg-agenda .ag-modal-hora, .pg-estoque .ag-modal-hora { color: #0a0a0a; }
-.pg-agenda .ag-modal-nome, .pg-estoque .ag-modal-nome { font-size: 18px; font-weight: 700; }
-.pg-agenda .ag-modal-fechar, .pg-estoque .ag-modal-fechar { color: #8a8a85; }
-.pg-agenda .ag-modal-box label, .pg-estoque .ag-modal-box label,
-.pg-agenda .ag-modal-box .texto-secundario, .pg-estoque .ag-modal-box .texto-secundario,
-.pg-agenda .ag-modal-box .texto-sutil, .pg-estoque .ag-modal-box .texto-sutil { color: #8a8a85; }
+.pg-novo .ag-modal-nome,
+.pg-novo .ag-modal-hora { color: #0a0a0a; }
+.pg-novo .ag-modal-nome { font-size: 18px; font-weight: 700; }
+.pg-novo .ag-modal-fechar { color: #8a8a85; }
+.pg-novo .ag-modal-box label,
+.pg-novo .ag-modal-box .texto-secundario,
+.pg-novo .ag-modal-box .texto-sutil { color: #8a8a85; }
 /* Campos sem caixa: só a linha de baixo, como no design. */
-.pg-agenda .ag-modal-box input, .pg-estoque .ag-modal-box input,
-.pg-agenda .ag-modal-box select, .pg-estoque .ag-modal-box select,
-.pg-agenda .ag-modal-box textarea, .pg-estoque .ag-modal-box textarea {
+.pg-novo .ag-modal-box input,
+.pg-novo .ag-modal-box select,
+.pg-novo .ag-modal-box textarea {
   background: transparent;
   border: none;
   border-bottom: 1px solid rgba(10, 10, 10, 0.15);
@@ -597,24 +592,25 @@
   color: #0a0a0a;
   padding: 0 0 6px;
 }
-.pg-agenda .ag-modal-box input::placeholder, .pg-estoque .ag-modal-box input::placeholder { color: rgba(10, 10, 10, 0.35); }
-.pg-agenda .ag-modal-box .pill-opcao, .pg-estoque .ag-modal-box .pill-opcao {
+.pg-novo .ag-modal-box input::placeholder { color: rgba(10, 10, 10, 0.35); }
+.pg-novo .ag-modal-box .pill-opcao {
   background: rgba(10, 10, 10, 0.06);
   color: #5a5a55;
   border: none;
   border-radius: 999px;
 }
-.pg-agenda .ag-modal-box .pill-opcao.ativo, .pg-estoque .ag-modal-box .pill-opcao.ativo { background: #0a0a0a; color: #fff; }
-.pg-agenda .ag-modal-box .btn-primario, .pg-estoque .ag-modal-box .btn-primario { background: #0a0a0a; color: #fff; border-radius: 12px; }
-.pg-agenda .ag-modal-box .modal-cancelar, .pg-estoque .ag-modal-box .modal-cancelar { color: #8a8a85; }
-.pg-agenda .ag-modal-box .row, .pg-estoque .ag-modal-box .row,
-.pg-agenda .ag-modal-box .linha-simples, .pg-estoque .ag-modal-box .linha-simples { color: #0a0a0a; }
-/* Pop-up de item (não o "novo"): sem escurecer a lista atrás, como no HTML
-   original (background:transparent especificamente para estes). Precisa vir
-   DEPOIS da regra genérica acima para ganhar por ordem no empate de
-   especificidade. */
-.pg-estoque #agm-novo.ag-overlay { background: rgba(10, 10, 10, 0.4); }
-.pg-estoque .ag-overlay:not(#agm-novo) { background: transparent; }
+.pg-novo .ag-modal-box .pill-opcao.ativo { background: #0a0a0a; color: #fff; }
+.pg-novo .ag-modal-box .btn-primario { background: #0a0a0a; color: #fff; border-radius: 12px; }
+.pg-novo .ag-modal-box .modal-cancelar { color: #8a8a85; }
+.pg-novo .ag-modal-box .row,
+.pg-novo .ag-modal-box .linha-simples { color: #0a0a0a; }
+/* Pop-up de item (não o "novo"), só em Estoque/Produtos: sem escurecer a
+   lista atrás, como no HTML original (background:transparent especificamente
+   para estes). Serviços NÃO entra aqui — o mockup usa fundo escuro tanto
+   para "novo serviço" quanto para o detalhe de um serviço existente.
+   Precisa vir DEPOIS da regra genérica acima para ganhar por especificidade. */
+.pg-estoque #agm-novo.ag-overlay, .pg-produtos #agm-novo.ag-overlay { background: rgba(10, 10, 10, 0.4); }
+.pg-estoque .ag-overlay:not(#agm-novo), .pg-produtos .ag-overlay:not(#agm-novo) { background: transparent; }
 
 /* O painel aplica text-transform:uppercase em labels; nas pílulas de pagamento
    o design usa capitalização normal ("Pix", "Crédito"). */
@@ -730,3 +726,52 @@
 
 /* Pop-up de item x "novo item": ver regra correspondente no bloco de pop-ups
    acima (perto de .ag-modal-box) — precisa vir depois dela por especificidade. */
+
+/* =========================================================================
+   SERVIÇOS (.pg-servicos) — grade de 2 colunas com tiles compactos, bem
+   diferente da lista de linha do Estoque/Produtos. É assim no HTML original:
+   nome ancorado embaixo (margin-top:auto), preço abaixo, categoria+seta em
+   cima. O pop-up de detalhe leva com uma foto RETANGULAR (16:9), não um
+   avatar circular.
+   ========================================================================= */
+/* Cabeçalho de Serviços usa um avatar mais claro e o "+" sem círculo de
+   fundo (só o ícone) — diferentes do padrão escuro/sólido das outras telas. */
+.ag2-avatar-deco--clara { background: rgba(10, 10, 10, 0.06); }
+.ag2-marca--sutil { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #8a8a85; text-transform: uppercase; }
+.ag2-add--claro { background: none; color: #0a0a0a; }
+
+.sv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.sv-tile {
+  display: flex;
+  flex-direction: column;
+  min-height: 110px;
+  background: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  animation: homeRiseIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.sv-tile--inativo { opacity: 0.5; }
+.sv-tile-topo { display: flex; align-items: center; justify-content: space-between; color: #8a8a85; }
+.sv-tile-label { font-size: 11px; font-weight: 600; }
+.sv-tile-nome { font-size: 20px; font-weight: 600; color: #0a0a0a; letter-spacing: -0.4px; margin-top: auto; }
+.sv-tile-preco { font-size: 13px; font-weight: 700; color: #0a0a0a; margin-top: 10px; }
+
+/* Foto retangular no topo do pop-up de edição (em vez do avatar circular). */
+.sv-foto-grande {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #efe9dd;
+  aspect-ratio: 16/9;
+}
+.sv-foto-grande img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Badge neutro (cinza) para "Inativo" — diferente do vermelho de "Estoque
+   baixo", que é especificamente um alerta. */
+.est-badge-mini--neutro { background: rgba(10, 10, 10, 0.08); color: #5a5a55; }
+.est-item--inativo { opacity: 0.5; }

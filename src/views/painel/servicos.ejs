@@ -1,103 +1,72 @@
-<span class="dash-rotulo texto-sutil">SERVIÇOS</span>
-<div class="cards-grid mt-16 mb-16">
-  <% servicos.filter(function (s) { return !s.ehProduto; }).forEach(function (s) { %>
-    <div class="item-card <%= s.ativo ? '' : 'item-card--baixo' %>">
-      <span class="item-status-dot ag-dot <%= s.ativo ? 'dot-concluido' : 'dot-cancelado' %>"></span>
-      <button type="button" class="item-edit-btn" title="Editar" onclick="abrirModal(<%= s.id %>)">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-      </button>
-      <div class="item-thumb">
-        <% if (s.fotoUrl) { %>
-          <img src="<%= s.fotoUrl %>" alt="<%= s.nome %>" />
-        <% } else { %>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-        <% } %>
-      </div>
-      <div class="item-info">
-        <div class="item-bottom">
-          <span class="row-title"><%= s.nome %></span>
-          <span class="item-preco"><%= fmtBRL(s.valor) %></span>
-        </div>
-        <div class="item-categoria"><%= s.categoria ? s.categoria.nome : 'Sem categoria' %><%= s.duracaoMin > 0 ? ' · ' + s.duracaoMin + ' min' : '' %></div>
-      </div>
-    </div>
-  <% }) %>
+<%
+  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
+%>
+
+<!-- Cabeçalho: mesmo padrão de lista das outras telas — sem cartão atrás. -->
+<div class="ag2-topo">
+  <div class="ag2-marca-linha">
+    <span class="ag2-avatar-deco ag2-avatar-deco--clara"></span>
+    <span class="ag2-marca ag2-marca--sutil"><%= nomeBarbearia %></span>
+    <button type="button" class="ag2-add ag2-add--claro" onclick="abrirModal('novo')" aria-label="Novo serviço">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+  <div class="ag2-titulo">Serviços</div>
 </div>
 
-<span class="dash-rotulo texto-sutil">PRODUTOS</span>
-<div class="cards-grid mt-16">
-  <% servicos.filter(function (s) { return s.ehProduto; }).forEach(function (s) { %>
-    <div class="item-card <%= s.ativo ? '' : 'item-card--baixo' %>">
-      <span class="item-status-dot ag-dot <%= s.ativo ? 'dot-concluido' : 'dot-cancelado' %>"></span>
-      <button type="button" class="item-edit-btn" title="Editar" onclick="abrirModal(<%= s.id %>)">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-      </button>
-      <div class="item-thumb">
-        <% if (s.fotoUrl) { %>
-          <img src="<%= s.fotoUrl %>" alt="<%= s.nome %>" />
-        <% } else { %>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12.17V2h10.17l8.42 8.42a2 2 0 0 1 0 2.99z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-        <% } %>
-      </div>
-      <div class="item-info">
-        <div class="item-bottom">
-          <span class="row-title"><%= s.nome %></span>
-          <span class="item-preco"><%= fmtBRL(s.valor) %></span>
-        </div>
-        <div class="item-categoria"><%= s.categoria ? s.categoria.nome : 'Sem categoria' %></div>
-      </div>
+<div class="ag2-corpo">
+  <% if (servicos.length === 0) { %>
+    <div class="ag2-vazio">Nenhum serviço cadastrado ainda.</div>
+  <% } else { %>
+    <%/* Grade de 2 colunas, tiles compactos — diferente da lista de linha do
+         Estoque/Produtos (avatar circular). É assim no HTML original. */%>
+    <div class="sv-grid">
+      <% servicos.forEach(function (s) { %>
+        <button type="button" class="sv-tile <%= s.ativo ? '' : 'sv-tile--inativo' %>" onclick="abrirModal(<%= s.id %>)">
+          <div class="sv-tile-topo">
+            <span class="sv-tile-label"><%= s.categoria ? s.categoria.nome : 'Sem categoria' %></span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17 17 7M7 7h10v10"/></svg>
+          </div>
+          <span class="sv-tile-nome"><%= s.nome %></span>
+          <span class="sv-tile-preco"><%= fmtBRL(s.valor) %></span>
+        </button>
+      <% }) %>
     </div>
-  <% }) %>
-</div>
+  <% } %>
 
-<% if (servicos.length === 0) { %>
-  <div class="card mt-16"><p class="texto-secundario">Nenhum serviço cadastrado ainda.</p></div>
-<% } %>
-
-<!-- Categorias -->
-<div class="card mt-24">
-  <h2>Categorias</h2>
-  <p class="texto-secundario mb-16">
-    Remover uma categoria não apaga os serviços — eles ficam "sem categoria".
-  </p>
-
-  <form method="POST" action="/painel/servicos/categorias" class="form-inline-cat">
-    <input name="nome" placeholder="Nova categoria" required />
-    <button class="btn btn-secundario btn-sm">Adicionar</button>
-  </form>
-
-  <ul class="lista-categorias mt-16">
+  <!-- Categorias (compartilhadas com Produtos) -->
+  <div class="est-categorias">
+    <div class="est-categorias-titulo">Categorias</div>
+    <p class="est-categorias-sub">Remover uma categoria não apaga os itens — eles ficam "sem categoria".</p>
+    <form method="POST" action="/painel/servicos/categorias" class="est-cat-form">
+      <input type="hidden" name="retorno" value="servicos" />
+      <input name="nome" placeholder="Nova categoria" required />
+      <button class="est-cat-btn" type="submit">Adicionar</button>
+    </form>
     <% categorias.forEach(function (c) { %>
-      <li>
-        <form method="POST" action="/painel/servicos/categorias/<%= c.id %>" class="form-inline-cat">
+      <div class="est-cat-linha">
+        <form method="POST" action="/painel/servicos/categorias/<%= c.id %>" class="est-cat-form">
+          <input type="hidden" name="retorno" value="servicos" />
           <input name="nome" value="<%= c.nome %>" />
-          <span class="texto-sutil"><%= c._count.servicos %> item(ns)</span>
-          <button class="btn btn-secundario btn-sm">Salvar</button>
+          <span class="est-cat-count"><%= c._count.servicos %></span>
+          <button class="est-cat-btn est-cat-btn--claro" type="submit">Salvar</button>
         </form>
-        <form method="POST" action="/painel/servicos/categorias/<%= c.id %>/remover" class="inline"
-              onsubmit="return confirm('Remover esta categoria?')">
-          <button class="btn-x" title="Remover categoria">×</button>
+        <form method="POST" action="/painel/servicos/categorias/<%= c.id %>/remover?retorno=servicos" onsubmit="return confirm('Remover esta categoria?')">
+          <button class="est-cat-x" title="Remover categoria">×</button>
         </form>
-      </li>
+      </div>
     <% }) %>
-    <% if (categorias.length === 0) { %>
-      <li class="texto-secundario">Nenhuma categoria.</li>
-    <% } %>
-  </ul>
+    <% if (categorias.length === 0) { %><p class="est-categorias-sub">Nenhuma categoria.</p><% } %>
+  </div>
 </div>
 
-<!-- Botão flutuante: Novo serviço/produto (só nesta tela) -->
-<div class="agenda-fab-wrap">
-  <button type="button" class="agenda-fab" onclick="abrirModal('novo')" aria-label="Novo serviço ou produto">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  </button>
-</div>
-
-<!-- Pop-up: novo serviço/produto -->
+<!-- Pop-up: novo serviço (foto retangular 16:9, sem o toggle "é produto" —
+     aqui já sabemos que é serviço; sem o campo de comissão de produto, que
+     não se aplica a serviços). -->
 <div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
   <div class="ag-modal-box">
     <div class="ag-modal-topo">
-      <div class="ag-modal-nome">Novo</div>
+      <div class="ag-modal-nome">Novo serviço</div>
       <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
     </div>
     <form method="POST" enctype="multipart/form-data" class="form mt-16" action="/painel/servicos">
@@ -116,19 +85,8 @@
         </div>
         <div class="campo">
           <label for="duracaoMin-novo">Duração (min)</label>
-          <input id="duracaoMin-novo" name="duracaoMin" type="number" min="0" value="0" />
+          <input id="duracaoMin-novo" name="duracaoMin" type="number" min="0" value="30" />
         </div>
-      </div>
-      <div class="campo">
-        <label class="check">
-          <input type="checkbox" name="ehProduto" id="ehProduto-novo" onchange="document.getElementById('campo-comissao-novo').style.display=this.checked?'block':'none'" />
-          É um produto
-        </label>
-        <span class="texto-sutil">Produto: usa a % de comissão abaixo, não ocupa horário. Serviço: usa a % do barbeiro.</span>
-      </div>
-      <div class="campo" id="campo-comissao-novo" style="display:none">
-        <label for="comissaoPercentual-novo">Comissão do produto (%)</label>
-        <input id="comissaoPercentual-novo" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="10" />
       </div>
       <div class="campo">
         <label for="categoriaId-novo">Categoria</label>
@@ -152,13 +110,14 @@
   </div>
 </div>
 
-<!-- Pop-up de edição: um por item -->
+<!-- Pop-up de edição: um por serviço -->
 <% servicos.forEach(function (s) { %>
   <div class="ag-overlay" id="agm-<%= s.id %>" onclick="if(event.target===this)fecharModal(this)">
     <div class="ag-modal-box">
-      <div class="ag-modal-topo">
-        <div class="ag-modal-nome"><%= s.nome %></div>
-        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+      <div class="sv-foto-grande">
+        <% if (s.fotoUrl) { %>
+          <img src="<%= s.fotoUrl %>" alt="<%= s.nome %>" />
+        <% } %>
       </div>
       <form method="POST" enctype="multipart/form-data" class="form mt-16" action="/painel/servicos/<%= s.id %>">
         <div class="campo">
@@ -180,17 +139,6 @@
           </div>
         </div>
         <div class="campo">
-          <label class="check">
-            <input type="checkbox" name="ehProduto" id="ehProduto-<%= s.id %>" <%= s.ehProduto ? 'checked' : '' %>
-                   onchange="document.getElementById('campo-comissao-<%= s.id %>').style.display=this.checked?'block':'none'" />
-            É um produto
-          </label>
-        </div>
-        <div class="campo" id="campo-comissao-<%= s.id %>" style="display:<%= s.ehProduto ? 'block' : 'none' %>">
-          <label for="comissaoPercentual-<%= s.id %>">Comissão do produto (%)</label>
-          <input id="comissaoPercentual-<%= s.id %>" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="<%= s.comissaoPercentual %>" />
-        </div>
-        <div class="campo">
           <label for="categoriaId-<%= s.id %>">Categoria</label>
           <select id="categoriaId-<%= s.id %>" name="categoriaId">
             <option value="">Sem categoria</option>
@@ -201,9 +149,6 @@
         </div>
         <div class="campo">
           <label for="foto-<%= s.id %>">Foto</label>
-          <% if (s.fotoUrl) { %>
-            <div class="preview-foto"><img src="<%= s.fotoUrl %>" alt="Foto atual" /></div>
-          <% } %>
           <input id="foto-<%= s.id %>" name="foto" type="file" accept="image/*" />
           <span class="texto-sutil">JPG, PNG ou WEBP, até 4 MB.<%= s.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %></span>
         </div>
@@ -217,7 +162,7 @@
           <button class="btn btn-secundario btn-sm"><%= s.ativo ? 'Desativar' : 'Ativar' %></button>
         </form>
         <form method="POST" action="/painel/servicos/<%= s.id %>/remover" class="inline"
-              onsubmit="return confirm('Excluir este item?')">
+              onsubmit="return confirm('Excluir este serviço?')">
           <button class="btn btn-perigo btn-sm">Excluir</button>
         </form>
       </div>
