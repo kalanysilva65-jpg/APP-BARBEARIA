@@ -1,0 +1,164 @@
+<%
+  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
+  var PAPEL_LABEL = { admin: 'Administrador', funcionario: 'Barbeiro' };
+%>
+
+<!-- Cabeçalho: mesmo padrão de marca-com-ícone da tela de Clientes. -->
+<div class="ag2-topo">
+  <div class="ag2-marca-linha">
+    <span class="ag2-avatar-deco"></span>
+    <span class="ag2-marca cl-marca">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8a8a85" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20a6 6 0 0 1 12 0M15.5 20a5 5 0 0 1 5.5-5"/></svg>
+      <%= nomeBarbearia %>
+    </span>
+    <button type="button" class="ag2-add" onclick="abrirModal('novo')" aria-label="Novo membro">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+  <div class="ag2-titulo">Equipe</div>
+</div>
+
+<%/* Sem o carrossel de swipe do HTML original (cards absolutos com
+     drag/transform) — vira uma lista vertical simples, mesmo padrão de
+     card+pop-up já usado nas outras telas. Sem a aba "Histórico" (o mockup
+     mostra um feed de comissões por barbeiro que já existe na tela de
+     Comissões — não duplicado aqui). */%>
+<div class="ag2-corpo">
+  <% if (membros.length === 0) { %>
+    <div class="ag2-vazio">Nenhum membro na equipe ainda.</div>
+  <% } else { %>
+    <div class="eq-lista">
+      <% membros.forEach(function (m) { %>
+        <div class="eq-card <%= m.ativo ? '' : 'eq-card--inativo' %>">
+          <div class="eq-card-topo">
+            <span class="eq-avatar">
+              <% if (m.fotoUrl) { %><img src="<%= m.fotoUrl %>" alt="<%= m.nome %>" /><% } %>
+            </span>
+            <span class="eq-info">
+              <span class="eq-nome-linha">
+                <span class="eq-nome"><%= m.nome %></span>
+                <% if (m.ativo) { %><svg width="15" height="15" viewBox="0 0 24 24" fill="#2fae5c" stroke="#fff" stroke-width="1.5"><path d="M8.5 12.2l2.3 2.3 4.7-4.9" stroke="#fff" stroke-width="2" fill="none"/></svg><% } %>
+              </span>
+              <span class="eq-papel"><%= PAPEL_LABEL[m.papel] || m.papel %></span>
+            </span>
+          </div>
+          <div class="eq-stats">
+            <span class="eq-stat"><%= m.stats.ocupacaoPct === null ? '—' : m.stats.ocupacaoPct + '%' %> ocupação</span>
+            <span class="eq-stat"><%= fmtBRL(m.stats.ticketMedio) %> ticket médio</span>
+          </div>
+          <button type="button" class="eq-ver-mais" onclick="abrirModal(<%= m.id %>)">Ver mais</button>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+
+<!-- Pop-up: novo membro (escurece atrás, igual Serviços/Planos). -->
+<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Novo membro</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
+    <form method="POST" action="/painel/equipe" class="form mt-16">
+      <div class="campo">
+        <label for="nome-novo">Nome</label>
+        <input id="nome-novo" name="nome" required />
+      </div>
+      <div class="campo">
+        <label for="email-novo">E-mail (login)</label>
+        <input id="email-novo" name="email" type="email" required />
+      </div>
+      <div class="campo">
+        <label for="senha-novo">Senha</label>
+        <input id="senha-novo" name="senha" type="password" minlength="6" required />
+      </div>
+      <div class="campo">
+        <label>Papel</label>
+        <input type="hidden" name="papel" id="papel-novo" value="funcionario" />
+        <div class="pill-group">
+          <button type="button" class="pill-opcao ativo" data-valor="funcionario" onclick="selecionarPapel(this,'novo')">Barbeiro</button>
+          <button type="button" class="pill-opcao" data-valor="admin" onclick="selecionarPapel(this,'novo')">Administrador</button>
+        </div>
+      </div>
+      <div class="modal-acoes">
+        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+        <button class="btn btn-primario" type="submit">Adicionar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Pop-up de edição: um por membro (transparente atrás, igual Estoque/Produtos). -->
+<% membros.forEach(function (m) { %>
+  <div class="ag-overlay" id="agm-<%= m.id %>" onclick="if(event.target===this)fecharModal(this)">
+    <div class="ag-modal-box">
+      <div class="ag-modal-topo">
+        <div class="ag-modal-nome"><%= m.nome %></div>
+        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+      </div>
+      <form method="POST" enctype="multipart/form-data" action="/painel/equipe/<%= m.id %>" class="form mt-16">
+        <div class="campo">
+          <label for="nome-<%= m.id %>">Nome</label>
+          <input id="nome-<%= m.id %>" name="nome" value="<%= m.nome %>" required />
+        </div>
+        <div class="campo">
+          <label for="email-<%= m.id %>">E-mail (login)</label>
+          <input id="email-<%= m.id %>" name="email" type="email" value="<%= m.email %>" required />
+        </div>
+        <div class="campo">
+          <label for="senha-<%= m.id %>">Nova senha <span class="texto-sutil">(deixe em branco pra manter)</span></label>
+          <input id="senha-<%= m.id %>" name="senha" type="password" minlength="6" />
+        </div>
+        <div class="campo">
+          <label>Papel</label>
+          <input type="hidden" name="papel" id="papel-<%= m.id %>" value="<%= m.papel %>" />
+          <div class="pill-group">
+            <button type="button" class="pill-opcao <%= m.papel === 'funcionario' ? 'ativo' : '' %>" data-valor="funcionario" onclick="selecionarPapel(this,'<%= m.id %>')">Barbeiro</button>
+            <button type="button" class="pill-opcao <%= m.papel === 'admin' ? 'ativo' : '' %>" data-valor="admin" onclick="selecionarPapel(this,'<%= m.id %>')">Administrador</button>
+          </div>
+        </div>
+        <div class="campo">
+          <label for="comissao-<%= m.id %>">Comissão em serviços (%)</label>
+          <input id="comissao-<%= m.id %>" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="<%= m.comissaoPercentual %>" />
+        </div>
+        <div class="campo">
+          <label for="foto-<%= m.id %>">Foto</label>
+          <% if (m.fotoUrl) { %><div class="preview-foto"><img src="<%= m.fotoUrl %>" alt="Foto atual" /></div><% } %>
+          <input id="foto-<%= m.id %>" name="foto" type="file" accept="image/*" />
+        </div>
+        <div class="modal-acoes">
+          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+          <button class="btn btn-primario" type="submit">Salvar alterações</button>
+        </div>
+      </form>
+      <div class="flex gap-8 mt-16">
+        <form method="POST" action="/painel/equipe/<%= m.id %>/toggle" class="inline">
+          <button class="btn btn-secundario btn-sm"><%= m.ativo ? 'Desativar' : 'Ativar' %></button>
+        </form>
+      </div>
+    </div>
+  </div>
+<% }) %>
+
+<script>
+  function abrirModal(id) {
+    var o = document.getElementById('agm-' + id);
+    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+  }
+  function fecharModal(o) {
+    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+  }
+  function selecionarPapel(btn, id) {
+    var grupo = btn.parentElement;
+    Array.prototype.forEach.call(grupo.querySelectorAll('.pill-opcao'), function (b) { b.classList.remove('ativo'); });
+    btn.classList.add('ativo');
+    document.getElementById('papel-' + id).value = btn.getAttribute('data-valor');
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
+      document.body.classList.remove('modal-aberto');
+    }
+  });
+</script>

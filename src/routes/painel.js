@@ -14,6 +14,7 @@ const clienteController = require('../controllers/clienteController');
 const planoController = require('../controllers/planoController');
 const dashboardController = require('../controllers/dashboardController');
 const perfilController = require('../controllers/perfilController');
+const equipeController = require('../controllers/equipeController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -38,12 +39,23 @@ function uploadFotoPerfil(req, res, next) {
   });
 }
 
-// Upload da foto do barbeiro (volta para a tela de Equipe/Comissões em caso de erro).
+// Upload da foto do barbeiro (volta para a tela de Comissões em caso de erro).
 function uploadFotoBarbeiro(req, res, next) {
   upload.single('foto')(req, res, (err) => {
     if (err) {
       req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload da foto.' };
       return res.redirect('/painel/comissoes');
+    }
+    next();
+  });
+}
+
+// Idem, mas volta para a Equipe em caso de erro.
+function uploadFotoEquipe(req, res, next) {
+  upload.single('foto')(req, res, (err) => {
+    if (err) {
+      req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload da foto.' };
+      return res.redirect('/painel/equipe');
     }
     next();
   });
@@ -123,7 +135,15 @@ router.post('/planos/:id/toggle', exigeAdmin, planoController.alternarAtivo);
 router.post('/planos/:id/remover', exigeAdmin, planoController.remover);
 router.post('/planos/:id', exigeAdmin, planoController.atualizar);
 
-// --- Equipe / Comissões ----------------------------------------------------
+// --- Equipe (só admin) -------------------------------------------------------
+// Voltou a existir no painel comum (antes só no painel-mestre) — decisão do
+// dono, 2026-07-20. Gerenciar quem trabalha na barbearia é coisa de admin.
+router.get('/equipe', exigeAdmin, equipeController.listar);
+router.post('/equipe', exigeAdmin, equipeController.criar);
+router.post('/equipe/:id/toggle', exigeAdmin, equipeController.alternarAtivo);
+router.post('/equipe/:id', exigeAdmin, uploadFotoEquipe, equipeController.atualizar);
+
+// --- Comissões ----------------------------------------------------
 // Barbeiro vê SÓ a comissão dele (escopado no controller). Editar a % e trocar
 // a foto de barbeiros continua sendo exclusivo do admin.
 router.get('/comissoes', comissaoController.ver);

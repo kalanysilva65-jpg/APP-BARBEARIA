@@ -620,6 +620,11 @@
 /* Clientes não tem pop-up "novo" (o cadastro é um painel inline, não modal)
    — todo pop-up aqui é o de detalhe, sempre transparente atrás. */
 .pg-clientes .ag-overlay { background: transparent; }
+/* Equipe: o pop-up de detalhe do HTML original usa um escurecido mais leve
+   (rgba(10,10,10,.3)) que o de Estoque/Produtos (transparente) e o de
+   Serviços/Planos "novo" (rgba(10,10,10,.4)) — uma terceira variação, não
+   invenção. O de "novo membro" fica no padrão escuro genérico (.5 do app). */
+.pg-equipe .ag-overlay:not(#agm-novo) { background: rgba(10, 10, 10, 0.3); }
 
 /* O painel aplica text-transform:uppercase em labels; nas pílulas de pagamento
    o design usa capitalização normal ("Pix", "Crédito"). */
@@ -1025,4 +1030,47 @@
   background: transparent;
   color: #0a0a0a;
   font-family: inherit;
+}
+
+/* =========================================================================
+   EQUIPE (.pg-equipe) — sem o carrossel de swipe do HTML original (cards
+   absolutos com drag/transform); lista vertical simples, mesmo padrão de
+   card+pop-up das outras telas. Cabeçalho igual ao de Clientes (marca com
+   ícone) e "+" sólido (igual Agenda/Estoque/Produtos/Clientes).
+   ========================================================================= */
+.eq-lista { display: flex; flex-direction: column; gap: 12px; }
+.eq-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  animation: homeRiseIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.eq-card--inativo { opacity: 0.5; }
+.eq-card-topo { display: flex; align-items: center; gap: 12px; }
+.eq-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #d7dbdc;
+  flex: none;
+  overflow: hidden;
+}
+.eq-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.eq-info { display: flex; flex-direction: column; }
+.eq-nome-linha { display: flex; align-items: center; gap: 6px; }
+.eq-nome { font-size: 16px; font-weight: 700; color: #0a0a0a; }
+.eq-papel { font-size: 12px; color: #8a8a85; margin-top: 2px; }
+.eq-stats { display: flex; gap: 16px; margin-top: 12px; }
+.eq-stat { font-size: 12px; color: #0a0a0a; }
+.eq-ver-mais {
+  margin-top: 12px;
+  width: 100%;
+  background: #ededed;
+  border: none;
+  border-radius: 999px;
+  padding: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0a0a0a;
+  cursor: pointer;
 }
