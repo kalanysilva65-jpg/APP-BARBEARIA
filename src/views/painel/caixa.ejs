@@ -1,103 +1,209 @@
-<form method="POST" action="/painel/caixa/config" class="caixa-auto mb-16">
-  <input type="hidden" name="ligado" value="<%= autoLigado ? 'false' : 'true' %>" />
-  <span class="caixa-auto-label">Entrada automática</span>
-  <button class="btn <%= autoLigado ? 'btn-secundario' : 'btn-primario' %> btn-sm btn-pill">
-    <%= autoLigado ? 'Desligar' : 'Ligar' %>
-  </button>
-</form>
+<%
+  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
+  var ICONE_PAG = {
+    pix: '<path d="M12 3 4 12l8 9 8-9-8-9z"/>',
+    credito: '<rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20"/>',
+    debito: '<rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20"/>',
+    dinheiro: '<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="3"/>',
+  };
+%>
 
-<!-- Seletor de período: pills (Hoje/Semana/Mês) + ícone de calendário (De/Até) -->
-<div class="periodo-barra mb-16">
-  <div class="periodo-pills">
-    <a class="periodo-pill <%= periodoAtivo === 'hoje' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>">Hoje</a>
-    <a class="periodo-pill <%= periodoAtivo === 'semana' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetSemana.inicio %>&fim=<%= presetSemana.fim %>">Semana</a>
-    <a class="periodo-pill <%= periodoAtivo === 'mes' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetMes.inicio %>&fim=<%= presetMes.fim %>">Mês</a>
-  </div>
-  <button type="button" class="periodo-cal-btn <%= periodoAtivo === 'custom' ? 'ativo' : '' %>" onclick="abrirModalCaixa('periodo')" title="Escolher período (De/Até)">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-  </button>
-</div>
-
-<!-- Gráfico do período -->
-<div class="card caixa-ganhos mb-16">
-  <span class="caixa-ganhos-rotulo texto-sutil"><%= nomePeriodoSel.toUpperCase() %></span>
-  <div class="semana caixa-semana">
-    <% barrasPeriodo.forEach(function (d) { %>
-      <div class="semana-col">
-        <div class="semana-bar <%= d.hoje ? 'hoje' : '' %>" style="height:<%= Math.max(4, Math.round((d.valor / maxBarraPeriodo) * 72)) %>px" title="<%= fmtBRL(d.valor) %>"></div>
-        <span class="semana-rot <%= d.hoje ? 'hoje' : '' %>"><%= d.rotulo %></span>
-      </div>
-    <% }) %>
-  </div>
-</div>
-
-<!-- Entrou / Saiu / Lucro do período -->
-<div class="caixa-resumo-hoje mb-16">
-  <div class="resumo-linha"><span class="texto-sutil">Entrou</span><span class="valor-entrada">+<%= fmtBRL(resumoPeriodo.entrou) %></span></div>
-  <div class="resumo-linha"><span class="texto-sutil">Saiu</span><span class="valor-saida">−<%= fmtBRL(resumoPeriodo.saiu) %></span></div>
-  <div class="resumo-linha total"><span>Lucro</span><span><%= fmtBRL(resumoPeriodo.saldo) %></span></div>
-</div>
-
-<!-- Saldo do dia + saldo do mês (fixos, não mudam com o período acima) -->
-<div class="caixa-saldos mb-16">
-  <div class="caixa-saldo caixa-saldo--destaque">
-    <span class="caixa-saldo-label">Saldo do dia</span>
-    <span class="caixa-saldo-valor"><%= fmtBRL(resumoHoje.saldo) %></span>
-  </div>
-  <div class="caixa-saldo caixa-saldo--mes">
-    <span class="caixa-saldo-label">Saldo do mês</span>
-    <span class="caixa-saldo-valor"><%= fmtBRL(resumoMesAtual.saldo) %></span>
-  </div>
-</div>
-
-<!-- Movimentações do período -->
-<div class="mt-24">
-  <span class="dash-rotulo texto-sutil">MOVIMENTAÇÕES</span>
-
-  <% if (lancamentos.length === 0) { %>
-    <p class="texto-secundario mt-16">Nenhum lançamento neste período.</p>
-  <% } else { %>
-    <div class="caixa-mov-lista mt-16">
-      <% lancamentos.forEach(function (l) { %>
-        <div class="caixa-mov-item">
-          <div class="caixa-mov-info">
-            <span class="caixa-mov-titulo"><%= l.descricao %><% if (l.agendamentoId) { %> <span class="texto-sutil">(auto)</span><% } %></span>
-            <span class="caixa-mov-sub"><%= l.categoria ? l.categoria.nome : '—' %> · <%= fmtData(l.data) %></span>
-          </div>
-          <span class="caixa-mov-valor <%= l.tipo === 'entrada' ? 'valor-entrada' : 'valor-saida' %>">
-            <%= l.tipo === 'entrada' ? '+' : '−' %><%= fmtBRL(l.valor) %>
-          </span>
-          <form method="POST" action="/painel/caixa/<%= l.id %>/remover" class="caixa-mov-x"
-                onsubmit="return confirm('Excluir este lançamento?')">
-            <input type="hidden" name="inicio" value="<%= inicioStr %>" />
-            <input type="hidden" name="fim" value="<%= fimStr %>" />
-            <button title="Excluir">×</button>
-          </form>
-        </div>
-      <% }) %>
+<!-- Cabeçalho: segmentado Saldo/Transações (igual ao Equipe/Histórico da
+     tela de Equipe) + "+" sem círculo (abre "Novo lançamento", escurece
+     atrás). -->
+<div class="ag2-topo">
+  <div class="ag2-marca-linha">
+    <span class="ag2-avatar-deco"></span>
+    <div class="fin-tabs">
+      <span class="fin-tab ativo" data-tab="saldo" onclick="mudarAbaFin('saldo')">Saldo</span>
+      <span class="fin-tab" data-tab="transacoes" onclick="mudarAbaFin('transacoes')">Transações</span>
     </div>
-  <% } %>
-</div>
-
-<!-- Botão flutuante: Novo lançamento / Categorias (só nesta tela) -->
-<div class="agenda-fab-wrap">
-  <div class="agenda-fab-menu" id="caixa-fab-menu">
-    <button type="button" class="agenda-fab-opcao" onclick="abrirModalCaixa('lancamento')">
-      <span>Novo lançamento</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    </button>
-    <button type="button" class="agenda-fab-opcao" onclick="abrirModalCaixa('categorias')">
-      <span>Categorias de caixa</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+    <button type="button" class="ag2-add ag2-add--claro" onclick="abrirModal('novo')" aria-label="Novo lançamento">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
     </button>
   </div>
-  <button type="button" class="agenda-fab" onclick="document.getElementById('caixa-fab-menu').classList.toggle('aberto')" aria-label="Nova ação">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  </button>
+
+  <div class="ag2-vazio-cabecalho" style="text-align:center;margin-top:20px;">
+    <span class="ag2-marca cl-marca">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8a8a85" stroke-width="2"><path d="M12 22s7-7.5 7-13a7 7 0 0 0-14 0c0 5.5 7 13 7 13z"/><circle cx="12" cy="9" r="2.2"/></svg>
+      <%= nomeBarbearia %>
+    </span>
+    <div class="ag2-titulo" style="margin-top:6px;"><%= saudacao %>, <%= usuarioPrimeiroNome %>!</div>
+  </div>
+
+  <!-- Seletor de período: pílulas de vidro (Hoje/Semana/Mês), igual ao HTML
+       original. Calendário (período customizado) e engrenagem (categorias)
+       são acréscimos necessários — não existem no protótipo, que não tem
+       backend por trás. -->
+  <div class="fin-periodo-linha">
+    <div class="fin-periodo-pills">
+      <a class="fin-periodo-pill <%= periodoAtivo === 'hoje' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>">Hoje</a>
+      <a class="fin-periodo-pill <%= periodoAtivo === 'semana' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetSemana.inicio %>&fim=<%= presetSemana.fim %>">Semana</a>
+      <a class="fin-periodo-pill <%= periodoAtivo === 'mes' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetMes.inicio %>&fim=<%= presetMes.fim %>">Mês</a>
+    </div>
+    <button type="button" class="fin-periodo-icone <%= periodoAtivo === 'custom' ? 'ativo' : '' %>" onclick="abrirModal('periodo')" title="Escolher período">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </button>
+    <button type="button" class="fin-periodo-icone" onclick="abrirModal('categorias')" title="Categorias de caixa">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="ag2-corpo fin-corpo">
+  <!-- Aba Saldo -->
+  <div class="fin-aba" id="fin-aba-saldo">
+    <div class="fin-carteira-wrap">
+      <div class="fin-peek fin-peek--1"></div>
+      <div class="fin-peek fin-peek--2"></div>
+      <div class="fin-carteira">
+        <div class="fin-carteira-label">Caixa</div>
+        <div class="fin-carteira-valor"><%= fmtBRL(resumoPeriodo.saldo) %></div>
+        <button type="button" class="fin-detalhes-btn" onclick="abrirModal('detalhes')">Detalhes</button>
+      </div>
+    </div>
+
+    <div class="fin-grid">
+      <div class="fin-grid-card">
+        <div class="fin-grid-label">Serviços</div>
+        <div class="fin-grid-valor"><%= fmtBRL(servicosValor) %></div>
+      </div>
+      <div class="fin-grid-card">
+        <div class="fin-grid-label">Produtos</div>
+        <div class="fin-grid-valor"><%= fmtBRL(produtosValor) %></div>
+      </div>
+      <div class="fin-grid-card">
+        <div class="fin-grid-label">Comissão</div>
+        <div class="fin-grid-valor"><%= fmtBRL(comissaoValor) %></div>
+      </div>
+      <div class="fin-grid-card">
+        <div class="fin-grid-label">Saídas</div>
+        <div class="fin-grid-valor"><%= fmtBRL(resumoPeriodo.saiu) %></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aba Transações -->
+  <div class="fin-aba" id="fin-aba-transacoes" hidden>
+    <div class="fin-trans-card">
+      <div class="fin-trans-topo">
+        <div class="fin-trans-titulo">Transações</div>
+        <div class="fin-trans-vertudo">Ver tudo</div>
+      </div>
+      <div class="fin-trans-secao"><%= nomePeriodoSel.toUpperCase() %></div>
+      <% if (lancamentos.length === 0) { %>
+        <div class="ag2-vazio">Nenhum lançamento neste período.</div>
+      <% } else { %>
+        <div class="fin-trans-lista">
+          <% lancamentos.forEach(function (l) { %>
+            <div class="fin-trans-item">
+              <span class="fin-trans-icone <%= l.tipo === 'entrada' ? 'fin-trans-icone--entrada' : 'fin-trans-icone--saida' %>">
+                <% if (l.tipo === 'entrada') { %>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+                <% } else { %>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e36b6b" stroke-width="2.4"><path d="M5 12h14"/></svg>
+                <% } %>
+              </span>
+              <span class="fin-trans-info">
+                <span class="fin-trans-nome"><%= l.descricao %></span>
+                <span class="fin-trans-sub"><%= fmtData(l.data) %><%= l.categoria ? ' · ' + l.categoria.nome : '' %></span>
+              </span>
+              <span class="fin-trans-valor <%= l.tipo === 'entrada' ? 'fin-trans-valor--entrada' : 'fin-trans-valor--saida' %>">
+                <%= l.tipo === 'entrada' ? '+ ' : '− ' %><%= fmtBRL(l.valor) %>
+              </span>
+              <form method="POST" action="/painel/caixa/<%= l.id %>/remover" class="fin-trans-x" onsubmit="return confirm('Excluir este lançamento?')">
+                <input type="hidden" name="inicio" value="<%= inicioStr %>" />
+                <input type="hidden" name="fim" value="<%= fimStr %>" />
+                <button title="Excluir">×</button>
+              </form>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Pop-up: Detalhes (formas de pagamento) — escurece atrás, igual ao HTML original. -->
+<div class="ag-overlay" id="agm-detalhes" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Formas de pagamento</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
+    <div class="texto-sutil mt-4"><%= nomePeriodoSel %> · <%= fmtBRL(resumoPeriodo.entrou) %></div>
+    <% if (formasPagamento.length === 0) { %>
+      <p class="texto-secundario mt-16">Nenhuma entrada com forma de pagamento registrada neste período.</p>
+    <% } else { %>
+      <div class="fin-pag-lista mt-16">
+        <% formasPagamento.forEach(function (f) { %>
+          <div class="fin-pag-item">
+            <span class="fin-pag-icone <%= f.valor === 'pix' ? 'fin-pag-icone--escura' : '' %>">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="<%= f.valor === 'pix' ? '#fff' : '#0a0a0a' %>" stroke-width="2"><%- ICONE_PAG[f.valor] %></svg>
+            </span>
+            <span class="fin-pag-nome"><%= f.label %></span>
+            <span class="fin-pag-valor"><%= fmtBRL(f.valorCentavos) %></span>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Pop-up: Novo lançamento (categoria já carrega o tipo entrada/saída). -->
+<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Novo lançamento</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
+    <% if (categorias.length === 0) { %>
+      <p class="texto-secundario mt-16">Cadastre uma categoria pra poder lançar.</p>
+    <% } else { %>
+      <form method="POST" action="/painel/caixa" class="form mt-16">
+        <input type="hidden" name="inicio" value="<%= inicioStr %>" />
+        <input type="hidden" name="fim" value="<%= fimStr %>" />
+        <div class="campo">
+          <label for="descricao-novo">Descrição</label>
+          <input id="descricao-novo" name="descricao" placeholder="Ex.: Corte do João" />
+        </div>
+        <div class="campo">
+          <label for="valor-novo">Valor (R$)</label>
+          <input id="valor-novo" name="valor" type="number" step="0.01" min="0" required />
+        </div>
+        <div class="campo">
+          <label>Categoria</label>
+          <input type="hidden" name="categoriaId" id="categoriaId-novo" required />
+          <div class="pill-group">
+            <% categorias.forEach(function (c) { %>
+              <button type="button" class="pill-opcao" data-valor="<%= c.id %>" onclick="selecionarPill(this,'categoriaId-novo')"><%= c.tipo === 'entrada' ? 'Entrada' : 'Saída' %> · <%= c.nome %></button>
+            <% }) %>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Forma de pagamento <span class="texto-sutil">(opcional)</span></label>
+          <input type="hidden" name="formaPagamento" id="formaPagamento-novo" />
+          <div class="pill-group">
+            <% formasPagamentoOpcoes.forEach(function (f) { %>
+              <button type="button" class="pill-opcao" data-valor="<%= f.valor %>" onclick="selecionarPill(this,'formaPagamento-novo')"><%= f.label %></button>
+            <% }) %>
+          </div>
+        </div>
+        <div class="campo">
+          <label for="data-novo">Data</label>
+          <input id="data-novo" name="data" type="date" value="<%= hojeIso %>" />
+        </div>
+        <div class="modal-acoes">
+          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+          <button class="btn btn-primario" type="submit">Adicionar</button>
+        </div>
+      </form>
+    <% } %>
+  </div>
 </div>
 
 <!-- Pop-up: escolher período (De/Até) -->
-<div class="ag-overlay" id="caixa-modal-periodo" onclick="if(event.target===this)fecharModal(this)">
+<div class="ag-overlay" id="agm-periodo" onclick="if(event.target===this)fecharModal(this)">
   <div class="ag-modal-box">
     <div class="ag-modal-topo">
       <div class="ag-modal-nome">Escolher período</div>
@@ -122,59 +228,14 @@
   </div>
 </div>
 
-<!-- Pop-up: Novo lançamento -->
-<div class="ag-overlay" id="caixa-modal-lancamento" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
-    <div class="ag-modal-topo">
-      <div class="ag-modal-nome">Novo lançamento</div>
-      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-    </div>
-    <% if (categorias.length === 0) { %>
-      <p class="texto-secundario mt-16">Cadastre uma categoria para poder lançar.</p>
-    <% } else { %>
-      <form method="POST" action="/painel/caixa" class="form mt-16">
-        <input type="hidden" name="inicio" value="<%= inicioStr %>" />
-        <input type="hidden" name="fim" value="<%= fimStr %>" />
-        <div class="campo">
-          <label for="categoriaId">Categoria</label>
-          <select id="categoriaId" name="categoriaId" required>
-            <option value="">Selecione…</option>
-            <% categorias.forEach(function (c) { %>
-              <option value="<%= c.id %>"><%= c.tipo === 'entrada' ? 'Entrada' : 'Saída' %> · <%= c.nome %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="grid-2">
-          <div class="campo">
-            <label for="valor">Valor (R$)</label>
-            <input id="valor" name="valor" type="number" step="0.01" min="0" required />
-          </div>
-          <div class="campo">
-            <label for="data">Data</label>
-            <input id="data" name="data" type="date" value="<%= hojeIso %>" />
-          </div>
-        </div>
-        <div class="campo">
-          <label for="descricao">Descrição (opcional)</label>
-          <input id="descricao" name="descricao" placeholder="Ex.: Corte do João" />
-        </div>
-        <div class="modal-acoes">
-          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-          <button class="btn btn-primario" type="submit">Registrar lançamento</button>
-        </div>
-      </form>
-    <% } %>
-  </div>
-</div>
-
 <!-- Pop-up: Categorias de caixa -->
-<div class="ag-overlay" id="caixa-modal-categorias" onclick="if(event.target===this)fecharModal(this)">
+<div class="ag-overlay" id="agm-categorias" onclick="if(event.target===this)fecharModal(this)">
   <div class="ag-modal-box">
     <div class="ag-modal-topo">
       <div class="ag-modal-nome">Categorias de caixa</div>
       <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
     </div>
-    <p class="texto-secundario">Cada categoria é de entrada ou saída. Remover não apaga lançamentos.</p>
+    <p class="texto-sutil mt-4">Cada categoria é de entrada ou saída. Remover não apaga lançamentos.</p>
 
     <form method="POST" action="/painel/caixa/categorias" class="form-cat-caixa mt-16">
       <input name="nome" placeholder="Nova categoria" required />
@@ -182,7 +243,7 @@
         <option value="entrada">Entrada</option>
         <option value="saida">Saída</option>
       </select>
-      <button class="btn btn-secundario btn-sm">Adicionar</button>
+      <button class="est-cat-btn est-cat-btn--claro">Adicionar</button>
     </form>
 
     <ul class="lista-categorias mt-16">
@@ -195,38 +256,48 @@
               <option value="saida" <%= c.tipo === 'saida' ? 'selected' : '' %>>Saída</option>
             </select>
             <span class="texto-sutil"><%= c._count.lancamentos %></span>
-            <button class="btn btn-secundario btn-sm">Salvar</button>
+            <button class="est-cat-btn est-cat-btn--claro">Salvar</button>
           </form>
           <form method="POST" action="/painel/caixa/categorias/<%= c.id %>/remover" class="inline"
                 onsubmit="return confirm('Remover esta categoria?')">
-            <button class="btn-x" title="Remover categoria">×</button>
+            <button class="est-cat-x" title="Remover categoria">×</button>
           </form>
         </li>
       <% }) %>
       <% if (categorias.length === 0) { %>
-        <li class="texto-secundario">Nenhuma categoria.</li>
+        <li class="texto-sutil">Nenhuma categoria.</li>
       <% } %>
     </ul>
+
+    <form method="POST" action="/painel/caixa/config" class="mt-16">
+      <input type="hidden" name="ligado" value="<%= autoLigado ? 'false' : 'true' %>" />
+      <div class="flex gap-8" style="align-items:center;justify-content:space-between;">
+        <span class="texto-sutil">Entrada automática ao concluir atendimento</span>
+        <button class="btn btn-secundario btn-sm"><%= autoLigado ? 'Desligar' : 'Ligar' %></button>
+      </div>
+    </form>
   </div>
 </div>
 
 <script>
-  function abrirModalCaixa(nome) {
-    var menu = document.getElementById('caixa-fab-menu');
-    if (menu) menu.classList.remove('aberto');
-    var o = document.getElementById('caixa-modal-' + nome);
+  function abrirModal(id) {
+    var o = document.getElementById('agm-' + id);
     if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
   }
   function fecharModal(o) {
     if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
   }
-  document.addEventListener('click', function (e) {
-    var wrap = document.querySelector('.agenda-fab-wrap');
-    if (wrap && !wrap.contains(e.target)) {
-      var menu = document.getElementById('caixa-fab-menu');
-      if (menu) menu.classList.remove('aberto');
-    }
-  });
+  function selecionarPill(btn, inputId) {
+    var grupo = btn.parentElement;
+    Array.prototype.forEach.call(grupo.querySelectorAll('.pill-opcao'), function (b) { b.classList.remove('ativo'); });
+    btn.classList.add('ativo');
+    document.getElementById(inputId).value = btn.getAttribute('data-valor');
+  }
+  function mudarAbaFin(nome) {
+    document.querySelectorAll('.fin-tab').forEach(function (t) { t.classList.toggle('ativo', t.dataset.tab === nome); });
+    document.getElementById('fin-aba-saldo').hidden = nome !== 'saldo';
+    document.getElementById('fin-aba-transacoes').hidden = nome !== 'transacoes';
+  }
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });

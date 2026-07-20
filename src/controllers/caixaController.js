@@ -2,6 +2,14 @@
 // Acesso exclusivo do admin (garantido pelas rotas com exigeAdmin).
 const prisma = require('../config/db');
 const caixaServ = require('../services/caixa');
+const { COMISSAO_PRODUTO_PERCENTUAL } = require('../config/constantes');
+
+const FORMAS_PAGAMENTO = [
+  { valor: 'pix', label: 'Pix' },
+  { valor: 'credito', label: 'Cartão de Crédito' },
+  { valor: 'debito', label: 'Cartão de Débito' },
+  { valor: 'dinheiro', label: 'Dinheiro' },
+];
 
 // "40,00" / "40" -> 4000 (centavos). Retorna null se inválido.
 function reaisParaCentavos(valorStr) {
@@ -71,6 +79,38 @@ async function ver(req, res) {
   });
   const resumoPeriodo = somar(lancamentos);
 
+  // Formas de pagamento (só entradas) — soma do período selecionado, usada
+  // no pop-up "Detalhes" da carteira.
+  const formasPagamento = FORMAS_PAGAMENTO.map((f) => ({
+    ...f,
+    valorCentavos: lancamentos
+      .filter((l) => l.tipo === 'entrada' && l.formaPagamento === f.valor)
+      .reduce((s, l) => s + l.valor, 0),
+  })).filter((f) => f.valorCentavos > 0);
+
+  // Serviços/Produtos/Comissão do período — a partir dos agendamentos
+  // concluídos (não dos lançamentos de caixa, que só têm o valor total).
+  const agendamentosPeriodo = await prisma.agendamento.findMany({
+    where: { barbeariaId: b, status: 'concluido', data: { gte: inicio, lt: fimExcl } },
+    include: { usuario: true, itens: { include: { servico: true } } },
+  });
+  let servicosValor = 0;
+  let produtosValor = 0;
+  let comissaoValor = 0;
+  for (const ag of agendamentosPeriodo) {
+    const pct = ag.usuario.comissaoPercentual ?? 50;
+    for (const it of ag.itens) {
+      const valor = it.valorUnitario * it.quantidade;
+      if (it.servico.ehProduto) {
+        produtosValor += valor;
+        comissaoValor += Math.round(valor * ((it.servico.comissaoPercentual ?? COMISSAO_PRODUTO_PERCENTUAL) / 100));
+      } else {
+        servicosValor += valor;
+        comissaoValor += Math.round(valor * (pct / 100));
+      }
+    }
+  }
+
   // Resumo do dia (hoje) — só faz sentido mostrar se "hoje" está dentro do período visto.
   const hoje0 = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
   const amanha0 = new Date(hoje0);
@@ -133,8 +173,12 @@ async function ver(req, res) {
   else if (inicioStr === presetSemana.inicio && fimStr === presetSemana.fim) periodoAtivo = 'semana';
   else if (inicioStr === padrao.inicio && fimStr === padrao.fim) periodoAtivo = 'mes';
 
+  const hora = agora.getHours();
+  const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+
   res.render('painel/caixa', {
     titulo: 'Financeiro',
+    saudacao,
     lancamentos,
     resumoPeriodo,
     resumoHoje,
@@ -152,6 +196,11 @@ async function ver(req, res) {
     presetHoje,
     presetSemana,
     presetMes: padrao,
+    formasPagamento,
+    servicosValor,
+    produtosValor,
+    comissaoValor,
+    formasPagamentoOpcoes: FORMAS_PAGAMENTO,
   });
 }
 
@@ -161,6 +210,7 @@ async function criar(req, res) {
   const descricao = (req.body.descricao || '').trim();
   const valor = reaisParaCentavos(req.body.valor);
   const categoriaId = req.body.categoriaId ? Number(req.body.categoriaId) : null;
+  const formaPagamento = FORMAS_PAGAMENTO.some((f) => f.valor === req.body.formaPagamento) ? req.body.formaPagamento : null;
 
   const categoria = categoriaId
     ? await prisma.categoriaCaixa.findFirst({ where: { id: categoriaId, barbeariaId: b } })
@@ -188,6 +238,7 @@ async function criar(req, res) {
       tipo: categoria.tipo,
       data,
       categoriaId: categoria.id,
+      formaPagamento,
     },
   });
   req.session.flash = { tipo: 'sucesso', texto: 'Lançamento registrado.' };

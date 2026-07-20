@@ -37,6 +37,7 @@ async function registrarEntradaAgendamento(agendamento) {
       data: new Date(),
       agendamentoId: agendamento.id,
       categoriaId: null,
+      formaPagamento: agendamento.formaPagamento || null,
     },
   });
 }

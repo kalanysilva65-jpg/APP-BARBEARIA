@@ -323,6 +323,7 @@ model Caixa {
   tipo          String // entrada | saida
   data          DateTime @default(now())
   agendamentoId Int?     @map("agendamento_id") // preenchido se veio de um agendamento concluído
+  formaPagamento String? @map("forma_pagamento") // pix | credito | debito | dinheiro (opcional)
 
   barbearia   Barbearia       @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   categoria   CategoriaCaixa? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)

@@ -1123,3 +1123,159 @@
 .eq-modal-stat { background: rgba(255, 255, 255, 0.5); border-radius: 12px; padding: 10px 12px; }
 .eq-modal-stat-label { font-size: 10px; color: #8a8a85; }
 .eq-modal-stat-valor { font-size: 14px; font-weight: 700; color: #0a0a0a; margin-top: 2px; }
+
+/* =========================================================================
+   FINANCEIRO/CAIXA (.pg-caixa) — cabeçalho com segmentado Saldo/Transações
+   (mesmo padrão do Equipe/Histórico do HTML original) e "+" sem círculo. A
+   carteira é uma pilha de 3 "cartões" (dois só decorativos, girados, atrás;
+   o de vidro na frente com o valor) — todos os valores (rotação, offset,
+   raio, sombra) vêm direto do HTML. O pop-up de "Detalhes" e o de "novo
+   lançamento" escurecem atrás (rgba(10,10,10,.4) no HTML — aqui cai no
+   escurecido padrão do app, ~mesma coisa). Período customizado e categorias
+   são pop-ups adicionais (não existem no protótipo, que não tem backend).
+   ========================================================================= */
+.fin-tabs { display: flex; gap: 18px; }
+.fin-tab { font-size: 14px; font-weight: 400; color: #8a8a85; cursor: pointer; }
+.fin-tab.ativo { font-weight: 700; color: #0a0a0a; }
+
+.fin-periodo-linha {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 16px;
+  position: relative;
+  z-index: 2;
+}
+.fin-periodo-pills {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  padding: 4px;
+  width: fit-content;
+}
+.fin-periodo-pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0a0a0a;
+  text-decoration: none;
+}
+.fin-periodo-pill.ativo { background: #0a0a0a; color: #fff; }
+.fin-periodo-icone {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  color: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  cursor: pointer;
+}
+.fin-periodo-icone.ativo { background: #0a0a0a; color: #fff; }
+
+.fin-corpo { padding-top: 0; }
+
+/* ---- Carteira (aba Saldo) ---- */
+.fin-carteira-wrap { position: relative; margin-top: 24px; padding-top: 16px; }
+.fin-peek {
+  position: absolute;
+  border-radius: 18px;
+  box-shadow: 0 8px 18px rgba(10, 10, 10, 0.12);
+}
+.fin-peek--1 { top: -9px; left: 8%; right: 8%; height: 93px; width: 308px; transform: rotate(-4deg); background: #fff; }
+.fin-peek--2 { top: 6px; left: 5%; right: 5%; height: 122px; width: 324px; transform: rotate(3deg); background: linear-gradient(135deg, #3a3a40, #111114); }
+.fin-carteira {
+  position: relative;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 22px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 14px 34px rgba(10, 10, 10, 0.14);
+}
+.fin-carteira-label { font-size: 13px; color: #8a8a85; font-weight: 500; }
+.fin-carteira-valor { font-size: 34px; font-weight: 600; color: #0a0a0a; margin-top: 6px; letter-spacing: -0.5px; }
+.fin-detalhes-btn {
+  margin-top: 16px;
+  display: inline-block;
+  background: #ededed;
+  color: #0a0a0a;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(10, 10, 10, 0.06);
+  cursor: pointer;
+}
+
+.fin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+.fin-grid-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 18px;
+  padding: 16px;
+}
+.fin-grid-label { font-size: 11px; color: #8a8a85; font-weight: 500; }
+.fin-grid-valor { font-size: 18px; font-weight: 700; color: #0a0a0a; margin-top: 5px; }
+
+/* ---- Transações (aba Transações) ---- */
+.fin-trans-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 22px;
+  padding: 18px;
+  margin-top: 8px;
+}
+.fin-trans-topo { display: flex; align-items: center; justify-content: space-between; }
+.fin-trans-titulo { font-size: 18px; font-weight: 700; color: #0a0a0a; }
+.fin-trans-vertudo { font-size: 13px; font-weight: 500; color: #8a8a85; }
+.fin-trans-secao { font-size: 11px; font-weight: 600; color: #8a8a85; letter-spacing: 0.5px; margin-top: 16px; }
+.fin-trans-lista { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+.fin-trans-item { display: flex; align-items: center; gap: 12px; }
+.fin-trans-icone {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.fin-trans-icone--entrada { background: rgba(39, 174, 96, 0.12); }
+.fin-trans-icone--saida { background: rgba(227, 107, 107, 0.12); }
+.fin-trans-info { flex: 1; min-width: 0; }
+.fin-trans-nome { font-weight: 600; font-size: 14px; color: #0a0a0a; }
+.fin-trans-sub { font-size: 11px; color: #8a8a85; margin-top: 1px; }
+.fin-trans-valor { font-size: 14px; font-weight: 600; }
+.fin-trans-valor--entrada { color: #27ae60; }
+.fin-trans-valor--saida { color: #e36b6b; }
+.fin-trans-x { flex: none; }
+.fin-trans-x button { background: none; border: none; color: #8a8a85; font-size: 16px; cursor: pointer; padding: 0 0 0 6px; }
+
+/* ---- Pop-up: formas de pagamento ---- */
+.fin-pag-lista { display: flex; flex-direction: column; gap: 12px; }
+.fin-pag-item { display: flex; align-items: center; gap: 12px; }
+.fin-pag-icone {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: rgba(10, 10, 10, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.fin-pag-icone--escura { background: linear-gradient(135deg, #3a3a40, #111114); }
+.fin-pag-nome { flex: 1; font-size: 14px; font-weight: 600; color: #0a0a0a; }
+.fin-pag-valor { font-size: 14px; font-weight: 700; color: #0a0a0a; }
