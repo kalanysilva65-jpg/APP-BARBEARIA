@@ -1033,44 +1033,96 @@
 }
 
 /* =========================================================================
-   EQUIPE (.pg-equipe) — sem o carrossel de swipe do HTML original (cards
-   absolutos com drag/transform); lista vertical simples, mesmo padrão de
-   card+pop-up das outras telas. Cabeçalho igual ao de Clientes (marca com
-   ícone) e "+" sólido (igual Agenda/Estoque/Produtos/Clientes).
+   EQUIPE (.pg-equipe) — pilha de cards arrastável (drag/swipe), fiel ao
+   HTML original: card ativo centralizado (translate -50%/-50%), vizinhos
+   "espiando" nas bordas em escala/opacidade reduzida (a matemática exata do
+   transform está no <script> de equipe.ejs, não aqui). Cabeçalho igual ao
+   de Clientes (marca com ícone) — o mockup usa um segmentado Equipe/
+   Histórico aqui, mas sem a aba Histórico (decisão de escopo, ver memória)
+   um segmentado de 1 item só não faz sentido, então fica o cabeçalho padrão.
+   Pop-up de edição também é fiel ao original (avatar+nome/papel inline no
+   topo, sem barra de título com X, fundo mais translúcido que o padrão);
+   os campos de e-mail/senha/foto/comissão não existem no protótipo (que não
+   tem backend) — entram depois da parte fiel, com o padrão .campo do app.
    ========================================================================= */
-.eq-lista { display: flex; flex-direction: column; gap: 12px; }
-.eq-card {
+.eq-corpo { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+.eq-swipe-wrap {
+  flex: 1;
+  position: relative;
+  margin-top: 6px;
+  touch-action: pan-y;
+  min-height: 420px;
+}
+.eq-swipe-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 310px;
+  max-width: calc(100vw - 64px);
+  height: 500px;
+  max-height: 62vh;
+  cursor: pointer;
   background: #fff;
-  border-radius: 16px;
-  padding: 14px 16px;
-  animation: homeRiseIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 14px 30px rgba(10, 10, 10, 0.12);
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+  user-select: none;
 }
-.eq-card--inativo { opacity: 0.5; }
-.eq-card-topo { display: flex; align-items: center; gap: 12px; }
-.eq-avatar {
-  width: 44px;
-  height: 44px;
+.eq-swipe-inativo {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1;
+  background: rgba(10, 10, 10, 0.06);
+  color: #5a5a55;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
   border-radius: 999px;
-  background: #d7dbdc;
-  flex: none;
-  overflow: hidden;
 }
-.eq-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.eq-info { display: flex; flex-direction: column; }
-.eq-nome-linha { display: flex; align-items: center; gap: 6px; }
-.eq-nome { font-size: 16px; font-weight: 700; color: #0a0a0a; }
-.eq-papel { font-size: 12px; color: #8a8a85; margin-top: 2px; }
-.eq-stats { display: flex; gap: 16px; margin-top: 12px; }
-.eq-stat { font-size: 12px; color: #0a0a0a; }
-.eq-ver-mais {
-  margin-top: 12px;
+.eq-swipe-foto {
   width: 100%;
+  aspect-ratio: 1/1.05;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  background: #d7dbdc;
+}
+.eq-swipe-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.eq-swipe-corpo { padding: 16px 4px 6px; }
+.eq-swipe-nome-linha { display: flex; align-items: center; gap: 6px; }
+.eq-swipe-nome { font-size: 19px; font-weight: 600; color: #0a0a0a; }
+.eq-swipe-papel { font-size: 13px; color: #8a8a85; margin-top: 6px; line-height: 1.4; }
+.eq-swipe-marca { font-size: 14px; color: #0a0a0a; margin-top: 12px; }
+.eq-swipe-stats { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+.eq-swipe-stats-esq { display: flex; align-items: center; gap: 14px; }
+.eq-swipe-stat { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #0a0a0a; }
+.eq-swipe-vermais {
   background: #ededed;
-  border: none;
   border-radius: 999px;
-  padding: 9px;
-  font-size: 13px;
+  padding: 10px 18px;
+  font-size: 14px;
   font-weight: 600;
   color: #0a0a0a;
-  cursor: pointer;
 }
+.eq-swipe-dots { display: flex; justify-content: center; gap: 6px; padding: 12px 0 4px; }
+.eq-swipe-dot { width: 6px; height: 6px; border-radius: 999px; background: rgba(10, 10, 10, 0.18); cursor: pointer; }
+.eq-swipe-dot.ativo { background: #0a0a0a; width: 16px; }
+
+/* Pop-up de edição: mais translúcido que o padrão (.7 em vez de .97) e sem
+   header com título/X — é assim no HTML original. */
+.pg-equipe .ag-modal-box.eq-modal-box {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.eq-modal-topo { display: flex; align-items: center; gap: 12px; }
+.eq-modal-avatar { width: 46px; height: 46px; border-radius: 999px; background: #3a3a40; flex: none; overflow: hidden; }
+.eq-modal-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.eq-modal-nome { font-size: 18px; font-weight: 700; color: #0a0a0a; }
+.eq-modal-papel { font-size: 12px; color: #8a8a85; margin-top: 2px; }
+.eq-modal-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.eq-modal-stat { background: rgba(255, 255, 255, 0.5); border-radius: 12px; padding: 10px 12px; }
+.eq-modal-stat-label { font-size: 10px; color: #8a8a85; }
+.eq-modal-stat-valor { font-size: 14px; font-weight: 700; color: #0a0a0a; margin-top: 2px; }
