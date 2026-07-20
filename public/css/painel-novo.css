@@ -1071,6 +1071,14 @@
   transform: translate(-50%, -50%);
   will-change: transform, opacity;
   user-select: none;
+  /* Em telas baixas o max-height (62vh) corta o card antes dos 500px do
+     HTML original — sem isto o nome/estatísticas/"Ver +" ficavam empurrados
+     pra fora do card (por baixo dele). Com flex column + a foto elástica
+     (flex:1, sem aspect-ratio fixo), o texto sempre cabe inteiro dentro do
+     card; só a foto encolhe. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .eq-swipe-inativo {
   position: absolute;
@@ -1086,14 +1094,15 @@
 }
 .eq-swipe-foto {
   width: 100%;
-  aspect-ratio: 1/1.05;
+  flex: 1 1 auto;
+  min-height: 0;
   border-radius: 12px;
   overflow: hidden;
   position: relative;
   background: #d7dbdc;
 }
 .eq-swipe-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.eq-swipe-corpo { padding: 16px 4px 6px; }
+.eq-swipe-corpo { flex: none; padding: 16px 4px 6px; }
 .eq-swipe-nome-linha { display: flex; align-items: center; gap: 6px; }
 .eq-swipe-nome { font-size: 19px; font-weight: 600; color: #0a0a0a; }
 .eq-swipe-papel { font-size: 13px; color: #8a8a85; margin-top: 6px; line-height: 1.4; }
