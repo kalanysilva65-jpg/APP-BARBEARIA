@@ -44,7 +44,6 @@ function urlRetorno(req) {
   const qs = new URLSearchParams();
   if (req.body.retornoData) qs.set('data', req.body.retornoData);
   if (req.body.retornoBarbeiro) qs.set('barbeiro', req.body.retornoBarbeiro);
-  if (req.body.retornoPeriodo) qs.set('periodo', req.body.retornoPeriodo);
   const s = qs.toString();
   return '/painel/agenda' + (s ? '?' + s : '');
 }
@@ -59,20 +58,11 @@ async function verAgenda(req, res) {
   const dataStr = req.query.data || iso(new Date());
   const dataObj = dataLocal(dataStr);
 
-  // Período mostrado: um dia só (padrão, igual sempre foi), a semana ou o mês
-  // da data selecionada — pedido do dono pra poder ver vários dias de uma vez.
-  const periodo = ['dia', 'semana', 'mes'].includes(req.query.periodo) ? req.query.periodo : 'dia';
-  let periodoInicio = new Date(dataObj);
-  let periodoFimExcl = new Date(dataObj);
+  // Mostra sempre um dia só (como sempre foi) — a faixa de dias é que agora
+  // é rolável e cobre o mês inteiro, em vez de só a semana.
+  const periodoInicio = new Date(dataObj);
+  const periodoFimExcl = new Date(dataObj);
   periodoFimExcl.setDate(periodoFimExcl.getDate() + 1);
-  if (periodo === 'semana') {
-    periodoInicio.setDate(dataObj.getDate() - dataObj.getDay()); // domingo
-    periodoFimExcl = new Date(periodoInicio);
-    periodoFimExcl.setDate(periodoInicio.getDate() + 7);
-  } else if (periodo === 'mes') {
-    periodoInicio = new Date(dataObj.getFullYear(), dataObj.getMonth(), 1);
-    periodoFimExcl = new Date(dataObj.getFullYear(), dataObj.getMonth() + 1, 1);
-  }
 
   // Filtro de barbeiro:
   //  - Funcionário: sempre o próprio (ignora a query).
@@ -107,7 +97,7 @@ async function verAgenda(req, res) {
     orderBy: { nome: 'asc' },
   });
 
-  // Bloqueios do período (mesmo filtro de barbeiro) — aparecem na linha do tempo.
+  // Bloqueios do dia (mesmo filtro de barbeiro) — aparecem na linha do tempo.
   const whereBloq = { barbeariaId: b, data: { gte: periodoInicio, lt: periodoFimExcl } };
   if (filtroBarbeiro) whereBloq.usuarioId = filtroBarbeiro;
   const bloqueios = await prisma.bloqueio.findMany({
@@ -122,31 +112,44 @@ async function verAgenda(req, res) {
   const next = new Date(dataObj);
   next.setDate(next.getDate() + 1);
 
-  // Faixa de dias (design novo): a semana do dia selecionado, de domingo a
-  // sábado, para trocar de data com um toque em vez de setinhas.
   const MESES_EXT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const hoje0 = new Date();
   hoje0.setHours(0, 0, 0, 0);
-  const inicioSemana = new Date(dataObj);
-  inicioSemana.setDate(dataObj.getDate() - dataObj.getDay()); // volta ao domingo
+
+  // Faixa de dias (design novo): TODOS os dias do mês da data selecionada,
+  // numa tira ROLÁVEL (pedido do dono — antes era só a semana, fixa).
+  const anoMes = dataObj.getFullYear();
+  const mesMes = dataObj.getMonth();
+  const ultimoDiaMes = new Date(anoMes, mesMes + 1, 0).getDate();
   const faixaDias = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(inicioSemana);
-    d.setDate(inicioSemana.getDate() + i);
+  for (let dia = 1; dia <= ultimoDiaMes; dia++) {
+    const d = new Date(anoMes, mesMes, dia);
     faixaDias.push({
       iso: iso(d),
-      num: d.getDate(),
+      num: dia,
       rotulo: DIAS_SEMANA[d.getDay()].slice(0, 3),
       selecionado: iso(d) === iso(dataObj),
       ehHoje: d.getTime() === hoje0.getTime(),
     });
   }
 
+  // Pop-up de escolher mês: ano navegável (?anoPicker=) + grade dos 12 meses;
+  // clicar num mês pula pro dia 1 dele.
+  const anoPicker = /^\d{4}$/.test(req.query.anoPicker || '') ? Number(req.query.anoPicker) : anoMes;
+  const mesesPicker = MESES_EXT.map((nome, i) => ({
+    nome,
+    iso: `${anoPicker}-${String(i + 1).padStart(2, '0')}-01`,
+    atual: anoPicker === anoMes && i === mesMes,
+  }));
+
   res.render('painel/agenda', {
     titulo: 'Agenda',
     ehAdmin,
     faixaDias,
-    mesLabel: MESES_EXT[dataObj.getMonth()],
+    mesLabel: MESES_EXT[mesMes],
+    anoMes,
+    anoPicker,
+    mesesPicker,
     agendamentos,
     bloqueios,
     barbeiros,
@@ -159,7 +162,6 @@ async function verAgenda(req, res) {
     dataNext: iso(next),
     dataHoje: iso(new Date()),
     hojeIso: iso(new Date()),
-    periodo,
     mostrarBarbeiroNoCard: !filtroBarbeiro, // mostra o nome do barbeiro quando vê "todos"
   });
 }
@@ -438,7 +440,6 @@ async function removerBloqueio(req, res) {
   const qs = new URLSearchParams();
   if (req.body.retornoData) qs.set('data', req.body.retornoData);
   if (req.body.retornoBarbeiro) qs.set('barbeiro', req.body.retornoBarbeiro);
-  if (req.body.retornoPeriodo) qs.set('periodo', req.body.retornoPeriodo);
   const s = qs.toString();
   res.redirect('/painel/agenda' + (s ? '?' + s : ''));
 }

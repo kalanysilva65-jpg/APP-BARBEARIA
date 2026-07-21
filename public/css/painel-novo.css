@@ -304,6 +304,7 @@
   margin-top: 14px;
 }
 .ag2-mes { font-size: 28px; font-weight: 600; letter-spacing: -0.6px; color: #0a0a0a; }
+.ag2-mes--clicavel { background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; }
 /* Só o ícone, sem o quadrado preto de fundo — pedido do dono (2026-07-20):
    o quadrado ficava pesado do lado das outras ações, sem fundo (Agenda,
    Estoque, Clientes, Equipe, Produtos). */
@@ -321,8 +322,19 @@
   flex: none;
 }
 
-/* ---- Faixa da semana ---- */
+/* ---- Faixa de dias ---- */
 .ag2-dias { display: flex; justify-content: space-between; gap: 4px; margin-top: 16px; }
+/* Rolável (pedido do dono, 2026-07-21): cobre o mês inteiro, não só a
+   semana — cada dia com largura fixa, em vez de dividir o espaço igual. */
+.ag2-dias--rolavel {
+  justify-content: flex-start;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+.ag2-dias--rolavel::-webkit-scrollbar { display: none; }
+.ag2-dias--rolavel .ag2-dia { flex: none; width: 40px; }
 .ag2-dia {
   flex: 1;
   display: flex;
@@ -370,30 +382,35 @@
 }
 .ag2-chip.sel { background: #0a0a0a; color: #fff; }
 
-/* Período mostrado (Dia/Semana/Mês) — não existe no HTML original, pedido
-   do dono pra poder ver vários dias de agendamentos de uma vez. Mesmo
-   padrão visual das pílulas de período do Financeiro. */
-.ag2-periodo-linha { display: flex; justify-content: center; margin-top: 14px; }
-.ag2-periodo-pills { display: flex; gap: 4px; background: #fff; border-radius: 999px; padding: 4px; }
-.ag2-periodo-pill {
-  padding: 6px 14px;
+/* Pop-up de escolher mês (toque no nome do mês) — não existe no HTML
+   original, pedido do dono pra navegar entre meses sem ficar clicando
+   dia a dia. Ano navegável (setas) + grade de 12 meses. */
+.ag2-ano-linha { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 16px; }
+.ag2-ano-seta {
+  width: 30px;
+  height: 30px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
+  background: rgba(10, 10, 10, 0.06);
   color: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  flex: none;
+}
+.ag2-ano-num { font-size: 16px; font-weight: 700; color: #0a0a0a; min-width: 52px; text-align: center; }
+.ag2-mes-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 18px; }
+.ag2-mes-opcao {
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: rgba(10, 10, 10, 0.04);
+  color: #0a0a0a;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
   text-decoration: none;
 }
-.ag2-periodo-pill.ativo { background: #0a0a0a; color: #fff; }
-/* Cabeçalho de data quando a lista mostra vários dias (Semana/Mês). */
-.ag2-data-cabecalho {
-  font-size: 11px;
-  font-weight: 700;
-  color: #8a8a85;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-  margin: 18px 0 8px;
-}
-.ag2-data-cabecalho:first-child { margin-top: 0; }
+.ag2-mes-opcao.sel { background: #0a0a0a; color: #fff; }
 
 /* ---- Corpo / lista ---- */
 .ag2-corpo {
