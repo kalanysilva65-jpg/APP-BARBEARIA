@@ -1572,3 +1572,98 @@
   cursor: pointer;
   flex: none;
 }
+
+/* =========================================================================
+   ANIMAÇÕES NO APP TODO (pedido do dono, 2026-07-21) — cobre as telas do
+   design novo que ainda não tinham entrada de card (Planos, Financeiro,
+   Relatórios, Fidelidade, Equipe) e adiciona feedback de toque (:active)
+   em pílulas/chips/cards que só tinham isso em alguns lugares (Estoque,
+   Serviços, Clientes já tinham `animation:homeRiseIn` nos cards — aqui
+   fecha o resto, reaproveitando os mesmos keyframes já usados no app,
+   sem inventar um estilo novo).
+   ========================================================================= */
+
+/* ---- Entrada dos cards (mesmo keyframe já usado em Home/Estoque/Serviços) */
+.pl-card,
+.fin-grid-card,
+.fin-trans-card,
+.rel-fat-card,
+.rel-card-branco,
+.rel-card-escuro,
+.rel-lista-card,
+.rel-pag-card,
+.fid-stat,
+.fid-cupom-card,
+.fid-rank-card {
+  animation: homeRiseIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.fin-carteira-wrap { animation: homeRiseIn 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
+/* A pilha de cards de Equipe já é posicionada via JS (transform inline) —
+   anima só a entrada do conjunto (opacidade), sem mexer no transform que o
+   drag/swipe controla. */
+.eq-swipe-wrap { animation: eqSwipeIn 0.4s ease both; }
+@keyframes eqSwipeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---- Feedback de toque (pressionar encolhe um pouco) — mesma escala do
+   .btn:active já usado no resto do app (styles.css). */
+.pl-card,
+.cl-card,
+.sv-tile,
+.est-item,
+.fid-rank-card,
+.ag2-chip,
+.ag2-dia,
+.ag2-mes-opcao,
+.fin-periodo-pill,
+.fin-periodo-icone,
+.fin-detalhes-btn,
+.rel-periodo-pill,
+.rel-gastos-btn,
+.pill-opcao,
+.dia-pill,
+.eq-swipe-vermais,
+.cl-novo-btn,
+.est-cat-btn,
+.fid-rank-add {
+  transition: transform 0.15s ease;
+}
+/* .eq-swipe-card não entra aqui: o JS do carrossel já controla o transform
+   dele via style inline (posição/escala do drag) — uma regra CSS com
+   :active nunca ganharia do inline, então ficaria morta. */
+.pl-card:active,
+.cl-card:active,
+.sv-tile:active,
+.est-item:active,
+.fid-rank-card:active,
+.ag2-chip:active,
+.ag2-dia:active,
+.ag2-mes-opcao:active,
+.fin-periodo-pill:active,
+.fin-periodo-icone:active,
+.fin-detalhes-btn:active,
+.rel-periodo-pill:active,
+.rel-gastos-btn:active,
+.pill-opcao:active,
+.dia-pill:active,
+.eq-swipe-vermais:active,
+.cl-novo-btn:active,
+.est-cat-btn:active,
+.fid-rank-add:active {
+  transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-card,
+  .fin-grid-card,
+  .fin-trans-card,
+  .rel-fat-card,
+  .rel-card-branco,
+  .rel-card-escuro,
+  .rel-lista-card,
+  .rel-pag-card,
+  .fid-stat,
+  .fid-cupom-card,
+  .fid-rank-card,
+  .fin-carteira-wrap,
+  .eq-swipe-wrap { animation: none !important; }
+}
