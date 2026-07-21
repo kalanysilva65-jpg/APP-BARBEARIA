@@ -916,6 +916,33 @@
 /* Clientes usa um "vidro" liso (sem o gradiente), é assim no HTML original. */
 .nav-novo-item--simples.ativo { background: rgba(255, 255, 255, 0.55); }
 
+/* Barra de 3 botões (pedido do dono, 2026-07-21, inspirada num app de
+   referência): só Início/Agenda nos cantos + "Mais" em destaque no meio —
+   um botão preto, maior, flutuando por cima da linha da barra (como um
+   botão de câmera numa barra de fotos). Vale pra admin e funcionário. */
+.nav-novo--3 { position: relative; justify-content: space-between; }
+.nav-novo-fab {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -58%);
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  border: 4px solid #eaeaea;
+  background: #0a0a0a;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 20px rgba(10, 10, 10, 0.35);
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-novo-fab:active { transform: translate(-50%, -58%) scale(0.9); }
+.nav-novo-fab.ativo { box-shadow: 0 10px 20px rgba(10, 10, 10, 0.35), 0 0 0 3px rgba(10, 10, 10, 0.15); }
+
 /* Painel do "Mais": vidro escuro flutuante perto da barra. */
 .nav-novo-overlay { position: fixed; inset: 0; z-index: 29; }
 .nav-novo-mais-painel {
