@@ -1191,6 +1191,11 @@
    são pop-ups adicionais (não existem no protótipo, que não tem backend).
    ========================================================================= */
 .fin-tabs { display: flex; gap: 18px; }
+/* Marca+saudação centralizadas — .ag2-marca é flex (block-level), então
+   text-align:center no pai não bastava: precisa centralizar o próprio
+   flex container. */
+.fin-saudacao { text-align: center; margin-top: 20px; }
+.fin-saudacao .ag2-marca { justify-content: center; }
 .fin-tab { font-size: 14px; font-weight: 400; color: #8a8a85; cursor: pointer; }
 .fin-tab.ativo { font-weight: 700; color: #0a0a0a; }
 
