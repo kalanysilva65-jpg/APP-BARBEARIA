@@ -49,6 +49,8 @@ model Barbearia {
   categoriasCaixa    CategoriaCaixa[]
   caixa              Caixa[]
   configuracoes      Configuracao[]
+  cupons             Cupom[]
+  resgatesFidelidade FidelidadeResgate[]
 
   @@map("barbearias")
 }
@@ -202,11 +204,13 @@ model Cliente {
   telefone       String // normalizado: apenas dígitos
   dataNascimento DateTime? @map("data_nascimento") // opcional
   observacoes    String? // nota livre do admin/barbeiro sobre o cliente
+  selosFidelidade Int      @default(0) @map("selos_fidelidade") // programa de fidelidade: selos acumulados
   criadoEm       DateTime  @default(now()) @map("criado_em")
 
-  barbearia    Barbearia      @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  barbearia    Barbearia         @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentos Agendamento[]
   planos       ClientePlano[]
+  resgates     FidelidadeResgate[]
 
   // Telefone único DENTRO de cada barbearia.
   @@unique([barbeariaId, telefone])
@@ -254,6 +258,38 @@ model ClientePlano {
   agendamentos Agendamento[]
 
   @@map("cliente_planos")
+}
+
+/// Cupom de desconto do programa de fidelidade (tela Fidelidade).
+model Cupom {
+  id        Int      @id @default(autoincrement())
+  barbeariaId Int    @map("barbearia_id")
+  nome      String
+  descricao String?
+  desconto  String // texto livre: "20%" ou "R$15" — o mesmo formato do HTML original
+  validade  DateTime
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+
+  @@map("cupons")
+}
+
+/// Registro de resgate de selos de fidelidade (zera o contador do cliente).
+/// Existe pra dar sentido real ao contador "Resgates/mês" da tela Fidelidade
+/// — o HTML original só mostrava o "+1 selo", sem uma ação de resgatar.
+model FidelidadeResgate {
+  id          Int      @id @default(autoincrement())
+  barbeariaId Int      @map("barbearia_id")
+  clienteId   Int      @map("cliente_id")
+  selosUsados Int      @map("selos_usados")
+  data        DateTime @default(now())
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  cliente   Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("fidelidade_resgates")
 }
 
 /// Itens (serviços/produtos) de cada agendamento. A equipe adiciona/remove aqui.

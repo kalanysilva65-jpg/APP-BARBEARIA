@@ -1484,3 +1484,69 @@
 .rel-gastos-cat-item span:first-child { color: #5a5a55; }
 .rel-gastos-cat-item span:last-child { font-weight: 600; color: #0a0a0a; }
 .rel-gastos-rodape { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(10, 10, 10, 0.1); padding-top: 14px; margin-top: 12px; font-size: 14px; font-weight: 700; color: #0a0a0a; }
+
+/* =========================================================================
+   FIDELIDADE (.pg-fidelidade) — título+subtítulo centralizados e "+" sem
+   círculo (mesmo padrão de Planos); 3 estatísticas logo abaixo do
+   cabeçalho; lista de cupons e ranking de clientes por selos. "Resgatar"
+   (zera os selos) é acréscimo — o HTML original só tinha o "+1 selo", sem
+   nenhuma ação de resgate, mas um contador de "Resgates/mês" sem uma ação
+   real por trás não faria sentido.
+   ========================================================================= */
+.fid-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 20px; }
+.fid-stat { background: #fff; border-radius: 16px; padding: 12px 10px; text-align: center; }
+.fid-stat-num { font-size: 18px; font-weight: 700; color: #0a0a0a; }
+.fid-stat-label { font-size: 10px; color: #8a8a85; margin-top: 2px; }
+
+.fid-secao-titulo { font-size: 12px; font-weight: 700; color: #8a8a85; letter-spacing: 0.3px; }
+.fid-secao-titulo--espacada { margin-top: 24px; }
+.fid-lista { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+
+.fid-cupom-card { background: #fff; border-radius: 18px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fid-cupom-card--inativo { opacity: 0.5; }
+.fid-cupom-nome { font-size: 15px; font-weight: 700; color: #0a0a0a; }
+.fid-cupom-desc { font-size: 12px; color: #8a8a85; margin-top: 2px; }
+.fid-cupom-validade { font-size: 11px; color: #8a8a85; margin-top: 4px; }
+.fid-cupom-acoes { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex: none; }
+.fid-cupom-desconto {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #3a3a40, #111114);
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.fid-cupom-remover { background: none; border: none; font-size: 11px; color: #c6432e; cursor: pointer; padding: 0; }
+
+.fid-rank-card { background: #fff; border-radius: 18px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+.fid-rank-num { width: 26px; text-align: center; font-size: 13px; font-weight: 700; color: #8a8a85; flex: none; }
+.fid-rank-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #3a3a40, #111114);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.fid-rank-info { flex: 1; min-width: 0; }
+.fid-rank-nome { display: block; font-size: 14px; font-weight: 700; color: #0a0a0a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fid-rank-selos { display: block; font-size: 11px; color: #8a8a85; margin-top: 1px; }
+.fid-rank-resgatar { background: none; border: none; font-size: 11px; font-weight: 600; color: #c6432e; cursor: pointer; padding: 0; flex: none; white-space: nowrap; }
+.fid-rank-add {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.06);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+}

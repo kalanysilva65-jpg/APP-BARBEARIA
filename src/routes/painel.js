@@ -16,6 +16,7 @@ const dashboardController = require('../controllers/dashboardController');
 const perfilController = require('../controllers/perfilController');
 const equipeController = require('../controllers/equipeController');
 const relatorioController = require('../controllers/relatorioController');
+const fidelidadeController = require('../controllers/fidelidadeController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -208,5 +209,12 @@ router.post('/caixa/:id/remover', exigeAdmin, caixaController.remover);
 
 // --- Relatórios (somente admin) --------------------------------------------
 router.get('/relatorios', exigeAdmin, relatorioController.ver);
+
+// --- Fidelidade (somente admin) --------------------------------------------
+router.get('/fidelidade', exigeAdmin, fidelidadeController.ver);
+router.post('/fidelidade/cupons', exigeAdmin, fidelidadeController.criarCupom);
+router.post('/fidelidade/cupons/:id/remover', exigeAdmin, fidelidadeController.removerCupom);
+router.post('/fidelidade/clientes/:id/selo', exigeAdmin, fidelidadeController.adicionarSelo);
+router.post('/fidelidade/clientes/:id/resgatar', exigeAdmin, fidelidadeController.resgatar);
 
 module.exports = router;
