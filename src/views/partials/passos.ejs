@@ -1,11 +1,7 @@
-<%
-  var ROTULOS_PASSO = { 1: 'Serviço', 2: 'Barbeiro', 3: 'Horário', 4: 'Dados' };
-%>
-<div class="passos-agendamento">
-  <span class="passos-agendamento-label"><%= passo %> / 4 — <%= ROTULOS_PASSO[passo].toUpperCase() %></span>
-  <div class="passos-agendamento-barra">
+<div class="ag3-progresso">
+  <div class="ag3-progresso-barra">
     <% for (var i = 1; i <= 4; i++) { %>
-      <span class="passos-agendamento-seg <%= i <= passo ? 'feito' : '' %>"></span>
+      <span class="ag3-progresso-seg <%= i <= passo ? 'feito' : '' %>"></span>
     <% } %>
   </div>
 </div>

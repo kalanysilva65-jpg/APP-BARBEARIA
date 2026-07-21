@@ -1,24 +1,33 @@
-<div class="sucesso-topo">
-  <div class="sucesso-icone">✓</div>
-  <h1>Agendamento confirmado!</h1>
-  <p class="texto-secundario">Anote os detalhes abaixo. Te esperamos!</p>
+<div class="ag3-sucesso">
+  <div class="ag3-sucesso-icone">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ag3-sucesso-check"><path d="M4 12l5 5L20 7"/></svg>
+  </div>
+  <div class="ag3-sucesso-titulo">Agendado com sucesso!</div>
+  <div class="ag3-sucesso-sub">Enviaremos uma confirmação por WhatsApp para <%= fmtTelefone(agendamento.clienteTelefone) %></div>
 </div>
 
-<div class="card resumo">
-  <div class="resumo-linha"><span class="texto-sutil">Cliente</span><span><%= agendamento.clienteNome %></span></div>
-  <div class="resumo-linha"><span class="texto-sutil">Barbeiro</span><span><%= agendamento.usuario.nome %></span></div>
-  <div class="resumo-linha"><span class="texto-sutil">Data</span><span><%= dataExtenso %></span></div>
-  <div class="resumo-linha"><span class="texto-sutil">Horário</span><span><%= agendamento.horaInicio %></span></div>
-  <% agendamento.itens.forEach(function (it) { %>
-    <div class="resumo-linha">
-      <span class="texto-sutil"><%= it.servico.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %></span>
-      <span><%= fmtBRL(it.valorUnitario * it.quantidade) %></span>
-    </div>
-  <% }) %>
-  <% if (usouPlano) { %>
-    <div class="resumo-linha"><span class="texto-sutil">Pagamento</span><span>Via plano</span></div>
-  <% } %>
-  <div class="resumo-linha total"><span>Total</span><span><%= fmtBRL(agendamento.valorTotal) %></span></div>
+<div class="ag3-resumo mt-24">
+  <div class="ag3-resumo-linha">
+    <span class="ag3-resumo-rot">Cliente</span>
+    <span class="ag3-resumo-val"><%= agendamento.clienteNome %></span>
+  </div>
+  <div class="ag3-resumo-sep"></div>
+  <div class="ag3-resumo-linha">
+    <span class="ag3-resumo-rot">Barbeiro</span>
+    <span class="ag3-resumo-val"><%= agendamento.usuario.nome %></span>
+  </div>
+  <div class="ag3-resumo-sep"></div>
+  <div class="ag3-resumo-linha">
+    <span class="ag3-resumo-rot">Data e hora</span>
+    <span class="ag3-resumo-val"><%= dataExtenso %> · <%= agendamento.horaInicio %></span>
+  </div>
+  <div class="ag3-resumo-sep"></div>
+  <div class="ag3-resumo-linha">
+    <span class="ag3-resumo-rot"><%= agendamento.itens.length === 1 ? agendamento.itens[0].servico.nome : 'Serviços' %></span>
+    <span class="ag3-resumo-preco"><%= usouPlano ? 'Via plano' : fmtBRL(agendamento.valorTotal) %></span>
+  </div>
 </div>
 
-<a href="/agendar" class="btn btn-secundario btn-bloco mt-24">Fazer outro agendamento</a>
+<div class="ag3-rodape-acao">
+  <a href="/agendar" class="ag3-cta ag3-cta--secundario">Fazer outro agendamento</a>
+</div>

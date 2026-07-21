@@ -1,0 +1,341 @@
+/* =========================================================================
+   AGENDAMENTO PÚBLICO — design novo "Turno 6" (mockup publico-template.html).
+   Substitui inteiramente agendamento-app.css: ao contrário do painel (onde
+   cada tela virou aos poucos, por trás de uma classe .pg-*), aqui as 6 telas
+   sempre aparecem em sequência na mesma sessão do cliente, então não há
+   razão pra misturar tema antigo/novo — troca tudo de uma vez.
+   Fundo claro (#EAEAEA) com círculos decorativos desfocados nos cantos,
+   logo circular "respirando", barra de progresso em segmentos, cards
+   brancos com entrada suave — mesma linguagem visual do painel novo.
+   ========================================================================= */
+
+@keyframes riseIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes popIn { 0% { opacity: 0; transform: scale(0.85); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes checkDraw { from { stroke-dashoffset: 40; } to { stroke-dashoffset: 0; } }
+@keyframes stepSlideIn { from { opacity: 0; transform: translateX(18px) scale(0.98); } to { opacity: 1; transform: translateX(0) scale(1); } }
+@keyframes cardStagger { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes badgePop { 0% { opacity: 0; transform: scale(0.4) rotate(-20deg); } 60% { opacity: 1; transform: scale(1.15) rotate(4deg); } 100% { transform: scale(1) rotate(0deg); } }
+@keyframes ctaShimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes logoBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+
+.ag3-body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #eaeaea;
+  position: relative;
+  overflow-x: hidden;
+  font-family: -apple-system, system-ui, sans-serif;
+  color: #0a0a0a;
+  display: flex;
+  flex-direction: column;
+}
+.ag3-brilho { position: fixed; border-radius: 999px; filter: blur(40px); pointer-events: none; z-index: 0; }
+.ag3-brilho--esq { top: -100px; left: -80px; width: 220px; height: 220px; background: radial-gradient(circle, rgba(10, 10, 10, 0.3), transparent 70%); }
+.ag3-brilho--dir { top: -40px; right: -90px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(31, 44, 67, 0.25), transparent 70%); }
+
+.ag3-tela {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Cabeçalho: logo + barra de progresso ---- */
+.ag3-topo { padding: calc(28px + env(safe-area-inset-top, 0px)) 22px 6px; flex-shrink: 0; }
+.ag3-logo-wrap { display: flex; justify-content: center; margin-bottom: 6px; }
+.ag3-logo {
+  width: 100px;
+  height: 100px;
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+  display: block;
+  animation: logoBreathe 4s ease-in-out infinite;
+}
+.ag3-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ag3-logo--texto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3a3a40, #111114);
+  color: #fff;
+  font-size: 34px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.ag3-progresso { margin-top: 14px; }
+.ag3-progresso-barra { display: flex; gap: 5px; }
+.ag3-progresso-seg { flex: 1; height: 3px; border-radius: 999px; background: rgba(10, 10, 10, 0.08); transition: background 0.3s ease; }
+.ag3-progresso-seg.feito { background: #0a0a0a; }
+
+/* ---- Corpo (conteúdo de cada passo) ---- */
+.ag3-corpo { position: relative; z-index: 1; flex: 1; padding: 8px 22px calc(28px + env(safe-area-inset-bottom, 0px)); }
+.ag3-passo { animation: stepSlideIn 0.4s cubic-bezier(0.2, 0.9, 0.25, 1.1) both; }
+.ag3-passo--coluna { display: flex; flex-direction: column; min-height: calc(100vh - 260px); }
+.ag3-passo-topo { position: relative; text-align: center; margin-bottom: 18px; }
+.ag3-voltar-inline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(10, 10, 10, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.ag3-marca {
+  font-size: 12px;
+  color: #8a8a85;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.ag3-titulo { font-size: 26px; font-weight: 600; color: #0a0a0a; margin-top: 6px; letter-spacing: -0.4px; }
+.ag3-subtitulo { font-size: 12px; color: #8a8a85; margin-top: 4px; }
+.ag3-vazio { text-align: center; color: #8a8a85; font-size: 13px; padding: 24px 0; }
+.ag3-aviso { background: rgba(198, 67, 46, 0.08); color: #c6432e; font-size: 12px; padding: 12px 14px; border-radius: 12px; margin-top: 16px; }
+.ag3-aviso strong { font-weight: 700; }
+
+/* ---- "Já tenho um plano" (pílula) e aviso de plano ativo ---- */
+.ag3-plano-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0a0a0a;
+  background: #ededed;
+  padding: 8px 14px;
+  border-radius: 999px;
+  text-decoration: none;
+}
+.ag3-plano-ativo { font-size: 12px; color: #0a0a0a; background: rgba(10, 10, 10, 0.05); padding: 10px 14px; border-radius: 12px; margin-top: 12px; }
+.ag3-plano-ativo a { color: #0a0a0a; font-weight: 700; margin-left: 4px; }
+
+/* ---- Serviços (grid 2 colunas) ---- */
+.ag3-servicos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+.ag3-servico-card {
+  display: flex;
+  flex-direction: column;
+  background: #f4f3ef;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+  animation: cardStagger 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+  text-decoration: none;
+  color: inherit;
+}
+.ag3-servico-card:active { transform: scale(0.97); }
+.ag3-servico-card.sel { border-color: #0a0a0a; }
+.ag3-servico-card:nth-child(2) { animation-delay: 0.05s; }
+.ag3-servico-card:nth-child(3) { animation-delay: 0.1s; }
+.ag3-servico-card:nth-child(4) { animation-delay: 0.15s; }
+.ag3-servico-card:nth-child(n+5) { animation-delay: 0.2s; }
+.ag3-servico-foto { width: 100%; height: 150px; background: #d7dbdc; flex-shrink: 0; position: relative; }
+.ag3-servico-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ag3-servico-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #0a0a0a;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.ag3-servico-card.sel .ag3-servico-check { display: flex; animation: badgePop 0.4s cubic-bezier(0.3, 1.5, 0.4, 1) both; }
+.ag3-servico-info { padding: 12px 12px 14px; }
+.ag3-servico-nome { display: block; font-size: 14px; font-weight: 700; color: #0a0a0a; line-height: 1.2; }
+.ag3-servico-meta { display: block; font-size: 12px; color: #8a8a85; margin-top: 3px; }
+
+/* ---- Barbeiro: "Qualquer disponível" + pilha de cards arrastável ---- */
+.ag3-qualquer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(10, 10, 10, 0.06);
+  cursor: pointer;
+  margin-bottom: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+.ag3-qualquer:active { transform: scale(0.98); }
+.ag3-qualquer-icone { width: 48px; height: 48px; border-radius: 999px; background: rgba(10, 10, 10, 0.06); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ag3-qualquer-info { display: flex; flex-direction: column; }
+.ag3-qualquer-nome { font-size: 15px; font-weight: 700; color: #0a0a0a; }
+.ag3-qualquer-sub { font-size: 11px; font-weight: 600; color: #8a8a85; margin-top: 2px; }
+
+.ag3-barb-wrap { flex: 1; position: relative; min-height: 420px; margin-top: 6px; touch-action: pan-y; }
+.ag3-barb-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 280px;
+  max-width: calc(100vw - 64px);
+  max-height: 66vh;
+  cursor: pointer;
+  background: #fff;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 14px 30px rgba(10, 10, 10, 0.12);
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+}
+.ag3-barb-foto { width: 100%; flex: 1 1 auto; min-height: 0; aspect-ratio: 1/1; position: relative; background: #d7dbdc; }
+.ag3-barb-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ag3-barb-corpo { flex: none; padding: 14px 16px 16px; }
+.ag3-barb-nome { font-size: 18px; font-weight: 700; color: #0a0a0a; }
+.ag3-barb-especialidade { display: block; font-size: 13px; color: #8a8a85; margin-top: 4px; }
+.ag3-barb-selecionar { display: block; margin-top: 14px; text-align: center; background: #0a0a0a; color: #fff; font-size: 13px; font-weight: 700; padding: 10px; border-radius: 999px; }
+
+/* ---- Horário: chips de data + grade de horários ---- */
+.ag3-datas { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+.ag3-datas::-webkit-scrollbar { display: none; }
+.ag3-data-chip {
+  flex-shrink: 0;
+  min-width: 52px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(10, 10, 10, 0.06);
+  text-align: center;
+  text-decoration: none;
+  color: #0a0a0a;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ag3-data-chip.sel { background: #0a0a0a; color: #fff; border-color: #0a0a0a; }
+.ag3-horarios-titulo { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #8a8a85; margin: 20px 0 10px; }
+.ag3-horarios-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ag3-horario {
+  padding: 11px 0;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(10, 10, 10, 0.06);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0a0a0a;
+  text-decoration: none;
+}
+.ag3-horario--indisponivel { background: rgba(10, 10, 10, 0.03); color: #c8c8c4; text-decoration: line-through; border-color: transparent; }
+
+/* ---- Campos (Seus dados) ---- */
+.ag3-campo { margin-bottom: 16px; }
+.ag3-campo-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #8a8a85; margin-bottom: 6px; }
+.ag3-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0a0a0a;
+  border: none;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 14px;
+  padding: 13px 14px;
+  outline: none;
+  font-family: inherit;
+}
+.ag3-input::placeholder { color: rgba(10, 10, 10, 0.35); font-weight: 500; }
+
+/* ---- Resumo (cartão escuro — Confirmação/Sucesso) ---- */
+.ag3-resumo {
+  border-radius: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, #3a3a40, #111114);
+  box-shadow: 0 12px 28px rgba(10, 10, 10, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+.ag3-resumo-linha { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ag3-resumo-rot { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); flex-shrink: 0; }
+.ag3-resumo-val { font-size: 14px; font-weight: 700; color: #fff; text-align: right; }
+.ag3-resumo-preco { font-size: 18px; font-weight: 600; color: #fff; font-family: ui-monospace, monospace; }
+.ag3-resumo-sep { height: 1px; background: rgba(255, 255, 255, 0.12); }
+
+.ag3-cliente-card { margin-top: 16px; padding: 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.6); }
+.ag3-cliente-label { font-size: 11px; font-weight: 700; color: #8a8a85; text-transform: uppercase; letter-spacing: 0.5px; }
+.ag3-cliente-nome { font-size: 14px; font-weight: 700; color: #0a0a0a; margin-top: 3px; }
+.ag3-cliente-tel { font-size: 12px; color: #8a8a85; margin-top: 2px; }
+
+/* ---- CTA (ação principal) ---- */
+.ag3-rodape-acao { margin-top: 20px; }
+.ag3-cta {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  background: linear-gradient(100deg, #111114 40%, #3a3a40 50%, #111114 60%);
+  background-size: 220% 100%;
+  animation: ctaShimmer 2.6s ease-in-out infinite;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 16px;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+.ag3-cta:active { transform: scale(0.98); }
+.ag3-cta:disabled { opacity: 0.4; cursor: default; animation: none; background: #0a0a0a; pointer-events: none; }
+.ag3-cta--secundario { background: rgba(10, 10, 10, 0.06); color: #0a0a0a; animation: none; }
+
+/* ---- Plano (consulta) ---- */
+.ag3-plano-lista { display: flex; flex-direction: column; gap: 10px; }
+.ag3-plano-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+}
+.ag3-plano-item-nome { display: block; font-size: 14px; font-weight: 700; color: #0a0a0a; }
+.ag3-plano-item-sub { display: block; font-size: 11px; color: #8a8a85; margin-top: 2px; }
+.ag3-plano-item-seta { font-size: 13px; font-weight: 700; color: #0a0a0a; flex-shrink: 0; }
+
+/* ---- Sucesso ---- */
+.ag3-sucesso { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 10px 20px; text-align: center; animation: popIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
+.ag3-sucesso-icone { width: 72px; height: 72px; border-radius: 999px; background: linear-gradient(135deg, #3a3a40, #111114); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(10, 10, 10, 0.25); }
+.ag3-sucesso-check { stroke-dasharray: 40; animation: checkDraw 0.5s ease 0.15s both; }
+.ag3-sucesso-titulo { font-size: 20px; font-weight: 700; color: #0a0a0a; margin-top: 20px; }
+.ag3-sucesso-sub { font-size: 13px; color: #8a8a85; margin-top: 6px; max-width: 260px; line-height: 1.5; }
+
+/* ---- Rodapé (link de acesso da equipe) ---- */
+.ag3-rodape { position: relative; z-index: 1; text-align: center; padding: 10px 0 calc(24px + env(safe-area-inset-bottom, 0px)); }
+.ag3-rodape-link { font-size: 12px; color: #8a8a85; text-decoration: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ag3-passo, .ag3-servico-card, .ag3-sucesso, .ag3-servico-check, .ag3-sucesso-check, .ag3-logo, .ag3-cta {
+    animation: none !important;
+  }
+}

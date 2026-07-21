@@ -8,47 +8,46 @@
     return dias.map(function (d) { return DIAS_SEMANA_EXT[d].slice(0, 3); }).join(', ');
   }
 %>
-<a href="/agendar" class="link-voltar">← Agendar normalmente</a>
+<div class="ag3-passo">
+  <div class="ag3-passo-topo">
+    <a href="/agendar" class="ag3-voltar-inline">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+    </a>
+    <div class="ag3-titulo">Consultar meu plano</div>
+    <div class="ag3-subtitulo">Informe seu telefone para verificarmos seu plano ativo.</div>
+  </div>
 
-<div class="cabecalho-pagina">
-  <h1>Tem um plano?</h1>
-  <p class="texto-secundario">Informe seu telefone para usar seu plano no agendamento.</p>
-</div>
-
-<div class="card">
-  <form method="GET" action="/agendar/plano" class="form">
-    <div class="campo">
-      <label for="telefone">Telefone</label>
-      <input id="telefone" name="telefone" inputmode="tel" placeholder="(51) 99999-9999"
-             value="<%= telefoneDigitado %>" required autofocus />
+  <form method="GET" action="/agendar/plano">
+    <div class="ag3-campo">
+      <label class="ag3-campo-label" for="telefone">Telefone / WhatsApp</label>
+      <input class="ag3-input" id="telefone" name="telefone" inputmode="tel" placeholder="(11) 99999-9999" value="<%= telefoneDigitado %>" required autofocus />
     </div>
-    <button class="btn btn-primario btn-bloco" type="submit">Verificar plano</button>
+    <button class="ag3-cta" type="submit">Consultar</button>
   </form>
-</div>
 
-<% if (resultado) { %>
-  <% if (resultado.assinaturas.length === 0) { %>
-    <div class="alerta alerta-aviso mt-16">Nenhum plano ativo encontrado para esse telefone.</div>
-    <a href="/agendar" class="btn btn-secundario btn-bloco">Agendar sem plano</a>
-  <% } else { %>
-    <div class="cabecalho-pagina mt-24">
-      <h2>Olá, <%= resultado.cliente.nome %>!</h2>
-      <p class="texto-secundario">Escolha o plano para agendar:</p>
-    </div>
-    <div class="lista-opcoes">
-      <% resultado.assinaturas.forEach(function (a) { %>
-        <a class="opcao-selecionavel opcao-servico"
-           href="<%= a.plano.servicoId ? '/agendar/barbeiro?servicoId=' + a.plano.servicoId + '&assinatura=' + a.id : '/agendar?assinatura=' + a.id %>">
-          <span class="opcao-info">
-            <span class="opcao-nome"><%= a.plano.nome %></span>
-            <span class="texto-sutil">
-              <%= a.plano.tipo === 'ilimitado' ? 'Ilimitado · ' + _diasPlanoLabel(a.plano.diasSemana) : a.usosRestantes + ' uso(s) restante(s)' %>
-              · até <%= fmtData(a.dataFim) %><%= a.plano.servico ? ' · ' + a.plano.servico.nome : '' %>
+  <% if (resultado) { %>
+    <% if (resultado.assinaturas.length === 0) { %>
+      <div class="ag3-aviso mt-24">Nenhum plano ativo encontrado para esse telefone.</div>
+      <a href="/agendar" class="ag3-cta ag3-cta--secundario mt-16">Agendar sem plano</a>
+    <% } else { %>
+      <div class="ag3-passo-topo mt-24" style="margin-bottom:0;">
+        <div class="ag3-titulo" style="font-size:20px;">Olá, <%= resultado.cliente.nome %>!</div>
+        <div class="ag3-subtitulo">Escolha o plano para agendar:</div>
+      </div>
+      <div class="ag3-plano-lista mt-16">
+        <% resultado.assinaturas.forEach(function (a) { %>
+          <a class="ag3-plano-item" href="<%= a.plano.servicoId ? '/agendar/barbeiro?servicoId=' + a.plano.servicoId + '&assinatura=' + a.id : '/agendar?assinatura=' + a.id %>">
+            <span class="ag3-plano-item-info">
+              <span class="ag3-plano-item-nome"><%= a.plano.nome %></span>
+              <span class="ag3-plano-item-sub">
+                <%= a.plano.tipo === 'ilimitado' ? 'Ilimitado · ' + _diasPlanoLabel(a.plano.diasSemana) : a.usosRestantes + ' uso(s) restante(s)' %>
+                · até <%= fmtData(a.dataFim) %><%= a.plano.servico ? ' · ' + a.plano.servico.nome : '' %>
+              </span>
             </span>
-          </span>
-          <span class="opcao-meta"><span class="opcao-valor">Usar →</span></span>
-        </a>
-      <% }) %>
-    </div>
+            <span class="ag3-plano-item-seta">Usar →</span>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
   <% } %>
-<% } %>
+</div>

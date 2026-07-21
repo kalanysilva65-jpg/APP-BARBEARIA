@@ -1,22 +1,130 @@
-<a href="/agendar<%= assinatura ? '?assinatura=' + assinatura.id : '' %>" class="link-voltar">← Voltar</a>
-
-<div class="cabecalho-pagina">
-  <h1>Escolha o barbeiro</h1>
-  <p class="texto-secundario">
-    <% if (servicos.length === 1) { %>
-      <%= servicos[0].nome %> · <%= assinatura ? 'incluso no plano' : fmtBRL(valorTotal) %>
-    <% } else { %>
-      <%= servicos.length %> serviços · <%= fmtBRL(valorTotal) %>
-    <% } %>
-  </p>
-</div>
-
-<div class="grade-opcoes">
-  <% barbeiros.forEach(function (b) { %>
-    <a class="card-barbeiro opcao-toggle"
-       href="/agendar/horario?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= b.id %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>">
-      <span class="avatar"><%= b.nome.charAt(0).toUpperCase() %></span>
-      <span class="card-barbeiro-nome"><%= b.nome %></span>
+<%
+  var nomeBarbearia = (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : 'Barbearia';
+  var qsBase = 'servicoIds=' + servicoIdsStr + (assinatura ? '&assinatura=' + assinatura.id : '');
+%>
+<div class="ag3-passo ag3-passo--coluna">
+  <div class="ag3-passo-topo">
+    <a href="/agendar<%= assinatura ? '?assinatura=' + assinatura.id : '' %>" class="ag3-voltar-inline">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
     </a>
-  <% }) %>
+    <span class="ag3-marca">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8a8a85" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20a6 6 0 0 1 12 0M15.5 20a5 5 0 0 1 5.5-5"/></svg>
+      <%= nomeBarbearia %>
+    </span>
+    <div class="ag3-titulo">Barbeiro</div>
+  </div>
+
+  <% if (mostrarQualquer) { %>
+    <a href="/agendar/horario?<%= qsBase %>&barbeiroId=any" class="ag3-qualquer">
+      <span class="ag3-qualquer-icone">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2"><path d="M5 20a7 7 0 0 1 14 0"/><circle cx="12" cy="8" r="4"/></svg>
+      </span>
+      <span class="ag3-qualquer-info">
+        <span class="ag3-qualquer-nome">Qualquer disponível</span>
+        <span class="ag3-qualquer-sub">Mais rápido para agendar</span>
+      </span>
+    </a>
+  <% } %>
+
+  <% if (barbeiros.length === 0) { %>
+    <p class="ag3-vazio">Nenhum barbeiro disponível no momento.</p>
+  <% } else { %>
+    <div class="ag3-barb-wrap" id="ag3-barb-wrap">
+      <% barbeiros.forEach(function (b, i) { %>
+        <div class="ag3-barb-card" data-idx="<%= i %>" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= b.id %>">
+          <span class="ag3-barb-foto">
+            <% if (b.fotoUrl) { %><img src="<%= b.fotoUrl %>" alt="" /><% } %>
+          </span>
+          <span class="ag3-barb-corpo">
+            <span class="ag3-barb-nome"><%= b.nome %></span>
+            <span class="ag3-barb-especialidade">Barbeiro</span>
+            <span class="ag3-barb-selecionar">Selecionar</span>
+          </span>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
 </div>
+
+<script>
+  // Pilha de cards arrastável — mesma matemática/lógica já usada no painel
+  // (Equipe): pointer events unificando mouse+touch; o clique é tratado no
+  // pointerup (não em "click") porque setPointerCapture redireciona o clique
+  // sintético pro próprio wrap.
+  (function () {
+    var wrap = document.getElementById('ag3-barb-wrap');
+    if (!wrap) return;
+    var cards = Array.prototype.slice.call(wrap.querySelectorAll('.ag3-barb-card'));
+    var n = cards.length;
+    var activeIdx = 0;
+    var dragging = false;
+    var startX = null;
+    var dragX = 0;
+    var cardAlvo = null;
+
+    function render() {
+      var dragPct = Math.max(-1, Math.min(1, dragX / 220));
+      var shift = dragPct * 30;
+      cards.forEach(function (card, i) {
+        var rel = i - activeIdx;
+        var transform, opacity, zIndex, pointerEvents;
+        if (rel === 0) {
+          transform = 'translate(calc(-50% + ' + dragX + 'px),-50%) scale(' + (1 - Math.abs(dragPct) * 0.12) + ')';
+          opacity = 1; zIndex = 3; pointerEvents = 'auto';
+        } else if (rel === 1) {
+          transform = 'translate(calc(-20% + ' + shift + 'px),-50%) scale(' + (0.86 + Math.max(0, dragPct) * 0.14) + ')';
+          opacity = 0.55 + Math.max(0, dragPct) * 0.45; zIndex = 2; pointerEvents = 'auto';
+        } else if (rel === -1) {
+          transform = 'translate(calc(-80% + ' + shift + 'px),-50%) scale(' + (0.86 + Math.max(0, -dragPct) * 0.14) + ')';
+          opacity = 0.55 + Math.max(0, -dragPct) * 0.45; zIndex = 2; pointerEvents = 'auto';
+        } else {
+          transform = rel > 0 ? 'translate(10%,-50%) scale(0.8)' : 'translate(-110%,-50%) scale(0.8)';
+          opacity = 0; zIndex = 1; pointerEvents = 'none';
+        }
+        card.style.transform = transform;
+        card.style.opacity = opacity;
+        card.style.zIndex = zIndex;
+        card.style.pointerEvents = pointerEvents;
+        card.style.transition = dragging ? 'none' : 'transform 0.45s cubic-bezier(.2,.9,.25,1.4), opacity 0.35s ease';
+      });
+    }
+
+    function irPara(i) {
+      activeIdx = Math.max(0, Math.min(n - 1, i));
+      render();
+    }
+
+    wrap.addEventListener('pointerdown', function (e) {
+      startX = e.clientX;
+      dragging = true;
+      dragX = 0;
+      cardAlvo = e.target.closest('.ag3-barb-card');
+      wrap.setPointerCapture(e.pointerId);
+    });
+    wrap.addEventListener('pointermove', function (e) {
+      if (startX == null) return;
+      dragX = e.clientX - startX;
+      render();
+    });
+    function terminarArrasto(e) {
+      if (startX == null) return;
+      var delta = e.clientX - startX;
+      startX = null;
+      dragging = false;
+      if (delta < -40) irPara(activeIdx + 1);
+      else if (delta > 40) irPara(activeIdx - 1);
+      else if (Math.abs(delta) <= 5 && cardAlvo) {
+        var i = cards.indexOf(cardAlvo);
+        if (i === activeIdx) window.location.href = cardAlvo.dataset.href;
+        else if (i !== -1) irPara(i);
+      }
+      dragX = 0;
+      cardAlvo = null;
+      render();
+    }
+    wrap.addEventListener('pointerup', terminarArrasto);
+    wrap.addEventListener('pointercancel', terminarArrasto);
+
+    render();
+  })();
+</script>

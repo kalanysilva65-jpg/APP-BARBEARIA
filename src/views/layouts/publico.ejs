@@ -4,45 +4,43 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : 'Agendamento' %></title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <%/* Mesma fonte do sistema do painel novo — sem webfont, visual nativo. */%>
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/tema-minimal.css" />
-    <link rel="stylesheet" href="/css/agendamento-app.css" />
+    <link rel="stylesheet" href="/css/agendamento-novo.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#0d0d0f" />
+    <meta name="theme-color" content="#eaeaea" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
   </head>
-  <body class="tela-publica app-agendamento">
-    <header class="topo-agendamento">
-      <div class="container-estreito topo-agendamento-inner">
-        <% if (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) { %>
-          <a href="/agendar" class="topo-agendamento-logo"><img src="<%= marcaLogoUrl %>" alt="Logo" class="logo-marca-img" /></a>
-        <% } else { %>
-          <a href="/agendar" class="topo-agendamento-logo topo-agendamento-logo--texto">Cortavo</a>
-        <% } %>
+  <body class="tela-publica ag3-body">
+    <div class="ag3-brilho ag3-brilho--esq"></div>
+    <div class="ag3-brilho ag3-brilho--dir"></div>
+
+    <div class="ag3-tela">
+      <header class="ag3-topo">
+        <div class="ag3-logo-wrap">
+          <% if (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) { %>
+            <a href="/agendar" class="ag3-logo"><img src="<%= marcaLogoUrl %>" alt="Logo" /></a>
+          <% } else { %>
+            <a href="/agendar" class="ag3-logo ag3-logo--texto"><%= (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome.charAt(0).toUpperCase() : 'C' %></a>
+          <% } %>
+        </div>
         <% if (typeof passo !== 'undefined' && passo >= 1 && passo <= 4) { %>
           <%- include('../partials/passos', { passo: passo }) %>
         <% } %>
-      </div>
-    </header>
+      </header>
 
-    <main class="container-estreito conteudo-publico animar-entrada">
-      <%- include('../partials/flash') %>
-      <%- body %>
-    </main>
+      <main class="ag3-corpo">
+        <%- include('../partials/flash') %>
+        <%- body %>
+      </main>
+    </div>
 
-    <footer class="rodape-publico">
-      <div class="container-estreito rodape-publico-inner">
-        <a href="/login" class="texto-sutil">Acesso da equipe →</a>
-      </div>
-    </footer>
+    <div class="ag3-rodape">
+      <a href="/login" class="ag3-rodape-link">Acesso da equipe →</a>
+    </div>
   </body>
 </html>
