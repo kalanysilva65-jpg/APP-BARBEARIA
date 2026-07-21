@@ -1,0 +1,272 @@
+<!-- Cabeçalho: seta pra Home + título + exportar (imprimir/salvar como PDF —
+     não existe geração de PDF de verdade, então usa a função nativa do
+     navegador, que é o que dá pra oferecer sem back-end novo). -->
+<div class="ag2-topo rel-topo">
+  <div class="rel-topo-linha">
+    <a href="/painel" class="rel-voltar" aria-label="Voltar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+    </a>
+    <div class="rel-titulo">Relatórios</div>
+    <button type="button" class="rel-exportar" onclick="window.print()" aria-label="Exportar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>
+    </button>
+  </div>
+
+  <div class="rel-periodo-linha">
+    <div class="rel-periodo-pills">
+      <a class="rel-periodo-pill <%= periodo === 'hoje' ? 'ativo' : '' %>" href="/painel/relatorios?periodo=hoje">Hoje</a>
+      <a class="rel-periodo-pill <%= periodo === 'semana' ? 'ativo' : '' %>" href="/painel/relatorios?periodo=semana">Semana</a>
+      <a class="rel-periodo-pill <%= periodo === 'mes' ? 'ativo' : '' %>" href="/painel/relatorios?periodo=mes">Mês</a>
+      <a class="rel-periodo-pill <%= periodo === 'ano' ? 'ativo' : '' %>" href="/painel/relatorios?periodo=ano">Ano</a>
+      <button type="button" class="rel-periodo-pill rel-periodo-pill--custom <%= periodo === 'custom' ? 'ativo' : '' %>" onclick="abrirModal('periodo')">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+        <%= periodo === 'custom' ? relPeriodLabel : 'Período' %>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="ag2-corpo rel-corpo">
+  <!-- Faturamento -->
+  <div class="rel-fat-card">
+    <div class="rel-fat-topo">
+      <span class="rel-fat-label">Faturamento · <%= relPeriodLabel %></span>
+      <% if (variacaoFaturamento !== null) { %>
+        <span class="rel-fat-var <%= variacaoFaturamento >= 0 ? 'rel-var--up' : 'rel-var--down' %>"><%= variacaoFaturamento >= 0 ? '+' : '' %><%= variacaoFaturamento %>%</span>
+      <% } %>
+    </div>
+    <div class="rel-fat-valor"><%= relFaturamentoVal %></div>
+    <svg width="100%" height="54" viewBox="0 0 300 54" preserveAspectRatio="none" class="rel-fat-chart">
+      <polyline points="<%= relChartPoints %>" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  </div>
+
+  <!-- Gastos / Lucro -->
+  <div class="rel-grid2">
+    <button type="button" class="rel-card-branco rel-gastos-btn" onclick="abrirModal('gastos')">
+      <span class="rel-card-label">Gastos</span>
+      <span class="rel-card-num"><%= gastosVal %></span>
+      <span class="rel-card-sub rel-sub--vermelho">Do período</span>
+    </button>
+    <div class="rel-card-escuro">
+      <span class="rel-card-label rel-card-label--claro">Lucro</span>
+      <span class="rel-card-num rel-card-num--claro"><%= lucroVal %></span>
+      <% if (variacaoLucro !== null) { %>
+        <span class="rel-card-sub <%= variacaoLucro >= 0 ? 'rel-sub--verde' : 'rel-sub--vermelho-claro' %>"><%= variacaoLucro >= 0 ? '↑' : '↓' %> <%= Math.abs(variacaoLucro) %>% vs período anterior</span>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Ticket médio / Clientes novos -->
+  <div class="rel-grid2">
+    <div class="rel-card-branco">
+      <span class="rel-card-label">Ticket médio</span>
+      <span class="rel-card-num"><%= ticketMedioVal %></span>
+      <% if (variacaoTicket !== null) { %>
+        <span class="rel-card-sub <%= variacaoTicket >= 0 ? 'rel-sub--verde-escuro' : 'rel-sub--vermelho' %>"><%= variacaoTicket >= 0 ? '↑' : '↓' %> <%= Math.abs(variacaoTicket) %>% vs período anterior</span>
+      <% } %>
+    </div>
+    <div class="rel-card-branco">
+      <span class="rel-card-label">Clientes novos</span>
+      <div class="rel-clientes-num">
+        <span class="rel-card-num"><%= clientesNovos %></span>
+        <span class="rel-clientes-sub">/ <%= clientesRecorrentes %> recorrentes</span>
+      </div>
+      <div class="rel-clientes-bar">
+        <div style="width:<%= clientesNovosPct %>%;background:#0a0a0a"></div>
+        <div style="width:<%= clientesRecorrentesPct %>%;background:#d7dbdc"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Serviços mais vendidos -->
+  <% if (topServices.length > 0) { %>
+    <div class="rel-lista-card">
+      <div class="rel-lista-titulo">Serviços mais vendidos</div>
+      <% topServices.forEach(function (svc) { %>
+        <div class="rel-lista-item">
+          <span class="rel-lista-rank"><%= svc.rank %></span>
+          <div class="rel-lista-corpo">
+            <div class="rel-lista-linha"><span><%= svc.name %></span><span><%= svc.value %></span></div>
+            <div class="rel-lista-barra"><div style="width:<%= svc.pct %>%;background:#0a0a0a"></div></div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <!-- Produtos mais vendidos -->
+  <% if (topProducts.length > 0) { %>
+    <div class="rel-lista-card">
+      <div class="rel-lista-titulo">Produtos mais vendidos</div>
+      <% topProducts.forEach(function (prd) { %>
+        <div class="rel-lista-item">
+          <span class="rel-lista-rank"><%= prd.rank %></span>
+          <div class="rel-lista-corpo">
+            <div class="rel-lista-linha"><span><%= prd.name %></span><span><%= prd.value %></span></div>
+            <div class="rel-lista-barra"><div style="width:<%= prd.pct %>%;background:#6b7a8f"></div></div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <!-- Desempenho por barbeiro -->
+  <% if (barberPerf.length > 0) { %>
+    <div class="rel-lista-card">
+      <div class="rel-lista-titulo">Desempenho por barbeiro</div>
+      <% barberPerf.forEach(function (bp) { %>
+        <div class="rel-barbeiro-item">
+          <span class="rel-barbeiro-avatar" style="background:<%= bp.avatarBg %>"><%= bp.initials %></span>
+          <div class="rel-lista-corpo">
+            <div class="rel-lista-linha"><span><%= bp.name %></span><span><%= bp.revenue %></span></div>
+            <div class="rel-lista-barra"><div style="width:<%= bp.pct %>%;background:#0a0a0a"></div></div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <!-- Formas de pagamento -->
+  <% if (formasPagamento.length > 0) { %>
+    <div class="rel-pag-card">
+      <div class="rel-donut" style="background:<%= donutGradiente %>"><span class="rel-donut-buraco"></span></div>
+      <div class="rel-pag-legenda">
+        <div class="rel-pag-titulo">Formas de pagamento</div>
+        <% formasPagamento.forEach(function (f) { %>
+          <div class="rel-pag-linha"><span class="rel-pag-dot" style="background:<%= f.cor %>"></span><%= f.label %> · <%= f.pct %>%</div>
+        <% }) %>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Ocupação por dia e horário -->
+  <div class="rel-lista-card">
+    <div class="rel-lista-titulo">Ocupação por dia e horário</div>
+    <div class="rel-ocup-sub">Quanto mais escuro, maior a ocupação</div>
+    <div class="rel-ocup-grid" style="grid-template-columns:24px repeat(<%= occupancyHours.length %>, 1fr);">
+      <div></div>
+      <% occupancyHours.forEach(function (h) { %><div class="rel-ocup-hora"><%= h %></div><% }) %>
+      <% occupancyGrid.forEach(function (row) { %>
+        <div class="rel-ocup-dia"><%= row.day %></div>
+        <% row.cells.forEach(function (c) { %>
+          <div class="rel-ocup-cel <%= c.peak ? 'rel-ocup-cel--pico' : '' %>" style="background:<%= c.bg %>"></div>
+        <% }) %>
+      <% }) %>
+    </div>
+    <div class="rel-ocup-legenda">
+      <span class="rel-ocup-legenda-texto">Menos</span>
+      <span class="rel-ocup-swatch" style="background:#efefef"></span>
+      <span class="rel-ocup-swatch" style="background:#d7dbdc"></span>
+      <span class="rel-ocup-swatch" style="background:#6b7a8f"></span>
+      <span class="rel-ocup-swatch" style="background:#0a0a0a"></span>
+      <span class="rel-ocup-legenda-texto">Mais</span>
+      <span class="rel-ocup-pico-legenda"><span class="rel-ocup-swatch rel-ocup-swatch--pico"></span>Pico</span>
+    </div>
+    <div class="rel-ocup-frase-wrap">
+      <div class="rel-ocup-frase-titulo">Horário de pico</div>
+      <div class="rel-ocup-frase"><%= fraseOcupacao %></div>
+    </div>
+  </div>
+
+  <!-- Histórico de clientes por horário -->
+  <% if (slotHistory.length > 0) { %>
+    <div class="rel-lista-card">
+      <div class="rel-lista-titulo">Histórico de clientes por horário</div>
+      <% slotHistory.forEach(function (sh) { %>
+        <div class="rel-hist-item">
+          <div class="rel-hist-hora">
+            <div class="rel-hist-hora-num"><%= sh.time %></div>
+            <div class="rel-hist-hora-dia"><%= sh.day %></div>
+          </div>
+          <div class="rel-lista-corpo">
+            <div class="rel-hist-cliente"><%= sh.client %></div>
+            <div class="rel-hist-sub"><%= sh.service %> · <%= sh.barber %></div>
+          </div>
+          <div class="rel-hist-valor"><%= sh.value %></div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+
+<!-- Pop-up: Gastos (detalhado por categoria) -->
+<div class="ag-overlay" id="agm-gastos" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Gastos · <%= relPeriodLabel %></div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
+    <div class="rel-gastos-total"><%= gastosVal %></div>
+    <% if (gastosDetail.length === 0) { %>
+      <p class="texto-secundario mt-16">Nenhum gasto neste período.</p>
+    <% } else { %>
+      <div class="rel-gastos-lista mt-16">
+        <% gastosDetail.forEach(function (g) { %>
+          <div class="rel-gastos-cat">
+            <div class="rel-gastos-cat-topo">
+              <div>
+                <div class="rel-gastos-cat-nome"><%= g.name %></div>
+                <div class="rel-gastos-cat-pct"><%= g.pct %>% do total</div>
+              </div>
+              <div class="rel-gastos-cat-valor"><%= g.value %></div>
+            </div>
+            <div class="rel-gastos-cat-barra"><div style="width:<%= g.pct %>%;background:<%= g.color %>"></div></div>
+            <% if (g.items.length > 0) { %>
+              <div class="rel-gastos-cat-itens">
+                <% g.items.forEach(function (it) { %>
+                  <div class="rel-gastos-cat-item"><span><%= it.label %></span><span><%= it.value %></span></div>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+        <% }) %>
+      </div>
+      <div class="rel-gastos-rodape">
+        <span>Total do período</span>
+        <span><%= gastosVal %></span>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Pop-up: período personalizado -->
+<div class="ag-overlay" id="agm-periodo" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="ag-modal-nome">Período personalizado</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
+    <form method="GET" action="/painel/relatorios" class="form mt-16">
+      <input type="hidden" name="periodo" value="custom" />
+      <div class="campo">
+        <label for="rel-de">De</label>
+        <input id="rel-de" type="date" name="de" value="<%= deStr %>" required />
+      </div>
+      <div class="campo">
+        <label for="rel-ate">Até</label>
+        <input id="rel-ate" type="date" name="ate" value="<%= ateStr %>" required />
+      </div>
+      <div class="modal-acoes">
+        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+        <button class="btn btn-primario">Aplicar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function abrirModal(id) {
+    var o = document.getElementById('agm-' + id);
+    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+  }
+  function fecharModal(o) {
+    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
+      document.body.classList.remove('modal-aberto');
+    }
+  });
+</script>

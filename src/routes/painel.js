@@ -15,6 +15,7 @@ const planoController = require('../controllers/planoController');
 const dashboardController = require('../controllers/dashboardController');
 const perfilController = require('../controllers/perfilController');
 const equipeController = require('../controllers/equipeController');
+const relatorioController = require('../controllers/relatorioController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -204,5 +205,8 @@ router.post('/caixa/categorias', exigeAdmin, caixaController.criarCategoria);
 router.post('/caixa/categorias/:id/remover', exigeAdmin, caixaController.removerCategoria);
 router.post('/caixa/categorias/:id', exigeAdmin, caixaController.atualizarCategoria);
 router.post('/caixa/:id/remover', exigeAdmin, caixaController.remover);
+
+// --- Relatórios (somente admin) --------------------------------------------
+router.get('/relatorios', exigeAdmin, relatorioController.ver);
 
 module.exports = router;

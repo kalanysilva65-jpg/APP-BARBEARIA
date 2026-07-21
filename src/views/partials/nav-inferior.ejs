@@ -4,7 +4,7 @@
   // não foram convertidas continuam com a barra antiga (escura, rolável),
   // pra não misturar os dois temas na mesma tela. Mesma lista de
   // src/views/layouts/painel.ejs (TELAS_NOVAS).
-  var TELAS_NOVAS_PATHS = ['/painel', '/painel/agenda', '/painel/estoque', '/painel/servicos', '/painel/produtos', '/painel/planos', '/painel/clientes', '/painel/equipe', '/painel/caixa'];
+  var TELAS_NOVAS_PATHS = ['/painel', '/painel/agenda', '/painel/estoque', '/painel/servicos', '/painel/produtos', '/painel/planos', '/painel/clientes', '/painel/equipe', '/painel/caixa', '/painel/relatorios'];
   var navNovo = TELAS_NOVAS_PATHS.indexOf(currentPath) !== -1;
 %>
 
@@ -27,6 +27,7 @@
       { href: '/painel/estoque', nome: 'Estoque' },
       { href: '/painel/planos', nome: 'Planos' },
       { href: '/painel/equipe', nome: 'Equipe', admin: true },
+      { href: '/painel/relatorios', nome: 'Relatórios', admin: true },
       { href: '/painel/comissoes', nome: 'Comissões' },
       { href: '/painel/horarios', nome: 'Horários' },
       { href: '/painel/mais', nome: 'Perfil' },
@@ -43,6 +44,7 @@
       'Estoque': '<path d="M20 12V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v4M2 12h20v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/><path d="M12 12v8"/>',
       'Planos': '<path d="m12 2 3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/>',
       'Equipe': '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20a6 6 0 0 1 12 0M15.5 20a5 5 0 0 1 5.5-5"/>',
+      'Relatórios': '<path d="M4 19V5a1 1 0 0 1 1-1h9l6 6v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M13 4v6h6M8 15h8M8 11h4"/>',
       'Comissões': '<circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/><path d="M18 6 6 18"/>',
       'Horários': '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
       'Perfil': '<circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/>',
