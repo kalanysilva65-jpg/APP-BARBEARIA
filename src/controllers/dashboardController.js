@@ -139,21 +139,69 @@ async function ver(req, res) {
   const hora = new Date().getHours();
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
 
-  // --- Mini-gráfico do faturamento da semana (sparkline) -------------------
-  // Caminho SVG de 0..140 x 0..30 (mesma viewBox do design) a partir das
-  // barras da semana; escala pelo maior valor. Sem dados vira uma linha reta.
-  let sparkPath = 'M0 15 L140 15';
-  if (barras.length > 1) {
-    const maxSpark = Math.max(1, ...barras.map((x) => x.valor));
-    const passo = 140 / (barras.length - 1);
-    sparkPath = barras
-      .map((x, i) => {
-        const px = Math.round(i * passo);
-        const py = Math.round(28 - (x.valor / maxSpark) * 26); // 2..28, invertido (svg y cresce p/ baixo)
-        return `${i === 0 ? 'M' : 'L'}${px} ${py}`;
-      })
-      .join(' ');
-  }
+  // --- Data por extenso do cabeçalho ---------------------------------------
+  const DIAS_SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+  const MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  const dataLonga = `${DIAS_SEMANA[agora.getDay()]}, ${agora.getDate()} de ${MESES_LONGOS[agora.getMonth()]}`;
+
+  // --- "PRÓXIMO AGENDAMENTO" + os seguintes --------------------------------
+  // Olha ALÉM de hoje de propósito: quando o dia já acabou, a Home mostra o
+  // próximo compromisso real (amanhã, semana que vem) em vez de ficar vazia
+  // — é o bloco que abre a tela no design Turno 6, não pode ficar em branco.
+  const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const agsFuturos = await prisma.agendamento.findMany({
+    where: { barbeariaId: b, data: { gte: hoje0 }, status: 'agendado', ...filtroBarbeiro },
+    include: { itens: { include: { servico: true } } },
+    orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
+    take: 20,
+  });
+  const proximosTodos = agsFuturos
+    // Hoje só conta o que ainda não passou; dias futuros contam inteiros.
+    .filter((a) => a.data.getTime() > hoje0.getTime() || paraMinutos(a.horaInicio) >= minutoAgora)
+    .slice(0, 4)
+    .map((a) => ({
+      cliente: a.clienteNome,
+      hora: a.horaInicio,
+      servico: a.itens.map((i) => i.servico.nome).join(' + ') || 'Atendimento',
+      diaNum: a.data.getDate(),
+      mesLabel: MESES_CURTOS[a.data.getMonth()],
+    }));
+  const proximoCorte = proximosTodos[0] || null;
+  const seguintesCortes = proximosTodos.slice(1);
+
+  // --- Faturamento semanal: total + colunas coloridas ----------------------
+  // Os tons ciclam numa paleta fixa de 5 (igual à referência) — a cor não
+  // codifica valor nenhum, é ritmo visual.
+  const faturamentoSemanal = barras.reduce((s, x) => s + x.valor, 0);
+  const TONS_BLOCO = [
+    { fundo: '#ADADAD', texto: '#0E0E0E', apoio: '#454545' },
+    { fundo: '#0E0E0E', texto: '#FAFAFA', apoio: '#7B7B7B' },
+    { fundo: '#454545', texto: '#FAFAFA', apoio: '#ADADAD' },
+    { fundo: '#FAFAFA', texto: '#0E0E0E', apoio: '#7B7B7B' },
+    { fundo: '#1B1C1D', texto: '#FAFAFA', apoio: '#7B7B7B' },
+  ];
+  const blocosSemana = barras.map((x, i) => {
+    const t = TONS_BLOCO[i % TONS_BLOCO.length];
+    return {
+      valor: x.valor,
+      label: x.rotulo,
+      // Piso de 120px: uma coluna zerada ainda precisa caber o valor + o dia.
+      altura: Math.max(120, Math.round((x.valor / maxBarra) * 240)),
+      fundo: t.fundo,
+      texto: t.texto,
+      apoio: t.apoio,
+    };
+  });
+
+  // --- Alerta de estoque baixo ---------------------------------------------
+  const itensEstoque = await prisma.estoque.findMany({ where: { barbeariaId: b } });
+  const emFalta = itensEstoque.filter((e) => e.quantidadeMinima > 0 && e.quantidade <= e.quantidadeMinima);
+  const estoqueBaixo = {
+    tem: emFalta.length > 0,
+    quantidade: emFalta.length,
+    titulo: emFalta.length === 1 ? 'item no limite' : 'itens no limite',
+    nomes: emFalta.slice(0, 4).map((e) => e.nome).join(', '),
+  };
 
   res.render('painel/dashboard', {
     titulo: 'Painel',
@@ -171,7 +219,12 @@ async function ver(req, res) {
     produtividade,
     ticketMedioHoje,
     saudacao,
-    sparkPath,
+    dataLonga,
+    proximoCorte,
+    seguintesCortes,
+    faturamentoSemanal,
+    blocosSemana,
+    estoqueBaixo,
   });
 }
 

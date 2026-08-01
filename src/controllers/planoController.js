@@ -44,7 +44,38 @@ async function listar(req, res) {
     include: { servico: true },
     orderBy: [{ ativo: 'desc' }, { nome: 'asc' }],
   });
-  res.render('painel/planos', { titulo: 'Planos', planos, servicos: await listarServicos(req.barbeariaId) });
+
+  // Assinaturas VIGENTES (ativas e dentro da validade) — são elas que dizem
+  // quantos assinantes cada plano tem e quanto de receita recorrente a
+  // barbearia tem por mês, os dois números que o design Turno 6 põe no topo
+  // da tela (pedido do dono, 2026-07-28).
+  const vigentes = await prisma.clientePlano.findMany({
+    where: { barbeariaId: req.barbeariaId, ativo: true, dataFim: { gte: new Date() } },
+    select: { planoId: true },
+  });
+  const porPlano = new Map();
+  vigentes.forEach((a) => porPlano.set(a.planoId, (porPlano.get(a.planoId) || 0) + 1));
+  planos.forEach((p) => {
+    p.assinantes = porPlano.get(p.id) || 0;
+    p.mrr = p.assinantes * p.valor;
+  });
+
+  const mrr = planos.reduce((soma, p) => soma + p.mrr, 0);
+  const lider = planos.reduce((maior, p) => (!maior || p.assinantes > maior.assinantes ? p : maior), null);
+  const resumo = {
+    mrr,
+    assinantes: vigentes.length,
+    ticket: vigentes.length ? Math.round(mrr / vigentes.length) : 0,
+    // Só faz sentido falar em "líder" se alguém tiver assinante.
+    lider: lider && lider.assinantes > 0 ? lider : null,
+  };
+
+  res.render('painel/planos', {
+    titulo: 'Planos',
+    planos,
+    resumo,
+    servicos: await listarServicos(req.barbeariaId),
+  });
 }
 
 // GET /painel/planos/novo

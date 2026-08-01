@@ -1,0 +1,585 @@
+/* Turno 6 (2026-07-28) — estilos desta tela. Tokens e componentes
+   compartilhados ficam em painel-turno6.css. */
+
+/* =========================================================================
+   CLIENTES
+   -------------------------------------------------------------------------
+   A referência abre com o título grande + "Novo", uma busca sem caixa (só o
+   fio de cima) e três filtros chapados. O miolo começa por um RESUMO com o
+   número gigante da carteira e segue numa lista de faixas separadas por fio —
+   nada de grade de cartões com avatar, que era o desenho anterior.
+   ========================================================================= */
+.t6-cl-tela,
+.t6-eq-tela {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--t6-bg);
+  animation: t6TabSlideIn 0.4s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+}
+
+.t6-cl-topo,
+.t6-eq-topo {
+  flex: none;
+  padding: calc(52px + env(safe-area-inset-top, 0px)) 20px 0;
+}
+.t6-cl-titulo-linha {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.t6-cl-titulo,
+.t6-eq-titulo {
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--t6-ink);
+  letter-spacing: -1.4px;
+}
+
+/* Busca: só o fio em cima, sem pílula e sem lupa — o campo É a linha. */
+.t6-cl-busca {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--t6-line);
+}
+.pg-t6 .t6-cl-busca-input {
+  width: 100%;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+  font-family: inherit;
+  padding: 2px 0 10px;
+  -webkit-appearance: none;
+}
+.pg-t6 .t6-cl-busca-input::placeholder { color: var(--t6-muted); }
+.pg-t6 .t6-cl-busca-input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+/* Filtros: retângulos CHAPADOS (o selecionado é preenchido de preto). Não é o
+   `.t6-chip` de contorno da Agenda — aqui a referência não desenha borda. */
+.t6-cl-filtros { display: flex; gap: 6px; padding-bottom: 4px; overflow-x: auto; }
+.pg-t6 .t6-cl-filtro {
+  flex: none;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 13px;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--t6-muted);
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pg-t6 .t6-cl-filtro.sel { background: var(--t6-ink); color: var(--t6-bg); }
+
+.t6-cl-corpo { flex: 1; margin-top: 16px; padding-bottom: 92px; }
+
+/* Resumo "Na base" — o número gigante da tela. */
+.t6-cl-resumo { padding: 0 20px 22px; }
+.t6-cl-resumo-rot {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--t6-muted);
+}
+.t6-cl-resumo-num {
+  font-size: 70px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  letter-spacing: -4px;
+  line-height: 0.9;
+  margin-top: 8px;
+}
+.t6-cl-resumo-sub {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  line-height: 1.45;
+  margin-top: 12px;
+}
+
+/* ---- Lista de clientes ---- */
+.t6-cl-lista { padding: 0 20px; }
+.pg-t6 .t6-cl-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-top: 1px solid var(--t6-line);
+  border-radius: 0;
+  background: none;
+  color: var(--t6-ink);
+  font-family: inherit;
+  padding: 16px 0 18px;
+  cursor: pointer;
+}
+.t6-cl-item-corpo { flex: 1; min-width: 0; }
+/* `display:block` porque a faixa é um <button> e os filhos são <span>: inline,
+   ficariam todos na mesma linha. */
+.t6-cl-nome {
+  display: block;
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  letter-spacing: -0.4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.t6-cl-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  margin-top: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.t6-cl-sub + .t6-cl-sub { margin-top: 3px; }
+.t6-cl-item-lado {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.t6-cl-gasto { font-size: 17px; font-weight: 500; color: var(--t6-ink); }
+.t6-cl-selo {
+  background: var(--t6-ink);
+  color: var(--t6-bg);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 7px;
+}
+.t6-cl-selo--aniv { background: var(--t6-line); color: var(--t6-ink); }
+
+/* ---- Diálogo "Novo cliente" ----
+   Este é dos poucos pop-ups que a referência faz CENTRADO (a folha de página
+   inteira é para o detalhe, que tem conteúdo demais). Campos aqui são rótulo
+   miúdo + linha, não o campo de 30px da folha. */
+.t6-cl-dlg-titulo { font-size: 22px; font-weight: 600; color: var(--t6-ink); letter-spacing: -0.6px; }
+.t6-cl-campo { margin-top: 16px; }
+.t6-cl-campo-rot {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--t6-muted);
+}
+.pg-t6 .ag-modal-box .t6-cl-campo-input {
+  width: 100%;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  border: none;
+  border-bottom: 1px solid var(--t6-line);
+  border-radius: 0;
+  background: transparent;
+  padding: 0 0 5px;
+  margin-top: 3px;
+  font-family: inherit;
+  outline: none;
+}
+.pg-t6 .ag-modal-box .t6-cl-dlg-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: var(--t6-ink);
+  color: var(--t6-bg);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 12px;
+  margin-top: 22px;
+  border: none;
+  border-radius: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ---- Folha de detalhe do cliente ----
+   Reaproveita `.t6-folha`/`.t6-campo` da Agenda; o que é próprio daqui é a
+   fileira de três números da referência e as listas de histórico/planos. */
+.t6-cl-tres {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--t6-line);
+}
+.t6-cl-tres-item { flex: 1; min-width: 0; }
+.t6-cl-tres-num {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  letter-spacing: -0.8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.t6-cl-tres-rot { font-size: 10px; font-weight: 500; color: var(--t6-muted); margin-top: 4px; }
+
+/* Reafirma o campo-de-fio DENTRO da folha: `.pg-t6 .ag-modal-box input` do
+   painel-turno6.css é mais específico (tem o seletor de tipo) e vem depois,
+   então sem isto o campo volta a ser uma caixinha de 14px com contorno. */
+.pg-t6 .ag-modal-box .t6-campo-input {
+  font-size: 30px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-top: 2px;
+}
+/* Campo de 30px é grande demais para data/observação — estes ficam em 20px. */
+.pg-t6 .ag-modal-box .t6-campo-input.t6-cl-input-sm { font-size: 20px; letter-spacing: -0.2px; }
+
+/* Os rótulos são <label> (ligados ao campo), e `.pg-t6 .ag-modal-box label`
+   os deixaria em 12px inline. */
+.pg-t6 .ag-modal-box label.t6-campo-rot { display: block; font-size: 11px; font-weight: 400; color: var(--t6-muted); }
+.pg-t6 .ag-modal-box label.t6-cl-campo-rot { display: block; font-size: 10px; font-weight: 500; color: var(--t6-muted); }
+
+.t6-cl-secao { margin-top: 26px; }
+.t6-cl-secao-rot {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--t6-muted);
+  margin-bottom: 4px;
+}
+.t6-cl-hist-linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--t6-line);
+  padding: 12px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t6-muted);
+}
+.t6-cl-hist-linha span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t6-cl-hist-valor { flex-shrink: 0; color: var(--t6-ink); font-size: 15px; }
+.t6-cl-plano-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--t6-line);
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.t6-cl-plano-estado {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  margin-left: 8px;
+  border: 1px solid var(--t6-line);
+  color: var(--t6-muted);
+}
+.t6-cl-plano-estado.vig { background: var(--t6-ink); border-color: var(--t6-ink); color: var(--t6-bg); }
+.t6-cl-add-plano {
+  display: flex;
+  gap: 6px;
+  border-top: 1px solid var(--t6-line);
+  padding: 14px 0;
+}
+.pg-t6 .t6-cl-add-plano select { flex: 1; min-width: 0; }
+.t6-cl-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--t6-line);
+}
+
+/* =========================================================================
+   EQUIPE
+   -------------------------------------------------------------------------
+   Duas abas de texto (Barbeiros / Histórico) logo abaixo do fio do título, e
+   a lista de barbeiros é só o NOME em 40px — o resto vira a página cheia do
+   barbeiro, que abre com foto grande e blocos pretos.
+   ========================================================================= */
+.t6-eq-abas {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--t6-line);
+}
+.pg-t6 .t6-eq-aba {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.pg-t6 .t6-eq-aba.ativo { font-weight: 600; color: var(--t6-ink); }
+
+.t6-eq-painel { flex: 1; margin-top: 20px; padding: 0 20px 92px; }
+.t6-eq-painel[hidden] { display: none; }
+
+.pg-t6 .t6-eq-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-top: 1px solid var(--t6-line);
+  border-radius: 0;
+  background: none;
+  color: var(--t6-ink);
+  font-family: inherit;
+  padding: 20px 0 22px;
+  cursor: pointer;
+}
+.t6-eq-item-linha {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.t6-eq-nome {
+  display: block;
+  min-width: 0;
+  font-size: 40px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  letter-spacing: -1.2px;
+  line-height: 1.05;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.t6-eq-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  margin-top: 7px;
+}
+.t6-eq-lado { flex-shrink: 0; text-align: right; }
+.t6-eq-lado-num { display: block; font-size: 17px; font-weight: 500; color: var(--t6-ink); }
+.t6-eq-lado-rot { display: block; font-size: 10px; font-weight: 500; color: var(--t6-muted); margin-top: 3px; }
+.t6-eq-selo {
+  display: inline-block;
+  margin-top: 6px;
+  background: var(--t6-line);
+  color: var(--t6-ink);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 7px;
+}
+
+/* ---- Aba Histórico ---- */
+.t6-eq-hist-linha {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border-top: 1px solid var(--t6-line);
+  padding: 15px 0 16px;
+}
+.t6-eq-hist-quando { width: 46px; flex-shrink: 0; padding-top: 3px; }
+.t6-eq-hist-hora { font-size: 12px; font-weight: 500; color: var(--t6-muted); }
+.t6-eq-hist-data { font-size: 10px; font-weight: 500; color: var(--t6-line); margin-top: 2px; }
+.t6-eq-hist-corpo { flex: 1; min-width: 0; }
+.t6-eq-hist-cliente {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.t6-eq-hist-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.t6-eq-hist-valor { flex-shrink: 0; font-size: 16px; font-weight: 500; color: var(--t6-ink); }
+
+/* =========================================================================
+   EQUIPE — página cheia do barbeiro
+   -------------------------------------------------------------------------
+   Diferente das outras folhas: aqui a foto e os blocos pretos SANGRAM até as
+   bordas, então a caixa da folha perde o padding lateral e cada bloco cuida
+   do próprio respiro.
+   ========================================================================= */
+.pg-t6 .ag-overlay.t6-folha.t6-eq-folha .ag-modal-box { padding: 0 0 92px; }
+
+.t6-eq-pg-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(46px + env(safe-area-inset-top, 0px)) 20px 14px;
+}
+.t6-eq-pg-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--t6-muted);
+  padding-top: 8px;
+}
+.pg-t6 .t6-eq-pg-fechar {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: var(--t6-ink);
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.t6-eq-hero { display: flex; align-items: stretch; }
+.t6-eq-foto {
+  position: relative;
+  width: 47%;
+  flex-shrink: 0;
+  min-height: 400px;
+  background: var(--t6-line);
+  overflow: hidden;
+}
+.t6-eq-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.t6-eq-foto-vazia {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff;
+}
+.t6-eq-hero-col {
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+  padding: 14px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.t6-eq-hero-rot {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--t6-ink);
+}
+.t6-eq-hero-num {
+  font-size: 44px;
+  font-weight: 400;
+  color: var(--t6-ink);
+  letter-spacing: -2.4px;
+  line-height: 0.95;
+  margin-top: 12px;
+}
+.t6-eq-hero-num--big { font-size: 56px; letter-spacing: -3px; line-height: 0.9; margin-top: 10px; }
+
+/* ---- Blocos pretos ---- */
+.t6-eq-bloco { background: var(--t6-ink); padding: 22px 20px 26px; }
+.t6-eq-bloco-rot {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+.t6-eq-bloco-nome {
+  font-size: 38px;
+  font-weight: 400;
+  color: #fff;
+  letter-spacing: -1.6px;
+  line-height: 1.05;
+  margin-top: 10px;
+}
+.t6-eq-duo { display: flex; margin-top: 22px; border-top: 1px solid rgba(255, 255, 255, 0.2); }
+.t6-eq-duo-cel { flex: 1; min-width: 0; padding: 14px 12px 0 0; }
+.t6-eq-duo-cel + .t6-eq-duo-cel { padding: 14px 0 0 12px; border-left: 1px solid rgba(255, 255, 255, 0.2); }
+.t6-eq-duo-num { font-size: 26px; font-weight: 400; color: #fff; letter-spacing: -1px; line-height: 1; }
+.t6-eq-duo-rot { font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, 0.55); margin-top: 6px; }
+
+/* ---- "Detalhes": a mesma grade de duas colunas, mas EDITÁVEL ----
+   Na referência a comissão já é um input dentro do bloco preto; o resto do
+   cadastro (nome, e-mail, senha, foto) segue a mesma linguagem em vez de
+   virar um formulário claro solto embaixo. */
+.t6-eq-det { background: var(--t6-ink); padding: 24px 20px 28px; }
+.t6-eq-grade { display: flex; border-top: 1px solid rgba(255, 255, 255, 0.18); }
+.t6-eq-cel { flex: 1; min-width: 0; padding: 16px 12px 0 0; }
+.t6-eq-cel + .t6-eq-cel { padding: 16px 0 0 12px; border-left: 1px solid rgba(255, 255, 255, 0.18); }
+.t6-eq-cel-val {
+  font-size: 22px;
+  font-weight: 400;
+  color: #fff;
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pg-t6 .t6-eq-det input,
+.pg-t6 .t6-eq-det select {
+  width: 100%;
+  font-size: 22px;
+  font-weight: 400;
+  color: #fff;
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 0;
+  background: transparent;
+  padding: 0 0 4px;
+  font-family: inherit;
+  outline: none;
+  min-width: 0;
+}
+.pg-t6 .t6-eq-det input::placeholder { color: rgba(255, 255, 255, 0.35); }
+/* O seletor de arquivo não aceita a tipografia grande sem estourar a coluna. */
+.pg-t6 .t6-eq-det input[type='file'] { font-size: 11px; letter-spacing: 0; padding-bottom: 8px; }
+.t6-eq-cel-rot { display: block; font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, 0.55); margin-top: 6px; }
+/* Idem aos rótulos da folha de Clientes: vencem o `label` genérico do modal,
+   que aqui pintaria o texto de cinza-escuro em cima do bloco preto. */
+.pg-t6 .ag-modal-box label.t6-eq-cel-rot { font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, 0.55); }
+.t6-eq-det-fim { border-top: 1px solid rgba(255, 255, 255, 0.18); }
+
+/* Pílulas de papel dentro do bloco preto: as do painel-turno6 são de tinta
+   escura sobre fio cinza — invisíveis aqui. */
+.pg-t6 .t6-eq-det .pill-opcao { color: #fff; border-color: rgba(255, 255, 255, 0.35); }
+.pg-t6 .t6-eq-det .pill-opcao.ativo { background: #fff; border-color: #fff; color: var(--t6-ink); }
+.t6-eq-papel { padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.18); }

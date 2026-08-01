@@ -3,9 +3,15 @@
 // produtos/barbeiros, formas de pagamento e ocupação por dia/horário.
 // Tudo calculado a partir dos dados reais (Agendamento/Caixa/Servico), sem
 // nada fixo — diferente do protótipo, que usava números de exemplo.
+//
+// TURNO 6 (pedido do dono, 2026-07-28): a tela virou uma capa curta (os 6
+// números que importam) + folhas de página inteira com o detalhe de cada um.
+// Por isso o controlador devolve, além dos totais, os RECORTES que cada folha
+// abre — vendas item a item, gastos por categoria, ocupação hora a hora etc.
+// Os valores monetários vão em CENTAVOS: quem escolhe entre `fmtT6` (número
+// grande, sem centavos) e `fmtBRL` (precisão) é a view.
 const prisma = require('../config/db');
 const { paraMinutos } = require('../services/disponibilidade');
-const { COMISSAO_PRODUTO_PERCENTUAL } = require('../config/constantes');
 
 function iso(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -17,10 +23,20 @@ function dataLocal(s) {
 function fmtDataBR(d) {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
+function fmtDataCurta(d) {
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
 
-// Cores recicladas em toda a tela (categorias de gasto, donut de pagamento) —
-// mesma paleta usada nos exemplos do HTML original (#0A0A0A, #6B7A8F, #C9A87C, #D7DBDC).
-const PALETA = ['#0A0A0A', '#6B7A8F', '#C9A87C', '#D7DBDC', '#8FA6C9', '#B5C9A0'];
+// Tons do Turno 6, na ordem em que a referência cicla: cinza-fio, tinta,
+// meio-termo, papel e o quase-preto. A cor NÃO codifica valor nenhum — é
+// ritmo visual, para que faixas seguidas não virem um borrão só.
+const TONS = [
+  { bg: '#ADADAD', text: '#0E0E0E', muted: '#454545' },
+  { bg: '#0E0E0E', text: '#FAFAFA', muted: '#7B7B7B' },
+  { bg: '#454545', text: '#FAFAFA', muted: '#ADADAD' },
+  { bg: '#FAFAFA', text: '#0E0E0E', muted: '#7B7B7B' },
+  { bg: '#1B1C1D', text: '#FAFAFA', muted: '#7B7B7B' },
+];
 
 function somarEntradaSaida(lancamentos) {
   let entrou = 0;
@@ -35,6 +51,10 @@ function somarEntradaSaida(lancamentos) {
 function variacaoPct(atual, anterior) {
   if (anterior <= 0) return null;
   return Math.round(((atual - anterior) / anterior) * 100);
+}
+
+function pctDe(parte, todo) {
+  return todo > 0 ? Math.round((parte / todo) * 100) : 0;
 }
 
 // GET /painel/relatorios
@@ -76,6 +96,20 @@ async function ver(req, res) {
   const inicioAnterior = new Date(inicio.getTime() - duracaoMs);
   const fimAnteriorExcl = new Date(inicio);
 
+  // Atalhos do painel de período personalizado (a referência tem essa fileira
+  // de selos cinzas embaixo dos campos De/Até). Só preenchem os campos — quem
+  // manda é o form GET, então o filtro continua sendo um link compartilhável.
+  function atalho(label, diasAtras) {
+    const de = new Date(hoje0);
+    de.setDate(de.getDate() - diasAtras);
+    return { label, de: iso(de), ate: iso(hoje0) };
+  }
+  const relCustomShortcuts = [
+    atalho('7 dias', 6),
+    atalho('30 dias', 29),
+    atalho('90 dias', 89),
+  ];
+
   const [lancamentos, lancamentosAnterior] = await Promise.all([
     prisma.caixa.findMany({ where: { barbeariaId: b, data: { gte: inicio, lt: fimExcl } }, include: { categoria: true } }),
     prisma.caixa.findMany({ where: { barbeariaId: b, data: { gte: inicioAnterior, lt: fimAnteriorExcl } } }),
@@ -85,7 +119,7 @@ async function ver(req, res) {
   const variacaoFaturamento = variacaoPct(resumo.entrou, resumoAnterior.entrou);
   const variacaoLucro = variacaoPct(resumo.lucro, resumoAnterior.lucro);
 
-  // --- Gastos por categoria (pop-up "Gastos") -----------------------------
+  // --- Gastos por categoria (folha "Gastos") ------------------------------
   const gastosPorCategoria = new Map();
   for (const l of lancamentos) {
     if (l.tipo !== 'saida') continue;
@@ -93,17 +127,45 @@ async function ver(req, res) {
     if (!gastosPorCategoria.has(nome)) gastosPorCategoria.set(nome, { nome, valor: 0, itens: [] });
     const g = gastosPorCategoria.get(nome);
     g.valor += l.valor;
-    g.itens.push({ label: l.descricao, valor: l.valor });
+    g.itens.push({ label: l.descricao, valor: l.valor, data: l.data });
   }
-  const gastosDetail = Array.from(gastosPorCategoria.values())
+  const gastoRows = Array.from(gastosPorCategoria.values())
     .sort((a, b2) => b2.valor - a.valor)
-    .map((g, i) => ({
+    .map((g) => ({
       name: g.nome,
-      value: fmtBRLLocal(g.valor),
-      pct: resumo.saiu > 0 ? Math.round((g.valor / resumo.saiu) * 100) : 0,
-      color: PALETA[i % PALETA.length],
-      items: g.itens.sort((a, b2) => b2.valor - a.valor).slice(0, 4).map((it) => ({ label: it.label, value: fmtBRLLocal(it.valor) })),
+      valor: g.valor,
+      pct: pctDe(g.valor, resumo.saiu),
+      // O detalhe abre por toque (sanfona). Corta em 6 lançamentos: a folha é
+      // uma leitura, não a tela de Caixa — quem quer tudo vai no Caixa.
+      qtdLabel: g.itens.length === 1 ? '1 lançamento' : g.itens.length + ' lançamentos',
+      entries: g.itens
+        .sort((a, b2) => b2.valor - a.valor)
+        .slice(0, 6)
+        .map((it) => ({ desc: it.label, date: fmtDataBR(new Date(it.data)), valor: it.valor })),
     }));
+
+  // Cascata do lucro: começa no faturamento e vai descontando categoria por
+  // categoria até sobrar o lucro. É a mesma conta do cartão "Lucro", só que
+  // mostrada passo a passo — é assim que a referência explica o número.
+  const lucroCascata = [
+    { label: 'Faturamento', amount: resumo.entrou, rest: resumo.entrou, w: '100%', bg: '#1B1C1D', text: '#FAFAFA' },
+  ];
+  {
+    let restante = resumo.entrou;
+    const categorias = Array.from(gastosPorCategoria.values()).sort((a, b2) => b2.valor - a.valor);
+    categorias.forEach((g, i) => {
+      restante -= g.valor;
+      const t = TONS[(i + 2) % TONS.length];
+      lucroCascata.push({
+        label: '− ' + g.nome,
+        amount: -g.valor,
+        rest: restante,
+        w: Math.max(14, pctDe(Math.max(0, restante), resumo.entrou)) + '%',
+        bg: t.bg,
+        text: t.text,
+      });
+    });
+  }
 
   // --- Agendamentos concluídos do período (base pra ticket médio, top
   //     serviços/produtos, desempenho por barbeiro, clientes novos/recorrentes) ---
@@ -113,163 +175,389 @@ async function ver(req, res) {
     orderBy: [{ data: 'desc' }, { horaInicio: 'desc' }],
   });
 
-  const ticketMedio = agendamentos.length > 0 ? Math.round(resumo.entrou / agendamentos.length) : 0;
+  const atendimentos = agendamentos.length;
+  const ticketMedio = atendimentos > 0 ? Math.round(resumo.entrou / atendimentos) : 0;
   const agendamentosAnterior = await prisma.agendamento.count({
     where: { barbeariaId: b, status: 'concluido', data: { gte: inicioAnterior, lt: fimAnteriorExcl } },
   });
   const ticketMedioAnterior = agendamentosAnterior > 0 ? Math.round(resumoAnterior.entrou / agendamentosAnterior) : 0;
   const variacaoTicket = variacaoPct(ticketMedio, ticketMedioAnterior);
 
-  // --- Top serviços / produtos --------------------------------------------
-  const porServico = new Map();
-  const porProduto = new Map();
+  // --- Vendas item a item (serviços e produtos) ----------------------------
+  // Uma passada só alimenta: o recorte serviços x produtos do topo, o ranking
+  // de serviços da capa, a folha de produtos e a folha de faturamento.
+  const porItem = new Map();
+  let servicosValor = 0;
+  let produtosValor = 0;
   for (const ag of agendamentos) {
     for (const it of ag.itens) {
-      const mapa = it.servico.ehProduto ? porProduto : porServico;
       const valor = it.valorUnitario * it.quantidade;
-      mapa.set(it.servico.nome, (mapa.get(it.servico.nome) || 0) + valor);
+      if (it.servico.ehProduto) produtosValor += valor;
+      else servicosValor += valor;
+      const chave = it.servico.id;
+      if (!porItem.has(chave)) {
+        porItem.set(chave, { nome: it.servico.nome, ehProduto: it.servico.ehProduto, valor: 0, qtd: 0, vendas: [] });
+      }
+      const reg = porItem.get(chave);
+      reg.valor += valor;
+      reg.qtd += it.quantidade;
+      reg.vendas.push({
+        when: `${fmtDataCurta(new Date(ag.data))} · ${ag.horaInicio}`,
+        who: ag.clienteNome,
+        valor,
+      });
     }
   }
-  function ranking(mapa, limite) {
-    const lista = Array.from(mapa.entries())
-      .sort((a, b2) => b2[1] - a[1])
-      .slice(0, limite);
-    const max = lista.length ? lista[0][1] : 1;
-    return lista.map(([nome, valor], i) => ({ rank: i + 1, name: nome, value: fmtBRLLocal(valor), pct: Math.round((valor / max) * 100) }));
-  }
-  const topServices = ranking(porServico, 5);
-  const topProducts = ranking(porProduto, 5);
+  const itensVendidos = Array.from(porItem.values()).sort((a, b2) => b2.valor - a.valor);
 
-  // --- Desempenho por barbeiro ---------------------------------------------
+  // Ranking de serviços da capa: faixas coloridas, uma por serviço, com o %
+  // do faturamento de serviços em corpo grande.
+  const topServices = itensVendidos
+    .filter((x) => !x.ehProduto)
+    .slice(0, 5)
+    .map((x, i) => {
+      const t = TONS[i % TONS.length];
+      const pct = pctDe(x.valor, servicosValor);
+      return {
+        name: x.nome,
+        valor: x.valor,
+        qtd: x.qtd,
+        pct,
+        // Piso de 26%: com 3% de participação a faixa animada sumiria.
+        w: Math.max(26, pct) + '%',
+        bg: t.bg,
+        text: t.text,
+        muted: t.muted,
+      };
+    });
+
+  const produtosVendidos = itensVendidos.filter((x) => x.ehProduto);
+  const relProdutosRows = produtosVendidos.slice(0, 6).map((x) => ({ qty: x.qtd, name: x.nome, valor: x.valor }));
+  const relProdutosTotalQty = produtosVendidos.reduce((s, x) => s + x.qtd, 0);
+
+  const relVendasRows = itensVendidos.map((x) => ({
+    name: x.nome,
+    kind: x.ehProduto ? 'Produto' : 'Serviço',
+    valor: x.valor,
+    qtyLabel: x.qtd === 1 ? '1 venda' : x.qtd + ' vendas',
+    entries: x.vendas.slice(0, 4),
+    more: x.vendas.length > 4 ? `+ ${x.vendas.length - 4} no período` : '',
+  }));
+
+  // --- Desempenho por barbeiro (faturamento e ticket) ----------------------
   const porBarbeiro = new Map();
   for (const ag of agendamentos) {
     const nome = ag.usuario.nome;
-    porBarbeiro.set(nome, (porBarbeiro.get(nome) || 0) + ag.valorTotal);
+    if (!porBarbeiro.has(nome)) porBarbeiro.set(nome, { nome, valor: 0, qtd: 0 });
+    const p = porBarbeiro.get(nome);
+    p.valor += ag.valorTotal;
+    p.qtd += 1;
   }
-  const maxBarbeiro = Math.max(1, ...Array.from(porBarbeiro.values()));
-  const barberPerf = Array.from(porBarbeiro.entries())
-    .sort((a, b2) => b2[1] - a[1])
-    .map(([nome, valor]) => ({
-      initials: nome.split(' ').filter(Boolean).map((p) => p[0]).slice(0, 2).join('').toUpperCase(),
-      name: nome,
-      revenue: fmtBRLLocal(valor),
-      pct: Math.round((valor / maxBarbeiro) * 100),
-      avatarBg: 'linear-gradient(135deg,#3A3A40,#111114)',
+  const maxBarbeiro = Math.max(1, ...Array.from(porBarbeiro.values()).map((x) => x.valor));
+  const barberPerf = Array.from(porBarbeiro.values())
+    .sort((a, b2) => b2.valor - a.valor)
+    .map((p) => ({
+      name: p.nome,
+      valor: p.valor,
+      qtd: p.qtd,
+      pct: Math.round((p.valor / maxBarbeiro) * 100),
+      ticket: p.qtd > 0 ? Math.round(p.valor / p.qtd) : 0,
     }));
+
+  // --- Ticket: com produto x só serviço ------------------------------------
+  let comProdutoQtd = 0;
+  let comProdutoValor = 0;
+  let semProdutoQtd = 0;
+  let semProdutoValor = 0;
+  for (const ag of agendamentos) {
+    if (ag.itens.some((it) => it.servico.ehProduto)) {
+      comProdutoQtd++;
+      comProdutoValor += ag.valorTotal;
+    } else {
+      semProdutoQtd++;
+      semProdutoValor += ag.valorTotal;
+    }
+  }
+  const ticketCom = comProdutoQtd > 0 ? Math.round(comProdutoValor / comProdutoQtd) : 0;
+  const ticketSem = semProdutoQtd > 0 ? Math.round(semProdutoValor / semProdutoQtd) : 0;
+  const maxTicketLado = Math.max(1, ticketCom, ticketSem);
+  const ticketData = {
+    com: ticketCom,
+    sem: ticketSem,
+    comQtd: comProdutoQtd,
+    semQtd: semProdutoQtd,
+    comW: Math.max(18, Math.round((ticketCom / maxTicketLado) * 100)) + '%',
+    semW: Math.max(18, Math.round((ticketSem / maxTicketLado) * 100)) + '%',
+    comPct: pctDe(comProdutoQtd, atendimentos),
+    delta: Math.max(0, ticketCom - ticketSem),
+  };
 
   // --- Clientes novos vs recorrentes ----------------------------------------
   // Novo = o 1º agendamento concluído (de todos os tempos) desse cliente caiu
   // dentro do período; recorrente = já tinha atendimento concluído antes.
-  const clienteIds = Array.from(new Set(agendamentos.filter((a) => a.clienteId).map((a) => a.clienteId)));
+  const receitaPorCliente = new Map();
+  for (const ag of agendamentos) {
+    if (!ag.clienteId) continue;
+    receitaPorCliente.set(ag.clienteId, (receitaPorCliente.get(ag.clienteId) || 0) + ag.valorTotal);
+  }
+  const clienteIds = Array.from(receitaPorCliente.keys());
   let clientesNovos = 0;
   let clientesRecorrentes = 0;
+  let receitaNovos = 0;
+  let receitaRecorrentes = 0;
   for (const cid of clienteIds) {
     const primeiro = await prisma.agendamento.findFirst({
       where: { barbeariaId: b, clienteId: cid, status: 'concluido' },
       orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
     });
-    if (primeiro && primeiro.data >= inicio && primeiro.data < fimExcl) clientesNovos++;
-    else clientesRecorrentes++;
-  }
-  const totalClientesPeriodo = Math.max(1, clientesNovos + clientesRecorrentes);
-  const clientesNovosPct = Math.round((clientesNovos / totalClientesPeriodo) * 100);
-  const clientesRecorrentesPct = 100 - clientesNovosPct;
-
-  // --- Formas de pagamento (donut) ------------------------------------------
-  const FORMAS = [
-    { valor: 'pix', label: 'Pix', cor: PALETA[0] },
-    { valor: 'credito', label: 'Crédito', cor: PALETA[1] },
-    { valor: 'debito', label: 'Débito', cor: PALETA[2] },
-    { valor: 'dinheiro', label: 'Dinheiro', cor: PALETA[3] },
-  ];
-  const totalPago = lancamentos.filter((l) => l.tipo === 'entrada' && l.formaPagamento).reduce((s, l) => s + l.valor, 0);
-  let acumulado = 0;
-  const formasPagamento = FORMAS.map((f) => {
-    const valor = lancamentos.filter((l) => l.tipo === 'entrada' && l.formaPagamento === f.valor).reduce((s, l) => s + l.valor, 0);
-    const pct = totalPago > 0 ? Math.round((valor / totalPago) * 100) : 0;
-    const de = acumulado;
-    acumulado += pct;
-    return { ...f, pct, de, ate: acumulado };
-  }).filter((f) => f.pct > 0);
-  const donutGradiente = formasPagamento.length
-    ? 'conic-gradient(' + formasPagamento.map((f) => `${f.cor} ${f.de}% ${f.ate}%`).join(', ') + ')'
-    : '#efefef';
-
-  // --- Ocupação por dia da semana × horário (heatmap) -----------------------
-  const HORAS_GRID = [9, 10, 11, 12, 13, 14, 15, 16, 17];
-  const DIAS_GRID = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-  const contagem = DIAS_GRID.map(() => HORAS_GRID.map(() => 0));
-  const agsOcupacao = await prisma.agendamento.findMany({
-    where: { barbeariaId: b, status: { not: 'cancelado' }, data: { gte: inicio, lt: fimExcl } },
-    select: { data: true, horaInicio: true },
-  });
-  for (const ag of agsOcupacao) {
-    const diaIdx = (new Date(ag.data).getDay() + 6) % 7; // 0 = segunda
-    const hora = Math.floor(paraMinutos(ag.horaInicio) / 60);
-    const horaIdx = HORAS_GRID.indexOf(hora);
-    if (horaIdx !== -1) contagem[diaIdx][horaIdx]++;
-  }
-  const maxContagem = Math.max(1, ...contagem.flat());
-  function corCelula(n) {
-    if (n === 0) return '#EFEFEF';
-    const r = n / maxContagem;
-    if (r > 0.75) return '#0A0A0A';
-    if (r > 0.4) return '#6B7A8F';
-    return '#D7DBDC';
-  }
-  const occupancyGrid = DIAS_GRID.map((dia, di) => ({
-    day: dia,
-    cells: HORAS_GRID.map((h, hi) => ({ bg: corCelula(contagem[di][hi]), peak: contagem[di][hi] === maxContagem && maxContagem > 0 })),
-  }));
-  const occupancyHours = HORAS_GRID.map((h) => h + 'h');
-
-  // Frase de horário de pico, calculada de verdade (não fixa) a partir da
-  // própria grade acima.
-  let horarioPico = null;
-  let maiorContagemPico = 0;
-  for (let di = 0; di < DIAS_GRID.length; di++) {
-    for (let hi = 0; hi < HORAS_GRID.length; hi++) {
-      if (contagem[di][hi] > maiorContagemPico) {
-        maiorContagemPico = contagem[di][hi];
-        horarioPico = { dia: DIAS_GRID[di], hora: HORAS_GRID[hi] };
-      }
+    const receita = receitaPorCliente.get(cid) || 0;
+    if (primeiro && primeiro.data >= inicio && primeiro.data < fimExcl) {
+      clientesNovos++;
+      receitaNovos += receita;
+    } else {
+      clientesRecorrentes++;
+      receitaRecorrentes += receita;
     }
   }
-  const fraseOcupacao = horarioPico
-    ? `${horarioPico.dia} às ${horarioPico.hora}h é o horário com mais atendimentos no período (${maiorContagemPico}).`
-    : 'Ainda não há atendimentos suficientes neste período pra identificar um horário de pico.';
+  const totalClientesPeriodo = clientesNovos + clientesRecorrentes;
+  const clientesNovosPct = pctDe(clientesNovos, Math.max(1, totalClientesPeriodo));
+  const clientesRecorrentesPct = totalClientesPeriodo > 0 ? 100 - clientesNovosPct : 0;
+  const maxGrupoCliente = Math.max(1, clientesNovos, clientesRecorrentes);
+  const clientesData = {
+    novos: clientesNovos,
+    recorrentes: clientesRecorrentes,
+    total: totalClientesPeriodo,
+    novosPct: clientesNovosPct,
+    recorrentesPct: clientesRecorrentesPct,
+    receitaNovos,
+    receitaRecorrentes,
+    novosW: Math.max(16, Math.round((clientesNovos / maxGrupoCliente) * 100)) + '%',
+    recorrentesW: Math.max(16, Math.round((clientesRecorrentes / maxGrupoCliente) * 100)) + '%',
+  };
 
-  // --- Histórico de clientes por horário (lista recente) --------------------
-  const slotHistory = agendamentos.slice(0, 8).map((ag) => ({
+  // --- Formas de pagamento ---------------------------------------------------
+  const FORMAS = [
+    { valor: 'pix', label: 'Pix', naHora: true },
+    { valor: 'credito', label: 'Crédito', naHora: false },
+    { valor: 'debito', label: 'Débito', naHora: false },
+    { valor: 'dinheiro', label: 'Dinheiro', naHora: true },
+  ];
+  const entradasComForma = lancamentos.filter((l) => l.tipo === 'entrada' && l.formaPagamento);
+  const totalPago = entradasComForma.reduce((s, l) => s + l.valor, 0);
+  const formasPagamento = FORMAS.map((f, i) => {
+    const doGrupo = entradasComForma.filter((l) => l.formaPagamento === f.valor);
+    const valor = doGrupo.reduce((s, l) => s + l.valor, 0);
+    const t = TONS[i % TONS.length];
+    return {
+      ...f,
+      valor,
+      qtd: doGrupo.length,
+      pct: pctDe(valor, totalPago),
+      ticket: doGrupo.length > 0 ? Math.round(valor / doGrupo.length) : 0,
+      cor: t.bg,
+      text: t.text,
+      muted: t.muted,
+    };
+  }).filter((f) => f.valor > 0);
+  formasPagamento.sort((a, b2) => b2.valor - a.valor);
+
+  // Rosca em SVG (a referência desenha com stroke-dasharray, não com
+  // conic-gradient): cada fatia é um arco do mesmo círculo, deslocado pelo
+  // acumulado das anteriores.
+  const CIRCUNFERENCIA = 2 * Math.PI * 42;
+  let percorrido = 0;
+  const pagDonut = formasPagamento.map((f) => {
+    const comprimento = (f.pct / 100) * CIRCUNFERENCIA;
+    const seg = {
+      color: f.cor,
+      dash: `${comprimento.toFixed(2)} ${(CIRCUNFERENCIA - comprimento).toFixed(2)}`,
+      offset: (-percorrido).toFixed(2),
+    };
+    percorrido += comprimento;
+    return seg;
+  });
+  const naHoraValor = formasPagamento.filter((f) => f.naHora).reduce((s, f) => s + f.valor, 0);
+  const depoisValor = totalPago - naHoraValor;
+  const maxQuando = Math.max(1, naHoraValor, depoisValor);
+  const pagData = {
+    total: totalPago,
+    transacoes: entradasComForma.length,
+    maiorPct: formasPagamento.length ? formasPagamento[0].pct : 0,
+    maiorNome: formasPagamento.length ? formasPagamento[0].label : '—',
+    naHoraValor,
+    depoisValor,
+    naHoraPct: pctDe(naHoraValor, totalPago),
+    depoisPct: pctDe(depoisValor, totalPago),
+    naHoraW: Math.max(16, Math.round((naHoraValor / maxQuando) * 100)) + '%',
+    depoisW: Math.max(16, Math.round((depoisValor / maxQuando) * 100)) + '%',
+  };
+
+  // --- Ocupação ------------------------------------------------------------
+  // Ocupação = minutos atendidos ÷ minutos de jornada. Só conta dias que já
+  // aconteceram: contar a agenda de amanhã como "vazia" derrubaria o número
+  // do mês inteiro logo no dia 1º.
+  const [jornadas, equipe, agsOcupacao] = await Promise.all([
+    prisma.horarioTrabalho.findMany({ where: { barbeariaId: b } }),
+    prisma.usuario.findMany({ where: { barbeariaId: b, ativo: true }, select: { id: true, nome: true } }),
+    prisma.agendamento.findMany({
+      where: { barbeariaId: b, status: { not: 'cancelado' }, data: { gte: inicio, lt: fimExcl } },
+      select: { data: true, horaInicio: true, usuarioId: true, itens: { select: { quantidade: true, servico: { select: { duracaoMin: true } } } } },
+    }),
+  ]);
+
+  const amanha0 = new Date(hoje0);
+  amanha0.setDate(amanha0.getDate() + 1);
+  const limiteOcup = new Date(Math.min(fimExcl.getTime(), amanha0.getTime()));
+
+  const minutosPorBarbeiro = new Map(); // usuarioId -> { ocupado, disponivel }
+  for (const u of equipe) minutosPorBarbeiro.set(u.id, { nome: u.nome, ocupado: 0, disponivel: 0 });
+  for (let d = new Date(inicio); d < limiteOcup; d.setDate(d.getDate() + 1)) {
+    const dow = d.getDay();
+    for (const j of jornadas) {
+      if (j.diaSemana !== dow || !j.trabalha) continue;
+      const alvo = minutosPorBarbeiro.get(j.usuarioId);
+      if (alvo) alvo.disponivel += Math.max(0, paraMinutos(j.horaFim) - paraMinutos(j.horaInicio));
+    }
+  }
+  function duracaoDe(ag) {
+    return ag.itens.reduce((s, it) => s + (it.servico.duracaoMin || 0) * it.quantidade, 0);
+  }
+  for (const ag of agsOcupacao) {
+    const alvo = minutosPorBarbeiro.get(ag.usuarioId);
+    if (alvo) alvo.ocupado += duracaoDe(ag);
+  }
+  let ocupadoTotal = 0;
+  let disponivelTotal = 0;
+  for (const m of minutosPorBarbeiro.values()) {
+    ocupadoTotal += m.ocupado;
+    disponivelTotal += m.disponivel;
+  }
+  const ocupacaoPct = pctDe(ocupadoTotal, disponivelTotal);
+  const ocupPorBarbeiro = Array.from(minutosPorBarbeiro.values())
+    .filter((m) => m.disponivel > 0 || m.ocupado > 0)
+    .map((m) => {
+      const pct = pctDe(m.ocupado, m.disponivel);
+      return {
+        name: m.nome,
+        pct,
+        w: Math.min(100, pct) + '%',
+        sub: `${Math.round(m.ocupado / 60)}h atendidas de ${Math.round(m.disponivel / 60)}h de jornada`,
+      };
+    })
+    .sort((a, b2) => b2.pct - a.pct);
+
+  // Faixa de horas da grade: sai das próprias jornadas (uma barbearia que abre
+  // às 13h não precisa de linhas mortas das 9h). Teto de 14 linhas.
+  let horaMin = 9;
+  let horaMax = 20;
+  if (jornadas.length) {
+    horaMin = Math.floor(Math.min(...jornadas.map((j) => paraMinutos(j.horaInicio))) / 60);
+    horaMax = Math.ceil(Math.max(...jornadas.map((j) => paraMinutos(j.horaFim))) / 60);
+  }
+  if (horaMax - horaMin > 14) horaMax = horaMin + 14;
+  const HORAS_GRID = [];
+  for (let h = horaMin; h < horaMax; h++) HORAS_GRID.push(h);
+  const DIAS_GRID = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+  const contagem = DIAS_GRID.map(() => HORAS_GRID.map(() => 0));
+  const porHora = HORAS_GRID.map(() => 0);
+  const porDiaSemana = DIAS_GRID.map(() => 0);
+  for (const ag of agsOcupacao) {
+    const diaIdx = (new Date(ag.data).getDay() + 6) % 7; // 0 = segunda
+    porDiaSemana[diaIdx]++;
+    const horaIdx = HORAS_GRID.indexOf(Math.floor(paraMinutos(ag.horaInicio) / 60));
+    if (horaIdx !== -1) {
+      contagem[diaIdx][horaIdx]++;
+      porHora[horaIdx]++;
+    }
+  }
+  const maxCelula = Math.max(1, ...contagem.flat());
+  function corCelula(n) {
+    if (n === 0) return '#EDEDED';
+    const r = n / maxCelula;
+    if (r > 0.66) return '#0E0E0E';
+    if (r > 0.33) return '#1B1C1D';
+    return '#ADADAD';
+  }
+  // Grade transposta em relação ao layout antigo: hora nas LINHAS e dia nas
+  // COLUNAS, como na referência — cabe no celular sem rolagem lateral.
+  const ocupGrid = {
+    days: DIAS_GRID,
+    rows: HORAS_GRID.map((h, hi) => ({
+      hour: h + 'h',
+      cells: DIAS_GRID.map((_, di) => ({ bg: corCelula(contagem[di][hi]) })),
+    })),
+  };
+
+  const maxHora = Math.max(1, ...porHora);
+  const ocupSlots = HORAS_GRID.map((h, hi) => {
+    const ehPico = porHora[hi] === maxHora && maxHora > 0;
+    return {
+      hour: h + 'h',
+      label: String(porHora[hi]),
+      w: Math.round((porHora[hi] / maxHora) * 100) + '%',
+      bg: ehPico ? '#0E0E0E' : porHora[hi] > 0 ? '#454545' : '#ADADAD',
+      hourColor: ehPico ? '#0E0E0E' : '#7B7B7B',
+      labelColor: ehPico ? '#0E0E0E' : '#7B7B7B',
+    };
+  });
+
+  // "Onde agir": o pico é a hora mais cheia; o buraco é a hora mais vazia
+  // DENTRO da faixa em que a barbearia realmente atende (da primeira à última
+  // hora com movimento). Sem esse recorte, o buraco seria sempre a primeira
+  // linha da grade — uma hora em que ninguém marca porque a loja mal abriu.
+  let idxPico = 0;
+  let primeiroCheio = -1;
+  let ultimoCheio = -1;
+  for (let i = 0; i < porHora.length; i++) {
+    if (porHora[i] > porHora[idxPico]) idxPico = i;
+    if (porHora[i] > 0) {
+      if (primeiroCheio === -1) primeiroCheio = i;
+      ultimoCheio = i;
+    }
+  }
+  let idxBuraco = idxPico;
+  for (let i = primeiroCheio; i >= 0 && i <= ultimoCheio; i++) {
+    if (porHora[i] < porHora[idxBuraco]) idxBuraco = i;
+  }
+  const ocupInsight = {
+    peak: HORAS_GRID.length ? HORAS_GRID[idxPico] + 'h' : '—',
+    gap: HORAS_GRID.length ? HORAS_GRID[idxBuraco] + 'h' : '—',
+    temDados: maxHora > 0,
+    // Com um único horário movimentado não existe "buraco" a apontar.
+    temBuraco: maxHora > 0 && idxBuraco !== idxPico,
+  };
+
+  const maxDiaSemana = Math.max(1, ...porDiaSemana);
+  const ocupWeekBars = DIAS_GRID.map((dia, i) => {
+    const t = TONS[i % TONS.length];
+    return {
+      label: dia,
+      value: porDiaSemana[i],
+      // Piso de 110px: uma coluna zerada ainda precisa caber número + rótulo.
+      h: Math.max(110, Math.round((porDiaSemana[i] / maxDiaSemana) * 230)),
+      bg: t.bg,
+      text: t.text,
+      muted: t.muted,
+    };
+  });
+
+  const horasLivres = Math.max(0, Math.round((disponivelTotal - ocupadoTotal) / 60));
+  const ocupData = {
+    pct: ocupacaoPct,
+    sub: `${Math.round(ocupadoTotal / 60)}h atendidas`,
+    livres: `${horasLivres}h livres na agenda`,
+  };
+
+  // --- Últimos atendimentos (lista da folha de faturamento) -----------------
+  const slotHistory = agendamentos.slice(0, 10).map((ag) => ({
     time: ag.horaInicio,
-    day: fmtDataBR(new Date(ag.data)),
+    day: fmtDataCurta(new Date(ag.data)),
     client: ag.clienteNome,
     service: ag.itens.map((it) => it.servico.nome).join(' + ') || 'Atendimento',
     barber: ag.usuario.nome.split(' ')[0],
-    value: fmtBRLLocal(ag.valorTotal),
+    valor: ag.valorTotal,
   }));
-
-  // --- Sparkline do faturamento (bucketiza o período em até 12 pontos) ------
-  const NUM_BUCKETS = 10;
-  const bucketMs = Math.max(1, duracaoMs / NUM_BUCKETS);
-  const buckets = new Array(NUM_BUCKETS).fill(0);
-  for (const l of lancamentos) {
-    if (l.tipo !== 'entrada') continue;
-    const idx = Math.min(NUM_BUCKETS - 1, Math.floor((l.data.getTime() - inicio.getTime()) / bucketMs));
-    if (idx >= 0) buckets[idx] += l.valor;
-  }
-  const maxBucket = Math.max(1, ...buckets);
-  const relChartPoints = buckets
-    .map((v, i) => {
-      const x = Math.round((i / (NUM_BUCKETS - 1)) * 300);
-      const y = Math.round(50 - (v / maxBucket) * 46);
-      return `${x},${y}`;
-    })
-    .join(' ');
-
-  function fmtBRLLocal(centavos) {
-    return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
 
   res.render('painel/relatorios', {
     titulo: 'Relatórios',
@@ -277,28 +565,49 @@ async function ver(req, res) {
     relPeriodLabel: rotulo,
     deStr: req.query.de || iso(inicio),
     ateStr: req.query.ate || iso(new Date(fimExcl.getTime() - 86400000)),
-    relFaturamentoVal: fmtBRLLocal(resumo.entrou),
+    relCustomShortcuts,
+
+    // Capa
+    faturamento: resumo.entrou,
+    servicosValor,
+    produtosValor,
+    atendimentos,
     variacaoFaturamento,
-    relChartPoints,
-    gastosVal: fmtBRLLocal(resumo.saiu),
-    gastosDetail,
-    lucroVal: fmtBRLLocal(resumo.lucro),
-    variacaoLucro,
-    ticketMedioVal: fmtBRLLocal(ticketMedio),
+    topServices,
+    ticketMedio,
     variacaoTicket,
+    ocupacaoPct,
+    formasPagamento,
     clientesNovos,
     clientesRecorrentes,
-    clientesNovosPct,
-    clientesRecorrentesPct,
-    topServices,
-    topProducts,
+    lucro: resumo.lucro,
+    variacaoLucro,
+    gastos: resumo.saiu,
+    lucroCascata,
+    margemPct: pctDe(Math.max(0, resumo.lucro), resumo.entrou),
+    // Ponto de equilíbrio: quantos atendimentos, no ticket atual, só pagam os
+    // gastos do período. Sem ticket (nenhum atendimento) não há conta a fazer.
+    breakEven: ticketMedio > 0 ? Math.ceil(resumo.saiu / ticketMedio) : null,
+
+    // Folhas
+    relVendasRows,
     barberPerf,
-    formasPagamento,
-    donutGradiente,
-    occupancyHours,
-    occupancyGrid,
-    fraseOcupacao,
     slotHistory,
+    relProdutosRows,
+    relProdutosTotalQty,
+    produtosValorTotal: produtosValor,
+    pagData,
+    pagDonut,
+    clientesData,
+    ticketData,
+    gastoRows,
+    gastosPctFat: pctDe(resumo.saiu, resumo.entrou),
+    ocupData,
+    ocupGrid,
+    ocupSlots,
+    ocupInsight,
+    ocupPorBarbeiro,
+    ocupWeekBars,
   });
 }
 

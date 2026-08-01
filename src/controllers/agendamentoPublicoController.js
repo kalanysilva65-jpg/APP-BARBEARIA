@@ -42,6 +42,24 @@ function diasLabel(diasStr) {
   return dias.map((d) => DIAS_SEMANA[d].slice(0, 3)).join(', ');
 }
 
+// Data de nascimento digitada pelo cliente -> Date (ou null).
+// Aceita "dd/mm/aaaa" (campo com máscara do design Turno 6, 2026-07-28) e
+// "aaaa-mm-dd" (formato do <input type="date"> anterior, mantido para não
+// quebrar quem tiver a tela antiga em cache). Fixa meio-dia porque salvar à
+// meia-noite faz o fuso jogar o aniversário pro dia anterior.
+function parseNascimento(str) {
+  const s = String(str || '').trim();
+  let ymd = null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) ymd = s;
+  else {
+    const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (m) ymd = `${m[3]}-${m[2]}-${m[1]}`;
+  }
+  if (!ymd) return null;
+  const d = new Date(ymd + 'T12:00:00');
+  return isNaN(d.getTime()) ? null : d;
+}
+
 // Carrega e valida a assinatura (plano vigente) DENTRO da barbearia. Null se inválida.
 async function carregarAssinatura(idStr, barbeariaId) {
   const id = Number(idStr);
@@ -69,6 +87,10 @@ async function passoPlano(req, res) {
     layout: 'layouts/publico',
     titulo: 'Meu plano',
     passo: 0,
+    // O "Voltar" do design Turno 6 (2026-07-28) mora no cabeçalho, que é do
+    // layout — como o destino carrega a querystring do fluxo, quem sabe dele
+    // é este controlador. Null = passo sem volta (primeiro passo / sucesso).
+    voltarHref: '/agendar',
     telefoneDigitado,
     resultado,
     dataPorExtenso,
@@ -88,7 +110,15 @@ async function passoServico(req, res) {
     include: { categoria: true },
     orderBy: { nome: 'asc' },
   });
-  res.render('agendar/servico', { layout: 'layouts/publico', titulo: 'Agendar', passo: 1, servicos, assinatura });
+  res.render('agendar/servico', {
+    layout: 'layouts/publico',
+    titulo: 'Agendar',
+    passo: 1,
+    servicos,
+    assinatura,
+    // Só há pra onde voltar se o cliente chegou aqui pela consulta de plano.
+    voltarHref: assinatura ? '/agendar/plano' : null,
+  });
 }
 
 // Passo 2 — escolher o barbeiro
@@ -120,6 +150,7 @@ async function passoBarbeiro(req, res) {
     // "Qualquer disponível" só faz sentido com mais de 1 barbeiro ativo.
     mostrarQualquer: barbeiros.length > 1,
     assinatura,
+    voltarHref: '/agendar' + (assinatura ? '?assinatura=' + assinatura.id : ''),
   });
 }
 
@@ -205,7 +236,15 @@ async function passoHorario(req, res) {
       const dia = String(d.getDate()).padStart(2, '0');
       const mes = String(d.getMonth() + 1).padStart(2, '0');
       const linha1 = i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : `${DIAS_SEMANA[dow].slice(0, 3)}, ${d.getDate()}`;
-      datas.push({ iso: iso(d), linha1, linha2: `${DIAS_SEMANA[dow].slice(0, 3)}, ${d.getDate()} ${MESES_ABREV[d.getMonth()]}` });
+      datas.push({
+        iso: iso(d),
+        linha1,
+        linha2: `${DIAS_SEMANA[dow].slice(0, 3)}, ${d.getDate()} ${MESES_ABREV[d.getMonth()]}`,
+        // O selo de dia do Turno 6 (2026-07-28) tem duas linhas independentes:
+        // em cima o dia da semana (ou "Hoje"), embaixo só o número, a 22px.
+        dow: i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : DIAS_SEMANA[dow].slice(0, 3),
+        dia: d.getDate(),
+      });
     }
   }
 
@@ -240,6 +279,7 @@ async function passoHorario(req, res) {
     assinatura,
     ilimitado,
     diasPlanoLabel: assinatura && assinatura.plano.diasSemana !== '0,1,2,3,4,5,6' ? diasLabel(assinatura.plano.diasSemana) : null,
+    voltarHref: `/agendar/barbeiro?servicoIds=${servicoIdsStr}` + (assinatura ? '&assinatura=' + assinatura.id : ''),
   });
 }
 
@@ -273,6 +313,9 @@ async function passoDados(req, res) {
     hora,
     dataExtenso: dataPorExtenso(data),
     assinatura,
+    voltarHref:
+      `/agendar/horario?servicoIds=${servicoIdsStr}&barbeiroId=${barbeiro.id}&data=${data}` +
+      (assinatura ? '&assinatura=' + assinatura.id : ''),
   });
 }
 
@@ -355,11 +398,9 @@ async function confirmar(req, res) {
         where: { barbeariaId_telefone: { barbeariaId: b, telefone: telNorm } },
       });
       if (!cliente) {
-        const dataNascimento =
-          nascimentoStr && /^\d{4}-\d{2}-\d{2}$/.test(nascimentoStr)
-            ? new Date(nascimentoStr + 'T12:00:00')
-            : null;
-        cliente = await prisma.cliente.create({ data: { barbeariaId: b, nome, telefone: telNorm, dataNascimento } });
+        cliente = await prisma.cliente.create({
+          data: { barbeariaId: b, nome, telefone: telNorm, dataNascimento: parseNascimento(nascimentoStr) },
+        });
       }
       clienteId = cliente.id;
     }

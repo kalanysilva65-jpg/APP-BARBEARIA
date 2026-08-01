@@ -1,0 +1,459 @@
+/* Turno 6 (2026-07-28) — estilos desta tela. Tokens e componentes
+   compartilhados ficam em painel-turno6.css. */
+
+/* =========================================================================
+   CATÁLOGO — Serviços, Produtos e Estoque
+   -------------------------------------------------------------------------
+   As três telas dividem o mesmo esqueleto da referência: cabeçalho com o
+   título em caixa alta + botão "Novo" preto, um fio, a dica ("toque para
+   editar") e a lista logo abaixo. O que muda é só a FAIXA de cada lista:
+
+     · Serviços — bloco alto, nome CENTRALIZADO em 34px
+     · Produtos — faixa colorida sangrando até as bordas, com foto de 112px
+     · Estoque  — linha compacta, quantidade grande à direita
+
+   Prefixos: `.t6-cat-` para o que as três compartilham (cabeçalho, pop-up de
+   edição, campos), `.t6-sv-` / `.t6-pr-` / `.t6-es-` para o que é de cada uma.
+   ========================================================================= */
+
+/* Entradas da referência: o serviço sobe, o produto é revelado da direita
+   para a esquerda (é uma faixa larga) e o item de estoque cresce no lugar. */
+@keyframes t6CatSvcIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes t6CatProdIn {
+  from { clip-path: inset(0 0 0 100%); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes t6CatStockIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.t6-cat-tela {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--t6-bg);
+  animation: t6TabSlideIn 0.4s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+}
+
+/* ---- Cabeçalho comum às três telas ---- */
+.t6-cat-topo {
+  flex: none;
+  padding: calc(52px + env(safe-area-inset-top, 0px)) 20px 0;
+}
+.t6-cat-titulo-linha {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.t6-cat-titulo {
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--t6-ink);
+  letter-spacing: -1.4px;
+}
+.t6-cat-dica {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--t6-line);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t6-muted);
+}
+/* O atalho de categorias mora na dica (a referência não tem categorias; no
+   app elas existem e precisavam de um lugar que não virasse cartão). */
+.pg-t6 .t6-cat-dica a {
+  color: var(--t6-ink);
+  border-bottom: 1px solid var(--t6-line);
+}
+
+/* Fio que fecha a última faixa da lista — sem ele a lista "vaza" no fundo. */
+.t6-cat-fim { border-top: 1px solid var(--t6-line); }
+
+/* Selo de estado (Inativo / Repor): retângulo invertido, miúdo. */
+.t6-cat-selo {
+  display: inline-block;
+  background: var(--t6-ink);
+  color: var(--t6-bg);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 7px;
+}
+
+/* Resumo em manchete do topo da lista (Produtos e Estoque). */
+.t6-cat-resumo { padding: 0 20px 24px; }
+.t6-cat-resumo-rot {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--t6-muted);
+}
+.t6-cat-resumo-num {
+  font-size: 70px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  letter-spacing: -4px;
+  line-height: 0.9;
+  margin-top: 8px;
+}
+.t6-cat-resumo-sub {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  line-height: 1.45;
+  margin-top: 12px;
+}
+
+/* =========================================================================
+   POP-UP de cadastro/edição
+   -------------------------------------------------------------------------
+   No catálogo a referência usa o diálogo CENTRADO (não a folha de página
+   inteira da Agenda): fundo escurecido e uma caixa clara com os campos em
+   linha sublinhada. Reaproveita `.ag-overlay`/`.ag-modal-box` do CSS
+   compartilhado — aqui vai só o conteúdo.
+   ========================================================================= */
+.t6-cat-dlg-titulo {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--t6-ink);
+  letter-spacing: -0.6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.t6-cat-campo { margin-top: 14px; }
+.t6-cat-campo:first-child { margin-top: 0; }
+.t6-cat-dupla { display: flex; gap: 12px; margin-top: 14px; }
+.t6-cat-dupla > .t6-cat-campo { flex: 1; min-width: 0; margin-top: 0; }
+
+/* `.pg-t6 .ag-modal-box .t6-cat-*` para vencer o skin genérico de input do
+   painel-turno6.css (que dá contorno de caixa nos 4 lados) — aqui o campo é
+   um SUBLINHADO só, como na referência. */
+.pg-t6 .ag-modal-box .t6-cat-rot {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--t6-muted);
+}
+.pg-t6 .ag-modal-box .t6-cat-input {
+  width: 100%;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--t6-line);
+  border-radius: 0;
+  padding: 0 0 5px;
+  margin-top: 3px;
+  font-family: inherit;
+  outline: none;
+}
+.pg-t6 .ag-modal-box .t6-cat-input::placeholder { color: var(--t6-line); }
+.pg-t6 .ag-modal-box textarea.t6-cat-input { font-size: 13px; resize: none; }
+/* O <select> nativo ficaria com a caixa cinza do sistema por cima do fio, o
+   que quebra o canto vivo — daí `appearance:none` + a seta desenhada. */
+.pg-t6 .ag-modal-box select.t6-cat-input {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%230E0E0E' stroke-width='1.4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
+  padding-right: 18px;
+}
+.pg-t6 .ag-modal-box input[type='file'].t6-cat-input {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  padding-bottom: 8px;
+}
+.t6-cat-ajuda {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+/* Foto atual dentro do pop-up: retângulo de canto vivo, como as fotos da
+   lista de Produtos. */
+.t6-cat-foto {
+  width: 100%;
+  height: 140px;
+  background: var(--t6-line);
+  margin-top: 3px;
+  overflow: hidden;
+}
+.t6-cat-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Botões do pop-up: o de confirmar é o bloco preto; os secundários são fio. */
+.pg-t6 .t6-cat-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: var(--t6-ink);
+  color: var(--t6-bg);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 12px;
+  margin-top: 18px;
+  border: none;
+  border-radius: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.pg-t6 .t6-cat-btn--vazado {
+  background: none;
+  color: var(--t6-muted);
+  border: 1px solid var(--t6-line);
+  font-size: 12px;
+  padding: 11px;
+}
+.t6-cat-acoes { display: flex; gap: 8px; }
+.t6-cat-acoes > form { flex: 1; min-width: 0; }
+
+/* ---- Categorias (não existem na referência; ficam num pop-up próprio) ---- */
+.t6-cat-cats-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  line-height: 1.45;
+  margin: 10px 0 0;
+}
+.t6-cat-cat-form { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; }
+.t6-cat-cat-form .t6-cat-input { flex: 1; min-width: 0; margin-top: 0; }
+.pg-t6 .t6-cat-cat-btn {
+  flex: none;
+  background: none;
+  border: 1px solid var(--t6-line);
+  border-radius: 0;
+  color: var(--t6-ink);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.t6-cat-cat-linha {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border-top: 1px solid var(--t6-line);
+  padding-top: 4px;
+  margin-top: 12px;
+}
+.t6-cat-cat-linha > form:first-child { flex: 1; min-width: 0; }
+.t6-cat-cat-conta { font-size: 11px; font-weight: 500; color: var(--t6-muted); flex: none; }
+.pg-t6 .t6-cat-cat-x {
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--t6-muted);
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* =========================================================================
+   SERVIÇOS — faixa alta com o nome centralizado em manchete
+   ========================================================================= */
+.t6-sv-lista { flex: 1; margin-top: 20px; padding: 0 20px 92px; }
+.t6-sv-lista .t6-vazio { padding-left: 0; padding-right: 0; }
+
+.pg-t6 .t6-sv-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--t6-line);
+  border-radius: 0;
+  padding: 20px 0 24px;
+  color: var(--t6-ink);
+  font-family: inherit;
+  cursor: pointer;
+  animation: t6CatSvcIn 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.05) both;
+}
+.t6-sv-card-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.t6-sv-dur,
+.t6-sv-preco { font-size: 12px; font-weight: 500; color: var(--t6-muted); }
+.t6-sv-nome {
+  display: block;
+  font-size: 34px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  letter-spacing: -1.4px;
+  line-height: 1.05;
+  margin-top: 12px;
+  text-align: center;
+}
+.t6-sv-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  margin-top: 10px;
+  text-align: center;
+  line-height: 1.45;
+}
+.t6-sv-selo-linha { display: block; margin-top: 12px; text-align: center; }
+/* Serviço desativado continua na lista (o dono precisa achá-lo para reativar),
+   mas em cinza: só o selo "Inativo" fica em tinta cheia. */
+.t6-sv-card--inativo .t6-sv-nome { color: var(--t6-line); }
+.t6-sv-card--inativo .t6-sv-label { color: var(--t6-line); }
+
+/* =========================================================================
+   PRODUTOS — faixas coloridas de borda a borda, com foto retangular
+   -------------------------------------------------------------------------
+   A referência cicla quatro tons (preto → #454545 → #7B7B7B → fio) nas faixas;
+   a tinta do texto inverte junto. As classes `--tom0..3` são atribuídas pelo
+   índice na view.
+   ========================================================================= */
+.t6-pr-lista { flex: 1; margin-top: 18px; padding-bottom: 92px; }
+.t6-pr-lista .t6-vazio { border-top: none; }
+
+.pg-t6 .t6-pr-card {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+  animation: t6CatProdIn 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.05) both;
+}
+.t6-pr-corpo { flex: 1; min-width: 0; padding: 22px 18px 20px; }
+.t6-pr-nome {
+  display: block;
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -1.2px;
+  line-height: 1.08;
+}
+.t6-pr-sub { display: block; font-size: 12px; font-weight: 500; margin-top: 10px; }
+.t6-pr-venda { display: flex; align-items: baseline; gap: 8px; margin-top: 22px; }
+.t6-pr-venda-num { font-size: 32px; font-weight: 500; letter-spacing: -1.4px; line-height: 1; }
+.t6-pr-venda-rot { font-size: 11px; font-weight: 500; }
+.t6-pr-selo-linha { display: block; margin-top: 14px; }
+/* Foto: retângulo de 112px encostado na direita, canto vivo. Sem foto fica o
+   próprio cinza do fio com a palavra "Foto" — igual ao placeholder da
+   referência, em vez de um ícone. */
+.t6-pr-foto {
+  position: relative;
+  width: 112px;
+  flex-shrink: 0;
+  background: var(--t6-line);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.t6-pr-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* Tinta escura sobre o cinza do fio — "Foto" em claro sumiria ali. */
+.t6-pr-foto span { font-size: 11px; font-weight: 500; color: var(--t6-mid); }
+
+.t6-pr-card--tom0 { background: var(--t6-ink); }
+.t6-pr-card--tom0 .t6-pr-nome,
+.t6-pr-card--tom0 .t6-pr-venda-num { color: var(--t6-bg); }
+.t6-pr-card--tom0 .t6-pr-sub,
+.t6-pr-card--tom0 .t6-pr-venda-rot { color: var(--t6-line); }
+.t6-pr-card--tom0 .t6-cat-selo { background: var(--t6-bg); color: var(--t6-ink); }
+
+.t6-pr-card--tom1 { background: var(--t6-mid); }
+.t6-pr-card--tom2 { background: var(--t6-muted); }
+.t6-pr-card--tom1 .t6-pr-nome,
+.t6-pr-card--tom1 .t6-pr-sub,
+.t6-pr-card--tom1 .t6-pr-venda-num,
+.t6-pr-card--tom1 .t6-pr-venda-rot,
+.t6-pr-card--tom2 .t6-pr-nome,
+.t6-pr-card--tom2 .t6-pr-sub,
+.t6-pr-card--tom2 .t6-pr-venda-num,
+.t6-pr-card--tom2 .t6-pr-venda-rot { color: var(--t6-bg); }
+.t6-pr-card--tom1 .t6-cat-selo,
+.t6-pr-card--tom2 .t6-cat-selo { background: var(--t6-bg); color: var(--t6-ink); }
+
+.t6-pr-card--tom3 { background: var(--t6-line); }
+.t6-pr-card--tom3 .t6-pr-nome,
+.t6-pr-card--tom3 .t6-pr-sub,
+.t6-pr-card--tom3 .t6-pr-venda-num,
+.t6-pr-card--tom3 .t6-pr-venda-rot { color: var(--t6-ink); }
+/* Na faixa cinza-fio a foto sumiria (mesmo tom): escurece o fundo dela — e o
+   "Foto" do vazio inverte junto. */
+.t6-pr-card--tom3 .t6-pr-foto { background: var(--t6-mid); }
+.t6-pr-card--tom3 .t6-pr-foto span { color: var(--t6-bg); }
+
+/* =========================================================================
+   ESTOQUE — resumo, bloco preto de reposição e linhas compactas
+   ========================================================================= */
+.t6-es-lista { flex: 1; margin-top: 18px; padding-bottom: 92px; }
+
+.t6-es-alerta { background: var(--t6-ink); padding: 20px 20px 22px; }
+.t6-es-alerta-num {
+  font-size: 40px;
+  font-weight: 500;
+  color: var(--t6-bg);
+  letter-spacing: -1.8px;
+  line-height: 1;
+}
+.t6-es-alerta-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t6-line);
+  margin-top: 10px;
+  line-height: 1.45;
+}
+
+.t6-es-itens { padding: 26px 20px 0; }
+.t6-es-itens .t6-vazio { padding-left: 0; padding-right: 0; }
+.pg-t6 .t6-es-linha {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--t6-line);
+  border-radius: 0;
+  padding: 16px 0 18px;
+  color: var(--t6-ink);
+  font-family: inherit;
+  cursor: pointer;
+  animation: t6CatStockIn 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.05) both;
+}
+.t6-es-corpo { flex: 1; min-width: 0; }
+.t6-es-nome {
+  display: block;
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  letter-spacing: -0.4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.t6-es-sub { display: block; font-size: 11px; font-weight: 500; color: var(--t6-muted); margin-top: 5px; }
+.t6-es-direita { flex-shrink: 0; text-align: right; }
+.t6-es-qtd { display: block; font-size: 24px; font-weight: 500; color: var(--t6-ink); letter-spacing: -1px; line-height: 1; }
+.t6-es-selo-linha { display: block; margin-top: 7px; }

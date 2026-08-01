@@ -1,195 +1,230 @@
 <%
-  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
-
-  // diasSemana grava 0=Dom..6=Sáb, mas o HTML original mostra as pílulas/
-  // bolinhas na ordem Seg→Dom — a ORDEM abaixo só afeta a exibição.
+  // diasSemana grava 0=Dom..6=Sáb, mas as pílulas/quadradinhos aparecem na
+  // ordem Seg→Dom — a ORDEM abaixo só afeta a exibição.
   var ORDEM_SEMANA = [1, 2, 3, 4, 5, 6, 0];
   var NOME_DIA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   var LETRA_DIA = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
   function _diasArr(diasStr) {
     return String(diasStr || '0,1,2,3,4,5,6').split(',').map(Number).filter(function (n) { return !isNaN(n); });
   }
+
+  // Turno 6 (pedido do dono, 2026-07-28): cada plano é um bloco CHAPADO numa
+  // tinta da escala de cinzas, rodando de quatro em quatro pela lista — é
+  // assim que a referência distingue um plano do outro, sem cartão nem cor de
+  // marca. O 4º tom é claro, então inverte a tinta do texto.
+  var TINTAS = [
+    { bg: '#0E0E0E', tinta: '#FAFAFA', apoio: '#ADADAD', fio: 'rgba(250,250,250,0.3)' },
+    { bg: '#454545', tinta: '#FAFAFA', apoio: '#ADADAD', fio: 'rgba(250,250,250,0.3)' },
+    { bg: '#7B7B7B', tinta: '#FAFAFA', apoio: '#ADADAD', fio: 'rgba(250,250,250,0.3)' },
+    { bg: '#ADADAD', tinta: '#0E0E0E', apoio: '#454545', fio: 'rgba(14,14,14,0.3)' },
+  ];
 %>
 
-<!-- Cabeçalho: título + subtítulo centralizados (só aqui) e "+" sem círculo
-     de fundo, igual ao de Serviços — é assim no HTML original. -->
-<div class="ag2-topo">
-  <div class="ag2-marca-linha">
-    <span class="ag2-avatar-deco"></span>
-    <span class="ag2-marca ag2-marca--escura"><%= nomeBarbearia %></span>
+<div class="t6-pl-topo">
+  <div class="t6-pl-topo-linha">
+    <div class="t6-pl-titulo">PLANOS</div>
     <% if (ehAdmin) { %>
-      <button type="button" class="ag2-add" onclick="abrirModal('novo')" aria-label="Novo plano">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      <button type="button" class="t6-btn-novo" onclick="abrirModal('novo')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Novo</span>
       </button>
-    <% } else { %>
-      <span class="ag2-avatar-deco ag2-avatar-deco--fantasma"></span>
     <% } %>
   </div>
-  <div class="ag2-titulo">Planos</div>
-  <div class="ag2-subtitulo">Assinaturas e pacotes para clientes</div>
+  <div class="t6-pl-dica"><%= ehAdmin ? 'Toque em um plano para editar' : 'Assinaturas e pacotes para clientes' %></div>
 </div>
 
-<div class="ag2-corpo">
-  <% if (planos.length === 0) { %>
-    <div class="ag2-vazio">Nenhum plano cadastrado<%= ehAdmin ? ' ainda.' : '.' %></div>
+<div class="t6-pl-corpo">
+  <% if (ehAdmin) { %>
+    <%/* Funcionário não vê receita (mesma regra da Home): para ele o resumo
+         é o volume de assinantes, sem dinheiro nenhum. */%>
+    <div class="t6-pl-resumo t6-reveal">
+      <div class="t6-eyebrow">Receita recorrente</div>
+      <div class="t6-pl-resumo-num"><%= fmtT6(resumo.mrr) %></div>
+      <div class="t6-pl-resumo-linha">
+        <%= resumo.assinantes %> assinante<%= resumo.assinantes === 1 ? '' : 's' %><% if (resumo.assinantes) { %> · <%= fmtT6(resumo.ticket) %> por assinante<% } %>
+        <% if (resumo.lider) { %><br><%= resumo.lider.nome %> lidera com <%= resumo.lider.assinantes %><% } %>
+      </div>
+    </div>
   <% } else { %>
-    <div class="pl-lista">
-      <% planos.forEach(function (p) { %>
-        <%
-          var ilimitado = p.tipo === 'ilimitado';
-          var badgeBg = ilimitado ? '#0a0a0a' : 'rgba(10,10,10,0.06)';
-          var badgeCor = ilimitado ? '#fff' : '#0a0a0a';
-          var diasAtivos = _diasArr(p.diasSemana);
-        %>
-        <div class="pl-card" <% if (ehAdmin) { %>onclick="abrirModal(<%= p.id %>)" style="cursor:pointer"<% } %>>
-          <div class="pl-card-topo">
-            <span class="pl-nome"><%= p.nome %></span>
-            <span class="pl-badge" style="background:<%= badgeBg %>;color:<%= badgeCor %>"><%= ilimitado ? 'Ilimitado' : 'Limitado' %></span>
-          </div>
-          <div class="pl-preco-linha">
-            <span class="pl-preco"><%= fmtBRL(p.valor) %></span>
-            <span class="pl-preco-sub">/mês · <%= ilimitado ? 'Usos ilimitados' : (p.usos || 0) + 'x por mês' %></span>
-          </div>
-          <div class="pl-desc"><%= p.servico ? p.servico.nome : 'Qualquer serviço' %><% if (!p.ativo) { %> · <span class="status status-cancelado">inativo</span><% } %></div>
-          <div class="pl-dias">
-            <% ORDEM_SEMANA.forEach(function (i) { %>
-              <% var ativo = diasAtivos.indexOf(i) !== -1; %>
-              <span class="pl-dia-dot" style="background:<%= ativo ? '#0a0a0a' : '#efefef' %>;color:<%= ativo ? '#fff' : '#8a8a85' %>"><%= LETRA_DIA[i] %></span>
-            <% }) %>
+    <div class="t6-pl-resumo t6-reveal">
+      <div class="t6-eyebrow">Planos ativos</div>
+      <div class="t6-pl-resumo-num"><%= planos.filter(function (p) { return p.ativo; }).length %></div>
+      <div class="t6-pl-resumo-linha"><%= resumo.assinantes %> assinante<%= resumo.assinantes === 1 ? '' : 's' %> com plano em dia</div>
+    </div>
+  <% } %>
+
+  <% if (planos.length === 0) { %>
+    <div class="t6-pl-vazio">Nenhum plano cadastrado<%= ehAdmin ? ' ainda.' : '.' %></div>
+  <% } else { %>
+    <% planos.forEach(function (p, idx) { %>
+      <%
+        var t = TINTAS[idx % 4];
+        var ilimitado = p.tipo === 'ilimitado';
+        var diasAtivos = _diasArr(p.diasSemana);
+        var descricao = (p.servico ? p.servico.nome : 'Qualquer serviço') + ' · validade de ' + p.validadeDias + ' dias';
+      %>
+      <div class="t6-pl-card" style="background:<%= t.bg %>;color:<%= t.tinta %>;<%= ehAdmin ? 'cursor:pointer;' : '' %>"
+           <% if (ehAdmin) { %>onclick="abrirModal(<%= p.id %>)"<% } %>>
+        <% if (!p.ativo) { %>
+          <div class="t6-pl-inativo" style="color:<%= t.apoio %>;">Inativo</div>
+        <% } %>
+        <div class="t6-pl-card-topo">
+          <div class="t6-pl-nome"><%= p.nome %></div>
+          <div class="t6-pl-assin">
+            <div class="t6-pl-assin-num"><%= p.assinantes %></div>
+            <div class="t6-pl-assin-rot" style="color:<%= t.apoio %>;">assinantes</div>
           </div>
         </div>
-      <% }) %>
-    </div>
+        <div class="t6-pl-desc" style="color:<%= t.apoio %>;"><%= descricao %></div>
+        <div class="t6-pl-rodape" style="border-top-color:<%= t.fio %>;">
+          <div class="t6-pl-rodape-esq" style="color:<%= t.apoio %>;">
+            <%= ilimitado ? 'Ilimitado' : 'Limitado' %> · <%= ilimitado ? 'Usos ilimitados' : (p.usos || 0) + 'x por mês' %>
+          </div>
+          <div class="t6-pl-rodape-dir">
+            <%= fmtT6(p.valor) %> /mês<% if (p.assinantes) { %> · <%= fmtT6(p.mrr) %><% } %>
+          </div>
+        </div>
+        <div class="t6-pl-dias">
+          <% ORDEM_SEMANA.forEach(function (i) { %>
+            <% var ativo = diasAtivos.indexOf(i) !== -1; %>
+            <span class="t6-pl-dia" style="<%= ativo ? 'background:' + t.tinta + ';color:' + t.bg : 'border:1px solid ' + t.fio + ';color:' + t.apoio %>;"><%= LETRA_DIA[i] %></span>
+          <% }) %>
+        </div>
+      </div>
+    <% }) %>
   <% } %>
 </div>
 
 <% if (ehAdmin) { %>
-  <!-- Pop-up: novo plano -->
-  <div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
+  <%/* Pop-up: novo plano. Na referência o formulário de plano é DIÁLOGO
+       CENTRADO (não a folha de página inteira) — caixa clara sobre o fundo
+       escurecido, campos underline com rótulo em caixa alta. */%>
+  <div class="ag-overlay t6-pl-dialogo" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
     <div class="ag-modal-box">
       <div class="ag-modal-topo">
-        <div class="ag-modal-nome">Novo plano</div>
+        <div class="t6-pl-modal-titulo">Novo plano</div>
         <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
       </div>
-      <form method="POST" class="form mt-16" action="/painel/planos">
-        <div class="campo">
-          <label for="nome-novo">Nome</label>
-          <input id="nome-novo" name="nome" required />
-        </div>
-        <div class="campo">
-          <label for="valor-novo">Valor (R$)</label>
-          <input id="valor-novo" name="valor" type="number" step="0.01" min="0" />
+      <form method="POST" action="/painel/planos">
+        <div class="t6-pl-campo">
+          <label class="t6-pl-rot" for="nome-novo">Nome</label>
+          <input class="t6-pl-input" id="nome-novo" name="nome" placeholder="Ex.: Corte mensal" required />
         </div>
 
-        <div class="campo">
-          <label>Tipo de uso</label>
+        <div class="t6-pl-dupla">
+          <div class="t6-pl-campo">
+            <label class="t6-pl-rot" for="valor-novo">Preço (R$)</label>
+            <input class="t6-pl-input" id="valor-novo" name="valor" type="number" step="0.01" min="0" placeholder="0,00" />
+          </div>
+          <div class="t6-pl-campo" id="campo-usos-novo">
+            <label class="t6-pl-rot" for="usos-novo">Usos/mês</label>
+            <input class="t6-pl-input" id="usos-novo" name="usos" type="number" min="1" value="1" />
+          </div>
+        </div>
+
+        <div class="t6-pl-campo">
           <input type="hidden" name="tipo" id="tipo-novo" value="limitado" />
-          <div class="pill-group">
+          <div class="pill-group t6-pl-tipo">
             <button type="button" class="pill-opcao ativo" data-valor="limitado" onclick="selecionarTipo(this,'novo')">Limitado</button>
             <button type="button" class="pill-opcao" data-valor="ilimitado" onclick="selecionarTipo(this,'novo')">Ilimitado</button>
           </div>
         </div>
 
-        <div class="campo" id="campo-usos-novo">
-          <label for="usos-novo">Usos por mês</label>
-          <input id="usos-novo" name="usos" type="number" min="1" value="1" />
-        </div>
-
-        <div class="campo">
-          <label>Dias disponíveis</label>
+        <div class="t6-pl-campo">
+          <div class="t6-pl-rot">Dias disponíveis</div>
           <input type="hidden" name="diasSemana" id="dias-novo" value="0,1,2,3,4,5,6" />
-          <div class="dias-semana-group" id="dias-group-novo">
+          <div class="dias-semana-group t6-pl-dias-grupo" id="dias-group-novo">
             <% ORDEM_SEMANA.forEach(function (i) { %>
               <button type="button" class="dia-pill ativo" data-dia="<%= i %>" onclick="alternarDia(this,'novo')"><%= NOME_DIA[i] %></button>
             <% }) %>
           </div>
         </div>
 
-        <div class="campo">
-          <label for="servicoId-novo">Serviço incluso</label>
-          <select id="servicoId-novo" name="servicoId">
+        <div class="t6-pl-campo">
+          <label class="t6-pl-rot" for="servicoId-novo">Serviço incluso</label>
+          <select class="t6-pl-input" id="servicoId-novo" name="servicoId">
             <option value="">Qualquer serviço</option>
             <% servicos.forEach(function (s) { %>
               <option value="<%= s.id %>"><%= s.nome %></option>
             <% }) %>
           </select>
         </div>
-        <div class="campo">
-          <label for="validadeDias-novo">Validade (dias)</label>
-          <input id="validadeDias-novo" name="validadeDias" type="number" min="1" value="30" />
+
+        <div class="t6-pl-campo">
+          <label class="t6-pl-rot" for="validadeDias-novo">Validade (dias)</label>
+          <input class="t6-pl-input" id="validadeDias-novo" name="validadeDias" type="number" min="1" value="30" />
         </div>
 
-        <div class="modal-acoes">
-          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-          <button class="btn btn-primario" type="submit">Adicionar</button>
-        </div>
+        <button class="t6-pl-cta" type="submit">Adicionar</button>
+        <button type="button" class="t6-pl-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
       </form>
     </div>
   </div>
 
-  <!-- Pop-up de edição: um por plano (fundo transparente, igual Estoque/Produtos) -->
+  <!-- Pop-up de edição: um por plano -->
   <% planos.forEach(function (p) { %>
     <% var diasAtivosEdit = _diasArr(p.diasSemana); %>
-    <div class="ag-overlay" id="agm-<%= p.id %>" onclick="if(event.target===this)fecharModal(this)">
+    <div class="ag-overlay t6-pl-dialogo" id="agm-<%= p.id %>" onclick="if(event.target===this)fecharModal(this)">
       <div class="ag-modal-box">
         <div class="ag-modal-topo">
-          <div class="ag-modal-nome"><%= p.nome %></div>
+          <div class="t6-pl-modal-titulo"><%= p.nome %></div>
           <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
         </div>
-        <form method="POST" class="form mt-16" action="/painel/planos/<%= p.id %>">
-          <div class="campo">
-            <label for="nome-<%= p.id %>">Nome</label>
-            <input id="nome-<%= p.id %>" name="nome" value="<%= p.nome %>" required />
-          </div>
-          <div class="campo">
-            <label for="valor-<%= p.id %>">Valor (R$)</label>
-            <input id="valor-<%= p.id %>" name="valor" type="number" step="0.01" min="0" value="<%= (p.valor / 100).toFixed(2) %>" />
+        <form method="POST" action="/painel/planos/<%= p.id %>">
+          <div class="t6-pl-campo">
+            <label class="t6-pl-rot" for="nome-<%= p.id %>">Nome</label>
+            <input class="t6-pl-input" id="nome-<%= p.id %>" name="nome" value="<%= p.nome %>" required />
           </div>
 
-          <div class="campo">
-            <label>Tipo de uso</label>
+          <div class="t6-pl-dupla">
+            <div class="t6-pl-campo">
+              <label class="t6-pl-rot" for="valor-<%= p.id %>">Preço (R$)</label>
+              <input class="t6-pl-input" id="valor-<%= p.id %>" name="valor" type="number" step="0.01" min="0" value="<%= (p.valor / 100).toFixed(2) %>" />
+            </div>
+            <div class="t6-pl-campo" id="campo-usos-<%= p.id %>" style="display:<%= p.tipo === 'ilimitado' ? 'none' : '' %>">
+              <label class="t6-pl-rot" for="usos-<%= p.id %>">Usos/mês</label>
+              <input class="t6-pl-input" id="usos-<%= p.id %>" name="usos" type="number" min="1" value="<%= p.usos || 1 %>" />
+            </div>
+          </div>
+
+          <div class="t6-pl-campo">
             <input type="hidden" name="tipo" id="tipo-<%= p.id %>" value="<%= p.tipo %>" />
-            <div class="pill-group">
+            <div class="pill-group t6-pl-tipo">
               <button type="button" class="pill-opcao <%= p.tipo === 'limitado' ? 'ativo' : '' %>" data-valor="limitado" onclick="selecionarTipo(this,'<%= p.id %>')">Limitado</button>
               <button type="button" class="pill-opcao <%= p.tipo === 'ilimitado' ? 'ativo' : '' %>" data-valor="ilimitado" onclick="selecionarTipo(this,'<%= p.id %>')">Ilimitado</button>
             </div>
           </div>
 
-          <div class="campo" id="campo-usos-<%= p.id %>" style="display:<%= p.tipo === 'ilimitado' ? 'none' : '' %>">
-            <label for="usos-<%= p.id %>">Usos por mês</label>
-            <input id="usos-<%= p.id %>" name="usos" type="number" min="1" value="<%= p.usos || 1 %>" />
-          </div>
-
-          <div class="campo">
-            <label>Dias disponíveis</label>
+          <div class="t6-pl-campo">
+            <div class="t6-pl-rot">Dias disponíveis</div>
             <input type="hidden" name="diasSemana" id="dias-<%= p.id %>" value="<%= p.diasSemana %>" />
-            <div class="dias-semana-group" id="dias-group-<%= p.id %>">
+            <div class="dias-semana-group t6-pl-dias-grupo" id="dias-group-<%= p.id %>">
               <% ORDEM_SEMANA.forEach(function (i) { %>
                 <button type="button" class="dia-pill <%= diasAtivosEdit.indexOf(i) !== -1 ? 'ativo' : '' %>" data-dia="<%= i %>" onclick="alternarDia(this,'<%= p.id %>')"><%= NOME_DIA[i] %></button>
               <% }) %>
             </div>
           </div>
 
-          <div class="campo">
-            <label for="servicoId-<%= p.id %>">Serviço incluso</label>
-            <select id="servicoId-<%= p.id %>" name="servicoId">
+          <div class="t6-pl-campo">
+            <label class="t6-pl-rot" for="servicoId-<%= p.id %>">Serviço incluso</label>
+            <select class="t6-pl-input" id="servicoId-<%= p.id %>" name="servicoId">
               <option value="">Qualquer serviço</option>
               <% servicos.forEach(function (s) { %>
                 <option value="<%= s.id %>" <%= p.servicoId === s.id ? 'selected' : '' %>><%= s.nome %></option>
               <% }) %>
             </select>
           </div>
-          <div class="campo">
-            <label for="validadeDias-<%= p.id %>">Validade (dias)</label>
-            <input id="validadeDias-<%= p.id %>" name="validadeDias" type="number" min="1" value="<%= p.validadeDias %>" />
+
+          <div class="t6-pl-campo">
+            <label class="t6-pl-rot" for="validadeDias-<%= p.id %>">Validade (dias)</label>
+            <input class="t6-pl-input" id="validadeDias-<%= p.id %>" name="validadeDias" type="number" min="1" value="<%= p.validadeDias %>" />
           </div>
 
-          <div class="modal-acoes">
-            <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-            <button class="btn btn-primario" type="submit">Salvar alterações</button>
-          </div>
+          <button class="t6-pl-cta" type="submit">Salvar alterações</button>
+          <button type="button" class="t6-pl-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
         </form>
-        <div class="flex gap-8 mt-16">
+
+        <div class="t6-pl-acoes">
           <form method="POST" action="/painel/planos/<%= p.id %>/toggle" class="inline">
             <button class="btn btn-secundario btn-sm"><%= p.ativo ? 'Desativar' : 'Ativar' %></button>
           </form>

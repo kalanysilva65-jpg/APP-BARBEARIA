@@ -1,0 +1,914 @@
+/* =========================================================================
+   TURNO 6 — design editorial (pedido do dono, 2026-07-28)
+   -------------------------------------------------------------------------
+   Substitui o tema escuro de cartões arredondados por uma linguagem
+   editorial/impressa, seguindo 100% o HTML de referência que o dono anexou
+   ("Barbearia - App de Gestao (standalone).html"):
+
+     · superfície clara #FAFAFA, tinta #0E0E0E, apoio #7B7B7B, fio #ADADAD
+     · CANTO VIVO — nada de border-radius, nada de sombra em cartão
+     · tipografia grande (títulos 40px caixa alta, números 50/57/80px)
+     · separação por FIO de 1px (#ADADAD), não por cartão
+     · barra inferior preta, chapada, largura toda: a aba ativa vira um
+       bloco branco (e é a única que mostra rótulo)
+
+   As classes são todas `t6-*`, sem colisão com o CSS antigo (`ag2-*`,
+   `home-*`, `fin-*`...): as telas convertidas simplesmente deixam de usar as
+   antigas, então dá para converter uma tela por vez sem guerra de override.
+   ========================================================================= */
+
+.pg-t6,
+.pg-t6 body {
+  background: #fafafa;
+}
+
+.pg-t6 {
+  --t6-bg: #fafafa;
+  --t6-ink: #0e0e0e;
+  --t6-muted: #7b7b7b;
+  --t6-line: #adadad;
+  --t6-dark: #1b1c1d;
+  --t6-mid: #454545;
+  --t6-fonte: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  background: var(--t6-bg);
+  color: var(--t6-ink);
+  font-family: var(--t6-fonte);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* O cabeçalho fixo antigo não existe na referência — cada tela traz o
+   próprio título grande no topo. */
+.pg-t6 .app-topo-fixo { display: none; }
+
+/* Neutraliza o container genérico do painel (largura máxima, padding,
+   fundo escuro do tema anterior): no Turno 6 a tela inteira é a página. */
+.pg-t6 .conteudo,
+.pg-t6 .container.conteudo {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--t6-bg);
+  color: var(--t6-ink);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  animation: none;
+}
+
+.pg-t6 a { color: inherit; text-decoration: none; }
+.pg-t6 * { box-sizing: border-box; }
+
+/* Barra de rolagem escondida — igual à referência (`.no-sb`). */
+.pg-t6 .t6-tela,
+.pg-t6 .t6-rolagem {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.pg-t6 .t6-tela::-webkit-scrollbar,
+.pg-t6 .t6-rolagem::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* Alerta/flash flutua sobre a tela, sem virar cartão. */
+.pg-t6 .conteudo > .alerta {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: 16px;
+  right: 16px;
+  z-index: 50;
+  background: var(--t6-ink);
+  color: var(--t6-bg);
+  border: none;
+  border-radius: 0;
+}
+
+@keyframes t6RevealUp {
+  from { transform: translateY(26px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes t6BarRise {
+  from { transform: scaleY(0.12); opacity: 0.15; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+@keyframes t6TabSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes t6DrawerIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* =========================================================================
+   HOME
+   ========================================================================= */
+.t6-tela {
+  position: relative;
+  flex: 1;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 92px;
+  display: flex;
+  flex-direction: column;
+  background: var(--t6-bg);
+  overflow-y: auto;
+  animation: t6TabSlideIn 0.4s cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+}
+
+.t6-reveal { animation: t6RevealUp 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.05) both; }
+
+.t6-home-topo { margin-top: 40px; }
+.t6-eyebrow {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--t6-muted);
+}
+.t6-home-titulo {
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--t6-ink);
+  letter-spacing: -1.2px;
+  margin-top: 14px;
+}
+
+/* Próximo agendamento — destaque, separado por fio. */
+.t6-prox {
+  display: block;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--t6-line);
+}
+.t6-prox-linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.t6-prox-nome,
+.t6-prox-hora { font-size: 25px; font-weight: 500; color: var(--t6-ink); }
+.t6-prox-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t6-prox-hora { flex-shrink: 0; }
+.t6-prox-sub {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  margin-top: 2px;
+}
+
+/* Os seguintes — lista compacta, um fio por linha. */
+.t6-seguintes { display: flex; flex-direction: column; margin-top: 16px; }
+.t6-seguinte {
+  border-top: 1px solid var(--t6-line);
+  padding: 11px 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--t6-muted);
+}
+.t6-seguinte-quem { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t6-seguinte-hora { flex-shrink: 0; }
+
+/* Bloco de números. Estende até as bordas da tela (margens negativas),
+   como na referência. */
+.t6-home-nums {
+  flex: 1;
+  margin: 22px -16px -16px;
+  background: var(--t6-bg);
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+}
+.t6-nums-linha { display: flex; gap: 6px; margin-top: 26px; }
+.t6-num-bloco {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 12px;
+  background: var(--t6-dark);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.t6-num-bloco .t6-num { color: var(--t6-bg); }
+.t6-num-bloco .t6-num-label { color: var(--t6-line); margin-top: 44px; }
+.t6-nums-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 2px 0 2px 24px;
+}
+.t6-num {
+  font-size: 50px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  letter-spacing: -1.4px;
+  line-height: 1;
+}
+.t6-num-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  margin-top: 6px;
+  line-height: 1.35;
+}
+
+/* Ocupação — o número gigante da tela. */
+.t6-ocupacao {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 18px;
+}
+.t6-ocupacao-num {
+  font-size: 80px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  letter-spacing: -1.4px;
+  line-height: 1;
+}
+.t6-ocupacao-label { font-size: 12px; font-weight: 500; color: var(--t6-muted); }
+
+/* Aviso de estoque baixo — único bloco com contorno (fio preto). */
+.t6-alerta-estoque {
+  margin-top: 22px;
+  border: 1px solid var(--t6-ink);
+  padding: 14px 16px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.t6-alerta-corpo { flex: 1; min-width: 0; }
+.t6-alerta-linha { display: flex; align-items: baseline; gap: 8px; }
+.t6-alerta-num {
+  font-size: 34px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  letter-spacing: -1.6px;
+  line-height: 1;
+}
+.t6-alerta-titulo { font-size: 12px; font-weight: 500; color: var(--t6-ink); }
+.t6-alerta-nomes {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  margin-top: 8px;
+  line-height: 1.45;
+}
+.t6-alerta-seta { flex-shrink: 0; margin-top: 8px; }
+
+/* Faturamento semanal — colunas coloridas roláveis na horizontal. */
+.t6-semana { margin-top: 26px; display: flex; flex-direction: column; }
+.t6-semana-titulo { font-size: 40px; font-weight: 600; color: var(--t6-ink); letter-spacing: -1.2px; }
+.t6-semana-total { font-size: 22px; font-weight: 500; color: var(--t6-ink); margin-top: 4px; }
+.t6-semana-blocos {
+  display: flex;
+  align-items: flex-end;
+  margin: 20px -16px -16px;
+  height: 240px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+.t6-bloco {
+  flex-shrink: 0;
+  width: 33.3333%;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px 12px;
+  transform-origin: bottom center;
+  animation: t6BarRise 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.05) both;
+}
+.t6-bloco-valor { font-size: 26px; font-weight: 500; letter-spacing: -1.2px; line-height: 1; }
+.t6-bloco-label { font-size: 11px; font-weight: 500; }
+
+/* =========================================================================
+   AGENDA
+   ------------------------------------------------------------------------
+   Sem tira de dias: o dia selecionado vem GRANDE, o mês num selo de contorno
+   e o dia seguinte em cinza ao lado (toque avança). A lista não tem cartão —
+   cada atendimento é uma faixa separada por fio, e o atendimento DA VEZ sai
+   invertido (fundo preto), que é como a referência marca "é este agora".
+   ========================================================================= */
+.t6-agenda-topo {
+  flex: none;
+  padding: calc(52px + env(safe-area-inset-top, 0px)) 20px 0;
+  background: var(--t6-bg);
+}
+.t6-agenda-titulo-linha {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.t6-agenda-titulo {
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--t6-ink);
+  letter-spacing: -1.4px;
+}
+.pg-t6 .t6-btn-novo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--t6-ink);
+  color: var(--t6-bg);
+  padding: 9px 14px;
+  margin-top: 4px;
+  border: none;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  flex: none;
+  cursor: pointer;
+}
+.t6-agenda-dica {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--t6-line);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t6-muted);
+}
+.t6-agenda-dias {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  margin-top: 22px;
+  padding-bottom: 18px;
+}
+.t6-agenda-dia-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.t6-agenda-dia-num {
+  font-size: 57px;
+  font-weight: 400;
+  color: var(--t6-ink);
+  letter-spacing: -2.5px;
+  line-height: 0.9;
+}
+.t6-agenda-mes {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  color: var(--t6-ink);
+  text-transform: uppercase;
+  border: 1px solid var(--t6-line);
+  padding: 4px 12px;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.pg-t6 .t6-agenda-dia-prox {
+  font-size: 57px;
+  font-weight: 400;
+  color: var(--t6-line);
+  letter-spacing: -2.5px;
+  line-height: 0.9;
+}
+
+/* Filtro de barbeiro. Selo PREENCHIDO (cinza cheio, preto quando ativo) e não
+   vazado: é o idioma de filtro da referência — mesmo desenho do seletor de
+   período do Caixa. A primeira versão aqui saiu de contorno e destoava da
+   outra tela. */
+.t6-agenda-barbeiros { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 14px; }
+.pg-t6 .t6-chip {
+  flex: none;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 5px 13px;
+  border: none;
+  background: var(--t6-line);
+  color: var(--t6-ink);
+  white-space: nowrap;
+}
+.pg-t6 .t6-chip.sel { background: var(--t6-ink); color: var(--t6-bg); }
+
+/* ---- Lista de atendimentos ---- */
+.t6-agenda-lista { flex: 1; padding-bottom: 92px; }
+.t6-linha {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px 14px;
+  background: #fff;
+  border-top: 1px solid var(--t6-line);
+  color: var(--t6-ink);
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+/* O atendimento da vez: bloco preto, o único invertido da lista. */
+.pg-t6 .t6-linha--agora {
+  background: var(--t6-ink);
+  border-top-color: var(--t6-ink);
+  color: #fff;
+}
+.t6-linha-corpo { flex: 1; min-width: 0; }
+.t6-linha-marca { display: flex; align-items: center; gap: 5px; height: 7px; }
+.t6-linha-ponto { width: 6px; height: 6px; border-radius: 999px; background: var(--t6-dark); }
+.t6-linha--agora .t6-linha-ponto { background: #fff; }
+.t6-linha--feito .t6-linha-ponto { background: #cfcfd6; }
+/* `display:block` porque a faixa é um <button> (só aceita conteúdo de frase,
+   então os filhos são <span>) — inline, eles ficariam na MESMA linha e só
+   quebrariam por acaso, quando o texto passasse da largura. */
+.t6-linha-cliente {
+  display: block;
+  font-size: 19px;
+  font-weight: 500;
+  margin-top: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.t6-linha-sub {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t6-muted);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.t6-linha--agora .t6-linha-sub { color: rgba(255, 255, 255, 0.6); }
+.t6-linha-hora {
+  font-size: 42px;
+  font-weight: 400;
+  letter-spacing: -2.2px;
+  line-height: 0.85;
+  flex-shrink: 0;
+}
+.t6-lista-fim { border-top: 1px solid var(--t6-line); }
+.t6-vazio {
+  padding: 26px 20px;
+  border-top: 1px solid var(--t6-line);
+  font-size: 13px;
+  color: var(--t6-muted);
+}
+/* Bloqueio: faixa cinza, sem hora gigante. */
+.t6-linha--bloqueio { background: #f0f0ee; }
+.t6-linha--bloqueio .t6-linha-cliente { font-size: 15px; color: var(--t6-muted); }
+.pg-t6 .t6-linha-x {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--t6-muted);
+  padding: 0 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* =========================================================================
+   POP-UPS / MODAIS
+   ------------------------------------------------------------------------
+   O painel reaproveita os modais que já existiam (`.ag-overlay`/`.ag-modal-box`
+   e os formulários dentro deles) — só a PELE muda aqui. Sem isto eles caem no
+   estilo escuro do painel-app.css e ficam texto escuro sobre fundo escuro,
+   porque as regras que os deixavam claros eram do `.pg-novo`, que as telas
+   Turno 6 não usam.
+   ========================================================================= */
+/* Pop-up CENTRADO — só o calendário do mês e o "bloquear horário". É a única
+   forma de diálogo que a referência tem (fundo escurecido + caixa clara). */
+.pg-t6 .ag-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(10, 10, 10, 0.35);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.pg-t6 .ag-modal-box {
+  width: 100%;
+  max-width: 320px;
+  max-height: 86vh;
+  overflow-y: auto;
+  background: var(--t6-bg);
+  color: var(--t6-ink);
+  border: none;
+  border-radius: 0;
+  padding: 22px;
+  animation: t6RevealUp 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.05) both;
+}
+
+/* FOLHA — "Novo agendamento" e o detalhe do atendimento não são diálogo
+   nenhum na referência: são PÁGINA INTEIRA branca, que entra deslizando e
+   volta pelo quadrado cinza no topo. */
+.pg-t6 .ag-overlay.t6-folha {
+  background: #fff;
+  padding: 0;
+  align-items: stretch;
+  animation: t6TabSlideIn 0.32s cubic-bezier(0.2, 0.9, 0.25, 1.05) both;
+}
+.pg-t6 .ag-overlay.t6-folha .ag-modal-box {
+  max-width: none;
+  max-height: none;
+  width: 100%;
+  background: #fff;
+  padding: calc(56px + env(safe-area-inset-top, 0px)) 22px 92px;
+  animation: none;
+}
+.pg-t6 .t6-folha-voltar {
+  width: 34px;
+  height: 34px;
+  background: var(--t6-line);
+  color: var(--t6-ink);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+}
+.t6-folha-titulo {
+  font-size: 50px;
+  font-weight: 600;
+  color: var(--t6-ink);
+  letter-spacing: -1.2px;
+  line-height: 1.05;
+  margin-top: 16px;
+}
+/* No detalhe o nome do cliente é o título, com a hora encostada na base. */
+.t6-folha-topo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+}
+.t6-folha-cliente { font-size: 45px; font-weight: 600; letter-spacing: -1.2px; line-height: 1.05; }
+.t6-folha-hora { font-size: 12px; color: var(--t6-muted); padding-bottom: 4px; flex: none; }
+
+/* Campo: rótulo miúdo + valor grande, separados por fio. */
+.t6-campo { border-top: 1px solid var(--t6-line); padding: 16px 0; }
+.t6-campo-rot { font-size: 11px; color: var(--t6-muted); }
+.t6-campo-val {
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--t6-ink);
+  letter-spacing: -0.6px;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.t6-campo-val--md { font-size: 28px; }
+.t6-campo-val--sm { font-size: 24px; }
+.pg-t6 .t6-campo-input {
+  width: 100%;
+  font-size: 30px;
+  font-weight: 500;
+  color: var(--t6-ink);
+  letter-spacing: -0.6px;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 0;
+  margin-top: 2px;
+  font-family: inherit;
+}
+.pg-t6 .t6-campo-input::placeholder { color: var(--t6-line); }
+
+/* Pílulas (serviço / horário / barbeiro): retângulos de canto vivo. Mantém os
+   nomes `.pill-group`/`.pill-opcao` porque o script da tela cria e marca essas
+   classes na mão (inclusive nos horários carregados por fetch) — trocá-las
+   quebraria a seleção. */
+.t6-pills,
+.pg-t6 .pill-group { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.pg-t6 .t6-pill,
+.pg-t6 .pill-opcao {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid var(--t6-line);
+  border-radius: 0;
+  background: none;
+  color: var(--t6-ink);
+  font-family: inherit;
+  cursor: pointer;
+}
+.pg-t6 .t6-pill.ativo,
+.pg-t6 .pill-opcao.ativo { background: var(--t6-ink); border-color: var(--t6-ink); color: var(--t6-bg); }
+.pg-t6 .pill-opcao.indisponivel { color: var(--t6-line); border-style: dashed; cursor: default; }
+
+/* Bloco preto do total — sangra até as bordas da folha. */
+.t6-total { background: var(--t6-ink); padding: 24px 22px; margin: 24px -22px 0; }
+.t6-total-linha { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.t6-total-rot {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--t6-muted);
+}
+.t6-total-num {
+  font-size: 52px;
+  font-weight: 500;
+  color: var(--t6-bg);
+  letter-spacing: -2.6px;
+  line-height: 0.92;
+  margin-top: 10px;
+}
+.t6-total-lado {
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t6-line);
+  line-height: 1.5;
+  padding-bottom: 4px;
+}
+.pg-t6 .t6-cta-claro {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-top: 22px;
+  background: var(--t6-bg);
+  color: var(--t6-ink);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 13px;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.pg-t6 .t6-cta-vazado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 22px;
+  border: 1px solid var(--t6-mid);
+  background: none;
+  color: var(--t6-bg);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Cartão preto de confirmação do "Novo agendamento". */
+.t6-confirma-rot { text-align: center; font-size: 11px; color: var(--t6-muted); border-top: 1px solid var(--t6-line); padding-top: 18px; margin-top: 22px; }
+.t6-confirma {
+  background: var(--t6-ink);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 26px 22px 24px;
+  margin-top: 14px;
+}
+.t6-confirma-barbeiro { font-size: 11px; font-weight: 500; color: var(--t6-muted); }
+.t6-confirma-cliente { font-size: 30px; font-weight: 500; color: var(--t6-bg); letter-spacing: -1.2px; line-height: 1.1; }
+.t6-confirma-servico { font-size: 11px; font-weight: 500; color: var(--t6-line); }
+.t6-confirma-hora { font-size: 38px; font-weight: 500; color: var(--t6-bg); letter-spacing: -1.8px; margin-top: 6px; line-height: 1; }
+.pg-t6 .t6-confirma-btn {
+  align-self: stretch;
+  text-align: center;
+  margin-top: 18px;
+  background: var(--t6-bg);
+  color: var(--t6-ink);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 12px;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.pg-t6 .ag-modal-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pg-t6 .ag-modal-nome { font-size: 16px; font-weight: 600; color: var(--t6-ink); }
+.pg-t6 .ag-modal-fechar {
+  background: none;
+  border: none;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--t6-muted);
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+.pg-t6 .ag-modal-box .texto-sutil { color: var(--t6-muted); font-size: 12px; font-weight: 500; }
+.pg-t6 .ag-modal-box .status {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 4px 12px;
+  border: 1px solid var(--t6-line);
+  border-radius: 0;
+  background: none;
+  color: var(--t6-ink);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.pg-t6 .ag-modal-box .itens { list-style: none; margin: 18px 0 0; padding: 0; }
+.pg-t6 .ag-modal-box .itens li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--t6-line);
+  font-size: 14px;
+}
+.pg-t6 .ag-modal-box .itens-direita { display: flex; align-items: center; gap: 10px; }
+.pg-t6 .ag-modal-box .agendamento-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-top: 1px solid var(--t6-line);
+}
+.pg-t6 .ag-modal-box .agendamento-total strong { font-size: 25px; font-weight: 500; letter-spacing: -0.6px; }
+.pg-t6 .ag-modal-box .form-add-item {
+  display: flex;
+  gap: 6px;
+  padding: 14px 0;
+  border-top: 1px solid var(--t6-line);
+}
+.pg-t6 .ag-modal-box .agendamento-acoes { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 14px; border-top: 1px solid var(--t6-line); }
+
+/* Campos e botões dentro dos modais: canto vivo, contorno de fio.
+   Os `:not(...)` são obrigatórios: o campo grande da folha (`.t6-campo-input`,
+   30px sem caixa) e os campos próprios das telas também são <input>, e esta
+   regra — por ter o seletor de elemento a mais — é MAIS específica que a
+   classe deles. Sem a exclusão, todo campo grande volta a ser uma caixinha
+   de 14px com contorno. */
+.pg-t6 .ag-modal-box input:not(.t6-campo-input):not(.t6-cat-input):not(.t6-cx-inp),
+.pg-t6 .ag-modal-box select,
+.pg-t6 .ag-modal-box textarea {
+  background: #fff;
+  color: var(--t6-ink);
+  border: 1px solid var(--t6-line);
+  border-radius: 0;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  min-width: 0;
+}
+.pg-t6 .ag-modal-box label:not(.t6-campo-rot) { font-size: 12px; font-weight: 500; color: var(--t6-muted); }
+.pg-t6 .ag-modal-box .btn {
+  border-radius: 0;
+  border: 1px solid var(--t6-ink);
+  background: var(--t6-ink);
+  color: var(--t6-bg);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+.pg-t6 .ag-modal-box .btn-secundario {
+  background: none;
+  color: var(--t6-ink);
+}
+.pg-t6 .ag-modal-box .btn-perigo {
+  background: none;
+  border-color: var(--t6-line);
+  color: #9a3b3b;
+}
+.pg-t6 .ag-modal-box .btn-x {
+  background: none;
+  border: none;
+  color: var(--t6-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+/* =========================================================================
+   BARRA INFERIOR — preta, chapada, largura toda. A aba ativa é um bloco
+   branco e é a única que mostra rótulo (é assim na referência).
+   ========================================================================= */
+.t6-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  background: var(--t6-ink);
+  display: flex;
+  align-items: stretch;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
+/* `.pg-t6 .` na frente porque o reset `.pg-t6 a { color: inherit }` é mais
+   específico que `.t6-nav-item` — sem isso o ícone da aba inativa herda a
+   tinta preta e some no fundo preto da barra. */
+.pg-t6 .t6-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 12px 0 14px;
+  min-height: 56px;
+  background: transparent;
+  color: var(--t6-muted);
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.pg-t6 .t6-nav-item.ativo { background: var(--t6-bg); color: var(--t6-ink); }
+.t6-nav-item:active { opacity: 0.7; }
+.t6-nav-label {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  height: 11px;
+  color: inherit;
+}
+/* Na referência o ícone da aba ativa é PREENCHIDO (sólido) e o da inativa é
+   só contorno — o preenchimento acompanha a cor do item. */
+.t6-nav-item .t6-fill { fill: none; }
+.t6-nav-item.ativo .t6-fill { fill: currentColor; }
+/* O "$" do Financeiro fica vazado sobre a nota preenchida. */
+.t6-nav-item .t6-cifrao { fill: #7b7b7b; }
+.t6-nav-item.ativo .t6-cifrao { fill: var(--t6-bg); }
+
+/* ---- Gaveta "Menu" (o antigo "Mais") ---- */
+/* `display:flex`/`block` abaixo venceriam o `display:none` que o atributo
+   [hidden] traz do UA — sem isto a gaveta nasce aberta. */
+.t6-drawer[hidden],
+.t6-drawer-fundo[hidden] { display: none; }
+.t6-drawer-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: rgba(10, 10, 10, 0.35);
+}
+.t6-drawer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 46;
+  width: 88%;
+  display: flex;
+  flex-direction: column;
+  padding: calc(58px + env(safe-area-inset-top, 0px)) 22px 18px;
+  background: var(--t6-dark);
+  box-shadow: -20px 0 50px rgba(10, 10, 10, 0.3);
+  animation: t6DrawerIn 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.05) both;
+}
+.t6-drawer-topo { display: flex; align-items: center; justify-content: space-between; }
+.t6-drawer-titulo { font-size: 20px; font-weight: 500; color: #fff; }
+.t6-drawer-fechar {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.t6-drawer-lista {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  scrollbar-width: none;
+}
+.t6-drawer-lista::-webkit-scrollbar { display: none; width: 0; }
+.t6-drawer-item { display: flex; align-items: flex-start; gap: 3px; }
+.t6-drawer-item span:first-child {
+  font-size: 40px;
+  font-weight: 500;
+  color: #fff;
+  letter-spacing: -1px;
+  line-height: 1.25;
+}
+.t6-drawer-conta {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 6px;
+}

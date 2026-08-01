@@ -6,34 +6,78 @@
    com cards brancos e texto escuro — é assim no design.
    ========================================================================= */
 
-/* No Home o hero substitui o cabeçalho padrão (CORTAVO + foto), e o conteúdo
-   é full-bleed (sem o padding lateral do .container). */
+/* =========================================================================
+   TELA DE CARREGAMENTO (splash) — pedido do dono, 2026-07-21, inspirada numa
+   referência: foto do usuário + saudação + nome, cheia a tela, some sozinha
+   (ver script em partials/splash.ejs). Fica em cima de tudo (z-index alto)
+   e só aparece uma vez por sessão de navegador.
+   ========================================================================= */
+.splash-tela {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  animation: splashEntra 0.4s ease both;
+}
+.splash-tela.splash-saindo { animation: splashSai 0.5s ease both; }
+@keyframes splashEntra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes splashSai { from { opacity: 1; } to { opacity: 0; } }
+.splash-texto {
+  flex: none;
+  width: 100%;
+  padding: calc(64px + env(safe-area-inset-top, 0px)) 24px 20px;
+  text-align: center;
+}
+.splash-saudacao { font-size: 15px; color: #8a8a85; font-weight: 500; }
+.splash-nome {
+  font-size: 30px;
+  font-weight: 600;
+  color: #0a0a0a;
+  letter-spacing: -0.4px;
+  margin-top: 2px;
+}
+.splash-foto {
+  flex: 1;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 96%);
+  mask-image: linear-gradient(to bottom, #000 60%, transparent 96%);
+}
+.splash-foto img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+.splash-foto-inicial {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 130px;
+  font-weight: 700;
+  color: #d4d4d1;
+  background: linear-gradient(160deg, #f4f4f2, #e4e4e1);
+}
+
+/* Cabeçalho de texto simples (pedido do dono, 2026-07-22: tirou o hero de
+   foto+saudação, inspirado numa referência de dashboard sem foto nenhuma no
+   topo) — reaproveita o mesmo .ag2-topo das outras telas, só com um pouco
+   mais de espaço embaixo antes do bento grid começar. */
 .pg-home .app-topo-fixo { display: none; }
 .pg-home .conteudo {
   max-width: none;
   padding: 0;
-  /* Coluna que ocupa a tela toda: assim a superfície clara (.home-corpo, com
-     flex:1) preenche até embaixo. Sem isto ela terminava junto com o conteúdo
-     e sobrava uma faixa escura do body até o rodapé — parecia um bloco cortado
-     no meio da tela. */
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
   position: relative; /* âncora do flash flutuante (abaixo) */
-  /* Claro também aqui: é o que aparece ATRÁS dos cantos arredondados da base
-     do hero. Com o fundo escuro do body, os cantos revelariam preto. */
-  background: #eaeaea;
-  /* O hero fica fixo no topo; quem anima a entrada são os cards (homeRiseIn).
-     Sem isto, a animação global .conteudo (translateY 14px) empurraria o hero
-     pra baixo do topo durante o fade. */
+  background: #0b0b0d;
   animation: none;
 }
-
-/* A mensagem (flash) é o primeiro filho do .conteudo. Em fluxo normal ela
-   empurraria o hero pra baixo e apareceria numa faixa escura acima da foto —
-   o que acontece direto na Home, já que a troca de foto é feita aqui. Flutua
-   sobre o hero, com fundo sólido pra ler por cima da imagem. */
 .pg-home .conteudo > .alerta {
   position: absolute;
   top: calc(12px + env(safe-area-inset-top, 0px));
@@ -45,101 +89,36 @@
   border-color: rgba(10, 10, 10, 0.12);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
+.home-topo { padding-bottom: 6px; }
 
-/* ---- Hero com foto de capa ----
-   No HTML original: height:380px fixo, border-radius 0 0 28px 28px, e um
-   zoom lento contínuo na foto (Ken Burns). 380px fixo é alto demais em
-   celulares baixos (ex.: iPhone SE, 667px de altura — quase 60% da tela só
-   de hero); o clamp mantém a intenção em telas normais/altas e encolhe com
-   segurança nas baixas, em vez de fatiar o conteúdo de baixo. */
-.home-hero {
-  position: relative;
-  flex: none; /* dentro da coluna flex: não estica nem encolhe */
-  height: clamp(240px, 48vh, 380px);
-  border-radius: 0 0 28px 28px;
-  overflow: hidden;
-  /* Fallback sem foto: gradiente com um brilho quente no canto, para parecer
-     um fundo escolhido e não uma imagem que falhou ao carregar. Enquanto a
-     barbearia não envia a capa, é este estado que aparece. */
-  background:
-    radial-gradient(120% 90% at 85% 0%, rgba(198, 67, 46, 0.28) 0%, rgba(198, 67, 46, 0) 55%),
-    linear-gradient(160deg, #34343a 0%, #17171b 55%, #0f0f12 100%);
-}
-@media (prefers-reduced-motion: no-preference) {
-  .home-hero { animation: homeHeroIn 0.7s cubic-bezier(0.2, 0.8, 0.25, 1.1) both; }
-  .home-hero-img {
-    /* Zoom lento e contínuo (Ken Burns) — dá vida à foto parada. */
-    animation: homeKenBurns 12s ease-in-out infinite alternate;
-  }
-}
-@keyframes homeHeroIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
-@keyframes homeKenBurns { from { transform: scale(1); } to { transform: scale(1.08); } }
-.home-hero-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 78%;
-}
-.home-hero-sombra {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 26%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.6) 100%);
-  pointer-events: none;
-}
-.home-hero-texto {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 18px;
-  padding-top: env(safe-area-inset-top, 0px); /* não cola no notch quando instalado */
-}
-.home-hero-badge {
-  display: inline-block;
-  font: 700 11px/1 var(--fonte);
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  color: #0a0a0a;
-  background: rgba(255, 255, 255, 0.85);
-  padding: 4px 10px;
-  border-radius: 8px;
-  margin-bottom: 8px;
-}
-.home-hero-nome {
-  font: 600 24px/1.1 var(--fonte);
-  letter-spacing: -0.4px;
-  color: #fff;
-}
-.home-hero-sub {
-  font: 400 13px/1.3 var(--fonte);
-  color: rgba(255, 255, 255, 0.75);
-  margin-top: 2px;
-}
-
-/* ---- Área de conteúdo (superfície clara) ---- */
+/* ---- Área de conteúdo ---- */
 .home-corpo {
-  background: #eaeaea;
-  /* flex:1 = ocupa toda a altura que sobra abaixo do hero, então o claro vai
-     até o rodapé. O padding-bottom reserva o espaço da barra flutuante DENTRO
-     da área clara (antes esse espaço era padding do .conteudo, e ficava escuro). */
+  background: #0b0b0d;
   flex: 1;
-  padding: 14px 16px calc(96px + env(safe-area-inset-bottom, 0px));
+  padding: 6px 16px calc(96px + env(safe-area-inset-bottom, 0px));
   font-family: var(--fonte);
 }
 
-/* ---- Bento grid ---- */
-.home-bento {
-  display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  gap: 10px;
-}
+/* ---- Bento grid: 2 colunas, cada uma com 2 cards empilhados (pedido do
+   dono, 2026-07-22, mesma disposição de uma referência de dashboard) — antes
+   era o card de Faturamento esticado por 2 linhas do grid ao lado de 2 cards
+   menores; agora as duas colunas têm a mesma estrutura (card grande + card
+   pequeno), só que a coluna da esquerda tem MENOS espaço reservado pro card
+   pequeno (o de Faturamento domina). */
+.home-bento { display: grid; grid-template-columns: 1.15fr 1fr; gap: 8px; }
+.home-bento-col { display: flex; flex-direction: column; gap: 8px; }
+/* Card de Faturamento bem mais dominante que o "Próximos cortes" embaixo
+   dele (pedido do dono, 2026-07-22: "quero igual às referências, igualzinho"
+   — na referência o card grande ocupa bem mais altura que o pequeno da
+   mesma coluna, não uma divisão quase igual como tinha ficado). */
+.home-bento-col .home-card--fat { flex: 2.6; }
+.home-bento-col .home-card--mini { flex: none; }
 @keyframes homeRiseIn {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .home-card {
-  border-radius: 22px;
+  border-radius: 14px;
   animation: homeRiseIn 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
   text-decoration: none;
   color: inherit;
@@ -148,84 +127,81 @@
 .home-card:nth-child(2) { animation-delay: 0.08s; }
 .home-card:nth-child(3) { animation-delay: 0.16s; }
 
-/* Card escuro (Faturamento) — ocupa as duas linhas da esquerda. */
+/* Cards escuros (pedido do dono, 2026-07-22, inspirado numa referência de
+   dashboard): fundo #1a1a1d + borda clara sutil, em vez do branco/vidro
+   anterior — vale pra praticamente todo card do app (só o painel "Mais" da
+   barra de navegação ficou de fora, por pedido explícito). Texto/ícones que
+   eram escuros viram claros aqui. */
 .home-card--fat {
-  grid-row: span 2;
   position: relative;
   padding: 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   overflow: hidden;
-  background: linear-gradient(135deg, #3a3a40, #111114);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 12px 28px rgba(10, 10, 10, 0.25);
-  min-height: 148px;
+  /* Card claro (pedido do dono, 2026-07-22: "igual a referência, igualzinho")
+     — na referência esse é o único card claro em meio a cards escuros, por
+     isso fica azul-acinzentado sólido em vez de escuro como os outros. */
+  background: #c7d5ec;
+  min-height: 210px;
 }
-.home-card--fat .home-card-eyebrow { font-size: 11px; color: rgba(255, 255, 255, 0.6); }
-.home-fat-spark { display: block; margin: 10px 0; width: 100%; height: 30px; }
-.home-fat-num { font: 600 26px/1 var(--fonte); color: #fff; }
-.home-fat-legenda { font-size: 12px; color: rgba(255, 255, 255, 0.75); margin-top: 2px; }
+.home-card--fat .home-card-eyebrow { font-size: 11px; color: rgba(10, 14, 26, 0.55); }
+.home-card--fat .home-card-icone { color: rgba(10, 14, 26, 0.6); }
+/* Grade de pontinhos atrás do gráfico — mesma técnica de antes, só que em
+   tom escuro agora que o fundo do card ficou claro. */
+.home-fat-spark-wrap {
+  position: relative;
+  margin: 8px -4px;
+  background-image: radial-gradient(rgba(10, 14, 26, 0.16) 1px, transparent 1.5px);
+  background-size: 14px 14px;
+}
+.home-fat-spark { display: block; width: 100%; height: 40px; }
+.home-fat-num { font: 700 38px/1 var(--fonte); letter-spacing: -0.8px; color: #12141a; }
+.home-fat-legenda { font-size: 12px; color: rgba(10, 14, 26, 0.55); margin-top: 4px; }
 
-/* Cards brancos (Ocupação / Cortes / Ticket). */
-.home-card--branco { background: #fff; padding: 14px 16px; }
+/* Cards escuros (Ocupação / Cortes / Ticket). */
+.home-card--branco { background: #1a1a1d; border: 1px solid rgba(255, 255, 255, 0.08); padding: 12px 14px; }
 .home-card-topo { display: flex; align-items: center; justify-content: space-between; }
-.home-card-label { font-size: 11px; color: #8a8a85; }
-.home-card-num { font: 600 22px/1 var(--fonte); color: #0a0a0a; margin-top: 6px; }
-.home-card-icone { color: #8a8a85; display: flex; }
-.home-bar { width: 100%; height: 4px; border-radius: 999px; background: rgba(31, 44, 67, 0.1); overflow: hidden; margin-top: 8px; }
-.home-bar > div { height: 100%; background: #0a0a0a; border-radius: 999px; }
-
-/* Card empilhado (Cortes hoje + Ticket médio no mesmo cartão). */
-.home-card--stack { background: #fff; overflow: hidden; padding: 0; }
-.home-stack-item { padding: 14px 16px; }
-.home-stack-item + .home-stack-item { border-top: 1px solid rgba(10, 10, 10, 0.06); }
-
-/* ---- Próximos cortes: cartão de VIDRO (não branco sólido) ----
-   No HTML original: background rgba(255,255,255,.65) + blur(20px), raio 24,
-   sombra própria e borda clara — se destaca dos outros cards do bento, que
-   são brancos opacos. */
-.home-proximos {
-  margin-top: 14px;
-  border-radius: 24px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 14px 34px rgba(10, 10, 10, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  padding: 18px 0 16px 18px;
-}
-.home-proximos-topo { display: flex; align-items: center; justify-content: space-between; padding-right: 18px; }
-.home-secao-titulo { font: 600 19px/1.2 var(--fonte); color: #0a0a0a; }
-/* Atalho pra Agenda: botão circular escuro com seta — existe no HTML e
-   tinha ficado de fora da primeira conversão. */
-.home-proximos-ir {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  background: #0a0a0a;
+.home-card-label { font-size: 11px; color: #9a9a97; }
+.home-card-num { font: 700 26px/1 var(--fonte); letter-spacing: -0.4px; color: #f2f2f0; margin-top: 8px; }
+/* Ícone só com o traço (sem fundo/círculo) — igual à referência, onde os
+   ícones dos cantos dos cards são simples, sem badge atrás. */
+.home-card-icone {
+  width: 22px;
+  height: 22px;
+  color: #c8c8c5;
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
 }
-/* Lado a lado (flex, largura igual) — não é uma lista empilhada com
-   divisórias como o resto do app costuma fazer. */
-.home-prox-linha { display: flex; gap: 2px; margin-top: 16px; padding-right: 18px; }
-.home-prox-item {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  text-decoration: none;
-  padding: 10px 12px;
-  border-radius: 14px;
+.home-bar { width: 100%; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; margin-top: 8px; }
+.home-bar > div { height: 100%; background: #f2f2f0; border-radius: 999px; }
+
+/* Card empilhado (Cortes hoje + Ticket médio no mesmo cartão). */
+.home-card--stack { background: #1a1a1d; border: 1px solid rgba(255, 255, 255, 0.08); overflow: hidden; padding: 0; }
+.home-stack-item { padding: 12px 14px; }
+.home-stack-item + .home-stack-item { border-top: 1px solid rgba(255, 255, 255, 0.08); }
+
+/* Próximos cortes — card compacto (pedido do dono, 2026-07-22: virou um
+   número + seta, no lugar da lista cheia de antes, pra caber na coluna da
+   esquerda do bento como na referência). */
+.home-card--mini {
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 14px;
 }
-.home-prox-hora { font-size: 11px; color: #8a8a85; }
-.home-prox-cliente { font-size: 15px; font-weight: 700; color: #0a0a0a; margin-top: 6px; }
-.home-prox-servico { font-size: 11px; color: #8a8a85; margin-top: 2px; }
-.home-vazio { padding: 4px 18px 2px 0; font-size: 13px; color: #8a8a85; }
+.home-card-mini-linha { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 6px; }
+.home-card-mini-linha .home-card-num { margin-top: 0; }
+.home-card-seta {
+  width: 22px;
+  height: 22px;
+  color: #f2f2f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
 
 
 /* =========================================================================
@@ -244,7 +220,7 @@
   min-height: 100vh;
   min-height: 100dvh;
   position: relative;
-  background: #eaeaea; /* mesmo cinza contínuo por trás de tudo */
+  background: #0b0b0d; /* tema escuro (pedido do dono, 2026-07-21) — mesmo fundo contínuo por trás de tudo */
   animation: none;
 }
 .pg-novo .conteudo > .alerta {
@@ -285,7 +261,7 @@
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #8a8a85;
+  color: #9a9a97;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -293,7 +269,7 @@
   font-size: 26px;
   font-weight: 600;
   letter-spacing: -0.4px;
-  color: #0a0a0a;
+  color: #f2f2f0;
   text-align: center;
   margin-top: 4px;
 }
@@ -303,17 +279,17 @@
   justify-content: space-between;
   margin-top: 14px;
 }
-.ag2-mes { font-size: 28px; font-weight: 600; letter-spacing: -0.6px; color: #0a0a0a; }
+.ag2-mes { font-size: 28px; font-weight: 600; letter-spacing: -0.6px; color: #f2f2f0; }
 .ag2-mes--clicavel { background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; }
-/* Só o ícone, sem o quadrado preto de fundo — pedido do dono (2026-07-20):
-   o quadrado ficava pesado do lado das outras ações, sem fundo (Agenda,
+/* Só o ícone, sem o quadrado de fundo — pedido do dono (2026-07-20): o
+   quadrado ficava pesado do lado das outras ações, sem fundo (Agenda,
    Estoque, Clientes, Equipe, Produtos). */
 .ag2-add {
   width: 34px;
   height: 34px;
   border-radius: 10px;
   background: none;
-  color: #0a0a0a;
+  color: #f2f2f0;
   border: none;
   display: flex;
   align-items: center;
@@ -344,7 +320,7 @@
   text-decoration: none;
   min-width: 0;
 }
-.ag2-dia-rot { font-size: 11px; color: #8a8a85; }
+.ag2-dia-rot { font-size: 11px; color: #9a9a97; }
 .ag2-dia-num {
   width: 34px;
   height: 34px;
@@ -354,11 +330,11 @@
   justify-content: center;
   font-size: 13px;
   font-weight: 600;
-  color: #0a0a0a;
+  color: #f2f2f0;
 }
 /* Hoje (quando não é o dia aberto): só um contorno, para não competir com a seleção. */
-.ag2-dia-num.hoje { box-shadow: inset 0 0 0 1.5px rgba(10, 10, 10, 0.25); }
-.ag2-dia.sel .ag2-dia-num { background: #0a0a0a; color: #fff; }
+.ag2-dia-num.hoje { box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3); }
+.ag2-dia.sel .ag2-dia-num { background: #f2f2f0; color: #0b0b0d; }
 
 /* ---- Chips de barbeiro ---- */
 .ag2-barbeiros {
@@ -373,18 +349,20 @@
   flex: none;
   padding: 7px 14px;
   border-radius: 999px;
-  background: #eaeaea;
-  color: #0a0a0a;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f2f2f0;
   font-size: 12.5px;
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
 }
-.ag2-chip.sel { background: #0a0a0a; color: #fff; }
+.ag2-chip.sel { background: #f2f2f0; border-color: #f2f2f0; color: #0b0b0d; }
 
-/* Pop-up de escolher mês (toque no nome do mês) — não existe no HTML
-   original, pedido do dono pra navegar entre meses sem ficar clicando
-   dia a dia. Ano navegável (setas) + grade de 12 meses. */
+/* Pop-up de escolher mês (toque no nome do mês) — vive DENTRO do
+   .ag-modal-box (vidro branco, não convertido pro tema escuro — pop-ups
+   continuam claros de propósito, ver comentário perto de .ag-modal-box),
+   então o texto aqui continua escuro mesmo com o resto do app no escuro. */
 .ag2-ano-linha { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 16px; }
 .ag2-ano-seta {
   width: 30px;
@@ -417,38 +395,106 @@
   flex: 1;
   padding: 14px 16px calc(96px + env(safe-area-inset-bottom, 0px));
 }
+/* Agenda: cabeçalho (marca/mês/faixa de dias/chips) fica parado — só o
+   carrossel de cards rola, dentro da própria altura da tela, não a página
+   inteira (senão o "role infinitamente" também arrastava o cabeçalho junto).
+   .ag2-corpo também precisa ser flex container pra ".ag2-carrossel{flex:1}"
+   ter efeito (senão fica presa no min-height, sobrando vão cinza embaixo).
+   Só aqui: as outras telas (Serviços, Planos...) continuam em bloco normal. */
+.pg-agenda .conteudo { height: 100vh; height: 100dvh; overflow: hidden; }
+.pg-agenda .ag2-corpo { display: flex; flex-direction: column; min-height: 0; }
 .ag2-vazio {
-  background: #fff;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 22px;
   padding: 22px 18px;
   font-size: 13px;
-  color: #8a8a85;
+  color: #9a9a97;
 }
 .ag2-lista { display: flex; flex-direction: column; gap: 10px; }
 .ag2-card {
   position: relative;
   display: block;
-  background: #fff;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 22px;
   padding: 16px 18px;
   text-decoration: none;
   color: inherit;
   animation: homeRiseIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
+/* Carrossel vertical com CSS Scroll Snap (pedido do dono, 2026-07-21: "role
+   infinitamente no mesmo eixo" — depois do carrossel arrastável na mão via
+   JS/transform quebrar de vários jeitos diferentes a cada ajuste, trocamos
+   pra rolagem NATIVA com scroll-snap: sem index/transform pra gerenciar, o
+   navegador cuida do arrasto/inércia/teclado sozinho. Cada card é um bloco
+   normal (altura de conteúdo, não mais esticado via flex:1) — foi o
+   flex:1 no cabeçalho competindo com o detalhe expandido que causava o
+   texto sobreposto visto antes. */
+.ag2-carrossel {
+  flex: 1;
+  min-height: 260px;
+  margin-top: 4px;
+  overflow-y: auto;
+  scroll-snap-type: y proximity;
+  scroll-padding-block: 4px;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 24px;
+  /* Esmaece as bordas de cima/baixo — puramente decorativo (CSS, sem JS),
+     reforça a sensação de pilha "sem fim" nas duas pontas. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+}
+.ag2-carrossel-card {
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  flex: none;
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(10, 10, 10, 0.14);
+  /* scale()/opacity do efeito de roleta (JS, no fim do arquivo) — origem
+     central pra encolher simetricamente, sem transição (precisa acompanhar
+     o scroll em tempo real, uma transição deixaria o efeito atrasado). */
+  transform-origin: center;
+  will-change: transform, opacity;
+}
 .ag2-card-icone {
-  width: 34px;
-  height: 34px;
+  width: 46px;
+  height: 46px;
   border-radius: 999px;
-  background: #eaeaea;
-  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f2f2f0;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: none;
 }
-.ag2-card-meta { display: block; font-size: 12px; font-weight: 500; color: #8a8a85; margin-top: 12px; }
-.ag2-card-linha { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 3px; }
-.ag2-card-cliente { font-size: 20px; font-weight: 700; color: #0a0a0a; letter-spacing: -0.3px; }
-.ag2-card-barbeiro { font-size: 14px; font-weight: 600; color: #8a8a85; flex: none; }
+.ag2-card-meta { display: block; font-size: 13px; font-weight: 500; color: #9a9a97; margin-top: 16px; }
+.ag2-card-linha { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 4px; }
+.ag2-card-cliente { font-size: 24px; font-weight: 700; color: #f2f2f0; letter-spacing: -0.3px; }
+.ag2-card-barbeiro { font-size: 15px; font-weight: 600; color: #9a9a97; flex: none; }
+.ag2-card-tel { display: block; font-size: 14px; color: #9a9a97; margin-top: 6px; }
+.ag2-card-rodape {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ag2-card-status {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #c8c8c5;
+}
+.ag2-card-status--concluido { background: rgba(39, 174, 96, 0.18); color: #4fd88a; }
+.ag2-card-status--cancelado { background: rgba(220, 80, 80, 0.18); color: #e08080; }
+.ag2-card-valor { font-size: 20px; font-weight: 700; color: #f2f2f0; }
 /* Selo de concluído */
 .ag2-card-selo {
   position: absolute;
@@ -464,13 +510,13 @@
   justify-content: center;
 }
 /* Concluído: card em tom mais apagado, já que a ação ali acabou. */
-.ag2-card--concluido { background: #f4f4f2; }
-.ag2-card--concluido .ag2-card-cliente { color: #5a5a55; }
+.ag2-card--concluido { background: #151517; }
+.ag2-card--concluido .ag2-card-cliente { color: #9a9a97; }
 .ag2-card--cancelado { opacity: 0.55; }
 .ag2-card--cancelado .ag2-card-cliente { text-decoration: line-through; }
 /* Bloqueio: visual neutro e listrado, para não parecer um atendimento. */
-.ag2-card--bloqueio { background: #e4e4e1; }
-.ag2-card--bloqueio .ag2-card-cliente { font-size: 16px; font-weight: 600; color: #5a5a55; }
+.ag2-card--bloqueio { background: #232326; }
+.ag2-card--bloqueio .ag2-card-cliente { font-size: 16px; font-weight: 600; color: #c8c8c5; }
 .ag2-card-x { margin: 0; flex: none; }
 .ag2-card-x button {
   background: none;
@@ -478,7 +524,7 @@
   cursor: pointer;
   font-size: 18px;
   line-height: 1;
-  color: #8a8a85;
+  color: #9a9a97;
   padding: 0 2px;
 }
 
@@ -492,9 +538,10 @@
   right: 0;
   z-index: 30;
   min-width: 190px;
-  background: #fff;
+  background: #1e1e21;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(10, 10, 10, 0.22);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
   padding: 6px;
   display: none;
   flex-direction: column;
@@ -508,10 +555,10 @@
   border-radius: 11px;
   font: inherit;
   font-size: 14px;
-  color: #0a0a0a;
+  color: #f2f2f0;
   cursor: pointer;
 }
-.ag2-menu button:active { background: #eaeaea; }
+.ag2-menu button:active { background: rgba(255, 255, 255, 0.08); }
 
 /* ---- Card: cabeçalho tocável + detalhe INLINE (não é pop-up) ---- */
 .ag2-card-topo {
@@ -532,15 +579,15 @@
   gap: 12px;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(10, 10, 10, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 .ag2-det-campo { display: flex; flex-direction: column; }
-.ag2-det-rot { font-size: 10px; color: #8a8a85; }
+.ag2-det-rot { font-size: 10px; color: #9a9a97; }
 .ag2-det-val {
   font-size: 15px;
   font-weight: 600;
-  color: #0a0a0a;
-  border-bottom: 1px solid rgba(10, 10, 10, 0.12);
+  color: #f2f2f0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   padding-bottom: 4px;
   margin-top: 2px;
 }
@@ -553,23 +600,23 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  background: rgba(10, 10, 10, 0.06);
-  color: #5a5a55;
+  background: rgba(255, 255, 255, 0.08);
+  color: #c8c8c5;
   user-select: none;
 }
-.ag2-pag.sel { background: #0a0a0a; color: #fff; }
+.ag2-pag.sel { background: #f2f2f0; color: #0b0b0d; }
 .ag2-det-ok {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: #27ae60;
+  color: #4fd88a;
 }
 .ag2-det-cta {
   text-align: center;
-  background: #0a0a0a;
-  color: #fff;
+  background: #f2f2f0;
+  color: #0b0b0d;
   font-size: 13px;
   font-weight: 600;
   padding: 10px;
@@ -579,14 +626,14 @@
   transition: transform 0.15s ease;
 }
 .ag2-det-cta:active { transform: scale(0.97); }
-.ag2-det-cta--claro { background: rgba(10, 10, 10, 0.08); color: #0a0a0a; }
+.ag2-det-cta--claro { background: rgba(255, 255, 255, 0.1); color: #f2f2f0; }
 .ag2-det-mais {
   background: none;
   border: none;
   padding: 2px;
   font: inherit;
   font-size: 12px;
-  color: #8a8a85;
+  color: #9a9a97;
   text-decoration: underline;
   cursor: pointer;
   align-self: flex-start;
@@ -594,7 +641,11 @@
 
 /* ---- Pop-ups no visual do design: claros, arredondados, com blur ----
    Vale para TODA tela do design novo (.pg-novo) — não é exclusivo da Agenda,
-   apesar do nome das classes .ag-*. */
+   apesar do nome das classes .ag-*. DECISÃO DE ESCOPO (tema escuro dos cards,
+   2026-07-22): pop-ups/modais continuam CLAROS de propósito — o pedido do
+   dono foi escurecer os cards da tela, não os formulários/pop-ups; um vidro
+   branco sobre fundo escuro já lê bem (contraste alto), sem precisar
+   converter cada campo/pílula de formulário pro escuro também. */
 .pg-novo .ag-overlay {
   background: rgba(10, 10, 10, 0.4);
   padding: 0 24px;
@@ -676,7 +727,7 @@
 .ag2-pag { text-transform: none; letter-spacing: 0; }
 /* Destaque acompanha o clique (o radio fica dentro do label). Sem isto só o
    estado vindo do servidor ficava marcado, e trocar de forma não dava retorno. */
-.ag2-pag:has(input:checked) { background: #0a0a0a; color: #fff; }
+.ag2-pag:has(input:checked) { background: #f2f2f0; color: #0b0b0d; }
 
 /* =========================================================================
    ESTOQUE (.pg-estoque) — cabeçalho igual ao padrão de lista (avatar+marca+
@@ -690,8 +741,8 @@
   gap: 4px;
   font-size: 11px;
   font-weight: 700;
-  color: #c6432e;
-  background: #fce4e1;
+  color: #e08080;
+  background: rgba(220, 80, 80, 0.18);
   padding: 3px 10px;
   border-radius: 999px;
   margin-top: 8px;
@@ -706,8 +757,8 @@
   gap: 12px;
   width: 100%;
   text-align: left;
-  background: #fff;
-  border: none;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   padding: 14px 16px;
   cursor: pointer;
@@ -719,8 +770,8 @@
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  background: #d7dbdc;
-  color: #5a5a55;
+  background: rgba(255, 255, 255, 0.1);
+  color: #c8c8c5;
   flex: none;
   display: flex;
   align-items: center;
@@ -728,41 +779,41 @@
 }
 .est-info { min-width: 0; flex: 1; }
 .est-nome-linha { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.est-nome { font-size: 16px; font-weight: 600; color: #0a0a0a; }
+.est-nome { font-size: 16px; font-weight: 600; color: #f2f2f0; }
 .est-badge-mini {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: #fce4e1;
-  color: #c6432e;
+  background: rgba(220, 80, 80, 0.18);
+  color: #e08080;
   font-size: 10px;
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 999px;
 }
-.est-sub { display: block; font-size: 12px; color: #8a8a85; margin-top: 2px; }
+.est-sub { display: block; font-size: 12px; color: #9a9a97; margin-top: 2px; }
 
 /* Categorias: não existe no HTML do design (é funcionalidade que o app já
-   tinha) — estilizada na mesma linguagem clara, sem inventar comportamento. */
-.est-categorias { margin-top: 24px; background: #fff; border-radius: 20px; padding: 18px 16px; }
-.est-categorias-titulo { font: 600 17px/1.2 var(--fonte); color: #0a0a0a; }
-.est-categorias-sub { font-size: 12px; color: #8a8a85; margin-top: 6px; }
+   tinha) — estilizada na mesma linguagem escura, sem inventar comportamento. */
+.est-categorias { margin-top: 24px; background: #1a1a1d; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 18px 16px; }
+.est-categorias-titulo { font: 600 17px/1.2 var(--fonte); color: #f2f2f0; }
+.est-categorias-sub { font-size: 12px; color: #9a9a97; margin-top: 6px; }
 .est-cat-form { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
 .est-cat-form input {
   flex: 1;
   min-width: 0;
   border: none;
-  border-bottom: 1px solid rgba(10, 10, 10, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   background: transparent;
   padding: 0 0 6px;
   font-size: 14px;
-  color: #0a0a0a;
+  color: #f2f2f0;
   font-family: inherit;
 }
 .est-cat-btn {
   flex: none;
-  background: #0a0a0a;
-  color: #fff;
+  background: #f2f2f0;
+  color: #0b0b0d;
   border: none;
   border-radius: 10px;
   padding: 8px 14px;
@@ -770,15 +821,15 @@
   font-weight: 600;
   cursor: pointer;
 }
-.est-cat-btn--claro { background: rgba(10, 10, 10, 0.08); color: #0a0a0a; }
+.est-cat-btn--claro { background: rgba(255, 255, 255, 0.1); color: #f2f2f0; }
 .est-cat-linha { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-.est-cat-count { font-size: 11px; color: #8a8a85; flex: none; }
+.est-cat-count { font-size: 11px; color: #9a9a97; flex: none; }
 .est-cat-x {
   flex: none;
   background: none;
   border: none;
   font-size: 18px;
-  color: #8a8a85;
+  color: #9a9a97;
   cursor: pointer;
   padding: 0 2px;
 }
@@ -796,16 +847,16 @@
 /* Cabeçalho de Serviços usa um avatar mais claro — diferente do padrão
    escuro/sólido das outras telas. (O "+" sem fundo agora é o padrão em
    todas as telas, ver .ag2-add.) */
-.ag2-avatar-deco--clara { background: rgba(10, 10, 10, 0.06); }
-.ag2-marca--sutil { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #8a8a85; text-transform: uppercase; }
+.ag2-avatar-deco--clara { background: rgba(255, 255, 255, 0.1); }
+.ag2-marca--sutil { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #9a9a97; text-transform: uppercase; }
 
 .sv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .sv-tile {
   display: flex;
   flex-direction: column;
   min-height: 110px;
-  background: #fff;
-  border: none;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   padding: 16px;
   text-align: left;
@@ -815,10 +866,10 @@
   animation: homeRiseIn 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 .sv-tile--inativo { opacity: 0.5; }
-.sv-tile-topo { display: flex; align-items: center; justify-content: space-between; color: #8a8a85; }
+.sv-tile-topo { display: flex; align-items: center; justify-content: space-between; color: #9a9a97; }
 .sv-tile-label { font-size: 11px; font-weight: 600; }
-.sv-tile-nome { font-size: 20px; font-weight: 600; color: #0a0a0a; letter-spacing: -0.4px; margin-top: auto; }
-.sv-tile-preco { font-size: 13px; font-weight: 700; color: #0a0a0a; margin-top: 10px; }
+.sv-tile-nome { font-size: 20px; font-weight: 600; color: #f2f2f0; letter-spacing: -0.4px; margin-top: auto; }
+.sv-tile-preco { font-size: 13px; font-weight: 700; color: #f2f2f0; margin-top: 10px; }
 
 /* Foto retangular no topo do pop-up de edição (em vez do avatar circular). */
 .sv-foto-grande {
@@ -832,7 +883,7 @@
 
 /* Badge neutro (cinza) para "Inativo" — diferente do vermelho de "Estoque
    baixo", que é especificamente um alerta. */
-.est-badge-mini--neutro { background: rgba(10, 10, 10, 0.08); color: #5a5a55; }
+.est-badge-mini--neutro { background: rgba(255, 255, 255, 0.1); color: #c8c8c5; }
 .est-item--inativo { opacity: 0.5; }
 
 /* =========================================================================
@@ -844,18 +895,18 @@
    pro campo diasSemana). Pop-up de edição é transparente atrás (igual
    Estoque/Produtos); o de "novo plano" escurece, como em toda outra tela.
    ========================================================================= */
-.ag2-marca--escura { color: #0a0a0a; font-weight: 700; }
-.ag2-subtitulo { font-size: 12px; color: #8a8a85; text-align: center; margin-top: 4px; }
+.ag2-marca--escura { color: #f2f2f0; font-weight: 700; }
+.ag2-subtitulo { font-size: 12px; color: #9a9a97; text-align: center; margin-top: 4px; }
 
 .pl-lista { display: flex; flex-direction: column; gap: 12px; }
-.pl-card { background: #fff; border-radius: 20px; padding: 16px 18px; }
+.pl-card { background: #1a1a1d; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 16px 18px; }
 .pl-card-topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.pl-nome { font-size: 16px; font-weight: 700; color: #0a0a0a; }
+.pl-nome { font-size: 16px; font-weight: 700; color: #f2f2f0; }
 .pl-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; flex: none; }
 .pl-preco-linha { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
-.pl-preco { font-size: 20px; font-weight: 700; color: #0a0a0a; }
-.pl-preco-sub { font-size: 12px; color: #8a8a85; }
-.pl-desc { font-size: 13px; color: #6b6b68; margin-top: 8px; line-height: 1.4; }
+.pl-preco { font-size: 20px; font-weight: 700; color: #f2f2f0; }
+.pl-preco-sub { font-size: 12px; color: #9a9a97; }
+.pl-desc { font-size: 13px; color: #a8a8a5; margin-top: 8px; line-height: 1.4; }
 .pl-dias { display: flex; gap: 5px; margin-top: 12px; }
 .pl-dia-dot {
   width: 24px;
@@ -876,81 +927,114 @@
    (gradiente + sombras internas simulando um "botão fundo") vêm direto do
    HTML, não são invenção.
    ========================================================================= */
-.nav-novo {
+/* Barra de 3 botões (pedido do dono, 2026-07-21, cópia exata de um app de
+   referência): ocupa a largura toda da tela, colada embaixo, com um recorte
+   circular (notch) na borda de cima onde fica encaixado um botão branco
+   central ("Mais"). Início/Agenda ficam nos cantos, ícone + legenda, sem
+   pílula de fundo. Vale pra admin e funcionário igual. */
+.nav-novo-wrap {
   position: fixed;
-  left: 16px;
-  right: 16px;
-  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 30;
+  height: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+.nav-novo {
+  position: absolute;
+  inset: 0;
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  padding: 8px;
-  background: #f0f0ee;
-  border-radius: 999px;
-  box-shadow: 0 8px 20px rgba(10, 10, 10, 0.12);
+  padding: 0 22px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: #ffffff;
+  border-radius: 0;
+  box-shadow: 0 -8px 24px rgba(10, 10, 10, 0.1);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 430 86' preserveAspectRatio='none'%3E%3Cpath d='M0,86 L0,0 L109,0 C154,0 154,58 215,58 C276,58 276,0 321,0 L430,0 L430,86 Z' fill='white'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 430 86' preserveAspectRatio='none'%3E%3Cpath d='M0,86 L0,0 L109,0 C154,0 154,58 215,58 C276,58 276,0 321,0 L430,0 L430,86 Z' fill='white'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-position: top;
+  mask-position: top;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+/* Sombra suave dentro do recorte (o "vidro" mais fundo atrás do botão) —
+   a referência não é só um buraco raso, tem uma penumbra macia entre a barra
+   e o botão que dá profundidade/fluidez ao encaixe. */
+.nav-novo-wrap::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  width: 104px;
+  height: 60px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at 50% 30%, rgba(10, 10, 10, 0.16), rgba(10, 10, 10, 0) 70%);
+  z-index: 0;
+  pointer-events: none;
 }
 .nav-novo-item {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  border: none;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex: none;
+  width: 56px;
+  padding-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  border-radius: 16px;
   color: #8a9aa5;
   text-decoration: none;
-  transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
+  transition: transform 0.25s ease, color 0.25s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.nav-novo-item:active { transform: scale(0.86); }
-.nav-novo-item.ativo {
-  color: #0a0a0a;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.5), rgba(200, 200, 198, 0.5));
-  box-shadow:
-    inset 0 2px 3px rgba(255, 255, 255, 0.9),
-    inset 0 -3px 5px rgba(0, 0, 0, 0.15),
-    0 6px 12px rgba(10, 10, 10, 0.2);
+.nav-novo-item:active { transform: scale(0.88); }
+.nav-novo-item.ativo { color: #0a0a0a; }
+.nav-novo-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
-/* Clientes usa um "vidro" liso (sem o gradiente), é assim no HTML original. */
-.nav-novo-item--simples.ativo { background: rgba(255, 255, 255, 0.55); }
 
-/* Barra de 3 botões (pedido do dono, 2026-07-21, inspirada num app de
-   referência): só Início/Agenda nos cantos + "Mais" em destaque no meio —
-   um botão preto, maior, flutuando por cima da linha da barra (como um
-   botão de câmera numa barra de fotos). Vale pra admin e funcionário. */
-.nav-novo--3 { position: relative; justify-content: space-between; }
 .nav-novo-fab {
   position: absolute;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -58%);
-  width: 58px;
-  height: 58px;
+  top: 0;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  width: 56px;
+  height: 56px;
   border-radius: 999px;
-  border: 4px solid #eaeaea;
-  background: #0a0a0a;
-  color: #fff;
+  border: none;
+  background: #ffffff;
+  color: #0a0a0a;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 20px rgba(10, 10, 10, 0.35);
+  box-shadow: 0 6px 16px rgba(10, 10, 10, 0.2);
   cursor: pointer;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.nav-novo-fab:active { transform: translate(-50%, -58%) scale(0.9); }
-.nav-novo-fab.ativo { box-shadow: 0 10px 20px rgba(10, 10, 10, 0.35), 0 0 0 3px rgba(10, 10, 10, 0.15); }
+.nav-novo-fab:active { transform: translate(-50%, -50%) scale(0.9); }
+.nav-novo-fab.ativo { box-shadow: 0 6px 16px rgba(10, 10, 10, 0.2), 0 0 0 3px rgba(10, 10, 10, 0.12); }
 
 /* Painel do "Mais": vidro escuro flutuante perto da barra. */
 .nav-novo-overlay { position: fixed; inset: 0; z-index: 29; }
 .nav-novo-mais-painel {
   position: fixed;
   right: 22px;
-  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  /* Opção 1 escolhida (pedido do dono, 2026-07-21): painel baixo e curto,
+     com scroll pro que não couber. Subiu de 70px pra 130px, depois marcou
+     numa captura de tela que queria mais colado na barra — 88px deixa uns
+     16px de vão até ela (a barra em si tem 72px de altura). */
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
   z-index: 31;
   width: 190px;
+  max-height: 230px;
+  overflow-y: auto;
   background: rgba(140, 140, 140, 0.45);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -987,10 +1071,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #fff;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
   padding: 12px 18px;
-  box-shadow: 0 4px 12px rgba(10, 10, 10, 0.05);
   margin-bottom: 12px;
 }
 .cl-busca input {
@@ -998,14 +1082,15 @@
   outline: none;
   background: transparent;
   font-size: 14px;
-  color: #0a0a0a;
+  color: #f2f2f0;
   flex: 1;
   font-family: inherit;
 }
-.cl-busca input::placeholder { color: #8a8a85; }
+.cl-busca input::placeholder { color: #9a9a97; }
 
 .cl-novo-painel {
-  background: #fff;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 14px;
   margin-bottom: 12px;
@@ -1015,23 +1100,23 @@
   animation: homeRiseIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 .cl-novo-painel[hidden] { display: none; }
-.cl-novo-titulo { font-size: 13px; font-weight: 700; color: #0a0a0a; }
+.cl-novo-titulo { font-size: 13px; font-weight: 700; color: #f2f2f0; }
 .cl-novo-form { display: flex; flex-direction: column; gap: 10px; }
 .cl-novo-form input {
   font-size: 14px;
   border: none;
   background: transparent;
-  border-bottom: 1px solid rgba(10, 10, 10, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   padding-bottom: 6px;
   font-family: inherit;
-  color: #0a0a0a;
+  color: #f2f2f0;
 }
-.cl-novo-form input::placeholder { color: rgba(10, 10, 10, 0.35); }
-.cl-novo-form label { font-size: 10px; color: #8a8a85; }
+.cl-novo-form input::placeholder { color: rgba(255, 255, 255, 0.3); }
+.cl-novo-form label { font-size: 10px; color: #9a9a97; }
 .cl-novo-btn {
   text-align: center;
-  background: linear-gradient(135deg, #3a3a40, #111114);
-  color: #fff;
+  background: #f2f2f0;
+  color: #0b0b0d;
   font-size: 13px;
   font-weight: 600;
   padding: 9px;
@@ -1043,7 +1128,8 @@
 .cl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .cl-card {
   position: relative;
-  background: #fff;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   padding: 14px 16px;
   aspect-ratio: 1;
@@ -1057,23 +1143,22 @@
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #3a3a40, #111114);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f2f2f0;
   font-size: 15px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  box-shadow: 0 3px 8px rgba(10, 10, 10, 0.15);
 }
 .cl-info { display: flex; flex-direction: column; }
-.cl-nome { font-size: 17px; font-weight: 700; color: #0a0a0a; letter-spacing: -0.2px; line-height: 1.2; }
-.cl-sub { font-size: 11px; color: #0a0a0a; opacity: 0.6; margin-top: 3px; }
-.cl-visita { font-size: 10px; color: #0a0a0a; opacity: 0.55; margin-top: 6px; }
+.cl-nome { font-size: 17px; font-weight: 700; color: #f2f2f0; letter-spacing: -0.2px; line-height: 1.2; }
+.cl-sub { font-size: 11px; color: #f2f2f0; opacity: 0.6; margin-top: 3px; }
+.cl-visita { font-size: 10px; color: #f2f2f0; opacity: 0.55; margin-top: 6px; }
 .cl-visita--sumido { color: #e36b6b; opacity: 1; font-weight: 700; }
 
-/* Pop-up de detalhe */
+/* Pop-up de detalhe (fica no vidro branco padrão, ver nota perto de .ag-modal-box) */
 .cl-modal-box { max-height: 80vh; overflow: auto; }
 .cl-modal-topo { display: flex; align-items: center; gap: 12px; }
 .cl-avatar--grande { width: 46px; height: 46px; font-size: 16px; }
@@ -1136,10 +1221,11 @@
   height: 500px;
   max-height: 62vh;
   cursor: pointer;
-  background: #fff;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 12px;
-  box-shadow: 0 14px 30px rgba(10, 10, 10, 0.12);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
   transform: translate(-50%, -50%);
   will-change: transform, opacity;
   user-select: none;
@@ -1176,19 +1262,19 @@
 .eq-swipe-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .eq-swipe-corpo { flex: none; padding: 16px 4px 6px; }
 .eq-swipe-nome-linha { display: flex; align-items: center; gap: 6px; }
-.eq-swipe-nome { font-size: 19px; font-weight: 600; color: #0a0a0a; }
-.eq-swipe-papel { font-size: 13px; color: #8a8a85; margin-top: 6px; line-height: 1.4; }
-.eq-swipe-marca { font-size: 14px; color: #0a0a0a; margin-top: 12px; }
+.eq-swipe-nome { font-size: 19px; font-weight: 600; color: #f2f2f0; }
+.eq-swipe-papel { font-size: 13px; color: #9a9a97; margin-top: 6px; line-height: 1.4; }
+.eq-swipe-marca { font-size: 14px; color: #f2f2f0; margin-top: 12px; }
 .eq-swipe-stats { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
 .eq-swipe-stats-esq { display: flex; align-items: center; gap: 14px; }
-.eq-swipe-stat { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #0a0a0a; }
+.eq-swipe-stat { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #f2f2f0; }
 .eq-swipe-vermais {
-  background: #ededed;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 999px;
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 600;
-  color: #0a0a0a;
+  color: #f2f2f0;
 }
 
 /* Pop-up de edição: mais translúcido que o padrão (.7 em vez de .97) e sem
@@ -1223,8 +1309,8 @@
    flex container. */
 .fin-saudacao { text-align: center; margin-top: 20px; }
 .fin-saudacao .ag2-marca { justify-content: center; }
-.fin-tab { font-size: 14px; font-weight: 400; color: #8a8a85; cursor: pointer; }
-.fin-tab.ativo { font-weight: 700; color: #0a0a0a; }
+.fin-tab { font-size: 14px; font-weight: 400; color: #9a9a97; cursor: pointer; }
+.fin-tab.ativo { font-weight: 700; color: #f2f2f0; }
 
 .fin-periodo-linha {
   display: flex;
@@ -1238,7 +1324,8 @@
 .fin-periodo-pills {
   display: flex;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.5);
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
   padding: 4px;
   width: fit-content;
@@ -1248,36 +1335,32 @@
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  color: #0a0a0a;
+  color: #f2f2f0;
   text-decoration: none;
 }
-.fin-periodo-pill.ativo { background: #0a0a0a; color: #fff; }
+.fin-periodo-pill.ativo { background: #f2f2f0; color: #0b0b0d; }
 .fin-periodo-icone {
   width: 30px;
   height: 30px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.5);
-  border: none;
-  color: #0a0a0a;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f2f2f0;
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
   cursor: pointer;
 }
-.fin-periodo-icone.ativo { background: #0a0a0a; color: #fff; }
+.fin-periodo-icone.ativo { background: #f2f2f0; color: #0b0b0d; }
 
 .fin-corpo { padding-top: 0; }
 
 /* ---- Carteira (aba Saldo) ---- */
 .fin-carteira-wrap { position: relative; margin-top: 24px; padding-top: 16px; }
-.fin-peek {
-  position: absolute;
-  border-radius: 18px;
-  box-shadow: 0 8px 18px rgba(10, 10, 10, 0.12);
-}
-.fin-peek--1 { top: -9px; left: 8%; right: 8%; height: 93px; width: 308px; transform: rotate(-4deg); background: #fff; }
-.fin-peek--2 { top: 6px; left: 5%; right: 5%; height: 122px; width: 324px; transform: rotate(3deg); background: linear-gradient(135deg, #3a3a40, #111114); }
+/* Vidro translúcido claro original (pedido do dono, 2026-07-21: voltou
+   atrás do efeito "Mais" — não gostou —, mas sem os cartões preto/branco
+   espiando atrás, removidos do EJS). */
 .fin-carteira {
   position: relative;
   background: rgba(255, 255, 255, 0.65);
@@ -1307,28 +1390,26 @@
 
 .fin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
 .fin-grid-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   padding: 16px;
 }
-.fin-grid-label { font-size: 11px; color: #8a8a85; font-weight: 500; }
-.fin-grid-valor { font-size: 18px; font-weight: 700; color: #0a0a0a; margin-top: 5px; }
+.fin-grid-label { font-size: 11px; color: #9a9a97; font-weight: 500; }
+.fin-grid-valor { font-size: 18px; font-weight: 700; color: #f2f2f0; margin-top: 5px; }
 
 /* ---- Transações (aba Transações) ---- */
 .fin-trans-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 22px;
   padding: 18px;
   margin-top: 8px;
 }
 .fin-trans-topo { display: flex; align-items: center; justify-content: space-between; }
-.fin-trans-titulo { font-size: 18px; font-weight: 700; color: #0a0a0a; }
-.fin-trans-vertudo { font-size: 13px; font-weight: 500; color: #8a8a85; }
-.fin-trans-secao { font-size: 11px; font-weight: 600; color: #8a8a85; letter-spacing: 0.5px; margin-top: 16px; }
+.fin-trans-titulo { font-size: 18px; font-weight: 700; color: #f2f2f0; }
+.fin-trans-vertudo { font-size: 13px; font-weight: 500; color: #9a9a97; }
+.fin-trans-secao { font-size: 11px; font-weight: 600; color: #9a9a97; letter-spacing: 0.5px; margin-top: 16px; }
 .fin-trans-lista { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
 .fin-trans-item { display: flex; align-items: center; gap: 12px; }
 .fin-trans-icone {
@@ -1340,16 +1421,16 @@
   justify-content: center;
   flex: none;
 }
-.fin-trans-icone--entrada { background: rgba(39, 174, 96, 0.12); }
-.fin-trans-icone--saida { background: rgba(227, 107, 107, 0.12); }
+.fin-trans-icone--entrada { background: rgba(39, 174, 96, 0.18); }
+.fin-trans-icone--saida { background: rgba(227, 107, 107, 0.18); }
 .fin-trans-info { flex: 1; min-width: 0; }
-.fin-trans-nome { font-weight: 600; font-size: 14px; color: #0a0a0a; }
-.fin-trans-sub { font-size: 11px; color: #8a8a85; margin-top: 1px; }
+.fin-trans-nome { font-weight: 600; font-size: 14px; color: #f2f2f0; }
+.fin-trans-sub { font-size: 11px; color: #9a9a97; margin-top: 1px; }
 .fin-trans-valor { font-size: 14px; font-weight: 600; }
-.fin-trans-valor--entrada { color: #27ae60; }
-.fin-trans-valor--saida { color: #e36b6b; }
+.fin-trans-valor--entrada { color: #4fd88a; }
+.fin-trans-valor--saida { color: #e88a8a; }
 .fin-trans-x { flex: none; }
-.fin-trans-x button { background: none; border: none; color: #8a8a85; font-size: 16px; cursor: pointer; padding: 0 0 0 6px; }
+.fin-trans-x button { background: none; border: none; color: #9a9a97; font-size: 16px; cursor: pointer; padding: 0 0 0 6px; }
 
 /* ---- Pop-up: formas de pagamento ---- */
 .fin-pag-lista { display: flex; flex-direction: column; gap: 12px; }
@@ -1390,7 +1471,7 @@
   justify-content: center;
   flex: none;
 }
-.rel-titulo { font-size: 16px; font-weight: 700; color: #0a0a0a; }
+.rel-titulo { font-size: 16px; font-weight: 700; color: #f2f2f0; }
 .rel-exportar {
   width: 34px;
   height: 34px;
@@ -1404,13 +1485,13 @@
 }
 
 .rel-periodo-linha { display: flex; justify-content: center; margin-top: 16px; }
-.rel-periodo-pills { display: flex; gap: 4px; background: rgba(255, 255, 255, 0.6); border-radius: 999px; padding: 4px; flex-wrap: wrap; justify-content: center; }
+.rel-periodo-pills { display: flex; gap: 4px; background: #1a1a1d; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 999px; padding: 4px; flex-wrap: wrap; justify-content: center; }
 .rel-periodo-pill {
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
-  color: #0a0a0a;
+  color: #f2f2f0;
   text-decoration: none;
   border: none;
   background: none;
@@ -1419,12 +1500,12 @@
   align-items: center;
   gap: 4px;
 }
-.rel-periodo-pill.ativo { background: #0a0a0a; color: #fff; }
+.rel-periodo-pill.ativo { background: #f2f2f0; color: #0b0b0d; }
 
 .rel-corpo { display: flex; flex-direction: column; gap: 12px; }
 
 /* Faturamento */
-.rel-fat-card { background: #0a0a0a; border-radius: 22px; padding: 18px; }
+.rel-fat-card { background: #1a1a1d; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 22px; padding: 18px; }
 .rel-fat-topo { display: flex; align-items: center; justify-content: space-between; }
 .rel-fat-label { font-size: 12px; color: rgba(255, 255, 255, 0.55); font-weight: 500; }
 .rel-fat-var { font-size: 11px; font-weight: 700; }
@@ -1436,37 +1517,37 @@
 /* Grids de 2 cartões */
 .rel-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .rel-card-branco {
-  background: #fff;
+  background: #1a1a1d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   padding: 16px;
-  border: none;
   text-align: left;
   cursor: default;
   display: flex;
   flex-direction: column;
 }
 .rel-gastos-btn { cursor: pointer; }
-.rel-card-escuro { background: #0a0a0a; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; }
-.rel-card-label { font-size: 11px; color: #8a8a85; font-weight: 500; }
+.rel-card-escuro { background: #1a1a1d; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; }
+.rel-card-label { font-size: 11px; color: #9a9a97; font-weight: 500; }
 .rel-card-label--claro { color: rgba(255, 255, 255, 0.55); }
-.rel-card-num { font-size: 22px; font-weight: 600; color: #0a0a0a; margin-top: 4px; }
+.rel-card-num { font-size: 22px; font-weight: 600; color: #f2f2f0; margin-top: 4px; }
 .rel-card-num--claro { color: #fff; }
 .rel-card-sub { font-size: 11px; font-weight: 600; margin-top: 2px; }
-.rel-sub--vermelho { color: #c6432e; }
+.rel-sub--vermelho { color: #e08080; }
 .rel-sub--verde { color: #8fe3a6; }
 .rel-sub--vermelho-claro { color: #e39a8f; }
 .rel-sub--verde-escuro { color: #3fae5c; }
 
 .rel-clientes-num { display: flex; align-items: baseline; gap: 6px; margin-top: 4px; }
 .rel-clientes-num .rel-card-num { margin-top: 0; }
-.rel-clientes-sub { font-size: 11px; color: #8a8a85; }
-.rel-clientes-bar { display: flex; height: 6px; border-radius: 999px; overflow: hidden; margin-top: 10px; background: #efefef; }
+.rel-clientes-sub { font-size: 11px; color: #9a9a97; }
+.rel-clientes-bar { display: flex; height: 6px; border-radius: 999px; overflow: hidden; margin-top: 10px; background: rgba(255, 255, 255, 0.1); }
 
 /* Listas com barra (serviços/produtos/barbeiros) */
-.rel-lista-card { background: #fff; border-radius: 22px; padding: 16px 16px 8px; }
-.rel-lista-titulo { font-size: 14px; font-weight: 700; color: #0a0a0a; margin-bottom: 10px; }
+.rel-lista-card { background: #1a1a1d; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 22px; padding: 16px 16px 8px; }
+.rel-lista-titulo { font-size: 14px; font-weight: 700; color: #f2f2f0; margin-bottom: 10px; }
 .rel-lista-item, .rel-barbeiro-item, .rel-hist-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
-.rel-lista-rank { width: 20px; font-size: 12px; font-weight: 700; color: #8a8a85; flex: none; }
+.rel-lista-rank { width: 20px; font-size: 12px; font-weight: 700; color: #9a9a97; flex: none; }
 .rel-barbeiro-avatar {
   width: 34px;
   height: 34px;
@@ -1480,43 +1561,43 @@
   color: #fff;
 }
 .rel-lista-corpo { flex: 1; min-width: 0; }
-.rel-lista-linha { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #0a0a0a; gap: 8px; }
+.rel-lista-linha { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #f2f2f0; gap: 8px; }
 .rel-lista-linha span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rel-lista-barra { height: 5px; border-radius: 999px; background: #efefef; margin-top: 5px; overflow: hidden; }
+.rel-lista-barra { height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); margin-top: 5px; overflow: hidden; }
 .rel-lista-barra > div, .rel-clientes-bar > div { height: 100%; border-radius: 999px; }
 
 /* Formas de pagamento */
-.rel-pag-card { background: #fff; border-radius: 22px; padding: 16px; display: flex; gap: 16px; align-items: center; }
+.rel-pag-card { background: #1a1a1d; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 22px; padding: 16px; display: flex; gap: 16px; align-items: center; }
 .rel-donut { width: 88px; height: 88px; border-radius: 999px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-.rel-donut-buraco { width: 56px; height: 56px; border-radius: 999px; background: #fff; }
+.rel-donut-buraco { width: 56px; height: 56px; border-radius: 999px; background: #1a1a1d; }
 .rel-pag-legenda { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.rel-pag-titulo { font-size: 14px; font-weight: 700; color: #0a0a0a; margin-bottom: 2px; }
-.rel-pag-linha { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #0a0a0a; }
+.rel-pag-titulo { font-size: 14px; font-weight: 700; color: #f2f2f0; margin-bottom: 2px; }
+.rel-pag-linha { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #f2f2f0; }
 .rel-pag-dot { width: 8px; height: 8px; border-radius: 999px; flex: none; }
 
 /* Ocupação por dia/horário */
-.rel-ocup-sub { font-size: 11px; color: #8a8a85; margin-top: 2px; margin-bottom: 12px; }
+.rel-ocup-sub { font-size: 11px; color: #9a9a97; margin-top: 2px; margin-bottom: 12px; }
 .rel-ocup-grid { display: grid; gap: 3px; align-items: center; }
-.rel-ocup-hora { font-size: 8px; color: #8a8a85; text-align: center; }
-.rel-ocup-dia { font-size: 9px; color: #8a8a85; font-weight: 600; }
+.rel-ocup-hora { font-size: 8px; color: #9a9a97; text-align: center; }
+.rel-ocup-dia { font-size: 9px; color: #9a9a97; font-weight: 600; }
 .rel-ocup-cel { position: relative; aspect-ratio: 1; border-radius: 5px; }
-.rel-ocup-cel--pico { border: 1.5px solid #c6432e; }
+.rel-ocup-cel--pico { border: 1.5px solid #e08080; }
 .rel-ocup-legenda { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
-.rel-ocup-legenda-texto { font-size: 10px; color: #8a8a85; }
+.rel-ocup-legenda-texto { font-size: 10px; color: #9a9a97; }
 .rel-ocup-swatch { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
-.rel-ocup-pico-legenda { display: flex; align-items: center; gap: 5px; margin-left: auto; font-size: 10px; color: #c6432e; font-weight: 600; }
-.rel-ocup-swatch--pico { width: 12px; height: 12px; border: 1.5px solid #c6432e; background: none; }
-.rel-ocup-frase-wrap { margin-top: 14px; padding-top: 12px; padding-bottom: 8px; border-top: 1px solid rgba(10, 10, 10, 0.08); }
-.rel-ocup-frase-titulo { font-size: 11px; font-weight: 700; color: #0a0a0a; margin-bottom: 6px; }
-.rel-ocup-frase { font-size: 12px; color: #5a5a55; line-height: 1.5; }
+.rel-ocup-pico-legenda { display: flex; align-items: center; gap: 5px; margin-left: auto; font-size: 10px; color: #e08080; font-weight: 600; }
+.rel-ocup-swatch--pico { width: 12px; height: 12px; border: 1.5px solid #e08080; background: none; }
+.rel-ocup-frase-wrap { margin-top: 14px; padding-top: 12px; padding-bottom: 8px; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.rel-ocup-frase-titulo { font-size: 11px; font-weight: 700; color: #f2f2f0; margin-bottom: 6px; }
+.rel-ocup-frase { font-size: 12px; color: #c8c8c5; line-height: 1.5; }
 
 /* Histórico de clientes por horário */
 .rel-hist-hora { width: 44px; flex-shrink: 0; text-align: center; }
-.rel-hist-hora-num { font-size: 12px; font-weight: 700; color: #0a0a0a; }
-.rel-hist-hora-dia { font-size: 9px; color: #8a8a85; }
-.rel-hist-cliente { font-size: 13px; font-weight: 600; color: #0a0a0a; }
-.rel-hist-sub { font-size: 11px; color: #8a8a85; margin-top: 1px; }
-.rel-hist-valor { font-size: 13px; font-weight: 700; color: #0a0a0a; flex: none; }
+.rel-hist-hora-num { font-size: 12px; font-weight: 700; color: #f2f2f0; }
+.rel-hist-hora-dia { font-size: 9px; color: #9a9a97; }
+.rel-hist-cliente { font-size: 13px; font-weight: 600; color: #f2f2f0; }
+.rel-hist-sub { font-size: 11px; color: #9a9a97; margin-top: 1px; }
+.rel-hist-valor { font-size: 13px; font-weight: 700; color: #f2f2f0; flex: none; }
 
 /* Pop-up: Gastos detalhado */
 .rel-gastos-total { font-size: 30px; font-weight: 600; color: #0a0a0a; margin-top: 4px; }
@@ -1543,33 +1624,33 @@
    real por trás não faria sentido.
    ========================================================================= */
 .fid-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 20px; }
-.fid-stat { background: #fff; border-radius: 16px; padding: 12px 10px; text-align: center; }
-.fid-stat-num { font-size: 18px; font-weight: 700; color: #0a0a0a; }
-.fid-stat-label { font-size: 10px; color: #8a8a85; margin-top: 2px; }
+.fid-stat { background: #1a1a1d; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 12px 10px; text-align: center; }
+.fid-stat-num { font-size: 18px; font-weight: 700; color: #f2f2f0; }
+.fid-stat-label { font-size: 10px; color: #9a9a97; margin-top: 2px; }
 
-.fid-secao-titulo { font-size: 12px; font-weight: 700; color: #8a8a85; letter-spacing: 0.3px; }
+.fid-secao-titulo { font-size: 12px; font-weight: 700; color: #9a9a97; letter-spacing: 0.3px; }
 .fid-secao-titulo--espacada { margin-top: 24px; }
 .fid-lista { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 
-.fid-cupom-card { background: #fff; border-radius: 18px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fid-cupom-card { background: #1a1a1d; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 18px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .fid-cupom-card--inativo { opacity: 0.5; }
-.fid-cupom-nome { font-size: 15px; font-weight: 700; color: #0a0a0a; }
-.fid-cupom-desc { font-size: 12px; color: #8a8a85; margin-top: 2px; }
-.fid-cupom-validade { font-size: 11px; color: #8a8a85; margin-top: 4px; }
+.fid-cupom-nome { font-size: 15px; font-weight: 700; color: #f2f2f0; }
+.fid-cupom-desc { font-size: 12px; color: #9a9a97; margin-top: 2px; }
+.fid-cupom-validade { font-size: 11px; color: #9a9a97; margin-top: 4px; }
 .fid-cupom-acoes { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex: none; }
 .fid-cupom-desconto {
   font-size: 14px;
   font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, #3a3a40, #111114);
+  color: #0b0b0d;
+  background: #f2f2f0;
   padding: 4px 12px;
   border-radius: 999px;
   white-space: nowrap;
 }
-.fid-cupom-remover { background: none; border: none; font-size: 11px; color: #c6432e; cursor: pointer; padding: 0; }
+.fid-cupom-remover { background: none; border: none; font-size: 11px; color: #e08080; cursor: pointer; padding: 0; }
 
-.fid-rank-card { background: #fff; border-radius: 18px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
-.fid-rank-num { width: 26px; text-align: center; font-size: 13px; font-weight: 700; color: #8a8a85; flex: none; }
+.fid-rank-card { background: #1a1a1d; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 18px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+.fid-rank-num { width: 26px; text-align: center; font-size: 13px; font-weight: 700; color: #9a9a97; flex: none; }
 .fid-rank-avatar {
   width: 38px;
   height: 38px;
@@ -1584,14 +1665,14 @@
   flex: none;
 }
 .fid-rank-info { flex: 1; min-width: 0; }
-.fid-rank-nome { display: block; font-size: 14px; font-weight: 700; color: #0a0a0a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fid-rank-selos { display: block; font-size: 11px; color: #8a8a85; margin-top: 1px; }
-.fid-rank-resgatar { background: none; border: none; font-size: 11px; font-weight: 600; color: #c6432e; cursor: pointer; padding: 0; flex: none; white-space: nowrap; }
+.fid-rank-nome { display: block; font-size: 14px; font-weight: 700; color: #f2f2f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fid-rank-selos { display: block; font-size: 11px; color: #9a9a97; margin-top: 1px; }
+.fid-rank-resgatar { background: none; border: none; font-size: 11px; font-weight: 600; color: #e08080; cursor: pointer; padding: 0; flex: none; white-space: nowrap; }
 .fid-rank-add {
   width: 30px;
   height: 30px;
   border-radius: 999px;
-  background: rgba(10, 10, 10, 0.06);
+  background: rgba(255, 255, 255, 0.1);
   border: none;
   display: flex;
   align-items: center;

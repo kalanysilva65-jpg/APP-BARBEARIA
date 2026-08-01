@@ -25,7 +25,16 @@ async function listar(req, res) {
   // Alerta: quantidade no mínimo ou abaixo
   const baixoEstoque = itens.filter((i) => i.quantidade <= i.quantidadeMinima);
 
-  res.render('painel/estoque', { titulo: 'Estoque', itens, categorias, baixoEstoque });
+  // O design Turno 6 (2026-07-28) abre a tela com um número em manchete. Como
+  // o model só guarda o CUSTO da compra (não há preço de venda por unidade), o
+  // total é o quanto foi gasto — e o rótulo na tela diz isso.
+  const resumo = {
+    valorGasto: itens.reduce((s, i) => s + i.valorGasto, 0),
+    unidades: itens.reduce((s, i) => s + i.quantidade, 0),
+    itens: itens.length,
+  };
+
+  res.render('painel/estoque', { titulo: 'Estoque', itens, categorias, baixoEstoque, resumo });
 }
 
 // GET /painel/estoque/novo — formulário de criação
@@ -42,9 +51,13 @@ async function criar(req, res) {
   const valorGasto = reaisParaCentavos(req.body.valorGasto);
   const categoriaId = req.body.categoriaId ? Number(req.body.categoriaId) : null;
 
+  // Volta para a LISTA, não para o formulário de página inteira: no Turno 6
+  // (2026-07-28) cadastrar é um pop-up dentro da lista, e `/estoque/novo` é
+  // uma tela antiga que ninguém mais linka — cair nela seria um beco sem saída
+  // com a pele antiga. O flash aparece igual por cima da lista.
   if (!nome) {
     req.session.flash = { tipo: 'erro', texto: 'Informe o nome do item.' };
-    return res.redirect('/painel/estoque/novo');
+    return res.redirect('/painel/estoque');
   }
 
   await prisma.estoque.create({ data: { barbeariaId: req.barbeariaId, nome, quantidade, quantidadeMinima, valorGasto, categoriaId } });
@@ -74,7 +87,7 @@ async function atualizar(req, res) {
 
   if (!nome) {
     req.session.flash = { tipo: 'erro', texto: 'Informe o nome do item.' };
-    return res.redirect('/painel/estoque/' + id + '/editar');
+    return res.redirect('/painel/estoque'); // idem: a edição virou pop-up da lista
   }
 
   await prisma.estoque.update({

@@ -173,6 +173,77 @@ async function ver(req, res) {
   else if (inicioStr === presetSemana.inicio && fimStr === presetSemana.fim) periodoAtivo = 'semana';
   else if (inicioStr === padrao.inicio && fimStr === padrao.fim) periodoAtivo = 'mes';
 
+  // --- Dados do design Turno 6 (2026-07-28) --------------------------------
+  // A tela virou um extrato corrido: manchete do saldo, o que ainda falta
+  // entrar e a lista de lançamentos com saldo acumulado ao lado.
+
+  // "A receber": atendimentos do período que ainda não foram concluídos —
+  // dinheiro que a agenda promete e o caixa ainda não viu.
+  const abertosPeriodo = await prisma.agendamento.findMany({
+    where: { barbeariaId: b, status: 'agendado', data: { gte: inicio, lt: fimExcl } },
+    select: { valorTotal: true },
+  });
+  const aReceber = {
+    valor: abertosPeriodo.reduce((s, a) => s + a.valorTotal, 0),
+    quantidade: abertosPeriodo.length,
+  };
+
+  // Extrato: o saldo mostrado em cada faixa é o acumulado ATÉ aquele
+  // lançamento, então precisa ser somado do mais antigo para o mais novo —
+  // por isso o vai-e-volta de ordem (a lista chega do mais novo pro mais velho).
+  const hojeIsoDia = isoDia(hoje0);
+  let acumulado = 0;
+  const extratoCompleto = lancamentos
+    .slice()
+    .reverse()
+    .map((l) => {
+      const entrada = l.tipo === 'entrada';
+      acumulado += entrada ? l.valor : -l.valor;
+      const d = new Date(l.data);
+      const ddmm = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const forma = FORMAS_PAGAMENTO.find((f) => f.valor === l.formaPagamento);
+      return {
+        id: l.id,
+        hora: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
+        diaLabel: isoDia(d) === hojeIsoDia ? 'hoje' : ddmm,
+        descricao: l.descricao,
+        sub: [l.categoria ? l.categoria.nome : null, forma ? forma.label : null].filter(Boolean).join(' · '),
+        entrada,
+        valor: l.valor,
+        saldo: acumulado,
+      };
+    })
+    .reverse();
+  const LIMITE_EXTRATO = 30;
+  const extrato = extratoCompleto.slice(0, LIMITE_EXTRATO);
+  const extratoRestantes = Math.max(0, extratoCompleto.length - LIMITE_EXTRATO);
+
+  // Atalhos do painel de período customizado (só preenchem os campos De/Até).
+  const diasAtras = (n) => {
+    const d = new Date(hoje0);
+    d.setDate(hoje0.getDate() - n);
+    return isoDia(d);
+  };
+  const atalhosPeriodo = [
+    { label: 'Últimos 7 dias', inicio: diasAtras(6), fim: isoDia(hoje0) },
+    { label: 'Últimos 15 dias', inicio: diasAtras(14), fim: isoDia(hoje0) },
+    { label: 'Últimos 30 dias', inicio: diasAtras(29), fim: isoDia(hoje0) },
+    {
+      label: 'Mês passado',
+      inicio: isoDia(new Date(agora.getFullYear(), agora.getMonth() - 1, 1)),
+      fim: isoDia(new Date(agora.getFullYear(), agora.getMonth(), 0)),
+    },
+  ];
+
+  const ROTULO_PERIODO = { hoje: 'do dia', semana: 'da semana', mes: 'do mês', custom: 'do período' };
+  const ROTULO_EXTRATO = {
+    hoje: 'Extrato de hoje',
+    semana: 'Extrato da semana',
+    mes: 'Extrato do mês',
+    custom: `Extrato de ${fmtDataBR(inicio)} a ${fmtDataBR(new Date(fimExcl.getTime() - 86400000))}`,
+  };
+  const ddmmCurto = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+
   const hora = agora.getHours();
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
 
@@ -201,6 +272,15 @@ async function ver(req, res) {
     produtosValor,
     comissaoValor,
     formasPagamentoOpcoes: FORMAS_PAGAMENTO,
+    // Turno 6
+    aReceber,
+    extrato,
+    extratoRestantes,
+    atalhosPeriodo,
+    periodoLabelCurto: ROTULO_PERIODO[periodoAtivo] || 'do período',
+    extratoLabel: ROTULO_EXTRATO[periodoAtivo] || 'Extrato do período',
+    periodoCustomLabel:
+      periodoAtivo === 'custom' ? `${ddmmCurto(inicio)} – ${ddmmCurto(new Date(fimExcl.getTime() - 86400000))}` : 'Período',
   });
 }
 

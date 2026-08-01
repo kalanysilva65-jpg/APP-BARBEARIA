@@ -43,6 +43,7 @@ function calcularStats(agendamentos) {
 
   return {
     totalGasto,
+    visitas: concluidos.length,
     diasDesdeUltima,
     frequenciaDias,
     servicoFavorito: maisFrequente(contagemServico),
@@ -78,16 +79,30 @@ async function listar(req, res) {
   hoje.setHours(0, 0, 0, 0);
   const planosDisponiveis = await prisma.plano.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { nome: 'asc' } });
 
+  // "Aniversariante" = nasceu no mês corrente. O Turno 6 (2026-07-28) filtra a
+  // lista por isso e mostra a contagem no resumo do topo, então o cálculo sai
+  // do template e vem pronto para cada cliente.
+  const mesAtual = hoje.getMonth();
+
   const clientesComStats = clientes.map((c) => {
     const stats = calcularStats(c.agendamentos);
     const assinaturas = c.planos.map((a) => ({
       ...a,
       vigente: a.ativo && new Date(a.dataFim) >= hoje && (a.usosRestantes === null || a.usosRestantes > 0),
     }));
-    return { ...c, iniciais: iniciais(c.nome), stats, assinaturas };
+    const aniversarianteMes = !!c.dataNascimento && new Date(c.dataNascimento).getMonth() === mesAtual;
+    return { ...c, iniciais: iniciais(c.nome), stats, assinaturas, aniversarianteMes };
   });
 
-  res.render('painel/clientes', { titulo: 'Clientes', clientes: clientesComStats, planosDisponiveis, hojeIso: isoHoje() });
+  // Resumo do topo ("Na base"): o número grande é o tamanho da carteira, e as
+  // duas linhas abaixo espelham exatamente os dois filtros disponíveis.
+  const resumo = {
+    total: clientesComStats.length,
+    sumidos: clientesComStats.filter((c) => c.stats.sumido).length,
+    aniversariantes: clientesComStats.filter((c) => c.aniversarianteMes).length,
+  };
+
+  res.render('painel/clientes', { titulo: 'Clientes', clientes: clientesComStats, planosDisponiveis, resumo, hojeIso: isoHoje() });
 }
 
 // POST /painel/clientes — cadastra um cliente

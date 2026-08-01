@@ -1,261 +1,673 @@
-<!-- Cabeçalho: seta pra Home + título + exportar (imprimir/salvar como PDF —
-     não existe geração de PDF de verdade, então usa a função nativa do
-     navegador, que é o que dá pra oferecer sem back-end novo). -->
-<div class="ag2-topo rel-topo">
-  <div class="rel-topo-linha">
-    <a href="/painel" class="rel-voltar" aria-label="Voltar">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
-    </a>
-    <div class="rel-titulo">Relatórios</div>
-    <button type="button" class="rel-exportar" onclick="window.print()" aria-label="Exportar">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>
-    </button>
-  </div>
+<%/* Relatórios no design TURNO 6 (pedido do dono, 2026-07-28): a capa mostra
+     só os números que decidem alguma coisa, em corpo grande e sem cartão —
+     cada bloco é uma FAIXA que sangra de borda a borda e abre uma FOLHA de
+     página inteira com o detalhe. Nada foi cortado: o que antes eram cartões
+     empilhados (gastos, pagamentos, ocupação, ranking, histórico) virou o
+     conteúdo dessas folhas. */%>
 
-  <div class="rel-periodo-linha">
-    <div class="rel-periodo-pills">
-      <a class="rel-periodo-pill <%= periodo === 'hoje' ? 'ativo' : '' %>" href="/painel/relatorios?periodo=hoje">Hoje</a>
-      <a class="rel-periodo-pill <%= periodo === 'semana' ? 'ativo' : '' %>" href="/painel/relatorios?periodo=semana">Semana</a>
-      <a class="rel-periodo-pill <%= periodo === 'mes' ? 'ativo' : '' %>" href="/painel/relatorios?periodo=mes">Mês</a>
-      <a class="rel-periodo-pill <%= periodo === 'ano' ? 'ativo' : '' %>" href="/painel/relatorios?periodo=ano">Ano</a>
-      <button type="button" class="rel-periodo-pill rel-periodo-pill--custom <%= periodo === 'custom' ? 'ativo' : '' %>" onclick="abrirModal('periodo')">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
-        <%= periodo === 'custom' ? relPeriodLabel : 'Período' %>
+<div class="t6-rl">
+
+  <div class="t6-rl-topo">
+    <div class="t6-rl-titulo-linha">
+      <div class="t6-rl-titulo">RELATÓRIOS</div>
+      <div class="t6-rl-acoes">
+        <%/* Exportar continua sendo o print do navegador: não existe geração
+             de PDF no servidor, e é o que dá pra oferecer sem back-end novo. */%>
+        <button type="button" class="t6-rl-icone" onclick="window.print()" aria-label="Exportar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>
+        </button>
+        <a href="/painel" class="t6-rl-icone" aria-label="Fechar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="t6-rl-periodos">
+      <a class="t6-rl-per <%= periodo === 'hoje' ? 'sel' : '' %>" href="/painel/relatorios?periodo=hoje">Hoje</a>
+      <a class="t6-rl-per <%= periodo === 'semana' ? 'sel' : '' %>" href="/painel/relatorios?periodo=semana">Semana</a>
+      <a class="t6-rl-per <%= periodo === 'mes' ? 'sel' : '' %>" href="/painel/relatorios?periodo=mes">Mês</a>
+      <a class="t6-rl-per <%= periodo === 'ano' ? 'sel' : '' %>" href="/painel/relatorios?periodo=ano">Ano</a>
+      <button type="button" class="t6-rl-per <%= periodo === 'custom' ? 'sel' : '' %>" onclick="relCustomToggle()" aria-controls="rel-custom">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8h18M7 3v3M17 3v3M4 5h16v16H4z"/></svg>
+        <span><%= periodo === 'custom' ? relPeriodLabel : 'Período' %></span>
       </button>
     </div>
-  </div>
-</div>
 
-<div class="ag2-corpo rel-corpo">
-  <!-- Faturamento -->
-  <div class="rel-fat-card">
-    <div class="rel-fat-topo">
-      <span class="rel-fat-label">Faturamento · <%= relPeriodLabel %></span>
-      <% if (variacaoFaturamento !== null) { %>
-        <span class="rel-fat-var <%= variacaoFaturamento >= 0 ? 'rel-var--up' : 'rel-var--down' %>"><%= variacaoFaturamento >= 0 ? '+' : '' %><%= variacaoFaturamento %>%</span>
-      <% } %>
-    </div>
-    <div class="rel-fat-valor"><%= relFaturamentoVal %></div>
-    <svg width="100%" height="54" viewBox="0 0 300 54" preserveAspectRatio="none" class="rel-fat-chart">
-      <polyline points="<%= relChartPoints %>" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
+    <%/* O período personalizado abre AQUI, embaixo dos selos, em vez de num
+         pop-up: é um form GET normal, então o filtro continua sendo um link
+         que dá pra guardar/compartilhar. */%>
+    <form id="rel-custom" class="t6-rl-custom" method="GET" action="/painel/relatorios" <%= periodo === 'custom' ? '' : 'hidden' %>>
+      <input type="hidden" name="periodo" value="custom" />
+      <div class="t6-rl-custom-datas">
+        <div class="t6-rl-custom-campo">
+          <label class="t6-rl-custom-rot" for="rel-de">De</label>
+          <input id="rel-de" class="t6-rl-custom-input" type="date" name="de" value="<%= deStr %>" required />
+        </div>
+        <div class="t6-rl-custom-campo">
+          <label class="t6-rl-custom-rot" for="rel-ate">Até</label>
+          <input id="rel-ate" class="t6-rl-custom-input" type="date" name="ate" value="<%= ateStr %>" required />
+        </div>
+      </div>
+      <div class="t6-rl-atalhos">
+        <% relCustomShortcuts.forEach(function (sh) { %>
+          <button type="button" class="t6-rl-atalho" onclick="relAtalho('<%= sh.de %>','<%= sh.ate %>')"><%= sh.label %></button>
+        <% }) %>
+      </div>
+      <button type="submit" class="t6-rl-custom-ok">Aplicar período</button>
+    </form>
   </div>
 
-  <!-- Gastos / Lucro -->
-  <div class="rel-grid2">
-    <button type="button" class="rel-card-branco rel-gastos-btn" onclick="abrirModal('gastos')">
-      <span class="rel-card-label">Gastos</span>
-      <span class="rel-card-num"><%= gastosVal %></span>
-      <span class="rel-card-sub rel-sub--vermelho">Do período</span>
+  <div class="t6-rl-corpo">
+
+    <%/* 1. Faturamento — o número que abre a tela, com o recorte
+         serviços / produtos / atendimentos logo abaixo. */%>
+    <button type="button" class="t6-rl-fat t6-reveal" onclick="abrirModal('fat')">
+      <span class="t6-rl-rot">
+        Faturamento do período
+        <% if (variacaoFaturamento !== null) { %> · <%= variacaoFaturamento >= 0 ? '+' : '' %><%= variacaoFaturamento %>% vs anterior<% } %>
+      </span>
+      <span class="t6-rl-fat-num"><%= fmtT6(faturamento) %></span>
+      <span class="t6-rl-tri">
+        <span class="t6-rl-tri-cel t6-rl-tri-cel--fio">
+          <span class="t6-rl-tri-num"><%= fmtT6(servicosValor) %></span>
+          <span class="t6-rl-tri-lab">em serviços</span>
+        </span>
+        <span class="t6-rl-tri-cel t6-rl-tri-cel--escuro">
+          <span class="t6-rl-tri-num"><%= fmtT6(produtosValor) %></span>
+          <span class="t6-rl-tri-lab">em produtos</span>
+        </span>
+        <span class="t6-rl-tri-cel">
+          <span class="t6-rl-tri-num"><%= atendimentos %></span>
+          <span class="t6-rl-tri-lab">atendimentos</span>
+        </span>
+      </span>
     </button>
-    <div class="rel-card-escuro">
-      <span class="rel-card-label rel-card-label--claro">Lucro</span>
-      <span class="rel-card-num rel-card-num--claro"><%= lucroVal %></span>
-      <% if (variacaoLucro !== null) { %>
-        <span class="rel-card-sub <%= variacaoLucro >= 0 ? 'rel-sub--verde' : 'rel-sub--vermelho-claro' %>"><%= variacaoLucro >= 0 ? '↑' : '↓' %> <%= Math.abs(variacaoLucro) %>% vs período anterior</span>
-      <% } %>
-    </div>
-  </div>
 
-  <!-- Ticket médio / Clientes novos -->
-  <div class="rel-grid2">
-    <div class="rel-card-branco">
-      <span class="rel-card-label">Ticket médio</span>
-      <span class="rel-card-num"><%= ticketMedioVal %></span>
-      <% if (variacaoTicket !== null) { %>
-        <span class="rel-card-sub <%= variacaoTicket >= 0 ? 'rel-sub--verde-escuro' : 'rel-sub--vermelho' %>"><%= variacaoTicket >= 0 ? '↑' : '↓' %> <%= Math.abs(variacaoTicket) %>% vs período anterior</span>
-      <% } %>
-    </div>
-    <div class="rel-card-branco">
-      <span class="rel-card-label">Clientes novos</span>
-      <div class="rel-clientes-num">
-        <span class="rel-card-num"><%= clientesNovos %></span>
-        <span class="rel-clientes-sub">/ <%= clientesRecorrentes %> recorrentes</span>
-      </div>
-      <div class="rel-clientes-bar">
-        <div style="width:<%= clientesNovosPct %>%;background:#0a0a0a"></div>
-        <div style="width:<%= clientesRecorrentesPct %>%;background:#d7dbdc"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Serviços mais vendidos -->
-  <% if (topServices.length > 0) { %>
-    <div class="rel-lista-card">
-      <div class="rel-lista-titulo">Serviços mais vendidos</div>
-      <% topServices.forEach(function (svc) { %>
-        <div class="rel-lista-item">
-          <span class="rel-lista-rank"><%= svc.rank %></span>
-          <div class="rel-lista-corpo">
-            <div class="rel-lista-linha"><span><%= svc.name %></span><span><%= svc.value %></span></div>
-            <div class="rel-lista-barra"><div style="width:<%= svc.pct %>%;background:#0a0a0a"></div></div>
-          </div>
-        </div>
-      <% }) %>
-    </div>
-  <% } %>
-
-  <!-- Produtos mais vendidos -->
-  <% if (topProducts.length > 0) { %>
-    <div class="rel-lista-card">
-      <div class="rel-lista-titulo">Produtos mais vendidos</div>
-      <% topProducts.forEach(function (prd) { %>
-        <div class="rel-lista-item">
-          <span class="rel-lista-rank"><%= prd.rank %></span>
-          <div class="rel-lista-corpo">
-            <div class="rel-lista-linha"><span><%= prd.name %></span><span><%= prd.value %></span></div>
-            <div class="rel-lista-barra"><div style="width:<%= prd.pct %>%;background:#6b7a8f"></div></div>
-          </div>
-        </div>
-      <% }) %>
-    </div>
-  <% } %>
-
-  <!-- Desempenho por barbeiro -->
-  <% if (barberPerf.length > 0) { %>
-    <div class="rel-lista-card">
-      <div class="rel-lista-titulo">Desempenho por barbeiro</div>
-      <% barberPerf.forEach(function (bp) { %>
-        <div class="rel-barbeiro-item">
-          <span class="rel-barbeiro-avatar" style="background:<%= bp.avatarBg %>"><%= bp.initials %></span>
-          <div class="rel-lista-corpo">
-            <div class="rel-lista-linha"><span><%= bp.name %></span><span><%= bp.revenue %></span></div>
-            <div class="rel-lista-barra"><div style="width:<%= bp.pct %>%;background:#0a0a0a"></div></div>
-          </div>
-        </div>
-      <% }) %>
-    </div>
-  <% } %>
-
-  <!-- Formas de pagamento -->
-  <% if (formasPagamento.length > 0) { %>
-    <div class="rel-pag-card">
-      <div class="rel-donut" style="background:<%= donutGradiente %>"><span class="rel-donut-buraco"></span></div>
-      <div class="rel-pag-legenda">
-        <div class="rel-pag-titulo">Formas de pagamento</div>
-        <% formasPagamento.forEach(function (f) { %>
-          <div class="rel-pag-linha"><span class="rel-pag-dot" style="background:<%= f.cor %>"></span><%= f.label %> · <%= f.pct %>%</div>
+    <%/* 2. Ranking de serviços — faixas coloridas, o % em corpo grande. */%>
+    <div class="t6-rl-secao-rot">Mais vendidos</div>
+    <% if (topServices.length) { %>
+      <button type="button" class="t6-rl-svc-lista" onclick="abrirModal('produtos')">
+        <% topServices.forEach(function (sv) { %>
+          <span class="t6-rl-svc" style="background:<%= sv.bg %>;">
+            <span class="t6-rl-svc-num" style="width:<%= sv.w %>;color:<%= sv.text %>;"><%= sv.pct %>%</span>
+            <span class="t6-rl-svc-nome" style="color:<%= sv.muted %>;"><%= sv.name %> · <%= sv.qtd %>x</span>
+          </span>
         <% }) %>
-      </div>
-    </div>
-  <% } %>
+        <span class="t6-rl-svc-mais">Ver tudo que saiu no período</span>
+      </button>
+    <% } else { %>
+      <div class="t6-vazio">Nenhum serviço concluído neste período.</div>
+    <% } %>
 
-  <!-- Ocupação por dia e horário -->
-  <div class="rel-lista-card">
-    <div class="rel-lista-titulo">Ocupação por dia e horário</div>
-    <div class="rel-ocup-sub">Quanto mais escuro, maior a ocupação</div>
-    <div class="rel-ocup-grid" style="grid-template-columns:24px repeat(<%= occupancyHours.length %>, 1fr);">
-      <div></div>
-      <% occupancyHours.forEach(function (h) { %><div class="rel-ocup-hora"><%= h %></div><% }) %>
-      <% occupancyGrid.forEach(function (row) { %>
-        <div class="rel-ocup-dia"><%= row.day %></div>
-        <% row.cells.forEach(function (c) { %>
-          <div class="rel-ocup-cel <%= c.peak ? 'rel-ocup-cel--pico' : '' %>" style="background:<%= c.bg %>"></div>
-        <% }) %>
-      <% }) %>
+    <%/* 3. Ticket médio e ocupação, lado a lado. */%>
+    <div class="t6-rl-par">
+      <button type="button" class="t6-rl-meia t6-rl-meia--fio t6-reveal" onclick="abrirModal('ticket')">
+        <span class="t6-rl-meia-num"><%= fmtT6(ticketMedio) %></span>
+        <span class="t6-rl-meia-lab">ticket médio</span>
+      </button>
+      <button type="button" class="t6-rl-meia t6-rl-meia--tinta t6-reveal" onclick="abrirModal('ocupacao')">
+        <span class="t6-rl-meia-num"><%= ocupacaoPct %>%</span>
+        <span class="t6-rl-meia-lab">da agenda ocupada</span>
+      </button>
     </div>
-    <div class="rel-ocup-legenda">
-      <span class="rel-ocup-legenda-texto">Menos</span>
-      <span class="rel-ocup-swatch" style="background:#efefef"></span>
-      <span class="rel-ocup-swatch" style="background:#d7dbdc"></span>
-      <span class="rel-ocup-swatch" style="background:#6b7a8f"></span>
-      <span class="rel-ocup-swatch" style="background:#0a0a0a"></span>
-      <span class="rel-ocup-legenda-texto">Mais</span>
-      <span class="rel-ocup-pico-legenda"><span class="rel-ocup-swatch rel-ocup-swatch--pico"></span>Pico</span>
+
+    <%/* 4. Formas de pagamento — barra única repartida pelo peso de cada uma. */%>
+    <button type="button" class="t6-rl-pag" onclick="abrirModal('pagamentos')">
+      <span class="t6-rl-pag-titulo">Como os clientes<br>pagaram no período</span>
+      <% if (formasPagamento.length) { %>
+        <span class="t6-rl-pag-stack">
+          <% formasPagamento.forEach(function (f) { %>
+            <span class="t6-rl-pag-col" style="flex:<%= Math.max(8, f.pct) %>;background:<%= f.cor %>;">
+              <span class="t6-rl-pag-pct" style="color:<%= f.text %>;"><%= f.pct %>%</span>
+              <span class="t6-rl-pag-nome" style="color:<%= f.muted %>;"><%= f.label %></span>
+            </span>
+          <% }) %>
+        </span>
+      <% } else { %>
+        <span class="t6-rl-pag-vazio">Nenhum recebimento com forma de pagamento registrada.</span>
+      <% } %>
+    </button>
+
+    <%/* 5. Clientes novos — bloco escuro, frase inteira. */%>
+    <button type="button" class="t6-rl-clientes t6-reveal" onclick="abrirModal('clientes')">
+      <span class="t6-rl-clientes-num"><%= clientesNovos %></span>
+      <span class="t6-rl-clientes-txt">clientes novos no período, contra<br><%= clientesRecorrentes %> que já eram da casa.</span>
+    </button>
+
+    <%/* 6. Lucro e gastos, lado a lado. */%>
+    <div class="t6-rl-par">
+      <button type="button" class="t6-rl-meia t6-rl-meia--papel t6-reveal" onclick="abrirModal('lucro')">
+        <span class="t6-rl-meia-num t6-rl-meia-num--sm"><%= fmtT6(lucro) %></span>
+        <span class="t6-rl-meia-lab">lucro estimado</span>
+      </button>
+      <button type="button" class="t6-rl-meia t6-rl-meia--apoio t6-reveal" onclick="abrirModal('gastos')">
+        <span class="t6-rl-meia-num t6-rl-meia-num--sm"><%= fmtT6(gastos) %></span>
+        <span class="t6-rl-meia-lab">gastos do período</span>
+      </button>
     </div>
-    <div class="rel-ocup-frase-wrap">
-      <div class="rel-ocup-frase-titulo">Horário de pico</div>
-      <div class="rel-ocup-frase"><%= fraseOcupacao %></div>
-    </div>
+
+    <div class="t6-rl-fim"></div>
   </div>
-
-  <!-- Histórico de clientes por horário -->
-  <% if (slotHistory.length > 0) { %>
-    <div class="rel-lista-card">
-      <div class="rel-lista-titulo">Histórico de clientes por horário</div>
-      <% slotHistory.forEach(function (sh) { %>
-        <div class="rel-hist-item">
-          <div class="rel-hist-hora">
-            <div class="rel-hist-hora-num"><%= sh.time %></div>
-            <div class="rel-hist-hora-dia"><%= sh.day %></div>
-          </div>
-          <div class="rel-lista-corpo">
-            <div class="rel-hist-cliente"><%= sh.client %></div>
-            <div class="rel-hist-sub"><%= sh.service %> · <%= sh.barber %></div>
-          </div>
-          <div class="rel-hist-valor"><%= sh.value %></div>
-        </div>
-      <% }) %>
-    </div>
-  <% } %>
 </div>
 
-<!-- Pop-up: Gastos (detalhado por categoria) -->
-<div class="ag-overlay" id="agm-gastos" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
-    <div class="ag-modal-topo">
-      <div class="ag-modal-nome">Gastos · <%= relPeriodLabel %></div>
-      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+
+<%/* ======================= FOLHA · FATURAMENTO ======================= */%>
+<div class="ag-overlay t6-folha" id="agm-fat" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box t6-rl-folha">
+    <div class="t6-rl-folha-topo">
+      <div class="t6-rl-folha-titulo">FATURAMENTO · <%= relPeriodLabel %></div>
+      <button type="button" class="t6-rl-folha-x" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
-    <div class="rel-gastos-total"><%= gastosVal %></div>
-    <% if (gastosDetail.length === 0) { %>
-      <p class="texto-secundario mt-16">Nenhum gasto neste período.</p>
-    <% } else { %>
-      <div class="rel-gastos-lista mt-16">
-        <% gastosDetail.forEach(function (g) { %>
-          <div class="rel-gastos-cat">
-            <div class="rel-gastos-cat-topo">
-              <div>
-                <div class="rel-gastos-cat-nome"><%= g.name %></div>
-                <div class="rel-gastos-cat-pct"><%= g.pct %>% do total</div>
+
+    <div class="t6-rl-hero">
+      <div class="t6-rl-hero-num"><%= fmtT6(faturamento) %></div>
+      <div class="t6-rl-hero-txt">Entradas do caixa no período<br><%= fmtBRL(servicosValor) %> em serviços · <%= fmtBRL(produtosValor) %> em produtos</div>
+    </div>
+
+    <div class="t6-rl-secao">
+      <div class="t6-rl-eyebrow">O que foi vendido</div>
+      <% if (relVendasRows.length === 0) { %>
+        <div class="t6-rl-vazio">Nenhuma venda registrada neste período.</div>
+      <% } %>
+      <% relVendasRows.forEach(function (vr) { %>
+        <div class="t6-rl-item">
+          <div class="t6-rl-item-num"><%= fmtT6(vr.valor) %></div>
+          <div class="t6-rl-item-baixo">
+            <div class="t6-rl-item-txt"><%= vr.name %><br><%= vr.kind %> · <%= vr.qtyLabel %></div>
+            <button type="button" class="t6-rl-seta" onclick="relSanfona(this)" aria-expanded="false" aria-label="Ver detalhe">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+          <div class="t6-rl-detalhe" hidden>
+            <% vr.entries.forEach(function (ev) { %>
+              <div class="t6-rl-detalhe-linha">
+                <div>
+                  <div class="t6-rl-detalhe-tit"><%= ev.when %></div>
+                  <div class="t6-rl-detalhe-sub"><%= ev.who %></div>
+                </div>
+                <div class="t6-rl-detalhe-val"><%= fmtBRL(ev.valor) %></div>
               </div>
-              <div class="rel-gastos-cat-valor"><%= g.value %></div>
+            <% }) %>
+            <% if (vr.more) { %><div class="t6-rl-detalhe-mais"><%= vr.more %></div><% } %>
+          </div>
+        </div>
+      <% }) %>
+      <div class="t6-rl-fio"></div>
+    </div>
+
+    <% if (barberPerf.length) { %>
+      <div class="t6-rl-secao">
+        <div class="t6-rl-eyebrow">Por barbeiro</div>
+        <% barberPerf.forEach(function (bp) { %>
+          <div class="t6-rl-barb">
+            <div class="t6-rl-barb-linha">
+              <div class="t6-rl-barb-nome"><%= bp.name %></div>
+              <div class="t6-rl-barb-num"><%= fmtT6(bp.valor) %></div>
             </div>
-            <div class="rel-gastos-cat-barra"><div style="width:<%= g.pct %>%;background:<%= g.color %>"></div></div>
-            <% if (g.items.length > 0) { %>
-              <div class="rel-gastos-cat-itens">
-                <% g.items.forEach(function (it) { %>
-                  <div class="rel-gastos-cat-item"><span><%= it.label %></span><span><%= it.value %></span></div>
-                <% }) %>
-              </div>
-            <% } %>
+            <div class="t6-rl-barra"><div class="t6-rl-barra-cheia" style="width:<%= bp.pct %>%;"></div></div>
+            <div class="t6-rl-barb-sub"><%= bp.qtd %> atendimentos · ticket <%= fmtBRL(bp.ticket) %></div>
           </div>
         <% }) %>
+        <div class="t6-rl-fio"></div>
       </div>
-      <div class="rel-gastos-rodape">
-        <span>Total do período</span>
-        <span><%= gastosVal %></span>
+    <% } %>
+
+    <% if (slotHistory.length) { %>
+      <div class="t6-rl-secao">
+        <div class="t6-rl-eyebrow">Últimos atendimentos</div>
+        <% slotHistory.forEach(function (sh) { %>
+          <div class="t6-rl-hist">
+            <div class="t6-rl-hist-quando">
+              <div class="t6-rl-hist-hora"><%= sh.time %></div>
+              <div class="t6-rl-hist-dia"><%= sh.day %></div>
+            </div>
+            <div class="t6-rl-hist-corpo">
+              <div class="t6-rl-hist-cliente"><%= sh.client %></div>
+              <div class="t6-rl-hist-sub"><%= sh.service %> · <%= sh.barber %></div>
+            </div>
+            <div class="t6-rl-hist-val"><%= fmtT6(sh.valor) %></div>
+          </div>
+        <% }) %>
+        <div class="t6-rl-fio"></div>
       </div>
     <% } %>
   </div>
 </div>
 
-<!-- Pop-up: período personalizado -->
-<div class="ag-overlay" id="agm-periodo" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
-    <div class="ag-modal-topo">
-      <div class="ag-modal-nome">Período personalizado</div>
-      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+
+<%/* ======================= FOLHA · MAIS VENDIDOS ======================= */%>
+<div class="ag-overlay t6-folha" id="agm-produtos" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box t6-rl-folha">
+    <div class="t6-rl-folha-topo">
+      <div class="t6-rl-folha-titulo">MAIS VENDIDOS</div>
+      <button type="button" class="t6-rl-folha-x" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
-    <form method="GET" action="/painel/relatorios" class="form mt-16">
-      <input type="hidden" name="periodo" value="custom" />
-      <div class="campo">
-        <label for="rel-de">De</label>
-        <input id="rel-de" type="date" name="de" value="<%= deStr %>" required />
+
+    <div class="t6-rl-secao">
+      <div class="t6-rl-eyebrow">Serviços</div>
+      <div class="t6-rl-ranking">
+        <% topServices.forEach(function (sv) { %>
+          <div class="t6-rl-rank">
+            <div class="t6-rl-rank-qtd"><%= sv.qtd %></div>
+            <div class="t6-rl-rank-corpo">
+              <div class="t6-rl-rank-nome"><%= sv.name %></div>
+              <div class="t6-rl-rank-val"><%= fmtBRL(sv.valor) %> · <%= sv.pct %>% dos serviços</div>
+            </div>
+          </div>
+        <% }) %>
+        <% if (!topServices.length) { %><div class="t6-rl-vazio">Nenhum serviço no período.</div><% } %>
       </div>
-      <div class="campo">
-        <label for="rel-ate">Até</label>
-        <input id="rel-ate" type="date" name="ate" value="<%= ateStr %>" required />
+    </div>
+
+    <div class="t6-rl-secao">
+      <div class="t6-rl-eyebrow">Produtos</div>
+      <div class="t6-rl-ranking">
+        <% relProdutosRows.forEach(function (pr) { %>
+          <div class="t6-rl-rank">
+            <div class="t6-rl-rank-qtd"><%= pr.qty %></div>
+            <div class="t6-rl-rank-corpo">
+              <div class="t6-rl-rank-nome"><%= pr.name %></div>
+              <div class="t6-rl-rank-val"><%= fmtBRL(pr.valor) %></div>
+            </div>
+          </div>
+        <% }) %>
+        <% if (!relProdutosRows.length) { %><div class="t6-rl-vazio">Nenhum produto vendido no período.</div><% } %>
       </div>
-      <div class="modal-acoes">
-        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-        <button class="btn btn-primario">Aplicar</button>
+
+      <div class="t6-rl-total-linha">
+        <div class="t6-rl-total-rot">Total em produtos</div>
+        <div class="t6-rl-total-dir">
+          <span class="t6-rl-total-qtd"><%= relProdutosTotalQty %> un</span>
+          <span class="t6-rl-total-val"><%= fmtT6(produtosValorTotal) %></span>
+        </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>
 
+
+<%/* ======================= FOLHA · TICKET MÉDIO ======================= */%>
+<div class="ag-overlay t6-folha" id="agm-ticket" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box t6-rl-folha">
+    <div class="t6-rl-folha-topo">
+      <div class="t6-rl-folha-titulo">TICKET MÉDIO · <%= relPeriodLabel %></div>
+      <button type="button" class="t6-rl-folha-x" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="t6-rl-hero">
+      <div class="t6-rl-hero-num"><%= fmtT6(ticketMedio) %></div>
+      <div class="t6-rl-hero-txt">Média por atendimento no período<br><%= fmtBRL(faturamento) %> em <%= atendimentos %> atendimentos<% if (variacaoTicket !== null) { %> · <%= variacaoTicket >= 0 ? '+' : '' %><%= variacaoTicket %>% vs anterior<% } %></div>
+    </div>
+
+    <div class="t6-rl-secao t6-rl-secao--fio">
+      <div class="t6-rl-eyebrow">Com produto x só serviço</div>
+      <div class="t6-rl-fillbars">
+        <div>
+          <div class="t6-rl-fill" style="width:<%= ticketData.comW %>;background:#1B1C1D;">
+            <span style="color:#fff;"><%= fmtT6(ticketData.com) %></span>
+          </div>
+          <div class="t6-rl-fill-rot">Com produto · <%= ticketData.comQtd %> atendimentos</div>
+        </div>
+        <div>
+          <div class="t6-rl-fill" style="width:<%= ticketData.semW %>;background:#ADADAD;">
+            <span style="color:#0E0E0E;"><%= fmtT6(ticketData.sem) %></span>
+          </div>
+          <div class="t6-rl-fill-rot t6-rl-fill-rot--apoio">Só serviço · <%= ticketData.semQtd %> atendimentos</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="t6-rl-bloco">
+      <div class="t6-rl-bloco-num"><%= ticketData.comPct %>%</div>
+      <div class="t6-rl-bloco-txt">dos atendimentos levaram algum produto —<br>e cada um deles rendeu <%= fmtT6(ticketData.delta) %> a mais.<br>Subir essa taxa é o caminho mais curto para aumentar o ticket.</div>
+    </div>
+
+    <% if (barberPerf.length) { %>
+      <div class="t6-rl-secao">
+        <div class="t6-rl-eyebrow">Por barbeiro</div>
+        <% barberPerf.forEach(function (bp) { %>
+          <div class="t6-rl-dupla">
+            <div class="t6-rl-dupla-esq">
+              <div class="t6-rl-dupla-nome"><%= bp.name %></div>
+              <div class="t6-rl-dupla-sub"><%= bp.qtd %> atendimentos · <%= fmtBRL(bp.valor) %></div>
+            </div>
+            <div class="t6-rl-dupla-num"><%= fmtT6(bp.ticket) %></div>
+          </div>
+        <% }) %>
+        <div class="t6-rl-fio"></div>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+
+<%/* ======================= FOLHA · OCUPAÇÃO ======================= */%>
+<div class="ag-overlay t6-folha" id="agm-ocupacao" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box t6-rl-folha">
+    <div class="t6-rl-folha-topo">
+      <div class="t6-rl-folha-titulo">OCUPAÇÃO · <%= relPeriodLabel %></div>
+      <button type="button" class="t6-rl-folha-x" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="t6-rl-ocup-topo">
+      <div class="t6-rl-ocup-num"><%= ocupData.pct %>%</div>
+      <div class="t6-rl-ocup-lado"><%= ocupData.sub %><br><%= ocupData.livres %></div>
+    </div>
+
+    <div class="t6-rl-secao">
+      <div class="t6-rl-mapa-topo">
+        <div class="t6-rl-eyebrow">Mapa</div>
+        <%/* Duas leituras do MESMO período: "Semana" cruza dia × hora (onde a
+             agenda enche) e "Dia" soma as horas de todos os dias (a curva do
+             expediente). Alternar é só client-side — os dados já vieram. */%>
+        <div class="t6-rl-mapa-abas">
+          <button type="button" class="t6-rl-mapa-btn sel" data-mapa="semana" onclick="relMapa('semana')">Semana</button>
+          <button type="button" class="t6-rl-mapa-btn" data-mapa="dia" onclick="relMapa('dia')">Dia</button>
+        </div>
+      </div>
+
+      <div class="t6-rl-mapa" id="rel-mapa-semana">
+        <div class="t6-rl-grid-dias">
+          <% ocupGrid.days.forEach(function (d) { %><div class="t6-rl-grid-dia"><%= d %></div><% }) %>
+        </div>
+        <div class="t6-rl-grid-linhas">
+          <% ocupGrid.rows.forEach(function (row) { %>
+            <div class="t6-rl-grid-linha">
+              <div class="t6-rl-grid-hora"><%= row.hour %></div>
+              <% row.cells.forEach(function (c) { %><div class="t6-rl-grid-cel" style="background:<%= c.bg %>;"></div><% }) %>
+            </div>
+          <% }) %>
+        </div>
+        <div class="t6-rl-legenda">
+          <span class="t6-rl-legenda-item"><span class="t6-rl-swatch" style="background:#0E0E0E;"></span>Lotado</span>
+          <span class="t6-rl-legenda-item"><span class="t6-rl-swatch" style="background:#1B1C1D;"></span>Cheio</span>
+          <span class="t6-rl-legenda-item"><span class="t6-rl-swatch" style="background:#ADADAD;"></span>Vago</span>
+          <span class="t6-rl-legenda-item"><span class="t6-rl-swatch" style="background:#EDEDED;"></span>Vazio</span>
+        </div>
+      </div>
+
+      <div class="t6-rl-mapa" id="rel-mapa-dia" hidden>
+        <div class="t6-rl-slots">
+          <% ocupSlots.forEach(function (sl) { %>
+            <div class="t6-rl-slot">
+              <div class="t6-rl-slot-hora" style="color:<%= sl.hourColor %>;"><%= sl.hour %></div>
+              <div class="t6-rl-slot-trilho"><div class="t6-rl-slot-cheio" style="width:<%= sl.w %>;background:<%= sl.bg %>;"></div></div>
+              <div class="t6-rl-slot-num" style="color:<%= sl.labelColor %>;"><%= sl.label %></div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <div class="t6-rl-bloco t6-rl-bloco--escuro">
+      <div class="t6-rl-bloco-rot">Onde agir</div>
+      <% if (ocupInsight.temDados) { %>
+        <div class="t6-rl-bloco-frase">Pico às <%= ocupInsight.peak %></div>
+        <% if (ocupInsight.temBuraco) { %>
+          <div class="t6-rl-bloco-frase t6-rl-bloco-frase--fraca">Buracos às <%= ocupInsight.gap %></div>
+        <% } %>
+        <div class="t6-rl-bloco-txt">Puxar clientes para os horários vagos vale mais<br>que abrir novos horários no pico.</div>
+      <% } else { %>
+        <div class="t6-rl-bloco-frase">Sem movimento</div>
+        <div class="t6-rl-bloco-txt">Ainda não há atendimentos suficientes neste período<br>para apontar pico e buraco.</div>
+      <% } %>
+    </div>
+
+    <% if (ocupPorBarbeiro.length) { %>
+      <div class="t6-rl-secao">
+        <div class="t6-rl-eyebrow">Por barbeiro</div>
+        <% ocupPorBarbeiro.forEach(function (ob) { %>
+          <div class="t6-rl-barb">
+            <div class="t6-rl-barb-linha">
+              <div class="t6-rl-barb-nome"><%= ob.name %></div>
+              <div class="t6-rl-barb-num"><%= ob.pct %>%</div>
+            </div>
+            <div class="t6-rl-barra"><div class="t6-rl-barra-cheia" style="width:<%= ob.w %>;"></div></div>
+            <div class="t6-rl-barb-sub"><%= ob.sub %></div>
+          </div>
+        <% }) %>
+        <div class="t6-rl-fio"></div>
+      </div>
+    <% } %>
+
+    <div class="t6-rl-secao t6-rl-secao--sem-fundo">
+      <div class="t6-rl-eyebrow">Por dia da semana</div>
+    </div>
+    <div class="t6-rl-colunas">
+      <% ocupWeekBars.forEach(function (wb) { %>
+        <div class="t6-rl-coluna" style="height:<%= wb.h %>px;background:<%= wb.bg %>;">
+          <div class="t6-rl-coluna-num" style="color:<%= wb.text %>;"><%= wb.value %></div>
+          <div class="t6-rl-coluna-lab" style="color:<%= wb.muted %>;"><%= wb.label %></div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</div>
+
+
+<%/* ======================= FOLHA · PAGAMENTOS ======================= */%>
+<div class="ag-overlay t6-folha" id="agm-pagamentos" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box t6-rl-folha">
+    <div class="t6-rl-folha-topo">
+      <div class="t6-rl-folha-titulo">PAGAMENTOS · <%= relPeriodLabel %></div>
+      <button type="button" class="t6-rl-folha-x" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="t6-rl-hero">
+      <div class="t6-rl-hero-num"><%= fmtT6(pagData.total) %></div>
+      <div class="t6-rl-hero-txt">Recebido no período<br><%= pagData.transacoes %> transações em <%= formasPagamento.length %> formas de pagamento</div>
+    </div>
+
+    <% if (formasPagamento.length) { %>
+      <div class="t6-rl-donut-linha">
+        <div class="t6-rl-donut">
+          <svg width="148" height="148" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#EDEDED" stroke-width="15"></circle>
+            <% pagDonut.forEach(function (dn) { %>
+              <circle cx="50" cy="50" r="42" fill="none" stroke="<%= dn.color %>" stroke-width="15" stroke-dasharray="<%= dn.dash %>" stroke-dashoffset="<%= dn.offset %>"></circle>
+            <% }) %>
+          </svg>
+          <div class="t6-rl-donut-centro">
+            <div class="t6-rl-donut-pct"><%= pagData.maiorPct %>%</div>
+            <div class="t6-rl-donut-nome"><%= pagData.maiorNome %></div>
+          </div>
+        </div>
+        <div class="t6-rl-donut-legenda">
+          <% formasPagamento.forEach(function (f) { %>
+            <div class="t6-rl-leg">
+              <span class="t6-rl-leg-cor" style="background:<%= f.cor %>;"></span>
+              <span class="t6-rl-leg-corpo">
+                <span class="t6-rl-leg-nome"><%= f.label %></span>
+                <span class="t6-rl-leg-val"><%= fmtBRL(f.valor) %></span>
+              </span>
+              <span class="t6-rl-leg-pct"><%= f.pct %>%</span>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+
+      <div class="t6-rl-secao">
+        <% formasPagamento.forEach(function (f) { %>
+          <div class="t6-rl-item t6-rl-item--simples">
+            <div class="t6-rl-item-num"><%= fmtT6(f.valor) %></div>
+            <div class="t6-rl-item-txt"><%= f.label %> · <%= f.pct %>%<br><%= f.qtd %> recebimentos · ticket <%= fmtBRL(f.ticket) %></div>
+          </div>
+        <% }) %>
+        <div class="t6-rl-fio"></div>
+      </div>
+
+      <div class="t6-rl-secao">
+        <div class="t6-rl-eyebrow">Quando o dinheiro cai</div>
+        <div class="t6-rl-fillbars">
+          <div>
+            <div class="t6-rl-fill" style="width:<%= pagData.naHoraW %>;background:#0E0E0E;">
+              <span style="color:#FAFAFA;"><%= fmtT6(pagData.naHoraValor) %></span>
+            </div>
+            <div class="t6-rl-fill-rot">Na hora · Pix e dinheiro · <%= pagData.naHoraPct %>%</div>
+          </div>
+          <div>
+            <div class="t6-rl-fill" style="width:<%= pagData.depoisW %>;background:#ADADAD;">
+              <span style="color:#0E0E0E;"><%= fmtT6(pagData.depoisValor) %></span>
+            </div>
+            <div class="t6-rl-fill-rot t6-rl-fill-rot--apoio">Depois · cartão, no prazo da maquininha · <%= pagData.depoisPct %>%</div>
+          </div>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="t6-rl-secao"><div class="t6-rl-vazio">Nenhum recebimento com forma de pagamento registrada neste período.</div></div>
+    <% } %>
+  </div>
+</div>
+
+
+<%/* ======================= FOLHA · CLIENTES ======================= */%>
+<div class="ag-overlay t6-folha" id="agm-clientes" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box t6-rl-folha">
+    <div class="t6-rl-folha-topo">
+      <div class="t6-rl-folha-titulo">CLIENTES · <%= relPeriodLabel %></div>
+      <button type="button" class="t6-rl-folha-x" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="t6-rl-hero">
+      <div class="t6-rl-hero-num"><%= clientesData.novos %></div>
+      <div class="t6-rl-hero-txt">clientes novos no período<br><%= clientesData.total %> atendidos ao todo · <%= clientesData.novosPct %>% eram primeira vez</div>
+    </div>
+
+    <div class="t6-rl-secao">
+      <div class="t6-rl-eyebrow">Novos x recorrentes</div>
+      <div class="t6-rl-fillbars">
+        <div>
+          <div class="t6-rl-fill" style="width:<%= clientesData.novosW %>;background:#0E0E0E;">
+            <span style="color:#FAFAFA;"><%= clientesData.novos %></span>
+          </div>
+          <div class="t6-rl-fill-rot">Novos · <%= clientesData.novosPct %>% · <%= fmtBRL(clientesData.receitaNovos) %></div>
+        </div>
+        <div>
+          <div class="t6-rl-fill" style="width:<%= clientesData.recorrentesW %>;background:#ADADAD;">
+            <span style="color:#0E0E0E;"><%= clientesData.recorrentes %></span>
+          </div>
+          <div class="t6-rl-fill-rot t6-rl-fill-rot--apoio">Recorrentes · <%= clientesData.recorrentesPct %>% · <%= fmtBRL(clientesData.receitaRecorrentes) %></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="t6-rl-bloco">
+      <div class="t6-rl-bloco-num"><%= clientesData.recorrentesPct %>%</div>
+      <div class="t6-rl-bloco-txt">de quem passou aqui no período já era da casa.<br>Cliente que volta custa menos que cliente novo —<br>vale medir isso todo mês.</div>
+    </div>
+  </div>
+</div>
+
+
+<%/* ======================= FOLHA · LUCRO ======================= */%>
+<div class="ag-overlay t6-folha" id="agm-lucro" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box t6-rl-folha">
+    <div class="t6-rl-folha-topo">
+      <div class="t6-rl-folha-titulo">LUCRO · <%= relPeriodLabel %></div>
+      <button type="button" class="t6-rl-folha-x" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="t6-rl-hero">
+      <div class="t6-rl-hero-num <%= lucro < 0 ? 't6-rl-hero-num--negativo' : '' %>"><%= fmtT6(lucro) %></div>
+      <div class="t6-rl-hero-txt">Lucro do período<br><%= fmtBRL(faturamento) %> faturados − <%= fmtBRL(gastos) %> de gastos<% if (variacaoLucro !== null) { %> · <%= variacaoLucro >= 0 ? '+' : '' %><%= variacaoLucro %>% vs anterior<% } %></div>
+    </div>
+
+    <div class="t6-rl-secao t6-rl-secao--fio">
+      <div class="t6-rl-eyebrow">A conta, passo a passo</div>
+      <div class="t6-rl-fillbars">
+        <% lucroCascata.forEach(function (cs) { %>
+          <div>
+            <div class="t6-rl-fill" style="width:<%= cs.w %>;background:<%= cs.bg %>;">
+              <span style="color:<%= cs.text %>;"><%= fmtT6(cs.rest) %></span>
+            </div>
+            <div class="t6-rl-fill-linha">
+              <span class="t6-rl-fill-rot"><%= cs.label %></span>
+              <span class="t6-rl-fill-valor"><%= fmtBRL(cs.amount) %></span>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="t6-rl-bloco t6-rl-bloco--escuro">
+      <div class="t6-rl-bloco-num"><%= margemPct %>%</div>
+      <div class="t6-rl-bloco-txt">
+        do faturamento vira lucro.<br>
+        <% if (breakEven !== null) { %>Ponto de equilíbrio: <%= breakEven %> atendimentos no ticket atual.<% } else { %>Sem atendimentos no período não dá pra calcular o ponto de equilíbrio.<% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<%/* ======================= FOLHA · GASTOS ======================= */%>
+<div class="ag-overlay t6-folha" id="agm-gastos" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box t6-rl-folha">
+    <div class="t6-rl-folha-topo">
+      <div class="t6-rl-folha-titulo">GASTOS · <%= relPeriodLabel %></div>
+      <button type="button" class="t6-rl-folha-x" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="t6-rl-hero">
+      <div class="t6-rl-hero-num"><%= fmtT6(gastos) %></div>
+      <div class="t6-rl-hero-txt">Gastos do período<br><%= gastosPctFat %>% do faturamento</div>
+    </div>
+
+    <div class="t6-rl-secao">
+      <% if (gastoRows.length === 0) { %>
+        <div class="t6-rl-vazio">Nenhum gasto neste período.</div>
+      <% } %>
+      <% gastoRows.forEach(function (gr) { %>
+        <div class="t6-rl-item">
+          <div class="t6-rl-item-num"><%= fmtT6(gr.valor) %></div>
+          <div class="t6-rl-item-baixo">
+            <div class="t6-rl-item-txt"><%= gr.name %><br><%= gr.qtdLabel %> · <%= gr.pct %>% do total</div>
+            <button type="button" class="t6-rl-seta" onclick="relSanfona(this)" aria-expanded="false" aria-label="Ver detalhe">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+          <div class="t6-rl-detalhe" hidden>
+            <% gr.entries.forEach(function (ge) { %>
+              <div class="t6-rl-detalhe-linha">
+                <div>
+                  <div class="t6-rl-detalhe-tit"><%= ge.desc %></div>
+                  <div class="t6-rl-detalhe-sub"><%= ge.date %></div>
+                </div>
+                <div class="t6-rl-detalhe-val"><%= fmtBRL(ge.valor) %></div>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      <% }) %>
+      <div class="t6-rl-fio"></div>
+      <div class="t6-rl-total-linha">
+        <div class="t6-rl-total-rot">Total do período</div>
+        <div class="t6-rl-total-dir"><span class="t6-rl-total-val"><%= fmtBRL(gastos) %></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <script>
+  // Pop-ups: os mesmos nomes de sempre (`abrirModal`/`fecharModal`), porque
+  // outras telas e o Esc global dependem deles.
   function abrirModal(id) {
     var o = document.getElementById('agm-' + id);
     if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
@@ -269,4 +681,40 @@
       document.body.classList.remove('modal-aberto');
     }
   });
+
+  // Painel de período personalizado (abre/fecha embaixo dos selos).
+  function relCustomToggle() {
+    var f = document.getElementById('rel-custom');
+    if (f) f.hidden = !f.hidden;
+  }
+  // Atalho só PREENCHE as datas — o envio continua sendo o submit do form,
+  // pra não disparar navegação em toque errado.
+  function relAtalho(de, ate) {
+    var a = document.getElementById('rel-de');
+    var b = document.getElementById('rel-ate');
+    if (a) a.value = de;
+    if (b) b.value = ate;
+  }
+
+  // Sanfona das faixas de venda/gasto.
+  function relSanfona(btn) {
+    var item = btn.closest('.t6-rl-item');
+    if (!item) return;
+    var caixa = item.querySelector('.t6-rl-detalhe');
+    if (!caixa) return;
+    caixa.hidden = !caixa.hidden;
+    btn.classList.toggle('aberto', !caixa.hidden);
+    btn.setAttribute('aria-expanded', String(!caixa.hidden));
+  }
+
+  // Mapa da ocupação: Semana (dia × hora) x Dia (curva do expediente).
+  function relMapa(qual) {
+    var semana = document.getElementById('rel-mapa-semana');
+    var dia = document.getElementById('rel-mapa-dia');
+    if (semana) semana.hidden = qual !== 'semana';
+    if (dia) dia.hidden = qual !== 'dia';
+    document.querySelectorAll('.t6-rl-mapa-btn').forEach(function (b) {
+      b.classList.toggle('sel', b.getAttribute('data-mapa') === qual);
+    });
+  }
 </script>

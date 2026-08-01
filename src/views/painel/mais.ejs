@@ -1,30 +1,111 @@
-<div class="perfil-topo">
-  <span class="avatar avatar--xl">
-    <% if (usuario.fotoUrl) { %><img src="<%= usuario.fotoUrl %>" alt="Foto de <%= usuario.nome %>" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" /><% } else { %><%= usuario.nome.charAt(0).toUpperCase() %><% } %>
-  </span>
-  <div>
-    <div class="perfil-nome"><%= usuario.nome %></div>
-    <div class="perfil-cargo"><%= ehDono ? 'Dono do sistema' : (usuario.papel === 'admin' ? 'Admin' : 'Barbeiro') %></div>
-  </div>
+<%/* Perfil no design TURNO 6 (pedido do dono, 2026-07-28): título grande, foto
+     redonda de 110px ao lado do nome, e as seções separadas por sobrancelha em
+     caixa alta — fechando no bloco preto "SUA SEMANA".
+     A foto é editável AQUI porque o cabeçalho antigo (que tinha o campo de
+     upload) fica escondido no Turno 6 — sem isto não haveria mais como o
+     usuário trocar a própria foto. */%>
+<%
+  var cargo = ehDono ? 'Dono do sistema' : (usuario.papel === 'admin' ? 'Admin' : 'Barbeiro');
+%>
+
+<div class="t6-pf-topo">
+  <div class="t6-pf-titulo">PERFIL</div>
 </div>
 
-<% if (usuario.barbeariaId) { %>
-  <div class="perfil-linha" style="justify-content:center;padding:16px 0;">
-    <div style="text-align:center;">
-      <div class="perfil-nome" style="font-size:16px;"><%= atendimentos %></div>
-      <div class="perfil-cargo" style="text-transform:none;letter-spacing:0;">Atendimentos</div>
+<div class="t6-pf-corpo">
+
+  <div class="t6-pf-cabeca t6-reveal">
+    <form method="POST" action="/painel/perfil/foto" enctype="multipart/form-data">
+      <label class="t6-pf-foto" title="Trocar foto">
+        <% if (usuarioFotoUrl) { %>
+          <img src="<%= usuarioFotoUrl %>" alt="Foto de <%= usuario.nome %>" />
+        <% } else { %>
+          <span class="t6-pf-foto-inicial"><%= usuario.nome.charAt(0).toUpperCase() %></span>
+        <% } %>
+        <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
+      </label>
+    </form>
+    <div class="t6-pf-cabeca-dados">
+      <div class="t6-pf-nome"><%= usuario.nome %></div>
+      <div class="t6-pf-funcao"><%= cargo %></div>
+      <div class="t6-pf-dica">Toque no círculo para trocar a foto</div>
     </div>
   </div>
-  <div class="perfil-linha">
-    <span class="perfil-linha-label">Horário de trabalho</span>
-    <span class="perfil-linha-valor"><%= horarioTrabalho %></span>
-  </div>
-<% } %>
-<div class="perfil-linha">
-  <span class="perfil-linha-label">Barbearia</span>
-  <span class="perfil-linha-valor"><%= barbeariaAtual ? barbeariaAtual.nome : '—' %></span>
-</div>
 
-<form method="POST" action="/logout">
-  <button class="perfil-sair" type="submit">Sair</button>
-</form>
+  <div class="t6-pf-secao t6-reveal">
+    <div class="t6-pf-secao-rot">Conta</div>
+    <div class="t6-pf-linha">
+      <span class="t6-pf-linha-rot">Barbearia</span>
+      <span class="t6-pf-linha-val"><%= barbeariaAtual ? barbeariaAtual.nome : '—' %></span>
+    </div>
+    <div class="t6-pf-linha">
+      <span class="t6-pf-linha-rot">Função</span>
+      <span class="t6-pf-linha-val"><%= cargo %></span>
+    </div>
+    <% if (usuario.barbeariaId) { %>
+      <div class="t6-pf-linha">
+        <span class="t6-pf-linha-rot">Atendimentos concluídos</span>
+        <span class="t6-pf-linha-val"><%= atendimentos %></span>
+      </div>
+    <% } %>
+    <div class="t6-pf-fio"></div>
+  </div>
+
+  <% if (usuario.barbeariaId) { %>
+    <div class="t6-pf-secao t6-reveal">
+      <div class="t6-pf-secao-topo">
+        <div class="t6-pf-secao-rot">Dias de trabalho</div>
+        <div class="t6-pf-secao-lado"><%= semana.dias ? semana.dias + ' dias' : 'nenhum dia' %></div>
+      </div>
+      <div class="t6-pf-dias">
+        <% jornada.forEach(function (d) { %>
+          <span class="t6-pf-dia <%= d.trabalha ? 'on' : '' %>"><%= d.label %></span>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="t6-pf-secao t6-reveal">
+      <div class="t6-pf-secao-rot">Horários</div>
+      <div style="margin-top:14px;">
+        <% jornada.filter(function (d) { return d.trabalha; }).forEach(function (d) { %>
+          <div class="t6-pf-hora">
+            <div class="t6-pf-hora-dia"><%= d.label %></div>
+            <div class="t6-pf-hora-faixa"><%= d.horaInicio %> <span class="t6-pf-hora-sep">às</span> <%= d.horaFim %></div>
+          </div>
+        <% }) %>
+        <div class="t6-pf-fio"></div>
+      </div>
+      <div class="t6-pf-nota">
+        <%= horarioTrabalho %> · <a href="/painel/horarios" class="t6-pf-nota-link">Editar jornada</a>
+      </div>
+    </div>
+
+    <div class="t6-pf-bloco t6-reveal">
+      <div class="t6-pf-bloco-rot">Sua semana</div>
+      <div class="t6-pf-bloco-num"><%= semana.horas %></div>
+      <div class="t6-pf-bloco-linha"><%= semana.linha %></div>
+    </div>
+  <% } %>
+
+  <% if (ehDono) { %>
+    <%/* O aviso de "operando como dono" e a saída para o painel-mestre viviam
+         no cabeçalho fixo, escondido no Turno 6 — passam a morar aqui. */%>
+    <div class="t6-pf-secao">
+      <div class="t6-pf-dono">
+        <div class="t6-pf-dono-txt">
+          Você está operando <strong><%= barbeariaAtual ? barbeariaAtual.nome : 'uma barbearia' %></strong> como dono do sistema.
+        </div>
+        <form method="POST" action="/mestre/sair">
+          <button class="t6-pf-dono-btn" type="submit">← Voltar ao painel-mestre</button>
+        </form>
+      </div>
+    </div>
+  <% } %>
+
+  <div class="t6-pf-rodape">
+    <form method="POST" action="/logout">
+      <button class="t6-pf-sair" type="submit">Sair da conta</button>
+    </form>
+  </div>
+
+</div>

@@ -65,6 +65,11 @@ app.use((req, res, next) => {
   // Formata centavos -> "R$ 40,00"
   res.locals.fmtBRL = (centavos) =>
     ((centavos || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  // Formata centavos -> "R$40" (sem centavos, sem espaço). É o formato do
+  // design Turno 6: os números aparecem a 50-80px, onde ",00" só rouba
+  // largura e quebra a linha.
+  res.locals.fmtT6 = (centavos) =>
+    'R$' + Math.round((centavos || 0) / 100).toLocaleString('pt-BR');
   // Formata Date -> "dd/mm/aaaa"
   res.locals.fmtData = (d) => {
     const x = new Date(d);
@@ -76,15 +81,51 @@ app.use((req, res, next) => {
   // Logo/marca da barbearia do contexto: a do usuário logado (painel) ou a do
   // subdomínio (público). Sem contexto, usa os padrões.
   const ctxId = barbeariaIdAtual(req) || (req.barbearia && req.barbearia.id) || null;
-  require('./controllers/configuracaoMarcaController').lerMarca(ctxId).then((marca) => {
+  const marcaP = require('./controllers/configuracaoMarcaController').lerMarca(ctxId);
+  // Tema visual escolhido pela barbearia, um por app (pedido do dono,
+  // 2026-07-31). Vai junto da marca porque as duas coisas são "identidade da
+  // barbearia" e ambas precisam estar prontas ANTES de qualquer view render.
+  const temasP = require('./services/tema').temasDe(ctxId);
+  Promise.all([marcaP, temasP]).then(([marca, temas]) => {
     res.locals.marcaLogoUrl = marca.logoUrl;
     res.locals.marcaMostrarPoweredBy = marca.mostrarPoweredBy;
+    res.locals.temaPainel = temas.painel;
+    res.locals.temaPublico = temas.publico;
     next();
   }).catch(() => {
     res.locals.marcaLogoUrl = null;
     res.locals.marcaMostrarPoweredBy = true;
+    const { PADRAO } = require('./services/tema');
+    res.locals.temaPainel = PADRAO;
+    res.locals.temaPublico = PADRAO;
     next();
   });
+});
+
+// --- Roteamento de views por TEMA ------------------------------------------
+// Os controllers continuam chamando `res.render('painel/dashboard')` sem saber
+// de tema nenhum. Aqui, se a barbearia escolheu um tema que NÃO é o padrão e
+// existe uma view daquele tema (`painel/suave/dashboard.ejs`), ela entra no
+// lugar. Cair de volta na view padrão quando o arquivo não existe é
+// intencional: permite converter o tema tela a tela sem quebrar as demais.
+const fsTema = require('fs');
+const { PADRAO: TEMA_PADRAO } = require('./services/tema');
+app.use((req, res, next) => {
+  const renderOriginal = res.render.bind(res);
+  res.render = function (view, options, callback) {
+    const ehPublico = String(view).startsWith('agendar/');
+    const tema = ehPublico ? res.locals.temaPublico : res.locals.temaPainel;
+    if (tema && tema !== TEMA_PADRAO && typeof view === 'string') {
+      const barra = view.lastIndexOf('/');
+      const alternativa = barra === -1
+        ? `${tema}/${view}`
+        : `${view.slice(0, barra)}/${tema}/${view.slice(barra + 1)}`;
+      const caminho = path.join(__dirname, 'views', `${alternativa}.ejs`);
+      if (fsTema.existsSync(caminho)) return renderOriginal(alternativa, options, callback);
+    }
+    return renderOriginal(view, options, callback);
+  };
+  next();
 });
 
 // --- Manifesto PWA (dinâmico por barbearia) -------------------------------

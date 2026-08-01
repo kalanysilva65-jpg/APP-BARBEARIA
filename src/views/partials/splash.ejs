@@ -1,0 +1,40 @@
+<%
+  // Saudação por hora do dia (mesma regra do dashboardController, duplicada
+  // aqui de propósito: é só um ternário de 1 linha e o layout não deveria
+  // depender de uma controller específica pra isso).
+  var horaSplash = new Date().getHours();
+  var saudacaoSplash = horaSplash < 12 ? 'Bom dia' : horaSplash < 18 ? 'Boa tarde' : 'Boa noite';
+  var inicialSplash = usuarioPrimeiroNome ? usuarioPrimeiroNome.trim().charAt(0).toUpperCase() : '';
+%>
+<%/* Tela de carregamento (pedido do dono, 2026-07-21, inspirada numa
+     referência de app): foto do usuário + saudação + nome, só isso — sem
+     ícones/tags extras. Some sozinha depois de um instante e só aparece uma
+     vez por sessão de navegador (sessionStorage), pra não piscar a cada
+     clique de link interno — só no carregamento "de verdade" (aba nova/
+     F5). */%>
+<div class="splash-tela" id="splash-tela">
+  <div class="splash-texto">
+    <div class="splash-saudacao"><%= saudacaoSplash %>,</div>
+    <div class="splash-nome"><%= usuarioPrimeiroNome %></div>
+  </div>
+  <div class="splash-foto">
+    <% if (usuarioFotoUrl) { %>
+      <img src="<%= usuarioFotoUrl %>" alt="<%= usuarioPrimeiroNome %>" />
+    <% } else { %>
+      <div class="splash-foto-inicial"><%= inicialSplash %></div>
+    <% } %>
+  </div>
+</div>
+<script>
+  (function () {
+    var CHAVE = 'cortavoSplashMostrado';
+    var el = document.getElementById('splash-tela');
+    if (!el) return;
+    if (sessionStorage.getItem(CHAVE)) { el.remove(); return; }
+    sessionStorage.setItem(CHAVE, '1');
+    setTimeout(function () {
+      el.classList.add('splash-saindo');
+      setTimeout(function () { el.remove(); }, 500);
+    }, 1100);
+  })();
+</script>

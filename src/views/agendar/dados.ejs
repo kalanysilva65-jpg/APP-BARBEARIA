@@ -1,72 +1,107 @@
-<%
-  var nomeBarbearia = (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : 'Barbearia';
-%>
-<div class="ag3-passo">
-  <div class="ag3-passo-topo">
-    <a href="/agendar/horario?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= data %><%= assinatura ? '&assinatura=' + assinatura.id : '' %>" class="ag3-voltar-inline">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
-    </a>
-    <span class="ag3-marca">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8a8a85" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20a6 6 0 0 1 12 0M15.5 20a5 5 0 0 1 5.5-5"/></svg>
-      <%= nomeBarbearia %>
-    </span>
-    <div class="ag3-titulo">Seus dados</div>
-  </div>
+<%/* TURNO 6 (2026-07-28): campos sem caixa — só rótulo miúdo em caixa alta e
+     um fio embaixo, com o texto digitado a 20px. O resumo deixou de ser um
+     cartão degradê e virou o ÚNICO bloco preenchido da tela (preto, canto
+     vivo), fechando a conta logo acima do botão de confirmar. */%>
+<form method="POST" action="/agendar/confirmar" id="ag6-form-dados" class="ag6-corpo">
+  <input type="hidden" name="servicoIds" value="<%= servicoIdsStr %>" />
+  <input type="hidden" name="barbeiroId" value="<%= barbeiro.id %>" />
+  <input type="hidden" name="data" value="<%= data %>" />
+  <input type="hidden" name="hora" value="<%= hora %>" />
+  <% if (assinatura) { %><input type="hidden" name="assinatura" value="<%= assinatura.id %>" /><% } %>
 
-  <form method="POST" action="/agendar/confirmar">
-    <input type="hidden" name="servicoIds" value="<%= servicoIdsStr %>" />
-    <input type="hidden" name="barbeiroId" value="<%= barbeiro.id %>" />
-    <input type="hidden" name="data" value="<%= data %>" />
-    <input type="hidden" name="hora" value="<%= hora %>" />
-    <% if (assinatura) { %><input type="hidden" name="assinatura" value="<%= assinatura.id %>" /><% } %>
+  <div class="ag6-rolagem">
+    <div class="ag6-cabeca">
+      <div class="ag6-titulo">Seus dados</div>
+    </div>
 
     <% if (!assinatura) { %>
-      <div class="ag3-campo">
-        <label class="ag3-campo-label" for="cliente_nome">Nome</label>
-        <input class="ag3-input" id="cliente_nome" name="cliente_nome" placeholder="Seu nome completo" required autofocus />
+      <div class="ag6-campos">
+        <div class="ag6-campo" style="animation-delay:0.06s">
+          <label class="ag6-campo-rot" for="cliente_nome">Nome</label>
+          <input class="ag6-input" id="cliente_nome" name="cliente_nome" placeholder="Como te chamamos" autocomplete="name" required autofocus />
+        </div>
+        <div class="ag6-campo" style="animation-delay:0.12s">
+          <label class="ag6-campo-rot" for="cliente_telefone">WhatsApp</label>
+          <input class="ag6-input" id="cliente_telefone" name="cliente_telefone" inputmode="tel" autocomplete="tel" placeholder="(11) 90000-0000" required />
+        </div>
+        <div class="ag6-campo" style="animation-delay:0.18s">
+          <label class="ag6-campo-rot" for="cliente_nascimento">Data de nascimento</label>
+          <%/* Era <input type="date">: o calendário nativo destoa do canto vivo
+               e obriga 3 toques pra digitar um ano. Virou texto com máscara
+               dd/mm/aaaa (o controlador aceita os dois formatos). */%>
+          <input class="ag6-input" id="cliente_nascimento" name="cliente_nascimento" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" />
+          <div class="ag6-campo-dica">Opcional — é só pra lembrarmos do seu aniversário.</div>
+        </div>
       </div>
-      <div class="ag3-campo">
-        <label class="ag3-campo-label" for="cliente_telefone">Telefone / WhatsApp</label>
-        <input class="ag3-input" id="cliente_telefone" name="cliente_telefone" inputmode="tel" placeholder="(11) 99999-9999" required />
-      </div>
-      <div class="ag3-campo">
-        <label class="ag3-campo-label" for="cliente_nascimento">Data de nascimento (opcional)</label>
-        <input class="ag3-input" id="cliente_nascimento" type="date" name="cliente_nascimento" />
-      </div>
-    <% } %>
-
-    <div class="ag3-resumo">
-      <div class="ag3-resumo-linha">
-        <span class="ag3-resumo-rot">Serviço</span>
-        <span class="ag3-resumo-val"><%= servicos.length === 1 ? servicos[0].nome : servicos.length + ' serviços' %></span>
-      </div>
-      <div class="ag3-resumo-sep"></div>
-      <div class="ag3-resumo-linha">
-        <span class="ag3-resumo-rot">Barbeiro</span>
-        <span class="ag3-resumo-val"><%= barbeiro.nome %></span>
-      </div>
-      <div class="ag3-resumo-sep"></div>
-      <div class="ag3-resumo-linha">
-        <span class="ag3-resumo-rot">Data e hora</span>
-        <span class="ag3-resumo-val"><%= dataExtenso %> · <%= hora %></span>
-      </div>
-      <div class="ag3-resumo-sep"></div>
-      <div class="ag3-resumo-linha">
-        <span class="ag3-resumo-rot">Valor</span>
-        <span class="ag3-resumo-preco"><%= assinatura ? 'Incluso no plano' : fmtBRL(valorTotal) %></span>
-      </div>
-    </div>
-
-    <% if (assinatura) { %>
-      <div class="ag3-cliente-card">
-        <div class="ag3-cliente-label">Cliente</div>
-        <div class="ag3-cliente-nome"><%= assinatura.cliente.nome %></div>
-        <div class="ag3-cliente-tel"><%= fmtTelefone(assinatura.cliente.telefone) %></div>
+    <% } else { %>
+      <div class="ag6-campos">
+        <div class="ag6-campo">
+          <span class="ag6-campo-rot">Cliente do plano</span>
+          <div class="ag6-titulo ag6-titulo--medio" style="margin-top:8px"><%= assinatura.cliente.nome %></div>
+          <div class="ag6-campo-dica"><%= fmtTelefone(assinatura.cliente.telefone) %> · plano <%= assinatura.plano.nome %></div>
+        </div>
       </div>
     <% } %>
 
-    <div class="ag3-rodape-acao">
-      <button class="ag3-cta" type="submit">Confirmar agendamento</button>
+    <div class="ag6-resumo">
+      <% servicos.forEach(function (s) { %>
+        <div class="ag6-resumo-linha">
+          <span class="ag6-resumo-rot"><%= s.nome %></span>
+          <span class="ag6-resumo-val"><%= assinatura ? 'Incluso' : fmtT6(s.valor) %></span>
+        </div>
+      <% }) %>
+      <div class="ag6-resumo-linha ag6-resumo-linha--sep">
+        <span class="ag6-resumo-rot">Barbeiro</span>
+        <span class="ag6-resumo-val"><%= barbeiro.nome %></span>
+      </div>
+      <div class="ag6-resumo-linha">
+        <span class="ag6-resumo-rot">Quando</span>
+        <span class="ag6-resumo-val"><%= dataExtenso %> · <%= hora %></span>
+      </div>
+      <div class="ag6-resumo-linha ag6-resumo-linha--sep ag6-resumo-linha--total">
+        <span class="ag6-resumo-rot">Total</span>
+        <span class="ag6-resumo-total"><%= assinatura ? 'Plano' : fmtT6(valorTotal) %></span>
+      </div>
     </div>
-  </form>
-</div>
+    <div style="height:20px"></div>
+  </div>
+
+  <div class="ag6-barra">
+    <button class="ag6-acao ag6-acao--simples <%= assinatura ? '' : 'ag6-inerte' %>" type="submit" id="ag6-confirmar" <%= assinatura ? '' : 'disabled' %>>
+      <%= assinatura ? 'Confirmar agendamento' : 'Preencha nome e WhatsApp' %>
+    </button>
+  </div>
+</form>
+
+<% if (!assinatura) { %>
+  <script>
+    // O botão só acende com nome e WhatsApp preenchidos — mesma ideia do CTA
+    // da referência, que troca o rótulo em vez de mostrar erro depois.
+    (function () {
+      var nome = document.getElementById('cliente_nome');
+      var tel = document.getElementById('cliente_telefone');
+      var nasc = document.getElementById('cliente_nascimento');
+      var btn = document.getElementById('ag6-confirmar');
+
+      function revisar() {
+        var ok = nome.value.trim() !== '' && tel.value.trim() !== '';
+        btn.disabled = !ok;
+        btn.classList.toggle('ag6-inerte', !ok);
+        btn.textContent = ok ? 'Confirmar agendamento' : 'Preencha nome e WhatsApp';
+      }
+      nome.addEventListener('input', revisar);
+      tel.addEventListener('input', revisar);
+
+      // Máscara dd/mm/aaaa: guarda só dígitos e reinsere as barras, pra
+      // digitação e apagamento caírem sempre no mesmo formato.
+      nasc.addEventListener('input', function () {
+        var d = nasc.value.replace(/\D/g, '').slice(0, 8);
+        nasc.value = d.length > 4 ? d.slice(0, 2) + '/' + d.slice(2, 4) + '/' + d.slice(4)
+          : d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2)
+          : d;
+      });
+
+      revisar();
+    })();
+  </script>
+<% } %>

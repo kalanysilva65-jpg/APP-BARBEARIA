@@ -142,10 +142,30 @@ async function verAgenda(req, res) {
     atual: anoPicker === anoMes && i === mesMes,
   }));
 
+  // --- Turno 6 (2026-07-28) ------------------------------------------------
+  // O cabeçalho novo não tem tira de dias: mostra o dia selecionado GRANDE, o
+  // mês num selo e o dia seguinte em cinza ao lado (toque = avança). E o
+  // agendamento "da vez" (o próximo que ainda não passou) sai INVERTIDO na
+  // lista, que é como a referência destaca o atendimento atual.
+  function _minT6(hhmm) {
+    const p = String(hhmm).split(':');
+    return (+p[0]) * 60 + (+p[1]);
+  }
+  const ehHojeSelecionado = dataObj.getTime() === hoje0.getTime();
+  const agoraT6 = new Date();
+  const minutoAgora = agoraT6.getHours() * 60 + agoraT6.getMinutes();
+  const aindaAbertos = agendamentos.filter((a) => a.status === 'agendado');
+  const proximoAg = ehHojeSelecionado
+    ? aindaAbertos.find((a) => _minT6(a.horaInicio) >= minutoAgora) || null
+    : aindaAbertos[0] || null;
+
   res.render('painel/agenda', {
     titulo: 'Agenda',
     ehAdmin,
     faixaDias,
+    diaNum: dataObj.getDate(),
+    proxDiaNum: next.getDate(),
+    proximoId: proximoAg ? proximoAg.id : null,
     mesLabel: MESES_EXT[mesMes],
     anoMes,
     anoPicker,

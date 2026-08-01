@@ -1,5 +1,4 @@
 <%
-  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
   function _labelVisita(dias) {
     if (dias === null) return 'sem visitas';
     if (dias === 0) return 'hoje';
@@ -8,137 +7,179 @@
   }
 %>
 
-<!-- Cabeçalho: aqui a marca vem com um ícone pequeno na frente do nome — é
-     assim no HTML original (diferente das outras telas, que só têm o texto). -->
-<div class="ag2-topo">
-  <div class="ag2-marca-linha">
-    <span class="ag2-avatar-deco"></span>
-    <span class="ag2-marca cl-marca">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8a8a85" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20a6 6 0 0 1 12 0M15.5 20a5 5 0 0 1 5.5-5"/></svg>
-      <%= nomeBarbearia %>
-    </span>
-    <button type="button" class="ag2-add" onclick="toggleNovoCliente()" aria-label="Novo cliente">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-    </button>
+<%/* Clientes no design TURNO 6 (pedido do dono, 2026-07-28): a grade de cartões
+     com avatar deu lugar ao desenho da referência — título grande, busca que é
+     só uma linha, filtros chapados e o RESUMO da carteira em número gigante
+     antes da lista. Cada cliente é uma faixa separada por fio, com o gasto
+     total à direita e os selos "sumido"/"aniversário".
+     O detalhe (que aqui tem histórico, planos e edição) é FOLHA de página
+     inteira; só o "Novo cliente" fica em diálogo centrado, como na referência. */%>
+<div class="t6-cl-tela">
+
+  <div class="t6-cl-topo t6-reveal">
+    <div class="t6-cl-titulo-linha">
+      <div class="t6-cl-titulo">CLIENTES</div>
+      <button type="button" class="t6-btn-novo" onclick="abrirModal('novo')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Novo</span>
+      </button>
+    </div>
+
+    <div class="t6-cl-busca">
+      <input type="search" class="t6-cl-busca-input" id="cl-busca-input" placeholder="Buscar cliente" oninput="filtrarClientes()" />
+    </div>
+
+    <div class="t6-cl-filtros" id="cl-filtros">
+      <button type="button" class="t6-cl-filtro sel" data-filtro="todos" onclick="selecionarFiltro(this)">Todos</button>
+      <button type="button" class="t6-cl-filtro" data-filtro="sumidos" onclick="selecionarFiltro(this)">Sumidos</button>
+      <button type="button" class="t6-cl-filtro" data-filtro="aniversariantes" onclick="selecionarFiltro(this)">Aniversariantes</button>
+    </div>
   </div>
-  <div class="ag2-titulo">Clientes</div>
+
+  <div class="t6-cl-corpo">
+    <div class="t6-cl-resumo t6-reveal">
+      <div class="t6-cl-resumo-rot">Na base</div>
+      <div class="t6-cl-resumo-num"><%= resumo.total %></div>
+      <div class="t6-cl-resumo-sub">
+        <%= resumo.sumidos %> sem voltar há mais de 30 dias<br>
+        <%= resumo.aniversariantes %> <%= resumo.aniversariantes === 1 ? 'faz' : 'fazem' %> aniversário neste mês
+      </div>
+    </div>
+
+    <% if (clientes.length === 0) { %>
+      <div class="t6-vazio">Nenhum cliente cadastrado ainda.</div>
+    <% } else { %>
+      <div class="t6-cl-lista" id="cl-lista">
+        <% clientes.forEach(function (c) { %>
+          <button type="button" class="t6-cl-item" onclick="abrirModal(<%= c.id %>)"
+                  data-nome="<%= c.nome.toLowerCase() %>"
+                  data-tel="<%= c.telefone %>"
+                  data-sumido="<%= c.stats.sumido ? '1' : '0' %>"
+                  data-aniv="<%= c.aniversarianteMes ? '1' : '0' %>">
+            <span class="t6-cl-item-corpo">
+              <span class="t6-cl-nome"><%= c.nome %></span>
+              <span class="t6-cl-sub"><%= fmtTelefone(c.telefone) %><% if (c.dataNascimento) { %> · nasc. <%= fmtData(c.dataNascimento) %><% } %></span>
+              <%/* Sem "Última visita" na frente quando não há visita nenhuma:
+                   senão sai "Última visita sem visitas". */%>
+              <span class="t6-cl-sub"><%= c.stats.diasDesdeUltima === null ? 'Nunca veio' : 'Última visita ' + _labelVisita(c.stats.diasDesdeUltima) %> · <%= c.stats.servicoFavorito || 'sem histórico' %></span>
+            </span>
+            <span class="t6-cl-item-lado">
+              <span class="t6-cl-gasto"><%= fmtT6(c.stats.totalGasto) %></span>
+              <% if (c.stats.sumido) { %><span class="t6-cl-selo">sumido</span><% } %>
+              <% if (c.aniversarianteMes) { %><span class="t6-cl-selo t6-cl-selo--aniv">aniversário</span><% } %>
+            </span>
+          </button>
+        <% }) %>
+        <div class="t6-lista-fim"></div>
+      </div>
+      <div class="t6-vazio" id="cl-sem-resultado" hidden>Nenhum cliente com esse filtro.</div>
+    <% } %>
+  </div>
 </div>
 
-<div class="ag2-corpo">
-  <!-- Busca: pílula branca com sombra, é assim no HTML original (não o
-       campo com linha embaixo usado nas outras telas). -->
-  <div class="cl-busca">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#575755" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
-    <input type="search" id="cl-busca-input" placeholder="Buscar cliente" oninput="filtrarClientes(this.value)" />
-  </div>
-
-  <!-- Novo cliente: painel que nasce embaixo da busca (não é um pop-up),
-       é assim no HTML original. -->
-  <div class="cl-novo-painel" id="cl-novo-painel" hidden>
-    <div class="cl-novo-titulo">Novo cliente</div>
-    <form method="POST" action="/painel/clientes" class="cl-novo-form">
-      <input name="nome" placeholder="Nome" required />
-      <input name="telefone" inputmode="tel" placeholder="Telefone" required />
-      <div>
-        <label for="cl-novo-nascimento">Data de nascimento (opcional)</label>
-        <input id="cl-novo-nascimento" name="dataNascimento" type="date" />
+<!-- Novo cliente: diálogo CENTRADO (é assim na referência) -->
+<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="t6-cl-dlg-titulo">Novo cliente</div>
+    <form method="POST" action="/painel/clientes">
+      <div class="t6-cl-campo">
+        <label class="t6-cl-campo-rot" for="cl-novo-nome">Nome</label>
+        <input class="t6-cl-campo-input" id="cl-novo-nome" name="nome" placeholder="Nome completo" required />
       </div>
-      <button type="submit" class="cl-novo-btn">Adicionar</button>
+      <div class="t6-cl-campo">
+        <label class="t6-cl-campo-rot" for="cl-novo-tel">Telefone</label>
+        <input class="t6-cl-campo-input" id="cl-novo-tel" name="telefone" inputmode="tel" placeholder="(51) 99999-9999" required />
+      </div>
+      <div class="t6-cl-campo">
+        <label class="t6-cl-campo-rot" for="cl-novo-nascimento">Data de nascimento</label>
+        <input class="t6-cl-campo-input" id="cl-novo-nascimento" name="dataNascimento" type="date" />
+      </div>
+      <button type="submit" class="t6-cl-dlg-btn">Cadastrar</button>
     </form>
   </div>
-
-  <% if (clientes.length === 0) { %>
-    <div class="ag2-vazio">Nenhum cliente cadastrado ainda.</div>
-  <% } else { %>
-    <div class="cl-grid" id="cl-grid">
-      <% clientes.forEach(function (c) { %>
-        <div class="cl-card" data-nome="<%= c.nome.toLowerCase() %>" onclick="abrirModal(<%= c.id %>)">
-          <span class="cl-avatar"><%= c.iniciais %></span>
-          <span class="cl-info">
-            <span class="cl-nome"><%= c.nome %></span>
-            <span class="cl-sub"><%= c.stats.servicoFavorito || 'sem histórico' %></span>
-            <span class="cl-visita <%= c.stats.sumido ? 'cl-visita--sumido' : '' %>"><%= _labelVisita(c.stats.diasDesdeUltima) %></span>
-          </span>
-        </div>
-      <% }) %>
-    </div>
-  <% } %>
 </div>
 
-<!-- Pop-up de detalhe: um por cliente, fundo transparente (igual Estoque/Produtos). -->
+<%/* Detalhe do cliente — FOLHA de página inteira. A referência resolve isso num
+     diálogo pequeno, mas lá o cliente só tem três campos; aqui cabe também
+     histórico, planos e exclusão, então segue o mesmo formato do detalhe de
+     atendimento da Agenda. */%>
 <% clientes.forEach(function (c) { %>
-  <div class="ag-overlay" id="agm-<%= c.id %>" onclick="if(event.target===this)fecharModal(this)">
-    <div class="ag-modal-box cl-modal-box">
-      <div class="cl-modal-topo">
-        <span class="cl-avatar cl-avatar--grande"><%= c.iniciais %></span>
-        <span class="ag-modal-nome"><%= c.nome %></span>
-        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+  <div class="ag-overlay t6-folha" id="agm-<%= c.id %>">
+    <div class="ag-modal-box">
+      <button class="t6-folha-voltar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Voltar">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+
+      <div class="t6-folha-topo">
+        <div class="t6-folha-cliente"><%= c.nome %></div>
+        <div class="t6-folha-hora"><%= _labelVisita(c.stats.diasDesdeUltima) %></div>
       </div>
 
-      <div class="cl-stats-grid">
-        <div class="cl-stat">
-          <div class="cl-stat-label">Gasto total</div>
-          <div class="cl-stat-valor"><%= fmtBRL(c.stats.totalGasto) %></div>
+      <div class="t6-cl-tres">
+        <div class="t6-cl-tres-item">
+          <div class="t6-cl-tres-num"><%= fmtT6(c.stats.totalGasto) %></div>
+          <div class="t6-cl-tres-rot">total gasto</div>
         </div>
-        <div class="cl-stat">
-          <div class="cl-stat-label">Frequência</div>
-          <div class="cl-stat-valor"><%= c.stats.frequenciaDias !== null ? '~' + c.stats.frequenciaDias + ' dias' : '—' %></div>
+        <div class="t6-cl-tres-item">
+          <div class="t6-cl-tres-num"><%= c.stats.visitas %></div>
+          <div class="t6-cl-tres-rot">visitas</div>
         </div>
-        <div class="cl-stat">
-          <div class="cl-stat-label">Serviço favorito</div>
-          <div class="cl-stat-valor"><%= c.stats.servicoFavorito || '—' %></div>
-        </div>
-        <div class="cl-stat">
-          <div class="cl-stat-label">Barbeiro</div>
-          <div class="cl-stat-valor"><%= c.stats.barbeiroFavorito || '—' %></div>
+        <div class="t6-cl-tres-item">
+          <div class="t6-cl-tres-num"><%= c.stats.frequenciaDias !== null ? c.stats.frequenciaDias + 'd' : '—' %></div>
+          <div class="t6-cl-tres-rot">frequência</div>
         </div>
       </div>
 
-      <form method="POST" action="/painel/clientes/<%= c.id %>" class="form mt-16">
-        <div class="campo">
-          <label for="telefone-<%= c.id %>">Telefone</label>
-          <input id="telefone-<%= c.id %>" name="telefone" value="<%= fmtTelefone(c.telefone) %>" required />
+      <form method="POST" action="/painel/clientes/<%= c.id %>" style="margin-top:22px;">
+        <div class="t6-campo">
+          <label class="t6-campo-rot" for="telefone-<%= c.id %>">Telefone</label>
+          <input class="t6-campo-input" id="telefone-<%= c.id %>" name="telefone" inputmode="tel" value="<%= fmtTelefone(c.telefone) %>" required />
         </div>
-        <div class="campo">
-          <label for="nascimento-<%= c.id %>">Data de nascimento</label>
-          <input id="nascimento-<%= c.id %>" name="dataNascimento" type="date" value="<%= c.dataNascimento ? new Date(c.dataNascimento).toISOString().slice(0, 10) : '' %>" />
+        <div class="t6-campo">
+          <label class="t6-campo-rot" for="nascimento-<%= c.id %>">Data de nascimento</label>
+          <input class="t6-campo-input t6-cl-input-sm" id="nascimento-<%= c.id %>" name="dataNascimento" type="date" value="<%= c.dataNascimento ? new Date(c.dataNascimento).toISOString().slice(0, 10) : '' %>" />
         </div>
-        <div class="campo">
-          <label for="obs-<%= c.id %>">Observações</label>
-          <input id="obs-<%= c.id %>" name="observacoes" placeholder="Adicionar observação" value="<%= c.observacoes || '' %>" />
+        <div class="t6-campo">
+          <label class="t6-campo-rot" for="obs-<%= c.id %>">Observações</label>
+          <input class="t6-campo-input t6-cl-input-sm" id="obs-<%= c.id %>" name="observacoes" placeholder="Adicionar observação" value="<%= c.observacoes || '' %>" />
         </div>
-        <div class="modal-acoes">
-          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Fechar</button>
-          <button class="btn btn-primario" type="submit">Salvar</button>
+        <div class="t6-campo">
+          <div class="t6-campo-rot">Serviço favorito · barbeiro</div>
+          <div class="t6-campo-val t6-campo-val--sm"><%= c.stats.servicoFavorito || '—' %> · <%= c.stats.barbeiroFavorito || '—' %></div>
         </div>
+        <button type="submit" class="t6-cl-dlg-btn">Salvar</button>
       </form>
 
       <% if (c.agendamentos.length > 0) { %>
-        <div class="cl-hist">
-          <div class="cl-hist-titulo">Histórico</div>
+        <div class="t6-cl-secao">
+          <div class="t6-cl-secao-rot">Histórico</div>
           <% c.agendamentos.slice(0, 8).forEach(function (ag) { %>
-            <div class="cl-hist-linha">
+            <div class="t6-cl-hist-linha">
               <span><%= fmtData(ag.data) %> · <%= ag.itens.length ? ag.itens.map(function (it) { return it.servico.nome; }).join(', ') : '—' %></span>
-              <span class="cl-hist-valor"><%= fmtBRL(ag.valorTotal) %></span>
+              <span class="t6-cl-hist-valor"><%= fmtT6(ag.valorTotal) %></span>
             </div>
           <% }) %>
         </div>
       <% } %>
 
-      <div class="cl-planos">
-        <div class="cl-hist-titulo">Plano</div>
-        <% if (c.assinaturas.length > 0) { %>
-          <% c.assinaturas.forEach(function (a) { %>
-            <div class="cl-plano-linha">
-              <span><%= a.plano.nome %> <span class="status <%= a.vigente ? 'status-concluido' : 'status-cancelado' %>"><%= a.vigente ? 'ativo' : 'inativo' %></span></span>
-              <form method="POST" action="/painel/clientes/planos/<%= a.id %>/remover" class="inline" onsubmit="return confirm('Remover este plano do cliente?')">
-                <button class="est-cat-x" title="Remover">×</button>
-              </form>
-            </div>
-          <% }) %>
+      <div class="t6-cl-secao">
+        <div class="t6-cl-secao-rot">Plano</div>
+        <% c.assinaturas.forEach(function (a) { %>
+          <div class="t6-cl-plano-linha">
+            <span>
+              <%= a.plano.nome %>
+              <span class="t6-cl-plano-estado <%= a.vigente ? 'vig' : '' %>"><%= a.vigente ? 'ativo' : 'inativo' %></span>
+            </span>
+            <form method="POST" action="/painel/clientes/planos/<%= a.id %>/remover" class="inline" onsubmit="return confirm('Remover este plano do cliente?')">
+              <button class="btn-x" title="Remover">×</button>
+            </form>
+          </div>
+        <% }) %>
+        <% if (c.assinaturas.length === 0 && planosDisponiveis.length === 0) { %>
+          <div class="t6-cl-hist-linha"><span>Nenhum plano.</span></div>
         <% } %>
         <% if (planosDisponiveis.length > 0) { %>
-          <form method="POST" action="/painel/clientes/<%= c.id %>/planos" class="cl-add-plano-form">
+          <form method="POST" action="/painel/clientes/<%= c.id %>/planos" class="t6-cl-add-plano">
             <select name="planoId" required>
               <option value="">Adicionar plano…</option>
               <% planosDisponiveis.forEach(function (p) { %>
@@ -146,14 +187,14 @@
               <% }) %>
             </select>
             <input type="hidden" name="dataInicio" value="<%= hojeIso %>" />
-            <button type="submit" class="est-cat-btn est-cat-btn--claro">Adicionar</button>
+            <button type="submit" class="btn btn-secundario">Adicionar</button>
           </form>
         <% } %>
       </div>
 
-      <div class="flex gap-8 mt-16">
+      <div class="t6-cl-acoes">
         <form method="POST" action="/painel/clientes/<%= c.id %>/remover" class="inline" onsubmit="return confirm('Excluir este cliente?')">
-          <button class="btn btn-perigo btn-sm">Excluir cliente</button>
+          <button class="btn btn-perigo">Excluir cliente</button>
         </form>
       </div>
     </div>
@@ -168,18 +209,42 @@
   function fecharModal(o) {
     if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
   }
-  function toggleNovoCliente() {
-    var p = document.getElementById('cl-novo-painel');
-    if (p) p.hidden = !p.hidden;
-  }
-  function filtrarClientes(termo) {
-    var t = termo.trim().toLowerCase();
-    var grid = document.getElementById('cl-grid');
-    if (!grid) return;
-    Array.prototype.forEach.call(grid.querySelectorAll('.cl-card'), function (card) {
-      card.style.display = card.dataset.nome.indexOf(t) === -1 ? 'none' : '';
+
+  // Busca e filtro trabalham JUNTOS sobre a mesma lista (o Turno 6 mostra os
+  // dois ao mesmo tempo no topo), por isso um recalcula o outro em vez de cada
+  // um esconder as faixas por conta própria.
+  var clFiltro = 'todos';
+  function selecionarFiltro(btn) {
+    Array.prototype.forEach.call(document.querySelectorAll('#cl-filtros .t6-cl-filtro'), function (b) {
+      b.classList.remove('sel');
     });
+    btn.classList.add('sel');
+    clFiltro = btn.getAttribute('data-filtro');
+    filtrarClientes();
   }
+  function filtrarClientes() {
+    var lista = document.getElementById('cl-lista');
+    if (!lista) return;
+    var campo = document.getElementById('cl-busca-input');
+    var t = (campo ? campo.value : '').trim().toLowerCase();
+    var tDigitos = t.replace(/\D/g, '');
+    var visiveis = 0;
+    Array.prototype.forEach.call(lista.querySelectorAll('.t6-cl-item'), function (item) {
+      var casaBusca = !t
+        || item.dataset.nome.indexOf(t) !== -1
+        || (tDigitos && item.dataset.tel.indexOf(tDigitos) !== -1);
+      var casaFiltro = clFiltro === 'todos'
+        || (clFiltro === 'sumidos' && item.dataset.sumido === '1')
+        || (clFiltro === 'aniversariantes' && item.dataset.aniv === '1');
+      var mostra = casaBusca && casaFiltro;
+      item.style.display = mostra ? '' : 'none';
+      if (mostra) visiveis++;
+    });
+    var vazio = document.getElementById('cl-sem-resultado');
+    if (vazio) vazio.hidden = visiveis > 0;
+    lista.hidden = visiveis === 0;
+  }
+
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });

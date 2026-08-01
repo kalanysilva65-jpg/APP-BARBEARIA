@@ -4,13 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Painel' %></title>
-    <%/* O painel usa a fonte do SISTEMA (-apple-system/system-ui) — sem webfont.
-         Além do visual nativo, some uma dependência externa: a tela não depende
-         mais do Google Fonts carregar para renderizar com a tipografia certa. */%>
+    <%/* As telas ainda não convertidas usam a fonte do SISTEMA (sem webfont).
+         O design Turno 6 (2026-07-28) é desenhado em Inter — o HTML de
+         referência declara 'Overused Grotesk' mas a fonte não vem no pacote e
+         ele mesmo cai em Inter, então Inter É o que a referência mostra.
+         Fica com `display=swap` e fallback de sistema: se o Google Fonts não
+         carregar, a tela ainda renderiza. */%>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/tema-minimal.css" />
     <link rel="stylesheet" href="/css/painel-app.css" />
     <link rel="stylesheet" href="/css/painel-novo.css" />
+    <%/* Turno 6: `painel-turno6.css` traz os TOKENS (cores, tipografia) e o que
+         é compartilhado — barra inferior, gaveta, folhas de pop-up, campos.
+         Cada tela convertida tem o próprio arquivo depois dele, para que as
+         conversões possam acontecer em paralelo sem uma sobrescrever a outra.
+         Os nomes de classe são disjuntos, então a ordem entre eles não importa. */%>
+    <link rel="stylesheet" href="/css/painel-turno6.css" />
+    <link rel="stylesheet" href="/css/t6-caixa.css" />
+    <link rel="stylesheet" href="/css/t6-relatorios.css" />
+    <link rel="stylesheet" href="/css/t6-clientes-equipe.css" />
+    <link rel="stylesheet" href="/css/t6-catalogo.css" />
+    <link rel="stylesheet" href="/css/t6-planos-perfil.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#111111" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -19,6 +36,13 @@
     <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
   </head>
   <%
+    // Telas já convertidas para o design TURNO 6 (2026-07-28, o HTML de
+    // referência que o dono anexou). Ganham só `pg-t6` — de propósito FORA do
+    // esquema `pg-novo` abaixo, senão o CSS do tema escuro anterior (fundo
+    // #0b0b0d, cartões arredondados) brigaria com o editorial claro.
+    var TELAS_T6 = ['/painel', '/painel/agenda', '/painel/caixa', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/relatorios'];
+    var ehT6 = TELAS_T6.indexOf(currentPath) !== -1;
+
     // Cada tela já convertida para o design novo ganha sua classe (.pg-*); as
     // demais seguem no visual antigo.
     var TELAS_NOVAS = {
@@ -41,7 +65,8 @@
        do painel-novo.css (cabeçalho sem cartão, pop-ups de vidro etc). As
        classes .pg-<tela> continuam existindo para o que É específico de
        cada uma (o hero só existe na Home, por exemplo). */%>
-  <body class="app-painel <%= classeTela %> <%= classeTela ? 'pg-novo' : '' %>">
+  <body class="app-painel <%= ehT6 ? 'pg-t6' : classeTela + ' ' + (classeTela ? 'pg-novo' : '') %>">
+    <% if (!ehT6) { %><%- include('../partials/splash') %><% } %>
     <div class="app-topo-fixo">
       <%- include('../partials/header-painel') %>
     </div>

@@ -1,111 +1,109 @@
-<%
-  var barbeariaNome = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
-  var capaUrl = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.capaUrl : null;
-  var papelLabel = ehAdmin ? 'Gestor' : 'Barbeiro';
-%>
+<%/* Home no design TURNO 6 (pedido do dono, 2026-07-28): segue o HTML de
+     referência que ele anexou — abre com o PRÓXIMO AGENDAMENTO em manchete,
+     depois os números grandes e, no fim, as colunas do faturamento semanal.
+     Sem cartão, sem canto redondo: a separação é por fio de 1px. */%>
+<div class="t6-tela">
 
-<!-- Hero com foto de capa + saudação -->
-<div class="home-hero">
-  <% if (capaUrl) { %>
-    <img class="home-hero-img" src="<%= capaUrl %>" alt="Capa de <%= barbeariaNome %>" />
+  <div class="t6-home-topo t6-reveal">
+    <div class="t6-eyebrow"><%= saudacao %> · <%= dataLonga %></div>
+    <div class="t6-home-titulo">PRÓXIMO<br>AGENDAMENTO</div>
+  </div>
+
+  <a href="/painel/agenda" class="t6-prox t6-reveal">
+    <% if (proximoCorte) { %>
+      <div class="t6-prox-linha">
+        <div class="t6-prox-nome"><%= proximoCorte.cliente %></div>
+        <div class="t6-prox-hora"><%= proximoCorte.hora %></div>
+      </div>
+      <div class="t6-prox-sub"><%= proximoCorte.servico %> · <%= proximoCorte.diaNum %> <%= proximoCorte.mesLabel %></div>
+    <% } else { %>
+      <div class="t6-prox-linha">
+        <div class="t6-prox-nome">Nenhum agendamento</div>
+      </div>
+      <div class="t6-prox-sub">A agenda está livre a partir de agora</div>
+    <% } %>
+  </a>
+
+  <% if (seguintesCortes.length) { %>
+    <a href="/painel/agenda" class="t6-seguintes t6-reveal">
+      <% seguintesCortes.forEach(function (nx) { %>
+        <div class="t6-seguinte">
+          <div class="t6-seguinte-quem"><%= nx.cliente %> · <%= nx.servico %></div>
+          <div class="t6-seguinte-hora"><%= nx.hora %></div>
+        </div>
+      <% }) %>
+    </a>
   <% } %>
-  <div class="home-hero-sombra"></div>
 
-  <%/* Sem avatar aqui: o hero é só a foto de capa + a saudação. A troca da foto
-       de perfil segue no cabeçalho das demais telas do painel. */%>
-  <div class="home-hero-texto">
-    <span class="home-hero-badge"><%= saudacao %> · <%= hojeFormatado %></span>
-    <div class="home-hero-nome"><%= usuario.nome %></div>
-    <div class="home-hero-sub"><%= papelLabel %> · <%= barbeariaNome %></div>
-  </div>
-</div>
-
-<div class="home-corpo">
-  <div class="home-bento">
-    <% if (ehAdmin) { %>
-      <!-- Faturamento (card escuro, ocupa 2 linhas) -->
-      <a href="/painel/caixa" class="home-card home-card--fat">
-        <div class="home-card-eyebrow">
-          Hoje<% if (variacaoHojeOntem !== null) { %> · <%= variacaoHojeOntem >= 0 ? '+' : '' %><%= variacaoHojeOntem %>%<% } %>
-        </div>
-        <svg class="home-fat-spark" viewBox="0 0 140 30" preserveAspectRatio="none" aria-hidden="true">
-          <path d="<%= sparkPath %>" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" />
-        </svg>
-        <div>
-          <div class="home-fat-num"><%= fmtBRL(ganhoHoje) %></div>
-          <div class="home-fat-legenda">Faturamento hoje</div>
-        </div>
-      </a>
-
-      <!-- Ocupação (card branco) -->
-      <a href="/painel/comissoes" class="home-card home-card--branco">
-        <div class="home-card-topo">
-          <span class="home-card-label">Ocupação</span>
-          <span class="home-card-icone"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
-        </div>
-        <div class="home-card-num"><%= produtividade %>%</div>
-        <div class="home-bar"><div style="width:<%= Math.min(100, produtividade) %>%"></div></div>
-      </a>
-
-      <!-- Cortes hoje + Ticket médio (card branco empilhado) -->
-      <div class="home-card home-card--stack">
-        <a href="/painel/agenda" class="home-stack-item" style="display:block;text-decoration:none;color:inherit;">
-          <div class="home-card-topo">
-            <span class="home-card-label">Cortes hoje</span>
-            <span class="home-card-icone"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
-          </div>
-          <div class="home-card-num"><%= concluidosHoje %></div>
+  <div class="t6-home-nums">
+    <div class="t6-nums-linha">
+      <% if (ehAdmin) { %>
+        <a href="/painel/caixa" class="t6-num-bloco t6-reveal">
+          <div class="t6-num"><%= fmtT6(ganhoHoje) %></div>
+          <div class="t6-num-label">Faturamento<br>hoje</div>
         </a>
-        <div class="home-stack-item">
-          <div class="home-card-topo">
-            <span class="home-card-label">Ticket médio</span>
+        <div class="t6-nums-col">
+          <a href="/painel/relatorios" class="t6-reveal">
+            <div class="t6-num"><%= concluidosHoje %></div>
+            <div class="t6-num-label">Cortes hoje</div>
+          </a>
+          <a href="/painel/relatorios" class="t6-reveal">
+            <div class="t6-num"><%= fmtT6(ticketMedioHoje) %></div>
+            <div class="t6-num-label">Ticket médio<br>por atendimento</div>
+          </a>
+        </div>
+      <% } else { %>
+        <%/* Funcionário não vê faturamento: o bloco escuro passa a ser o
+             volume de atendimentos do dia. */%>
+        <a href="/painel/agenda" class="t6-num-bloco t6-reveal">
+          <div class="t6-num"><%= totalHoje %></div>
+          <div class="t6-num-label">Agendamentos<br>hoje</div>
+        </a>
+        <div class="t6-nums-col">
+          <div class="t6-reveal">
+            <div class="t6-num"><%= concluidosHoje %></div>
+            <div class="t6-num-label">Concluídos</div>
           </div>
-          <div class="home-card-num"><%= fmtBRL(ticketMedioHoje) %></div>
+          <div class="t6-reveal">
+            <div class="t6-num"><%= restantesHoje %></div>
+            <div class="t6-num-label">Restantes<br>para hoje</div>
+          </div>
         </div>
-      </div>
-    <% } else { %>
-      <!-- Funcionário: sem faturamento. Cortes hoje ocupa o card grande. -->
-      <a href="/painel/agenda" class="home-card home-card--fat">
-        <div class="home-card-eyebrow">Hoje</div>
-        <div>
-          <div class="home-fat-num"><%= totalHoje %></div>
-          <div class="home-fat-legenda">Agendamentos hoje</div>
+      <% } %>
+    </div>
+
+    <a href="/painel/agenda" class="t6-ocupacao t6-reveal">
+      <div class="t6-ocupacao-num"><%= produtividade %>%</div>
+      <div class="t6-ocupacao-label">Ocupação da agenda hoje</div>
+    </a>
+
+    <% if (estoqueBaixo.tem) { %>
+      <a href="/painel/estoque" class="t6-alerta-estoque t6-reveal">
+        <div class="t6-alerta-corpo">
+          <div class="t6-alerta-linha">
+            <div class="t6-alerta-num"><%= estoqueBaixo.quantidade %></div>
+            <div class="t6-alerta-titulo"><%= estoqueBaixo.titulo %></div>
+          </div>
+          <div class="t6-alerta-nomes"><%= estoqueBaixo.nomes %></div>
         </div>
+        <svg class="t6-alerta-seta" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0E0E0E" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
-      <div class="home-card home-card--branco">
-        <div class="home-card-topo"><span class="home-card-label">Concluídos</span></div>
-        <div class="home-card-num"><%= concluidosHoje %></div>
-      </div>
-      <div class="home-card home-card--branco">
-        <div class="home-card-topo"><span class="home-card-label">Restantes</span></div>
-        <div class="home-card-num"><%= restantesHoje %></div>
+    <% } %>
+
+    <% if (ehAdmin) { %>
+      <div class="t6-semana t6-reveal">
+        <div class="t6-semana-titulo">FATURAMENTO SEMANAL</div>
+        <div class="t6-semana-total"><%= fmtT6(faturamentoSemanal) %></div>
+        <div class="t6-semana-blocos">
+          <% blocosSemana.forEach(function (bl) { %>
+            <div class="t6-bloco" style="height:<%= bl.altura %>px;background:<%= bl.fundo %>;">
+              <div class="t6-bloco-valor" style="color:<%= bl.texto %>;"><%= fmtT6(bl.valor) %></div>
+              <div class="t6-bloco-label" style="color:<%= bl.apoio %>;"><%= bl.label %></div>
+            </div>
+          <% }) %>
+        </div>
       </div>
     <% } %>
   </div>
 
-  <!-- Próximos cortes: cartão de vidro (translúcido, com blur) — não é um
-       card branco sólido como o resto do bento. -->
-  <div class="home-proximos">
-    <div class="home-proximos-topo">
-      <span class="home-secao-titulo">Próximos cortes</span>
-      <a href="/painel/agenda" class="home-proximos-ir" aria-label="Ver agenda">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M7 17 17 7M9 7h8v8"/></svg>
-      </a>
-    </div>
-    <% if (proximosLista.length === 0) { %>
-      <div class="home-vazio">Sem próximos atendimentos hoje.</div>
-    <% } else { %>
-      <%/* Lado a lado (flex, cada item ocupa espaço igual) — não é uma lista
-           empilhada com divisórias. */%>
-      <div class="home-prox-linha">
-        <% proximosLista.forEach(function (p) { %>
-          <a href="/painel/agenda" class="home-prox-item">
-            <span class="home-prox-hora"><%= p.hora %></span>
-            <span class="home-prox-cliente"><%= p.nome %></span>
-            <span class="home-prox-servico"><%= p.servico %></span>
-          </a>
-        <% }) %>
-      </div>
-    <% } %>
-  </div>
 </div>

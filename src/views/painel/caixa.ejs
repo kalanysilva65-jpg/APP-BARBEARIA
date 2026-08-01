@@ -1,148 +1,165 @@
-<%
-  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
-  var ICONE_PAG = {
-    pix: '<path d="M12 3 4 12l8 9 8-9-8-9z"/>',
-    credito: '<rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20"/>',
-    debito: '<rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20"/>',
-    dinheiro: '<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="3"/>',
-  };
-%>
+<%/* CAIXA no design TURNO 6 (pedido do dono, 2026-07-28): segue o HTML de
+     referência. As abas Saldo/Transações e a carteira-cartão saíram — a tela
+     agora é um EXTRATO corrido: saldo do período em manchete, o que ainda
+     falta entrar num bloco preto e a lista de lançamentos com o saldo
+     acumulado ao lado de cada faixa. Nada de cartão nem canto redondo: a
+     separação é por fio de 1px. */%>
 
-<!-- Cabeçalho: segmentado Saldo/Transações (igual ao Equipe/Histórico da
-     tela de Equipe) + "+" sem círculo (abre "Novo lançamento", escurece
-     atrás). -->
-<div class="ag2-topo">
-  <div class="ag2-marca-linha">
-    <span class="ag2-avatar-deco"></span>
-    <div class="fin-tabs">
-      <span class="fin-tab ativo" data-tab="saldo" onclick="mudarAbaFin('saldo')">Saldo</span>
-      <span class="fin-tab" data-tab="transacoes" onclick="mudarAbaFin('transacoes')">Transações</span>
-    </div>
-    <button type="button" class="ag2-add" onclick="abrirModal('novo')" aria-label="Novo lançamento">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+<div class="t6-cx-topo">
+  <div class="t6-cx-titulo-linha">
+    <div class="t6-cx-titulo">CAIXA</div>
+    <button type="button" class="t6-btn-novo" onclick="abrirModal('novo')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      <span>Lançar</span>
     </button>
   </div>
 
-  <div class="fin-saudacao">
-    <span class="ag2-marca cl-marca">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8a8a85" stroke-width="2"><path d="M12 22s7-7.5 7-13a7 7 0 0 0-14 0c0 5.5 7 13 7 13z"/><circle cx="12" cy="9" r="2.2"/></svg>
-      <%= nomeBarbearia %>
-    </span>
-    <div class="ag2-titulo" style="margin-top:6px;"><%= saudacao %>, <%= usuarioPrimeiroNome %>!</div>
-  </div>
-
-  <!-- Seletor de período: pílulas de vidro (Hoje/Semana/Mês), igual ao HTML
-       original. Calendário (período customizado) e engrenagem (categorias)
-       são acréscimos necessários — não existem no protótipo, que não tem
-       backend por trás. -->
-  <div class="fin-periodo-linha">
-    <div class="fin-periodo-pills">
-      <a class="fin-periodo-pill <%= periodoAtivo === 'hoje' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>">Hoje</a>
-      <a class="fin-periodo-pill <%= periodoAtivo === 'semana' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetSemana.inicio %>&fim=<%= presetSemana.fim %>">Semana</a>
-      <a class="fin-periodo-pill <%= periodoAtivo === 'mes' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetMes.inicio %>&fim=<%= presetMes.fim %>">Mês</a>
-    </div>
-    <button type="button" class="fin-periodo-icone <%= periodoAtivo === 'custom' ? 'ativo' : '' %>" onclick="abrirModal('periodo')" title="Escolher período">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    </button>
-    <button type="button" class="fin-periodo-icone" onclick="abrirModal('categorias')" title="Categorias de caixa">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  <div class="t6-cx-periodo">
+    <a class="t6-cx-per <%= periodoAtivo === 'hoje' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>">Hoje</a>
+    <a class="t6-cx-per <%= periodoAtivo === 'semana' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetSemana.inicio %>&fim=<%= presetSemana.fim %>">Semana</a>
+    <a class="t6-cx-per <%= periodoAtivo === 'mes' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetMes.inicio %>&fim=<%= presetMes.fim %>">Mês</a>
+    <%/* O período livre é um painel que abre AQUI mesmo (não mais um pop-up):
+         na referência escolher datas faz parte do cabeçalho, não é diálogo. */%>
+    <button type="button" class="t6-cx-per <%= periodoAtivo === 'custom' ? 'ativo' : '' %>" id="cx-per-custom" onclick="cxAlternarPeriodo()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8h18M7 3v3M17 3v3M4 5h16v16H4z"/></svg>
+      <span><%= periodoCustomLabel %></span>
     </button>
   </div>
-</div>
 
-<div class="ag2-corpo fin-corpo">
-  <!-- Aba Saldo -->
-  <div class="fin-aba" id="fin-aba-saldo">
-    <div class="fin-carteira-wrap">
-      <div class="fin-peek fin-peek--1"></div>
-      <div class="fin-peek fin-peek--2"></div>
-      <div class="fin-carteira">
-        <div class="fin-carteira-label">Caixa</div>
-        <div class="fin-carteira-valor"><%= fmtBRL(resumoPeriodo.saldo) %></div>
-        <button type="button" class="fin-detalhes-btn" onclick="abrirModal('detalhes')">Detalhes</button>
-      </div>
-    </div>
-
-    <div class="fin-grid">
-      <div class="fin-grid-card">
-        <div class="fin-grid-label">Serviços</div>
-        <div class="fin-grid-valor"><%= fmtBRL(servicosValor) %></div>
-      </div>
-      <div class="fin-grid-card">
-        <div class="fin-grid-label">Produtos</div>
-        <div class="fin-grid-valor"><%= fmtBRL(produtosValor) %></div>
-      </div>
-      <div class="fin-grid-card">
-        <div class="fin-grid-label">Comissão</div>
-        <div class="fin-grid-valor"><%= fmtBRL(comissaoValor) %></div>
-      </div>
-      <div class="fin-grid-card">
-        <div class="fin-grid-label">Saídas</div>
-        <div class="fin-grid-valor"><%= fmtBRL(resumoPeriodo.saiu) %></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Aba Transações -->
-  <div class="fin-aba" id="fin-aba-transacoes" hidden>
-    <div class="fin-trans-card">
-      <div class="fin-trans-topo">
-        <div class="fin-trans-titulo">Transações</div>
-        <div class="fin-trans-vertudo">Ver tudo</div>
-      </div>
-      <div class="fin-trans-secao"><%= nomePeriodoSel.toUpperCase() %></div>
-      <% if (lancamentos.length === 0) { %>
-        <div class="ag2-vazio">Nenhum lançamento neste período.</div>
-      <% } else { %>
-        <div class="fin-trans-lista">
-          <% lancamentos.forEach(function (l) { %>
-            <div class="fin-trans-item">
-              <span class="fin-trans-icone <%= l.tipo === 'entrada' ? 'fin-trans-icone--entrada' : 'fin-trans-icone--saida' %>">
-                <% if (l.tipo === 'entrada') { %>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
-                <% } else { %>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e36b6b" stroke-width="2.4"><path d="M5 12h14"/></svg>
-                <% } %>
-              </span>
-              <span class="fin-trans-info">
-                <span class="fin-trans-nome"><%= l.descricao %></span>
-                <span class="fin-trans-sub"><%= fmtData(l.data) %><%= l.categoria ? ' · ' + l.categoria.nome : '' %></span>
-              </span>
-              <span class="fin-trans-valor <%= l.tipo === 'entrada' ? 'fin-trans-valor--entrada' : 'fin-trans-valor--saida' %>">
-                <%= l.tipo === 'entrada' ? '+ ' : '− ' %><%= fmtBRL(l.valor) %>
-              </span>
-              <form method="POST" action="/painel/caixa/<%= l.id %>/remover" class="fin-trans-x" onsubmit="return confirm('Excluir este lançamento?')">
-                <input type="hidden" name="inicio" value="<%= inicioStr %>" />
-                <input type="hidden" name="fim" value="<%= fimStr %>" />
-                <button title="Excluir">×</button>
-              </form>
-            </div>
-          <% }) %>
+  <div class="t6-cx-custom" id="cx-custom" hidden>
+    <form method="GET" action="/painel/caixa">
+      <div class="t6-cx-custom-datas">
+        <div>
+          <div class="t6-cx-rot">De</div>
+          <input class="t6-cx-inp" id="cx-inicio" type="date" name="inicio" value="<%= inicioStr %>" />
         </div>
-      <% } %>
-    </div>
+        <div>
+          <div class="t6-cx-rot">Até</div>
+          <input class="t6-cx-inp" id="cx-fim" type="date" name="fim" value="<%= fimStr %>" />
+        </div>
+      </div>
+      <div class="t6-cx-atalhos" style="margin-top:14px;">
+        <% atalhosPeriodo.forEach(function (a) { %>
+          <button type="button" class="t6-cx-atalho" onclick="cxAtalho('<%= a.inicio %>','<%= a.fim %>')"><%= a.label %></button>
+        <% }) %>
+      </div>
+      <button type="submit" class="t6-cx-aplicar" style="margin-top:14px;">Aplicar</button>
+    </form>
   </div>
 </div>
 
-<!-- Pop-up: Detalhes (formas de pagamento) — escurece atrás, igual ao HTML original. -->
+<div class="t6-cx-corpo">
+
+  <div class="t6-cx-saldo t6-reveal">
+    <div class="t6-eyebrow">Saldo <%= periodoLabelCurto %></div>
+    <div class="t6-cx-saldo-num"><%= resumoPeriodo.saldo < 0 ? '−' : '' %><%= fmtT6(Math.abs(resumoPeriodo.saldo)) %></div>
+    <div class="t6-cx-saldo-sub"><%= fmtBRL(resumoPeriodo.entrou) %> de entradas − <%= fmtBRL(resumoPeriodo.saiu) %> de saídas</div>
+  </div>
+
+  <%/* O que a agenda promete e o caixa ainda não viu. Leva pros relatórios,
+       que é onde dá pra olhar o período inteiro. */%>
+  <a href="/painel/relatorios" class="t6-cx-receber t6-reveal">
+    <div>
+      <div class="t6-cx-receber-num"><%= fmtT6(aReceber.valor) %></div>
+      <div class="t6-cx-receber-sub">a receber · <%= aReceber.quantidade %> atendimento<%= aReceber.quantidade === 1 ? '' : 's' %> ainda aberto<%= aReceber.quantidade === 1 ? '' : 's' %></div>
+    </div>
+    <svg class="t6-cx-receber-seta" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </a>
+
+  <div class="t6-cx-comp t6-reveal">
+    <div class="t6-eyebrow">Composição do período</div>
+    <div class="t6-cx-comp-grade">
+      <div class="t6-cx-comp-item">
+        <div class="t6-cx-comp-rot">Serviços</div>
+        <div class="t6-cx-comp-val"><%= fmtT6(servicosValor) %></div>
+      </div>
+      <div class="t6-cx-comp-item">
+        <div class="t6-cx-comp-rot">Produtos</div>
+        <div class="t6-cx-comp-val"><%= fmtT6(produtosValor) %></div>
+      </div>
+      <div class="t6-cx-comp-item">
+        <div class="t6-cx-comp-rot">Comissão</div>
+        <div class="t6-cx-comp-val"><%= fmtT6(comissaoValor) %></div>
+      </div>
+      <div class="t6-cx-comp-item">
+        <div class="t6-cx-comp-rot">Saídas</div>
+        <div class="t6-cx-comp-val"><%= fmtT6(resumoPeriodo.saiu) %></div>
+      </div>
+    </div>
+  </div>
+
+  <%/* A animação de entrada fica no bloco, não em cada faixa: com 30 linhas
+       subindo juntas o extrato inteiro tremia. */%>
+  <div class="t6-cx-extrato t6-reveal">
+    <div class="t6-eyebrow t6-cx-extrato-rot"><%= extratoLabel %></div>
+    <% if (extrato.length === 0) { %>
+      <div class="t6-vazio">Nenhum lançamento neste período.</div>
+    <% } else { %>
+      <% extrato.forEach(function (ex) { %>
+        <div class="t6-cx-linha">
+          <div class="t6-cx-linha-quando">
+            <div class="t6-cx-hora"><%= ex.hora %></div>
+            <div class="t6-cx-dia"><%= ex.diaLabel %></div>
+          </div>
+          <div class="t6-cx-linha-corpo">
+            <div class="t6-cx-desc"><%= ex.descricao %></div>
+            <% if (ex.sub) { %><div class="t6-cx-sub"><%= ex.sub %></div><% } %>
+          </div>
+          <div class="t6-cx-linha-valor">
+            <div class="t6-cx-valor <%= ex.entrada ? '' : 't6-cx-valor--saida' %>"><%= ex.entrada ? '+' : '−' %><%= fmtBRL(ex.valor) %></div>
+            <div class="t6-cx-saldo-corrido"><%= fmtBRL(ex.saldo) %></div>
+          </div>
+          <form method="POST" action="/painel/caixa/<%= ex.id %>/remover" onsubmit="return confirm('Excluir este lançamento?')">
+            <input type="hidden" name="inicio" value="<%= inicioStr %>" />
+            <input type="hidden" name="fim" value="<%= fimStr %>" />
+            <button class="t6-cx-linha-x" title="Excluir lançamento">×</button>
+          </form>
+        </div>
+      <% }) %>
+      <div class="t6-cx-fim"></div>
+      <% if (extratoRestantes > 0) { %>
+        <div class="t6-cx-mais">+ <%= extratoRestantes %> lançamento<%= extratoRestantes === 1 ? '' : 's' %> anterior<%= extratoRestantes === 1 ? '' : 'es' %> neste período</div>
+      <% } %>
+    <% } %>
+  </div>
+
+  <%/* Configuração do caixa fica no fim, fora do caminho do dia a dia. */%>
+  <div class="t6-cx-ajustes">
+    <div class="t6-eyebrow">Ajustes do caixa</div>
+    <button type="button" class="t6-cx-ajuste" onclick="abrirModal('detalhes')">
+      <span>
+        Formas de pagamento
+        <span class="t6-cx-ajuste-sub">Como entrou o dinheiro do período</span>
+      </span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+    <button type="button" class="t6-cx-ajuste" onclick="abrirModal('categorias')">
+      <span>
+        Categorias e automação
+        <span class="t6-cx-ajuste-sub"><%= categorias.length %> categoria<%= categorias.length === 1 ? '' : 's' %> · entrada automática <%= autoLigado ? 'ligada' : 'desligada' %></span>
+      </span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<!-- Pop-up: formas de pagamento do período -->
 <div class="ag-overlay" id="agm-detalhes" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
+  <div class="ag-modal-box t6-cx-modal">
     <div class="ag-modal-topo">
-      <div class="ag-modal-nome">Formas de pagamento</div>
+      <div class="t6-cx-modal-titulo">Formas de pagamento</div>
       <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
     </div>
-    <div class="texto-sutil mt-4"><%= nomePeriodoSel %> · <%= fmtBRL(resumoPeriodo.entrou) %></div>
+    <div class="t6-cx-rot" style="margin-top:10px;"><%= nomePeriodoSel %> · <%= fmtBRL(resumoPeriodo.entrou) %></div>
     <% if (formasPagamento.length === 0) { %>
-      <p class="texto-secundario mt-16">Nenhuma entrada com forma de pagamento registrada neste período.</p>
+      <div class="t6-vazio">Nenhuma entrada com forma de pagamento registrada neste período.</div>
     <% } else { %>
-      <div class="fin-pag-lista mt-16">
+      <div class="t6-cx-pag">
         <% formasPagamento.forEach(function (f) { %>
-          <div class="fin-pag-item">
-            <span class="fin-pag-icone <%= f.valor === 'pix' ? 'fin-pag-icone--escura' : '' %>">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="<%= f.valor === 'pix' ? '#fff' : '#0a0a0a' %>" stroke-width="2"><%- ICONE_PAG[f.valor] %></svg>
-            </span>
-            <span class="fin-pag-nome"><%= f.label %></span>
-            <span class="fin-pag-valor"><%= fmtBRL(f.valorCentavos) %></span>
+          <div class="t6-cx-pag-item">
+            <span class="t6-cx-pag-nome"><%= f.label %></span>
+            <span class="t6-cx-pag-valor"><%= fmtBRL(f.valorCentavos) %></span>
           </div>
         <% }) %>
       </div>
@@ -150,131 +167,115 @@
   </div>
 </div>
 
-<!-- Pop-up: Novo lançamento (categoria já carrega o tipo entrada/saída). -->
+<%/* Pop-up: Novo lançamento. Entrada/Saída no topo é FILTRO das categorias —
+     no app o tipo do lançamento vem da categoria, então dois campos separados
+     poderiam se contradizer. */%>
 <div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
+  <div class="ag-modal-box t6-cx-modal">
     <div class="ag-modal-topo">
-      <div class="ag-modal-nome">Novo lançamento</div>
+      <div class="t6-cx-modal-titulo">Novo lançamento</div>
       <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
     </div>
     <% if (categorias.length === 0) { %>
-      <p class="texto-secundario mt-16">Cadastre uma categoria pra poder lançar.</p>
+      <div class="t6-vazio">Cadastre uma categoria pra poder lançar.</div>
     <% } else { %>
-      <form method="POST" action="/painel/caixa" class="form mt-16">
+      <form method="POST" action="/painel/caixa">
         <input type="hidden" name="inicio" value="<%= inicioStr %>" />
         <input type="hidden" name="fim" value="<%= fimStr %>" />
-        <div class="campo">
-          <label for="descricao-novo">Descrição</label>
-          <input id="descricao-novo" name="descricao" placeholder="Ex.: Corte do João" />
-        </div>
-        <div class="campo">
-          <label for="valor-novo">Valor (R$)</label>
-          <input id="valor-novo" name="valor" type="number" step="0.01" min="0" required />
-        </div>
-        <div class="campo">
-          <label>Categoria</label>
-          <input type="hidden" name="categoriaId" id="categoriaId-novo" required />
-          <div class="pill-group">
-            <% categorias.forEach(function (c) { %>
-              <button type="button" class="pill-opcao" data-valor="<%= c.id %>" onclick="selecionarPill(this,'categoriaId-novo')"><%= c.tipo === 'entrada' ? 'Entrada' : 'Saída' %> · <%= c.nome %></button>
-            <% }) %>
+
+        <div class="t6-cx-modal-campos">
+          <div class="t6-cx-tipo">
+            <button type="button" class="t6-cx-tipo-btn ativo" data-tipo="entrada" onclick="cxFiltrarCategorias('entrada')">Entrada</button>
+            <button type="button" class="t6-cx-tipo-btn" data-tipo="saida" onclick="cxFiltrarCategorias('saida')">Saída</button>
           </div>
-        </div>
-        <div class="campo">
-          <label>Forma de pagamento <span class="texto-sutil">(opcional)</span></label>
-          <input type="hidden" name="formaPagamento" id="formaPagamento-novo" />
-          <div class="pill-group">
-            <% formasPagamentoOpcoes.forEach(function (f) { %>
-              <button type="button" class="pill-opcao" data-valor="<%= f.valor %>" onclick="selecionarPill(this,'formaPagamento-novo')"><%= f.label %></button>
-            <% }) %>
+
+          <div>
+            <div class="t6-cx-rot">Valor</div>
+            <input class="t6-cx-inp t6-cx-inp--grande" id="valor-novo" name="valor" type="number" step="0.01" min="0" placeholder="0,00" required />
           </div>
-        </div>
-        <div class="campo">
-          <label for="data-novo">Data</label>
-          <input id="data-novo" name="data" type="date" value="<%= hojeIso %>" />
-        </div>
-        <div class="modal-acoes">
-          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-          <button class="btn btn-primario" type="submit">Adicionar</button>
+
+          <div>
+            <div class="t6-cx-rot">Descrição</div>
+            <input class="t6-cx-inp" id="descricao-novo" name="descricao" placeholder="Ex.: corte do João" />
+          </div>
+
+          <div>
+            <div class="t6-cx-rot">Categoria</div>
+            <input type="hidden" name="categoriaId" id="categoriaId-novo" required />
+            <div class="pill-group" id="cx-pills-categoria">
+              <% categorias.forEach(function (c) { %>
+                <button type="button" class="pill-opcao" data-tipo="<%= c.tipo %>" data-valor="<%= c.id %>" onclick="selecionarPill(this,'categoriaId-novo')"><%= c.nome %></button>
+              <% }) %>
+            </div>
+          </div>
+
+          <div>
+            <div class="t6-cx-rot">Forma de pagamento (opcional)</div>
+            <input type="hidden" name="formaPagamento" id="formaPagamento-novo" />
+            <div class="pill-group">
+              <% formasPagamentoOpcoes.forEach(function (f) { %>
+                <button type="button" class="pill-opcao" data-valor="<%= f.valor %>" onclick="selecionarPill(this,'formaPagamento-novo')"><%= f.label %></button>
+              <% }) %>
+            </div>
+          </div>
+
+          <div>
+            <div class="t6-cx-rot">Data</div>
+            <input class="t6-cx-inp" id="data-novo" name="data" type="date" value="<%= hojeIso %>" />
+          </div>
+
+          <button class="t6-cx-enviar" type="submit">Lançar</button>
         </div>
       </form>
     <% } %>
   </div>
 </div>
 
-<!-- Pop-up: escolher período (De/Até) -->
-<div class="ag-overlay" id="agm-periodo" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
-    <div class="ag-modal-topo">
-      <div class="ag-modal-nome">Escolher período</div>
-      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-    </div>
-    <form method="GET" action="/painel/caixa" class="form mt-16">
-      <div class="grid-2">
-        <div class="campo">
-          <label for="inicio">De</label>
-          <input id="inicio" type="date" name="inicio" value="<%= inicioStr %>" />
-        </div>
-        <div class="campo">
-          <label for="fim">Até</label>
-          <input id="fim" type="date" name="fim" value="<%= fimStr %>" />
-        </div>
-      </div>
-      <div class="modal-acoes">
-        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-        <button class="btn btn-primario">Aplicar</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Pop-up: Categorias de caixa -->
+<!-- Pop-up: categorias de caixa + entrada automática -->
 <div class="ag-overlay" id="agm-categorias" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
+  <div class="ag-modal-box t6-cx-modal">
     <div class="ag-modal-topo">
-      <div class="ag-modal-nome">Categorias de caixa</div>
+      <div class="t6-cx-modal-titulo">Categorias de caixa</div>
       <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
     </div>
-    <p class="texto-sutil mt-4">Cada categoria é de entrada ou saída. Remover não apaga lançamentos.</p>
+    <div class="t6-cx-ajuste-sub" style="margin-top:8px;">Cada categoria é de entrada ou saída. Remover não apaga lançamentos.</div>
 
-    <form method="POST" action="/painel/caixa/categorias" class="form-cat-caixa mt-16">
+    <form method="POST" action="/painel/caixa/categorias" class="t6-cx-cat-nova">
       <input name="nome" placeholder="Nova categoria" required />
       <select name="tipo">
         <option value="entrada">Entrada</option>
         <option value="saida">Saída</option>
       </select>
-      <button class="est-cat-btn est-cat-btn--claro">Adicionar</button>
+      <button class="btn btn-secundario">Adicionar</button>
     </form>
 
-    <ul class="lista-categorias mt-16">
+    <ul class="t6-cx-cat-lista">
       <% categorias.forEach(function (c) { %>
-        <li>
-          <form method="POST" action="/painel/caixa/categorias/<%= c.id %>" class="form-cat-caixa">
+        <li class="t6-cx-cat-item">
+          <form method="POST" action="/painel/caixa/categorias/<%= c.id %>">
             <input name="nome" value="<%= c.nome %>" />
             <select name="tipo">
               <option value="entrada" <%= c.tipo === 'entrada' ? 'selected' : '' %>>Entrada</option>
               <option value="saida" <%= c.tipo === 'saida' ? 'selected' : '' %>>Saída</option>
             </select>
-            <span class="texto-sutil"><%= c._count.lancamentos %></span>
-            <button class="est-cat-btn est-cat-btn--claro">Salvar</button>
+            <span class="t6-cx-cat-n"><%= c._count.lancamentos %></span>
+            <button class="btn btn-secundario">Salvar</button>
           </form>
-          <form method="POST" action="/painel/caixa/categorias/<%= c.id %>/remover" class="inline"
+          <form method="POST" action="/painel/caixa/categorias/<%= c.id %>/remover"
                 onsubmit="return confirm('Remover esta categoria?')">
-            <button class="est-cat-x" title="Remover categoria">×</button>
+            <button class="t6-cx-cat-x" title="Remover categoria">×</button>
           </form>
         </li>
       <% }) %>
       <% if (categorias.length === 0) { %>
-        <li class="texto-sutil">Nenhuma categoria.</li>
+        <li class="t6-vazio">Nenhuma categoria.</li>
       <% } %>
     </ul>
 
-    <form method="POST" action="/painel/caixa/config" class="mt-16">
+    <form method="POST" action="/painel/caixa/config" class="t6-cx-auto">
       <input type="hidden" name="ligado" value="<%= autoLigado ? 'false' : 'true' %>" />
-      <div class="flex gap-8" style="align-items:center;justify-content:space-between;">
-        <span class="texto-sutil">Entrada automática ao concluir atendimento</span>
-        <button class="btn btn-secundario btn-sm"><%= autoLigado ? 'Desligar' : 'Ligar' %></button>
-      </div>
+      <span class="t6-cx-auto-txt">Entrada automática ao concluir atendimento</span>
+      <button class="btn btn-secundario"><%= autoLigado ? 'Desligar' : 'Ligar' %></button>
     </form>
   </div>
 </div>
@@ -293,11 +294,35 @@
     btn.classList.add('ativo');
     document.getElementById(inputId).value = btn.getAttribute('data-valor');
   }
-  function mudarAbaFin(nome) {
-    document.querySelectorAll('.fin-tab').forEach(function (t) { t.classList.toggle('ativo', t.dataset.tab === nome); });
-    document.getElementById('fin-aba-saldo').hidden = nome !== 'saldo';
-    document.getElementById('fin-aba-transacoes').hidden = nome !== 'transacoes';
+
+  // Painel De/Até: enquanto está aberto o selo fica cinza escuro — só vira
+  // preto quando o período for de fato aplicado (aí vem do servidor).
+  function cxAlternarPeriodo() {
+    var painel = document.getElementById('cx-custom');
+    var selo = document.getElementById('cx-per-custom');
+    painel.hidden = !painel.hidden;
+    if (!selo.classList.contains('ativo')) selo.classList.toggle('abrindo', !painel.hidden);
   }
+  function cxAtalho(inicio, fim) {
+    document.getElementById('cx-inicio').value = inicio;
+    document.getElementById('cx-fim').value = fim;
+  }
+
+  // Entrada/Saída no "Novo lançamento" só mostra as categorias daquele tipo;
+  // trocar de lado limpa a escolha para não enviar uma categoria escondida.
+  function cxFiltrarCategorias(tipo) {
+    document.querySelectorAll('.t6-cx-tipo-btn').forEach(function (b) {
+      b.classList.toggle('ativo', b.dataset.tipo === tipo);
+    });
+    var hidden = document.getElementById('categoriaId-novo');
+    if (hidden) hidden.value = '';
+    document.querySelectorAll('#cx-pills-categoria .pill-opcao').forEach(function (p) {
+      p.hidden = p.dataset.tipo !== tipo;
+      p.classList.remove('ativo');
+    });
+  }
+  cxFiltrarCategorias('entrada');
+
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });

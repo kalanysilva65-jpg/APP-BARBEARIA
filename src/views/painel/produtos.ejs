@@ -1,72 +1,66 @@
-<%
-  var nomeBarbearia = (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Barbearia';
-%>
+<%/* Produtos no design TURNO 6 (pedido do dono, 2026-07-28): abre com o
+     "vendido no mês" em manchete e, abaixo, cada produto é uma FAIXA que
+     sangra até as bordas, com a foto retangular de 112px encostada na
+     direita. As faixas ciclam quatro tons (preto → #454545 → #7B7B7B →
+     fio), como na referência — é o que substitui o cartão arredondado.
 
-<!-- Cabeçalho: mesmo padrão de lista das outras telas — sem cartão atrás. -->
-<div class="ag2-topo">
-  <div class="ag2-marca-linha">
-    <span class="ag2-avatar-deco"></span>
-    <span class="ag2-marca"><%= nomeBarbearia %></span>
-    <button type="button" class="ag2-add" onclick="abrirModal('novo')" aria-label="Novo produto">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-    </button>
+     O mockup mostra um campo "Estoque" (quantidade) por produto, que NÃO
+     existe no model Servico — só Estoque (insumos internos) tem contagem.
+     No lugar dele a faixa mostra a categoria, e o número grande é o que o
+     produto vendeu no mês (dado que o app já tinha e não aparecia). */%>
+<div class="t6-cat-tela">
+  <div class="t6-cat-topo">
+    <div class="t6-cat-titulo-linha">
+      <div class="t6-cat-titulo">PRODUTOS</div>
+      <button type="button" class="t6-btn-novo" onclick="abrirModal('novo')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Novo</span>
+      </button>
+    </div>
+    <div class="t6-cat-dica">
+      Toque em um produto para editar · <a href="#" onclick="abrirModal('categorias');return false;">Categorias</a>
+    </div>
   </div>
-  <div class="ag2-titulo">Produtos</div>
-</div>
 
-<%/* Mesmo padrão de lista + pop-up de vidro do Estoque (avatar circular,
-     pop-up transparente atrás). O mockup mostra um campo "Estoque" (quantidade)
-     editável aqui, que NÃO existe no model Servico — só Estoque (insumos
-     internos) tem contagem. Fica de fora por ora; ver memória do redesign. */%>
-<div class="ag2-corpo">
-  <% if (produtos.length === 0) { %>
-    <div class="ag2-vazio">Nenhum produto cadastrado ainda.</div>
-  <% } else { %>
-    <div class="est-lista">
-      <% produtos.forEach(function (p) { %>
-        <button type="button" class="est-item <%= p.ativo ? '' : 'est-item--inativo' %>" onclick="abrirModal(<%= p.id %>)">
-          <span class="est-avatar">
-            <% if (p.fotoUrl) { %>
-              <img src="<%= p.fotoUrl %>" alt="<%= p.nome %>" />
-            <% } else { %>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12.17V2h10.17l8.42 8.42a2 2 0 0 1 0 2.99z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+  <div class="t6-pr-lista">
+    <div class="t6-cat-resumo">
+      <div class="t6-cat-resumo-rot">Vendido no mês</div>
+      <%/* fmtT6 (sem centavos) porque é o número gigante da tela. */%>
+      <div class="t6-cat-resumo-num"><%= fmtT6(resumoMes.receita) %></div>
+      <div class="t6-cat-resumo-sub">
+        <%= resumoMes.unidades %> unidade<%= resumoMes.unidades === 1 ? '' : 's' %> em <%= resumoMes.itens %> produto<%= resumoMes.itens === 1 ? '' : 's' %>
+        <% if (resumoMes.topNome) { %><br><%= resumoMes.topNome %> lidera com <%= resumoMes.topQtd %> un<% } %>
+      </div>
+    </div>
+
+    <% if (produtos.length === 0) { %>
+      <div class="t6-vazio">Nenhum produto cadastrado ainda.</div>
+    <% } else { %>
+      <% produtos.forEach(function (p, i) { %>
+        <button type="button" class="t6-pr-card t6-pr-card--tom<%= i % 4 %>" onclick="abrirModal(<%= p.id %>)">
+          <span class="t6-pr-corpo">
+            <span class="t6-pr-nome"><%= p.nome %></span>
+            <%/* fmtBRL e não fmtT6: é o preço de tabela, arredondar induziria
+                 o dono a cobrar errado. */%>
+            <span class="t6-pr-sub"><%= fmtBRL(p.valor) %> · <%= p.categoria ? p.categoria.nome : 'Sem categoria' %></span>
+            <span class="t6-pr-venda">
+              <span class="t6-pr-venda-num"><%= p.vendidosMes %></span>
+              <span class="t6-pr-venda-rot">vendidos no mês · <%= fmtT6(p.receitaMes) %></span>
+            </span>
+            <% if (!p.ativo) { %>
+              <span class="t6-pr-selo-linha"><span class="t6-cat-selo">Inativo</span></span>
             <% } %>
           </span>
-          <span class="est-info">
-            <span class="est-nome-linha">
-              <span class="est-nome"><%= p.nome %></span>
-              <% if (!p.ativo) { %><span class="est-badge-mini est-badge-mini--neutro">Inativo</span><% } %>
-            </span>
-            <span class="est-sub"><%= fmtBRL(p.valor) %> · <%= p.categoria ? p.categoria.nome : 'Sem categoria' %></span>
+          <span class="t6-pr-foto">
+            <% if (p.fotoUrl) { %>
+              <img src="<%= p.fotoUrl %>" alt="Foto de <%= p.nome %>" />
+            <% } else { %>
+              <span>Foto</span>
+            <% } %>
           </span>
         </button>
       <% }) %>
-    </div>
-  <% } %>
-
-  <!-- Categorias (compartilhadas com Serviços) -->
-  <div class="est-categorias">
-    <div class="est-categorias-titulo">Categorias</div>
-    <p class="est-categorias-sub">Remover uma categoria não apaga os itens — eles ficam "sem categoria".</p>
-    <form method="POST" action="/painel/servicos/categorias" class="est-cat-form">
-      <input type="hidden" name="retorno" value="produtos" />
-      <input name="nome" placeholder="Nova categoria" required />
-      <button class="est-cat-btn" type="submit">Adicionar</button>
-    </form>
-    <% categorias.forEach(function (c) { %>
-      <div class="est-cat-linha">
-        <form method="POST" action="/painel/servicos/categorias/<%= c.id %>" class="est-cat-form">
-          <input type="hidden" name="retorno" value="produtos" />
-          <input name="nome" value="<%= c.nome %>" />
-          <span class="est-cat-count"><%= c._count.servicos %></span>
-          <button class="est-cat-btn est-cat-btn--claro" type="submit">Salvar</button>
-        </form>
-        <form method="POST" action="/painel/servicos/categorias/<%= c.id %>/remover?retorno=produtos" onsubmit="return confirm('Remover esta categoria?')">
-          <button class="est-cat-x" title="Remover categoria">×</button>
-        </form>
-      </div>
-    <% }) %>
-    <% if (categorias.length === 0) { %><p class="est-categorias-sub">Nenhuma categoria.</p><% } %>
+    <% } %>
   </div>
 </div>
 
@@ -75,41 +69,40 @@
 <div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
   <div class="ag-modal-box">
     <div class="ag-modal-topo">
-      <div class="ag-modal-nome">Novo produto</div>
+      <div class="t6-cat-dlg-titulo">Novo produto</div>
       <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
     </div>
-    <form method="POST" enctype="multipart/form-data" class="form mt-16" action="/painel/servicos">
+    <form method="POST" enctype="multipart/form-data" action="/painel/servicos" style="margin-top:16px;">
       <input type="hidden" name="ehProduto" value="on" />
-      <div class="campo">
-        <label for="nome-novo">Nome</label>
-        <input id="nome-novo" name="nome" required />
+      <div class="t6-cat-campo">
+        <label class="t6-cat-rot" for="nome-novo">Nome</label>
+        <input class="t6-cat-input" id="nome-novo" name="nome" placeholder="Ex.: Pomada modeladora" required />
       </div>
-      <div class="campo">
-        <label for="valor-novo">Valor (R$)</label>
-        <input id="valor-novo" name="valor" type="number" step="0.01" min="0" required />
+      <div class="t6-cat-dupla">
+        <div class="t6-cat-campo">
+          <label class="t6-cat-rot" for="valor-novo">Preço (R$)</label>
+          <input class="t6-cat-input" id="valor-novo" name="valor" type="number" step="0.01" min="0" placeholder="45,00" required />
+        </div>
+        <div class="t6-cat-campo">
+          <label class="t6-cat-rot" for="comissaoPercentual-novo">Comissão (%)</label>
+          <input class="t6-cat-input" id="comissaoPercentual-novo" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="10" />
+        </div>
       </div>
-      <div class="campo">
-        <label for="comissaoPercentual-novo">Comissão do produto (%)</label>
-        <input id="comissaoPercentual-novo" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="10" />
-      </div>
-      <div class="campo">
-        <label for="categoriaId-novo">Categoria</label>
-        <select id="categoriaId-novo" name="categoriaId">
+      <div class="t6-cat-campo">
+        <label class="t6-cat-rot" for="categoriaId-novo">Categoria</label>
+        <select class="t6-cat-input" id="categoriaId-novo" name="categoriaId">
           <option value="">Sem categoria</option>
           <% categorias.forEach(function (c) { %>
             <option value="<%= c.id %>"><%= c.nome %></option>
           <% }) %>
         </select>
       </div>
-      <div class="campo">
-        <label for="foto-novo">Foto</label>
-        <input id="foto-novo" name="foto" type="file" accept="image/*" />
-        <span class="texto-sutil">JPG, PNG ou WEBP, até 4 MB.</span>
+      <div class="t6-cat-campo">
+        <label class="t6-cat-rot" for="foto-novo">Foto</label>
+        <input class="t6-cat-input" id="foto-novo" name="foto" type="file" accept="image/*" />
+        <span class="t6-cat-ajuda">JPG, PNG ou WEBP, até 4 MB.</span>
       </div>
-      <div class="modal-acoes">
-        <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-        <button class="btn btn-primario" type="submit">Adicionar</button>
-      </div>
+      <button class="t6-cat-btn" type="submit">Adicionar</button>
     </form>
   </div>
 </div>
@@ -119,57 +112,89 @@
   <div class="ag-overlay" id="agm-<%= p.id %>" onclick="if(event.target===this)fecharModal(this)">
     <div class="ag-modal-box">
       <div class="ag-modal-topo">
-        <div class="ag-modal-nome"><%= p.nome %></div>
+        <div class="t6-cat-dlg-titulo"><%= p.nome %></div>
         <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
       </div>
-      <form method="POST" enctype="multipart/form-data" class="form mt-16" action="/painel/servicos/<%= p.id %>">
+      <form method="POST" enctype="multipart/form-data" action="/painel/servicos/<%= p.id %>" style="margin-top:16px;">
         <input type="hidden" name="ehProduto" value="on" />
-        <div class="campo">
-          <label for="nome-<%= p.id %>">Nome</label>
-          <input id="nome-<%= p.id %>" name="nome" value="<%= p.nome %>" required />
+        <div class="t6-cat-campo">
+          <label class="t6-cat-rot" for="nome-<%= p.id %>">Nome</label>
+          <input class="t6-cat-input" id="nome-<%= p.id %>" name="nome" value="<%= p.nome %>" required />
         </div>
-        <div class="campo">
-          <label for="valor-<%= p.id %>">Valor (R$)</label>
-          <input id="valor-<%= p.id %>" name="valor" type="number" step="0.01" min="0" value="<%= (p.valor / 100).toFixed(2) %>" required />
+        <div class="t6-cat-dupla">
+          <div class="t6-cat-campo">
+            <label class="t6-cat-rot" for="valor-<%= p.id %>">Preço (R$)</label>
+            <input class="t6-cat-input" id="valor-<%= p.id %>" name="valor" type="number" step="0.01" min="0" value="<%= (p.valor / 100).toFixed(2) %>" required />
+          </div>
+          <div class="t6-cat-campo">
+            <label class="t6-cat-rot" for="comissaoPercentual-<%= p.id %>">Comissão (%)</label>
+            <input class="t6-cat-input" id="comissaoPercentual-<%= p.id %>" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="<%= p.comissaoPercentual %>" />
+          </div>
         </div>
-        <div class="campo">
-          <label for="comissaoPercentual-<%= p.id %>">Comissão do produto (%)</label>
-          <input id="comissaoPercentual-<%= p.id %>" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="<%= p.comissaoPercentual %>" />
-        </div>
-        <div class="campo">
-          <label for="categoriaId-<%= p.id %>">Categoria</label>
-          <select id="categoriaId-<%= p.id %>" name="categoriaId">
+        <div class="t6-cat-campo">
+          <label class="t6-cat-rot" for="categoriaId-<%= p.id %>">Categoria</label>
+          <select class="t6-cat-input" id="categoriaId-<%= p.id %>" name="categoriaId">
             <option value="">Sem categoria</option>
             <% categorias.forEach(function (c) { %>
               <option value="<%= c.id %>" <%= p.categoriaId === c.id ? 'selected' : '' %>><%= c.nome %></option>
             <% }) %>
           </select>
         </div>
-        <div class="campo">
-          <label for="foto-<%= p.id %>">Foto</label>
+        <div class="t6-cat-campo">
+          <label class="t6-cat-rot" for="foto-<%= p.id %>">Foto</label>
           <% if (p.fotoUrl) { %>
-            <div class="preview-foto"><img src="<%= p.fotoUrl %>" alt="Foto atual" /></div>
+            <div class="t6-cat-foto"><img src="<%= p.fotoUrl %>" alt="Foto de <%= p.nome %>" /></div>
           <% } %>
-          <input id="foto-<%= p.id %>" name="foto" type="file" accept="image/*" />
-          <span class="texto-sutil">JPG, PNG ou WEBP, até 4 MB.<%= p.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %></span>
+          <input class="t6-cat-input" id="foto-<%= p.id %>" name="foto" type="file" accept="image/*" />
+          <span class="t6-cat-ajuda">JPG, PNG ou WEBP, até 4 MB.<%= p.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %></span>
         </div>
-        <div class="modal-acoes">
-          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-          <button class="btn btn-primario" type="submit">Salvar alterações</button>
-        </div>
+        <button class="t6-cat-btn" type="submit">Salvar alterações</button>
       </form>
-      <div class="flex gap-8 mt-16">
-        <form method="POST" action="/painel/servicos/<%= p.id %>/toggle" class="inline">
-          <button class="btn btn-secundario btn-sm"><%= p.ativo ? 'Desativar' : 'Ativar' %></button>
+      <div class="t6-cat-campo" style="border-top:1px solid var(--t6-line); margin-top:18px; padding-top:14px;">
+        <span class="t6-cat-ajuda"><%= p.vendidosMes %> unidade<%= p.vendidosMes === 1 ? '' : 's' %> vendida<%= p.vendidosMes === 1 ? '' : 's' %> no mês · <%= fmtBRL(p.receitaMes) %></span>
+      </div>
+      <div class="t6-cat-acoes">
+        <form method="POST" action="/painel/servicos/<%= p.id %>/toggle">
+          <button class="t6-cat-btn t6-cat-btn--vazado" type="submit"><%= p.ativo ? 'Desativar' : 'Ativar' %></button>
         </form>
-        <form method="POST" action="/painel/servicos/<%= p.id %>/remover" class="inline"
+        <form method="POST" action="/painel/servicos/<%= p.id %>/remover"
               onsubmit="return confirm('Excluir este produto?')">
-          <button class="btn btn-perigo btn-sm">Excluir</button>
+          <button class="t6-cat-btn t6-cat-btn--vazado" type="submit">Excluir produto</button>
         </form>
       </div>
     </div>
   </div>
 <% }) %>
+
+<!-- Pop-up: categorias (compartilhadas com Serviços) -->
+<div class="ag-overlay" id="agm-categorias" onclick="if(event.target===this)fecharModal(this)">
+  <div class="ag-modal-box">
+    <div class="ag-modal-topo">
+      <div class="t6-cat-dlg-titulo">Categorias</div>
+      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+    </div>
+    <p class="t6-cat-cats-sub">Remover uma categoria não apaga os itens — eles ficam "sem categoria".</p>
+    <form method="POST" action="/painel/servicos/categorias" class="t6-cat-cat-form">
+      <input type="hidden" name="retorno" value="produtos" />
+      <input class="t6-cat-input" name="nome" placeholder="Nova categoria" required />
+      <button class="t6-cat-cat-btn" type="submit">Adicionar</button>
+    </form>
+    <% categorias.forEach(function (c) { %>
+      <div class="t6-cat-cat-linha">
+        <form method="POST" action="/painel/servicos/categorias/<%= c.id %>" class="t6-cat-cat-form">
+          <input type="hidden" name="retorno" value="produtos" />
+          <input class="t6-cat-input" name="nome" value="<%= c.nome %>" aria-label="Nome da categoria" />
+          <span class="t6-cat-cat-conta"><%= c._count.servicos %></span>
+          <button class="t6-cat-cat-btn" type="submit">Salvar</button>
+        </form>
+        <form method="POST" action="/painel/servicos/categorias/<%= c.id %>/remover?retorno=produtos" onsubmit="return confirm('Remover esta categoria?')">
+          <button class="t6-cat-cat-x" type="submit" title="Remover categoria">×</button>
+        </form>
+      </div>
+    <% }) %>
+    <% if (categorias.length === 0) { %><p class="t6-cat-cats-sub">Nenhuma categoria.</p><% } %>
+  </div>
+</div>
 
 <script>
   function abrirModal(id) {

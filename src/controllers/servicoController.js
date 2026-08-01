@@ -52,7 +52,44 @@ async function listarProdutos(req, res) {
     orderBy: { nome: 'asc' },
     include: { _count: { select: { servicos: true } } },
   });
-  res.render('painel/produtos', { titulo: 'Produtos', produtos, categorias });
+
+  // Quanto cada produto vendeu NO MÊS: o design Turno 6 (2026-07-28) abre a
+  // tela com "vendido no mês" em manchete e traz o número de vendas dentro de
+  // cada faixa. Só conta atendimento concluído — agendado ainda pode furar.
+  const agora = new Date();
+  const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const inicioProxMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 1);
+  const vendidos = await prisma.agendamentoItem.findMany({
+    where: {
+      servico: { barbeariaId: b, ehProduto: true },
+      agendamento: { barbeariaId: b, status: 'concluido', data: { gte: inicioMes, lt: inicioProxMes } },
+    },
+    select: { servicoId: true, quantidade: true, valorUnitario: true },
+  });
+
+  const porProduto = new Map();
+  vendidos.forEach((it) => {
+    const acc = porProduto.get(it.servicoId) || { qtd: 0, receita: 0 };
+    acc.qtd += it.quantidade;
+    acc.receita += it.valorUnitario * it.quantidade;
+    porProduto.set(it.servicoId, acc);
+  });
+  produtos.forEach((p) => {
+    const v = porProduto.get(p.id) || { qtd: 0, receita: 0 };
+    p.vendidosMes = v.qtd;
+    p.receitaMes = v.receita;
+  });
+
+  const maisVendido = produtos.reduce((a, p) => (a && a.vendidosMes >= p.vendidosMes ? a : p), null);
+  const resumoMes = {
+    receita: produtos.reduce((s, p) => s + p.receitaMes, 0),
+    unidades: produtos.reduce((s, p) => s + p.vendidosMes, 0),
+    itens: produtos.length,
+    topNome: maisVendido && maisVendido.vendidosMes > 0 ? maisVendido.nome : null,
+    topQtd: maisVendido ? maisVendido.vendidosMes : 0,
+  };
+
+  res.render('painel/produtos', { titulo: 'Produtos', produtos, categorias, resumoMes });
 }
 
 // GET /painel/servicos/novo — formulário de criação
