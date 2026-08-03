@@ -9,63 +9,66 @@
   }
 %>
 
-<%/* TURNO 6 (2026-07-28): a grade de dois cartões por linha virou uma LISTA
-     separada por fios, com o nome do serviço a 34px — é a peça central da
-     tela de escolha na referência. O selecionado inverte (bloco preto), em
-     vez de ganhar borda/selo de check. */%>
-<div class="ag6-rolagem">
-  <div class="ag6-cabeca">
-    <div class="ag6-titulo">Serviços</div>
-    <% if (!assinatura) { %>
-      <a href="/agendar/plano" class="ag6-selo">Já tenho um plano</a>
-    <% } %>
-  </div>
-
+<%/* SUAVE (pedido do dono, 2026-07-31): a lista separada por fios do Turno 6
+     (nome do serviço a 34px) virou uma pilha de CARTÕES brancos com sombra
+     suave, nome a 17px e um seletor redondo à direita. O selecionado inverte
+     pra preto — na referência é o único uso do preto na área de conteúdo. */%>
+<div class="sv-ag6-rolagem">
   <% if (assinatura) { %>
-    <div class="ag6-aviso">
+    <div class="sv-ag6-aviso">
       Usando o plano <strong><%= assinatura.plano.nome %></strong><%= assinatura.usosRestantes !== null ? ' · ' + assinatura.usosRestantes + ' uso(s) restante(s)' : ' · ilimitado (' + _diasPlanoLabelServico(assinatura.plano.diasSemana) + ')' %>.
       <a href="/agendar">Agendar sem plano</a>
+    </div>
+  <% } else { %>
+    <%/* A porta de entrada do plano fica ANTES da lista: quem tem plano não
+         deve percorrer os serviços com preço pra depois descobrir o atalho. */%>
+    <div class="sv-ag6-cabeca">
+      <a href="/agendar/plano" class="sv-ag6-chip">Já tenho um plano</a>
     </div>
   <% } %>
 
   <% if (servicos.length === 0) { %>
-    <p class="ag6-vazio">Nenhum serviço disponível no momento.</p>
+    <p class="sv-ag6-vazio">Nenhum serviço disponível no momento.</p>
   <% } else if (assinatura) { %>
     <%/* Plano: seleção única e direta por link — o plano cobre um serviço por
          agendamento, então não há o que somar nem barra de total. */%>
-    <div class="ag6-sobrancelha-linha">
-      <span class="ag6-sobrancelha">Escolha o serviço</span>
+    <div class="sv-ag6-secao">
+      <div class="sv-ag6-secao-tit">Escolha o serviço</div>
     </div>
-    <div class="ag6-lista">
+    <div class="sv-ag6-lista">
       <% servicos.forEach(function (s, i) { %>
-        <a class="ag6-servico" href="/agendar/barbeiro?servicoIds=<%= s.id %>&assinatura=<%= assinatura.id %>" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
-          <span class="ag6-servico-txt">
-            <span class="ag6-servico-nome"><%= s.nome %></span>
-            <span class="ag6-servico-meta"><%= s.duracaoMin %> min · Incluso</span>
+        <a class="sv-ag6-servico" href="/agendar/barbeiro?servicoIds=<%= s.id %>&assinatura=<%= assinatura.id %>" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
+          <span class="sv-ag6-servico-txt">
+            <span class="sv-ag6-servico-nome"><%= s.nome %></span>
+            <span class="sv-ag6-servico-meta"><%= s.duracaoMin %> min · Incluso</span>
           </span>
-          <% if (s.fotoUrl) { %><span class="ag6-servico-foto"><img src="<%= s.fotoUrl %>" alt="" /></span><% } %>
+          <% if (s.fotoUrl) { %><span class="sv-ag6-servico-foto"><img src="<%= s.fotoUrl %>" alt="" /></span><% } %>
+          <span class="sv-ag6-servico-check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+          </span>
         </a>
       <% }) %>
-      <div class="ag6-lista-fim"></div>
     </div>
   <% } else { %>
     <form id="form-servicos" action="/agendar/barbeiro" method="GET" onsubmit="return validarSelecao()">
       <input type="hidden" name="servicoIds" id="servicoIds-input" value="" />
-      <div class="ag6-sobrancelha-linha">
-        <span class="ag6-sobrancelha">Escolha os serviços</span>
-        <span class="ag6-sobrancelha-val" id="ag6-conta">toque para escolher</span>
+      <div class="sv-ag6-secao">
+        <div class="sv-ag6-secao-tit">Escolha os serviços</div>
+        <div class="sv-ag6-secao-val" id="ag6-conta">toque para escolher</div>
       </div>
-      <div class="ag6-lista" id="lista-servicos">
+      <div class="sv-ag6-lista" id="lista-servicos">
         <% servicos.forEach(function (s, i) { %>
-          <button type="button" class="ag6-servico" data-id="<%= s.id %>" data-valor="<%= s.valor %>" data-min="<%= s.duracaoMin %>" onclick="toggleServico(this)" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
-            <span class="ag6-servico-txt">
-              <span class="ag6-servico-nome"><%= s.nome %></span>
-              <span class="ag6-servico-meta"><%= s.duracaoMin %> min · <%= fmtT6(s.valor) %></span>
+          <button type="button" class="sv-ag6-servico" data-id="<%= s.id %>" data-valor="<%= s.valor %>" data-min="<%= s.duracaoMin %>" onclick="toggleServico(this)" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
+            <span class="sv-ag6-servico-txt">
+              <span class="sv-ag6-servico-nome"><%= s.nome %></span>
+              <span class="sv-ag6-servico-meta"><%= s.duracaoMin %> min · <%= fmtT6(s.valor) %></span>
             </span>
-            <% if (s.fotoUrl) { %><span class="ag6-servico-foto"><img src="<%= s.fotoUrl %>" alt="" /></span><% } %>
+            <% if (s.fotoUrl) { %><span class="sv-ag6-servico-foto"><img src="<%= s.fotoUrl %>" alt="" /></span><% } %>
+            <span class="sv-ag6-servico-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+            </span>
           </button>
         <% }) %>
-        <div class="ag6-lista-fim"></div>
       </div>
     </form>
   <% } %>
@@ -75,14 +78,14 @@
   <%/* A barra fica SEMPRE visível (a referência esconde enquanto nada está
        escolhido). Aqui ela é o próprio submit do formulário, então some-la
        tiraria a única pista de "e agora?" de quem abriu a tela. Sem seleção,
-       ela usa o par de cores inerte fio/apoio. */%>
-  <div class="ag6-barra">
-    <button class="ag6-acao ag6-inerte" type="submit" form="form-servicos" id="btn-continuar" disabled>
+       ela usa o par de cores inerte fio/apoio claro. */%>
+  <div class="sv-ag6-barra">
+    <button class="sv-ag6-acao sv-ag6-inerte" type="submit" form="form-servicos" id="btn-continuar" disabled>
       <span>
-        <span class="ag6-acao-rot" id="ag6-cta-rot">Escolha um serviço</span>
-        <span class="ag6-acao-sub" id="ag6-cta-sub">para seguir pro barbeiro</span>
+        <span class="sv-ag6-acao-rot" id="ag6-cta-rot">Escolha um serviço</span>
+        <span class="sv-ag6-acao-sub" id="ag6-cta-sub">para seguir pro barbeiro</span>
       </span>
-      <span class="ag6-acao-total" id="ag6-cta-total">R$0</span>
+      <span class="sv-ag6-acao-total" id="ag6-cta-total">R$0</span>
     </button>
   </div>
 
@@ -93,12 +96,12 @@
     const selecionados = new Set();
     const precos = {};
     const duracoes = {};
-    document.querySelectorAll('#lista-servicos .ag6-servico').forEach(function (el) {
+    document.querySelectorAll('#lista-servicos .sv-ag6-servico').forEach(function (el) {
       precos[el.dataset.id] = Number(el.dataset.valor);
       duracoes[el.dataset.id] = Number(el.dataset.min);
     });
-    // Formato do Turno 6: "R$40" — sem centavos e sem espaço, porque o total
-    // aparece a 22px na barra e ",00" só rouba largura.
+    // "R$40" — sem centavos e sem espaço, porque o total aparece a 22px na
+    // barra e ",00" só rouba largura.
     function fmtT6Local(centavos) {
       return 'R$' + Math.round(centavos / 100).toLocaleString('pt-BR');
     }
@@ -122,7 +125,7 @@
       const n = selecionados.size;
       const btn = document.getElementById('btn-continuar');
       btn.disabled = n === 0;
-      btn.classList.toggle('ag6-inerte', n === 0);
+      btn.classList.toggle('sv-ag6-inerte', n === 0);
       document.getElementById('ag6-conta').textContent = n ? n + ' selecionado' + (n > 1 ? 's' : '') : 'toque para escolher';
 
       const ids = Array.from(selecionados);

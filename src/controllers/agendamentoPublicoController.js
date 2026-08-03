@@ -43,10 +43,10 @@ function diasLabel(diasStr) {
 }
 
 // Data de nascimento digitada pelo cliente -> Date (ou null).
-// Aceita "dd/mm/aaaa" (campo com máscara do design Turno 6, 2026-07-28) e
-// "aaaa-mm-dd" (formato do <input type="date"> anterior, mantido para não
-// quebrar quem tiver a tela antiga em cache). Fixa meio-dia porque salvar à
-// meia-noite faz o fuso jogar o aniversário pro dia anterior.
+// Aceita "dd/mm/aaaa" (campo com máscara, formato usado pela tela desde
+// 2026-07-28) e "aaaa-mm-dd" (formato do <input type="date"> anterior, mantido
+// para não quebrar quem tiver a tela antiga em cache). Fixa meio-dia porque
+// salvar à meia-noite faz o fuso jogar o aniversário pro dia anterior.
 function parseNascimento(str) {
   const s = String(str || '').trim();
   let ymd = null;
@@ -87,9 +87,9 @@ async function passoPlano(req, res) {
     layout: 'layouts/publico',
     titulo: 'Meu plano',
     passo: 0,
-    // O "Voltar" do design Turno 6 (2026-07-28) mora no cabeçalho, que é do
-    // layout — como o destino carrega a querystring do fluxo, quem sabe dele
-    // é este controlador. Null = passo sem volta (primeiro passo / sucesso).
+    // O "Voltar" mora no cabeçalho, que é do layout — como o destino carrega
+    // a querystring do fluxo, quem sabe dele é este controlador.
+    // Null = passo sem volta (primeiro passo / sucesso).
     voltarHref: '/agendar',
     telefoneDigitado,
     resultado,
@@ -240,8 +240,8 @@ async function passoHorario(req, res) {
         iso: iso(d),
         linha1,
         linha2: `${DIAS_SEMANA[dow].slice(0, 3)}, ${d.getDate()} ${MESES_ABREV[d.getMonth()]}`,
-        // O selo de dia do Turno 6 (2026-07-28) tem duas linhas independentes:
-        // em cima o dia da semana (ou "Hoje"), embaixo só o número, a 22px.
+        // O ladrilho de dia tem duas linhas independentes: em cima o dia da
+        // semana (ou "Hoje"), embaixo só o número, a 20px.
         dow: i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : DIAS_SEMANA[dow].slice(0, 3),
         dia: d.getDate(),
       });

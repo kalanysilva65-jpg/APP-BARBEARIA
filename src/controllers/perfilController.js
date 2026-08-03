@@ -29,19 +29,26 @@ async function ver(req, res) {
     const registros = await prisma.horarioTrabalho.findMany({ where: { usuarioId: usuario.id } });
     horarioTrabalho = resumoJornada(registros);
 
-    // Uma linha por dia da semana, na ordem de exibição — o design Turno 6
-    // mostra os dias como selos e o expediente dia a dia (pedido do dono,
-    // 2026-07-28), enquanto a jornada em si continua sendo editada em
-    // /painel/horarios.
+    // Uma linha por dia da semana, na ordem de exibição. A jornada passou a ser
+    // EDITADA aqui (pedido do dono, 2026-08-01): a tela /painel/horarios saiu do
+    // menu, e é esta jornada que define o que o cliente enxerga como horário
+    // livre no agendamento público.
+    // `dia` é o índice real (0=domingo) porque é ele que nomeia os campos do
+    // formulário (`trabalha_3`, `inicio_3`...) e o que o banco guarda — a ordem
+    // de exibição começa na segunda, mas isso é só apresentação.
     const porDia = new Array(7).fill(null);
     registros.forEach((r) => { porDia[r.diaSemana] = r; });
     jornada = ORDEM_SEMANA.map((i) => {
       const r = porDia[i];
       return {
+        dia: i,
         label: NOME_DIA[i],
         trabalha: !!(r && r.trabalha),
-        horaInicio: r ? r.horaInicio : null,
-        horaFim: r ? r.horaFim : null,
+        // Sem registro, o campo abre com o expediente padrão da casa em vez de
+        // vazio: marcar o dia já deixa um horário utilizável.
+        horaInicio: (r && r.horaInicio) || '09:00',
+        horaFim: (r && r.horaFim) || '20:00',
+        temRegistro: !!r,
       };
     });
   }

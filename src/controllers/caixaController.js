@@ -4,11 +4,15 @@ const prisma = require('../config/db');
 const caixaServ = require('../services/caixa');
 const { COMISSAO_PRODUTO_PERCENTUAL } = require('../config/constantes');
 
+// `curto` é o rótulo das pílulas do design suave (pedido do dono, 2026-07-31):
+// numa fila de 4 pílulas de 11.5px, "Cartão de Crédito" quebra a linha e o
+// grupo vira duas fileiras. O `label` inteiro continua valendo onde há espaço
+// (extrato e folha "Formas de pagamento").
 const FORMAS_PAGAMENTO = [
-  { valor: 'pix', label: 'Pix' },
-  { valor: 'credito', label: 'Cartão de Crédito' },
-  { valor: 'debito', label: 'Cartão de Débito' },
-  { valor: 'dinheiro', label: 'Dinheiro' },
+  { valor: 'pix', label: 'Pix', curto: 'Pix' },
+  { valor: 'credito', label: 'Cartão de Crédito', curto: 'Crédito' },
+  { valor: 'debito', label: 'Cartão de Débito', curto: 'Débito' },
+  { valor: 'dinheiro', label: 'Dinheiro', curto: 'Dinheiro' },
 ];
 
 // "40,00" / "40" -> 4000 (centavos). Retorna null se inválido.
@@ -173,9 +177,10 @@ async function ver(req, res) {
   else if (inicioStr === presetSemana.inicio && fimStr === presetSemana.fim) periodoAtivo = 'semana';
   else if (inicioStr === padrao.inicio && fimStr === padrao.fim) periodoAtivo = 'mes';
 
-  // --- Dados do design Turno 6 (2026-07-28) --------------------------------
-  // A tela virou um extrato corrido: manchete do saldo, o que ainda falta
-  // entrar e a lista de lançamentos com saldo acumulado ao lado.
+  // --- Dados da tela de extrato (design suave, 2026-07-31) -----------------
+  // Nasceram no Turno 6 e seguem valendo no design novo: saldo do período em
+  // destaque, o que ainda falta entrar e a lista de lançamentos com o saldo
+  // acumulado ao lado de cada um.
 
   // "A receber": atendimentos do período que ainda não foram concluídos —
   // dinheiro que a agenda promete e o caixa ainda não viu.
@@ -272,7 +277,7 @@ async function ver(req, res) {
     produtosValor,
     comissaoValor,
     formasPagamentoOpcoes: FORMAS_PAGAMENTO,
-    // Turno 6
+    // Extrato / cabeçalho de período
     aReceber,
     extrato,
     extratoRestantes,

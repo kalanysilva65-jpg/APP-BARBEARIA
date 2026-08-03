@@ -1,69 +1,68 @@
 <%
-  // Cabeçalho do design TURNO 6 (2026-07-28): tracinhos de progresso à
-  // esquerda, nome do passo + "Voltar" à direita. O passo 0 é a consulta de
-  // plano — fica FORA da trilha de 4 etapas do agendamento, então não acende
-  // tracinho nenhum. O passo 5 (sucesso) fecha os quatro.
-  var AG6_NOMES = { 0: 'Plano', 1: 'Serviços', 2: 'Barbeiro', 3: 'Horário', 4: 'Dados', 5: 'Pronto' };
-  var ag6Passo = (typeof passo !== 'undefined' && passo !== null) ? Number(passo) : 0;
-  var ag6Nome = AG6_NOMES[ag6Passo] || '';
-  var ag6Atual = Math.min(Math.max(ag6Passo, 1), 4);
+  // Cabeçalho do design SUAVE (2026-07-31): a marca vai pro CENTRO (a
+  // referência dedica 112px a ela) e "Voltar" vira uma pílula branca no canto
+  // direito. O passo 0 é a consulta de plano — fica FORA da trilha de 4 etapas
+  // do agendamento, então não acende tracinho nenhum. O passo 5 (sucesso)
+  // fecha os quatro.
+  var AG_NOMES = { 0: 'Plano', 1: 'Serviços', 2: 'Barbeiro', 3: 'Horário', 4: 'Dados', 5: 'Pronto' };
+  var agPasso = (typeof passo !== 'undefined' && passo !== null) ? Number(passo) : 0;
+  var agNome = AG_NOMES[agPasso] || '';
+  var agAtual = Math.min(Math.max(agPasso, 1), 4);
   // O destino do "Voltar" muda por passo (e carrega a querystring do fluxo),
   // então quem sabe dele é o controlador — a view só desenha.
-  var ag6Voltar = (typeof voltarHref !== 'undefined' && voltarHref) ? voltarHref : null;
-  var ag6Marca = (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : 'Agendamento';
+  var agVoltar = (typeof voltarHref !== 'undefined' && voltarHref) ? voltarHref : null;
+  var agMarca = (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : 'Agendamento';
 %>
 <!DOCTYPE html>
-<html lang="pt-BR" class="ag6-html">
+<html lang="pt-BR" class="sv-ag-html">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= ag6Marca %></title>
-    <%/* O Turno 6 é desenhado em Inter (o HTML de referência declara 'Overused
-         Grotesk', que não vem no pacote, e ele mesmo cai em Inter). Mesmo
-         carregamento do painel: `display=swap` + fallback de sistema, pra tela
-         renderizar mesmo se o Google Fonts não responder. */%>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= agMarca %></title>
+    <%/* 'Overused Grotesk' agora vem do próprio pacote (public/fonts) — o
+         @font-face está em agendamento-novo.css. Sem Google Fonts: uma ida à
+         rede a menos antes do primeiro quadro, e a fonte certa mesmo offline. */%>
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/tema-minimal.css" />
     <link rel="stylesheet" href="/css/agendamento-novo.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#fafafa" />
+    <meta name="theme-color" content="#f2f2f2" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
   </head>
-  <body class="ag6-body">
-    <div class="ag6-tela">
-      <header class="ag6-topo">
-        <div class="ag6-marca-linha">
-          <a href="/agendar" class="ag6-marca">
+  <body class="sv-ag-body">
+    <div class="sv-ag6-tela">
+      <header class="sv-ag6-topo">
+        <div class="sv-ag6-marca-linha">
+          <%/* O acesso da equipe ganha a mesma pílula do "Voltar", do lado
+               oposto: é um atalho de uso raro, não merece barra própria. */%>
+          <a href="/login" class="sv-ag6-pilula sv-ag6-pilula--canto sv-ag6-pilula--esq">Equipe</a>
+          <a href="/agendar" class="sv-ag6-marca">
             <% if (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) { %>
-              <img class="ag6-marca-logo" src="<%= marcaLogoUrl %>" alt="" />
+              <img class="sv-ag6-marca-logo" src="<%= marcaLogoUrl %>" alt="<%= agMarca %>" />
             <% } else { %>
-              <span class="ag6-marca-inicial"><%= ag6Marca.charAt(0).toUpperCase() %></span>
+              <span class="sv-ag6-marca-inicial"><%= agMarca.charAt(0).toUpperCase() %></span>
+              <span class="sv-ag6-marca-nome"><%= agMarca %></span>
             <% } %>
-            <span class="ag6-marca-nome"><%= ag6Marca %></span>
           </a>
-          <a href="/login" class="ag6-equipe">Equipe →</a>
+          <% if (agVoltar) { %>
+            <a class="sv-ag6-pilula sv-ag6-pilula--canto sv-ag6-pilula--dir" href="<%= agVoltar %>">Voltar</a>
+          <% } %>
         </div>
 
-        <div class="ag6-topo-linha">
-          <div class="ag6-ticks">
+        <div class="sv-ag6-topo-linha">
+          <div class="sv-ag6-ticks">
             <% for (var i = 1; i <= 4; i++) { %>
-              <span class="ag6-tick <%= i < ag6Atual || ag6Passo === 5 ? 'feito' : '' %> <%= i === ag6Atual && ag6Passo >= 1 ? 'atual' : '' %>"></span>
+              <span class="sv-ag6-tick <%= i < agAtual || agPasso === 5 ? 'feito' : '' %> <%= i === agAtual && agPasso >= 1 && agPasso <= 4 ? 'atual' : '' %>"></span>
             <% } %>
           </div>
-          <div class="ag6-topo-dir">
-            <% if (ag6Nome) { %><span class="ag6-passo-nome"><%= ag6Nome %></span><% } %>
-            <% if (ag6Voltar) { %><a class="ag6-voltar" href="<%= ag6Voltar %>">Voltar</a><% } %>
-          </div>
+          <% if (agNome) { %><div class="sv-ag6-passo-nome"><%= agNome %></div><% } %>
         </div>
       </header>
 
-      <main class="ag6-corpo">
+      <main class="sv-ag6-corpo">
         <%- include('../partials/flash') %>
         <%- body %>
       </main>

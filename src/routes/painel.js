@@ -102,6 +102,11 @@ router.get('/', dashboardController.ver);
 
 // Foto do próprio usuário logado (hero do painel).
 router.post('/perfil/foto', uploadFotoPerfil, perfilController.salvarFoto);
+// A jornada é editada no Perfil (a tela /painel/horarios saiu do menu em
+// 2026-08-01). Reusa o mesmo controller: a regra de "funcionário só edita a
+// própria jornada" já vive lá, e duplicá-la seria criar dois lugares para
+// errar. O `retorno=perfil` do formulário traz o usuário de volta pra cá.
+router.post('/perfil/jornada', horarioController.salvarJornada);
 
 // "Mais" — menu com as demais seções (acesso pela navegação inferior).
 router.get('/mais', perfilController.ver);

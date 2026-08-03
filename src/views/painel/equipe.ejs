@@ -2,227 +2,259 @@
   var PAPEL_LABEL = { admin: 'Administrador', funcionario: 'Barbeiro' };
 %>
 
-<%/* Equipe no design TURNO 6 (pedido do dono, 2026-07-28): a pilha de cards
-     arrastável saiu — a referência lista os barbeiros como faixas de fio com o
-     NOME em 40px, sob duas abas de texto (Barbeiros / Histórico). O card só
-     dava um resumo; agora tocar no nome abre a PÁGINA DO BARBEIRO em tela
-     cheia (foto grande + blocos pretos), que é onde ficam os números do mês e
-     todo o cadastro editável. */%>
-<div class="t6-eq-tela">
+<%/* Equipe no design SUAVE (pedido do dono, 2026-07-31): as faixas de fio com
+     o nome em 40px do Turno 6 dão lugar aos cartões arredondados da
+     referência, sob um par de abas em pílula (Barbeiros / Histórico) que fica
+     FIXO junto com o título.
+     Tocar num barbeiro continua abrindo a PÁGINA DO BARBEIRO em tela cheia —
+     mas agora ela é clara e feita de cartões (foto arredondada, dois números,
+     bloco escuro, comissão e desempenho) em vez dos blocos pretos de canto
+     vivo. Estilos em public/css/sv-clientes-equipe.css. */%>
+<div class="sv-tela sv-eq-tela">
 
-  <div class="t6-eq-topo t6-reveal">
-    <div class="t6-cl-titulo-linha">
-      <div class="t6-eq-titulo">EQUIPE</div>
-      <button type="button" class="t6-btn-novo" onclick="abrirModal('novo')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+  <div class="sv-eq-topo sv-reveal">
+    <div class="sv-eq-topo-linha">
+      <div class="sv-titulo">Equipe</div>
+      <button type="button" class="sv-btn sv-eq-novo" onclick="eqAbrirFolha('novo')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
         <span>Novo</span>
       </button>
     </div>
-    <div class="t6-eq-abas">
-      <button type="button" class="t6-eq-aba <%= aba === 'equipe' ? 'ativo' : '' %>" data-aba="equipe" onclick="selecionarAba(this)">Barbeiros</button>
-      <button type="button" class="t6-eq-aba <%= aba === 'historico' ? 'ativo' : '' %>" data-aba="historico" onclick="selecionarAba(this)">Histórico</button>
+    <div class="sv-eq-abas">
+      <button type="button" class="sv-eq-aba <%= aba === 'equipe' ? 'ativo' : '' %>" data-aba="equipe" onclick="eqSelecionarAba(this)">Barbeiros</button>
+      <button type="button" class="sv-eq-aba <%= aba === 'historico' ? 'ativo' : '' %>" data-aba="historico" onclick="eqSelecionarAba(this)">Histórico</button>
     </div>
   </div>
 
-  <div class="t6-eq-painel" id="eq-painel-equipe" <%= aba === 'equipe' ? '' : 'hidden' %>>
+  <div class="sv-eq-painel sv-rolagem" id="eq-painel-equipe" <%= aba === 'equipe' ? '' : 'hidden' %>>
     <% if (membros.length === 0) { %>
-      <div class="t6-vazio">Nenhum membro na equipe ainda.</div>
+      <div class="sv-vazio">Nenhum membro na equipe ainda.</div>
     <% } else { %>
-      <% membros.forEach(function (m) { %>
-        <button type="button" class="t6-eq-item" onclick="abrirModal(<%= m.id %>)">
-          <span class="t6-eq-item-linha">
-            <span style="min-width:0;">
-              <span class="t6-eq-nome"><%= m.nome %></span>
-              <span class="t6-eq-sub">
-                <%= PAPEL_LABEL[m.papel] || m.papel %> · <%= m.stats.atendimentos %> no mês · <%= m.comissaoPercentual %>% de comissão
+      <div class="sv-eq-lista">
+        <% membros.forEach(function (m) { %>
+          <button type="button" class="sv-eq-item" onclick="eqAbrirPagina(<%= m.id %>)">
+            <span class="sv-eq-av">
+              <% if (m.fotoUrl) { %><img src="<%= m.fotoUrl %>" alt="" /><% } else { %><%= m.iniciais %><% } %>
+            </span>
+            <span class="sv-eq-item-corpo">
+              <span class="sv-eq-nome-linha">
+                <span class="sv-eq-nome"><%= m.nome %></span>
+                <% if (!m.ativo) { %><span class="sv-eq-selo">inativo</span><% } %>
               </span>
+              <span class="sv-eq-sub"><%= PAPEL_LABEL[m.papel] || m.papel %> · <%= m.comissaoPercentual %>% comissão</span>
             </span>
-            <span class="t6-eq-lado">
-              <span class="t6-eq-lado-num"><%= m.stats.ocupacaoPct === null ? '—' : m.stats.ocupacaoPct + '%' %></span>
-              <span class="t6-eq-lado-rot">ocupação</span>
-              <% if (!m.ativo) { %><span class="t6-eq-selo">inativo</span><% } %>
+            <span class="sv-eq-lado">
+              <span class="sv-eq-lado-num"><%= m.stats.ocupacaoPct === null ? '—' : m.stats.ocupacaoPct + '%' %></span>
+              <span class="sv-eq-lado-rot">ocupação</span>
             </span>
-          </span>
-        </button>
-      <% }) %>
-      <div class="t6-lista-fim"></div>
+          </button>
+        <% }) %>
+      </div>
     <% } %>
   </div>
 
   <%/* Histórico: feed enxuto dos últimos atendimentos concluídos da casa. O
        relatório com comissão por período continua em Comissões — aqui é o
        "quem atendeu quem" de relance, como na referência. */%>
-  <div class="t6-eq-painel" id="eq-painel-historico" <%= aba === 'historico' ? '' : 'hidden' %>>
+  <div class="sv-eq-painel sv-rolagem" id="eq-painel-historico" <%= aba === 'historico' ? '' : 'hidden' %>>
     <% if (historico.length === 0) { %>
-      <div class="t6-vazio">Nenhum atendimento concluído ainda.</div>
+      <div class="sv-vazio">Nenhum atendimento concluído ainda.</div>
     <% } else { %>
-      <% historico.forEach(function (h) { %>
-        <div class="t6-eq-hist-linha">
-          <div class="t6-eq-hist-quando">
-            <div class="t6-eq-hist-hora"><%= h.hora %></div>
-            <div class="t6-eq-hist-data"><%= fmtData(h.data).slice(0, 5) %></div>
+      <div class="sv-eq-hist">
+        <% historico.forEach(function (h) { %>
+          <div class="sv-eq-hist-item">
+            <div class="sv-eq-hist-quando">
+              <div class="sv-eq-hist-hora"><%= h.hora %></div>
+              <div class="sv-eq-hist-data"><%= fmtData(h.data).slice(0, 5) %></div>
+            </div>
+            <div class="sv-eq-hist-corpo">
+              <div class="sv-eq-hist-cliente"><%= h.cliente %></div>
+              <div class="sv-eq-hist-sub"><%= h.item %> · <%= h.barbeiro %></div>
+            </div>
+            <div class="sv-eq-hist-valor"><%= fmtT6(h.valor) %></div>
           </div>
-          <div class="t6-eq-hist-corpo">
-            <div class="t6-eq-hist-cliente"><%= h.cliente %></div>
-            <div class="t6-eq-hist-sub"><%= h.item %> · <%= h.barbeiro %></div>
-          </div>
-          <div class="t6-eq-hist-valor"><%= fmtT6(h.valor) %></div>
-        </div>
-      <% }) %>
-      <div class="t6-lista-fim"></div>
+        <% }) %>
+      </div>
     <% } %>
   </div>
 </div>
 
-<!-- Novo membro: diálogo CENTRADO (mesmo formato do "Novo cliente"). -->
-<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
-    <div class="t6-cl-dlg-titulo">Novo membro</div>
+<%/* Novo membro — folha inferior, mesmo formato do "Novo cliente". */%>
+<div class="sv-folha-fundo" id="eq-folha-novo" hidden>
+  <div class="sv-folha">
+    <div class="sv-folha-puxador"></div>
+    <div class="sv-folha-titulo">Novo barbeiro</div>
     <form method="POST" action="/painel/equipe">
-      <div class="t6-cl-campo">
-        <label class="t6-cl-campo-rot" for="nome-novo">Nome</label>
-        <input class="t6-cl-campo-input" id="nome-novo" name="nome" placeholder="Nome completo" required />
+      <div class="sv-campo">
+        <label class="sv-campo-rot" for="eq-novo-nome">Nome</label>
+        <input class="sv-campo-input" id="eq-novo-nome" name="nome" placeholder="Nome completo" required />
       </div>
       <%/* Sem e-mail/senha/papel (pedido do dono, 2026-07-28: "só quem vai ter
            acesso sou eu"). O barbeiro é cadastro para a agenda e a comissão,
            não conta de login — o controller gera as credenciais internas que
            o banco exige. */%>
-      <button type="submit" class="t6-cl-dlg-btn">Adicionar</button>
+      <button type="submit" class="sv-btn sv-eq-btn-bloco">Adicionar</button>
     </form>
   </div>
 </div>
 
-<%/* Página do barbeiro — folha de tela cheia com foto grande e canto vivo
-     (referência, linhas 2049-2138). O bloco preto "Detalhes" É o formulário de
-     edição: a referência já traz a comissão como input dentro dele, então
-     nome/e-mail/senha/foto seguem a mesma linguagem em vez de virar um
-     formulário claro solto embaixo. */%>
+<%/* Página do barbeiro — tela cheia sobre a lista (referência, linhas
+     1654-1741). O formulário de edição não é um bloco separado: os campos
+     moram DENTRO dos cartões que mostram os números (o nome no cartão de
+     identidade, a comissão no cartão de comissões), que é como a referência
+     trata edição. */%>
 <% membros.forEach(function (m) { %>
-  <div class="ag-overlay t6-folha t6-eq-folha" id="agm-<%= m.id %>">
-    <div class="ag-modal-box">
-      <div class="t6-eq-pg-topo">
-        <div class="t6-eq-pg-eyebrow"><%= PAPEL_LABEL[m.papel] || m.papel %></div>
-        <button type="button" class="t6-eq-pg-fechar" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  <div class="sv-eq-pg" id="eq-pg-<%= m.id %>" hidden>
+    <div class="sv-eq-pg-rolagem sv-rolagem">
+      <div class="sv-eq-pg-topo">
+        <div class="sv-eq-pg-eyebrow">Barbeiro</div>
+        <button type="button" class="sv-eq-pg-fechar" onclick="eqFecharPagina()" aria-label="Fechar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
       </div>
 
-      <div class="t6-eq-hero">
-        <div class="t6-eq-foto">
-          <% if (m.fotoUrl) { %>
-            <img src="<%= m.fotoUrl %>" alt="<%= m.nome %>" />
-          <% } else { %>
-            <span class="t6-eq-foto-vazia">Foto</span>
-          <% } %>
-        </div>
-        <div class="t6-eq-hero-col">
-          <div>
-            <div class="t6-eq-hero-rot">Faturamento</div>
-            <div class="t6-eq-hero-num"><%= fmtT6(m.stats.faturado) %></div>
-          </div>
-          <div>
-            <div class="t6-eq-hero-rot">Atendimentos<br>no mês</div>
-            <div class="t6-eq-hero-num t6-eq-hero-num--big"><%= m.stats.atendimentos %></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="t6-eq-bloco">
-        <div class="t6-eq-bloco-rot"><%= m.ativo ? (PAPEL_LABEL[m.papel] || m.papel) : 'Inativo' %></div>
-        <div class="t6-eq-bloco-nome"><%= m.nome %></div>
-        <div class="t6-eq-duo">
-          <div class="t6-eq-duo-cel">
-            <div class="t6-eq-duo-num"><%= fmtT6(m.stats.ticketMedio) %></div>
-            <div class="t6-eq-duo-rot">Ticket médio</div>
-          </div>
-          <div class="t6-eq-duo-cel">
-            <div class="t6-eq-duo-num"><%= m.stats.ocupacaoPct === null ? '—' : m.stats.ocupacaoPct + '%' %></div>
-            <div class="t6-eq-duo-rot">Ocupação</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="t6-eq-det">
-        <div class="t6-eq-bloco-rot">Detalhes</div>
-
-        <%/* Só de leitura: sai do mês corrente, não é campo de cadastro. */%>
-        <div class="t6-eq-grade" style="margin-top:8px;">
-          <div class="t6-eq-cel">
-            <div class="t6-eq-cel-val"><%= fmtT6(m.stats.comissaoReceber) %></div>
-            <div class="t6-eq-cel-rot">Comissão a receber</div>
-          </div>
-          <div class="t6-eq-cel">
-            <div class="t6-eq-cel-val"><%= m.stats.servicoTop || '—' %></div>
-            <div class="t6-eq-cel-rot">Serviço mais feito</div>
-          </div>
-        </div>
-        <div class="t6-eq-grade">
-          <div class="t6-eq-cel">
-            <div class="t6-eq-cel-val"><%= m.stats.clientesAtendidos %></div>
-            <div class="t6-eq-cel-rot">Clientes atendidos</div>
-          </div>
-          <div class="t6-eq-cel">
-            <div class="t6-eq-cel-val"><%= m.ativo ? 'Ativo' : 'Inativo' %></div>
-            <div class="t6-eq-cel-rot">Status</div>
+      <form method="POST" enctype="multipart/form-data" action="/painel/equipe/<%= m.id %>">
+        <div class="sv-cartao sv-eq-hero">
+          <%/* A foto É o botão de trocar: o <input file> fica escondido e o
+               <label> em cima da imagem abre a galeria. */%>
+          <label class="sv-eq-foto" for="eq-foto-<%= m.id %>">
+            <% if (m.fotoUrl) { %>
+              <img src="<%= m.fotoUrl %>" alt="<%= m.nome %>" />
+            <% } else { %>
+              <span class="sv-eq-foto-vazia">Foto</span>
+            <% } %>
+          </label>
+          <input class="sv-eq-foto-input" id="eq-foto-<%= m.id %>" name="foto" type="file" accept="image/*" onchange="eqFotoEscolhida(this, <%= m.id %>)" />
+          <div class="sv-eq-hero-corpo">
+            <input class="sv-eq-nome-input" name="nome" value="<%= m.nome %>" aria-label="Nome do barbeiro" required />
+            <div class="sv-eq-papel"><%= m.ativo ? (PAPEL_LABEL[m.papel] || m.papel) : 'Inativo' %></div>
+            <span class="sv-pilula sv-eq-hero-pilula"><%= m.jornadaLabel %></span>
+            <div class="sv-eq-foto-dica" id="eq-foto-dica-<%= m.id %>">Toque na foto para trocar</div>
           </div>
         </div>
 
-        <form method="POST" enctype="multipart/form-data" action="/painel/equipe/<%= m.id %>">
-          <div class="t6-eq-grade">
-            <div class="t6-eq-cel">
-              <input id="nome-<%= m.id %>" name="nome" value="<%= m.nome %>" required />
-              <label class="t6-eq-cel-rot" for="nome-<%= m.id %>">Nome</label>
-            </div>
-            <div class="t6-eq-cel">
-              <input id="comissao-<%= m.id %>" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="<%= m.comissaoPercentual %>" placeholder="0" />
-              <label class="t6-eq-cel-rot" for="comissao-<%= m.id %>">Comissão serviços (%)</label>
+        <div class="sv-eq-par">
+          <div class="sv-cartao sv-eq-par-cel">
+            <div class="sv-eq-num"><%= fmtT6(m.stats.faturado) %></div>
+            <div class="sv-eq-num-rot">Faturamento</div>
+          </div>
+          <div class="sv-cartao sv-eq-par-cel">
+            <div class="sv-eq-num"><%= m.stats.atendimentos %></div>
+            <div class="sv-eq-num-rot">Atendimentos no mês</div>
+          </div>
+        </div>
+
+        <div class="sv-cartao sv-cartao--escuro sv-eq-escuro">
+          <div class="sv-eq-par-cel">
+            <div class="sv-eq-num"><%= fmtT6(m.stats.ticketMedio) %></div>
+            <div class="sv-eq-num-rot">Ticket médio</div>
+          </div>
+          <div class="sv-eq-divisor"></div>
+          <div class="sv-eq-par-cel">
+            <div class="sv-eq-num"><%= m.stats.ocupacaoPct === null ? '—' : m.stats.ocupacaoPct + '%' %></div>
+            <div class="sv-eq-num-rot">Ocupação</div>
+          </div>
+        </div>
+
+        <div class="sv-cartao sv-eq-bloco">
+          <div class="sv-eq-bloco-tit">Comissões</div>
+          <%/* A referência tem duas caixas (serviços e produtos). Aqui só a de
+               serviços é do barbeiro: a comissão de produto é por PRODUTO, e
+               fica na tela de Produtos — duplicá-la aqui daria dois donos para
+               o mesmo número. */%>
+          <div class="sv-eq-com">
+            <div class="sv-eq-com-caixa">
+              <input class="sv-eq-com-input" id="eq-com-<%= m.id %>" name="comissaoPercentual" type="number" min="0" max="100" step="0.1" value="<%= m.comissaoPercentual %>" placeholder="0" />
+              <label class="sv-eq-com-rot" for="eq-com-<%= m.id %>">% sobre serviços</label>
             </div>
           </div>
-          <%/* E-mail, senha e papel saíram (pedido do dono, 2026-07-28: "só
-               quem vai ter acesso sou eu") — o barbeiro é cadastro da agenda,
-               não conta de login. Não vão nem como campo oculto: o controller
-               preserva os valores que já estão no banco, senão salvar por aqui
-               rebaixaria um administrador a funcionário. */%>
-          <div class="t6-eq-grade">
-            <div class="t6-eq-cel">
-              <input id="foto-<%= m.id %>" name="foto" type="file" accept="image/*" />
-              <label class="t6-eq-cel-rot" for="foto-<%= m.id %>">Foto</label>
+          <div class="sv-eq-com-pe">
+            <span class="sv-eq-com-pe-rot">Comissão a receber</span>
+            <span class="sv-eq-com-pe-val"><%= fmtT6(m.stats.comissaoReceber) %></span>
+          </div>
+        </div>
+
+        <div class="sv-cartao sv-eq-bloco">
+          <div class="sv-eq-bloco-tit">Desempenho</div>
+          <div class="sv-eq-desemp">
+            <div class="sv-eq-desemp-linha">
+              <div class="sv-eq-desemp-cel">
+                <div class="sv-eq-desemp-num"><%= m.stats.clientesAtendidos %></div>
+                <div class="sv-eq-desemp-rot">Clientes atendidos</div>
+              </div>
+              <div class="sv-eq-desemp-cel">
+                <div class="sv-eq-desemp-num"><%= m.stats.taxaRetorno === null ? '—' : m.stats.taxaRetorno + '%' %></div>
+                <div class="sv-eq-desemp-rot">Taxa de retorno</div>
+              </div>
+            </div>
+            <div class="sv-eq-desemp-linha">
+              <div class="sv-eq-desemp-cel">
+                <div class="sv-eq-desemp-num"><%= m.stats.servicoTop || '—' %></div>
+                <div class="sv-eq-desemp-rot">Serviço mais feito</div>
+              </div>
+              <div class="sv-eq-desemp-cel">
+                <div class="sv-eq-desemp-num"><%= m.stats.produtosVendidos %></div>
+                <div class="sv-eq-desemp-rot">Produtos vendidos</div>
+              </div>
             </div>
           </div>
+        </div>
 
-          <button type="submit" class="t6-cta-claro">Salvar alterações</button>
-        </form>
+        <div class="sv-eq-acoes">
+          <button type="submit" class="sv-btn sv-eq-btn-bloco">Salvar alterações</button>
+        </div>
+      </form>
 
-        <form method="POST" action="/painel/equipe/<%= m.id %>/toggle">
-          <button type="submit" class="t6-cta-vazado"><%= m.ativo ? 'Desativar membro' : 'Ativar membro' %></button>
-        </form>
-      </div>
+      <%/* Fora do formulário acima de propósito: <form> não aninha. */%>
+      <form method="POST" action="/painel/equipe/<%= m.id %>/toggle" class="sv-eq-acoes">
+        <button type="submit" class="sv-btn sv-btn--claro sv-eq-btn-bloco"><%= m.ativo ? 'Desativar membro' : 'Ativar membro' %></button>
+      </form>
     </div>
   </div>
 <% }) %>
 
 <script>
-  function abrirModal(id) {
-    var o = document.getElementById('agm-' + id);
-    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+  // Folha inferior (novo barbeiro): `hidden` liga/desliga. Tirar o `hidden`
+  // recria o elemento na tela, e é isso que faz a animação de subida rodar de
+  // novo a cada abertura.
+  function eqAbrirFolha(id) {
+    var f = document.getElementById('eq-folha-' + id);
+    if (f) f.hidden = false;
   }
-  function fecharModal(o) {
-    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+  Array.prototype.forEach.call(document.querySelectorAll('.sv-folha-fundo'), function (f) {
+    // Só o fundo fecha — clique DENTRO da folha não deve fechá-la.
+    f.addEventListener('click', function (e) { if (e.target === f) f.hidden = true; });
+  });
+
+  // Página do barbeiro: sobe por cima da lista, sem recarregar.
+  function eqAbrirPagina(id) {
+    var p = document.getElementById('eq-pg-' + id);
+    if (p) p.hidden = false;
   }
+  function eqFecharPagina() {
+    Array.prototype.forEach.call(document.querySelectorAll('.sv-eq-pg'), function (p) { p.hidden = true; });
+  }
+  // O <input file> está escondido, então sem isto nada indicaria que a foto
+  // foi escolhida antes de salvar.
+  function eqFotoEscolhida(input, id) {
+    var dica = document.getElementById('eq-foto-dica-' + id);
+    if (dica && input.files && input.files[0]) dica.textContent = 'Nova foto: ' + input.files[0].name;
+  }
+
   // Troca de aba sem recarregar: as duas listas já vêm renderizadas. O
   // ?aba=historico do servidor só decide qual nasce visível.
-  function selecionarAba(btn) {
+  function eqSelecionarAba(btn) {
     var alvo = btn.getAttribute('data-aba');
-    Array.prototype.forEach.call(document.querySelectorAll('.t6-eq-aba'), function (b) {
+    Array.prototype.forEach.call(document.querySelectorAll('.sv-eq-aba'), function (b) {
       b.classList.toggle('ativo', b === btn);
     });
     document.getElementById('eq-painel-equipe').hidden = alvo !== 'equipe';
     document.getElementById('eq-painel-historico').hidden = alvo !== 'historico';
   }
+
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
-      document.body.classList.remove('modal-aberto');
-    }
+    if (e.key !== 'Escape') return;
+    Array.prototype.forEach.call(document.querySelectorAll('.sv-folha-fundo'), function (f) { f.hidden = true; });
+    eqFecharPagina();
   });
 </script>

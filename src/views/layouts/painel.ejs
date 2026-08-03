@@ -1,48 +1,64 @@
+<%
+  // Precisa vir ANTES do <head>: é daqui que sai quais CSS a página carrega.
+  // Telas já no design SUAVE — as demais (fidelidade, comissões, horários e os
+  // formulários órfãos) seguem na pilha de CSS antiga.
+  var TELAS_SUAVE = ['/painel', '/painel/agenda', '/painel/caixa', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/relatorios'];
+  var ehSuave = TELAS_SUAVE.indexOf(currentPath) !== -1;
+%>
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Painel' %></title>
-    <%/* As telas ainda não convertidas usam a fonte do SISTEMA (sem webfont).
-         O design Turno 6 (2026-07-28) é desenhado em Inter — o HTML de
-         referência declara 'Overused Grotesk' mas a fonte não vem no pacote e
-         ele mesmo cai em Inter, então Inter É o que a referência mostra.
-         Fica com `display=swap` e fallback de sistema: se o Google Fonts não
-         carregar, a tela ainda renderiza. */%>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <%
+      // CSS POR TELA (2026-08-01). Antes o layout carregava os 18 arquivos em
+      // toda página: 415 KB e 2709 regras, das quais ~1100 (painel-novo,
+      // painel-turno6 e os t6-*) não casavam com NADA numa tela do design novo,
+      // mais ~730 dos sv-* das outras telas. Medido no navegador, não estimado.
+      //
+      // A fonte é local (@font-face no suave.css) — sem Google Fonts.
+      var CSS_POR_TELA = {
+        '/painel': 'sv-home',
+        '/painel/agenda': 'sv-agenda',
+        '/painel/caixa': 'sv-caixa',
+        '/painel/relatorios': 'sv-relatorios',
+        '/painel/clientes': 'sv-clientes-equipe',
+        '/painel/equipe': 'sv-clientes-equipe',
+        '/painel/servicos': 'sv-catalogo',
+        '/painel/produtos': 'sv-catalogo',
+        '/painel/estoque': 'sv-catalogo',
+        '/painel/planos': 'sv-planos-perfil',
+        '/painel/mais': 'sv-planos-perfil',
+      };
+      var cssDaTela = CSS_POR_TELA[currentPath];
+    %>
+    <%/* `styles.css` fica nos dois caminhos: dele vêm os resets de base
+         (html/body/a/img/input) que o suave.css pressupõe em vez de repetir. */%>
     <link rel="stylesheet" href="/css/styles.css" />
-    <link rel="stylesheet" href="/css/tema-minimal.css" />
-    <link rel="stylesheet" href="/css/painel-app.css" />
-    <link rel="stylesheet" href="/css/painel-novo.css" />
-    <%/* Turno 6: `painel-turno6.css` traz os TOKENS (cores, tipografia) e o que
-         é compartilhado — barra inferior, gaveta, folhas de pop-up, campos.
-         Cada tela convertida tem o próprio arquivo depois dele, para que as
-         conversões possam acontecer em paralelo sem uma sobrescrever a outra.
-         Os nomes de classe são disjuntos, então a ordem entre eles não importa. */%>
-    <link rel="stylesheet" href="/css/painel-turno6.css" />
-    <link rel="stylesheet" href="/css/t6-caixa.css" />
-    <link rel="stylesheet" href="/css/t6-relatorios.css" />
-    <link rel="stylesheet" href="/css/t6-clientes-equipe.css" />
-    <link rel="stylesheet" href="/css/t6-catalogo.css" />
-    <link rel="stylesheet" href="/css/t6-planos-perfil.css" />
+    <% if (ehSuave) { %>
+      <link rel="stylesheet" href="/css/suave.css" />
+      <% if (cssDaTela) { %><link rel="stylesheet" href="/css/<%= cssDaTela %>.css" /><% } %>
+    <% } else { %>
+      <%/* Telas ainda não migradas (fidelidade, comissões, horários e os
+           formulários órfãos) seguem na pilha antiga — inteira, porque elas
+           dependem dela de verdade. */%>
+      <link rel="stylesheet" href="/css/tema-minimal.css" />
+      <link rel="stylesheet" href="/css/painel-app.css" />
+      <link rel="stylesheet" href="/css/painel-novo.css" />
+    <% } %>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#111111" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
+    <%/* Motor de animação do design suave: dispara as entradas por `data-*`
+         quando o elemento aparece na tela. `defer` porque ele varre o DOM —
+         precisa do documento montado, mas não deve segurar a pintura. */%>
+    <script src="/js/suave-anim.js" defer></script>
   </head>
   <%
-    // Telas já convertidas para o design TURNO 6 (2026-07-28, o HTML de
-    // referência que o dono anexou). Ganham só `pg-t6` — de propósito FORA do
-    // esquema `pg-novo` abaixo, senão o CSS do tema escuro anterior (fundo
-    // #0b0b0d, cartões arredondados) brigaria com o editorial claro.
-    var TELAS_T6 = ['/painel', '/painel/agenda', '/painel/caixa', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/relatorios'];
-    var ehT6 = TELAS_T6.indexOf(currentPath) !== -1;
-
     // Cada tela já convertida para o design novo ganha sua classe (.pg-*); as
     // demais seguem no visual antigo.
     var TELAS_NOVAS = {
@@ -65,8 +81,8 @@
        do painel-novo.css (cabeçalho sem cartão, pop-ups de vidro etc). As
        classes .pg-<tela> continuam existindo para o que É específico de
        cada uma (o hero só existe na Home, por exemplo). */%>
-  <body class="app-painel <%= ehT6 ? 'pg-t6' : classeTela + ' ' + (classeTela ? 'pg-novo' : '') %>">
-    <% if (!ehT6) { %><%- include('../partials/splash') %><% } %>
+  <body class="app-painel <%= ehSuave ? 'pg-sv' : classeTela + ' ' + (classeTela ? 'pg-novo' : '') %>">
+    <% if (!ehSuave) { %><%- include('../partials/splash') %><% } %>
     <div class="app-topo-fixo">
       <%- include('../partials/header-painel') %>
     </div>

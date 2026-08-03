@@ -3,9 +3,16 @@
     var p = String(nome || '').trim().split(/\s+/);
     return p.length > 1 ? (p[0][0] + p[p.length - 1][0]).toUpperCase() : p[0].slice(0, 2).toUpperCase();
   }
+  function _primeiroNome(nome) {
+    return String(nome || '').trim().split(/\s+/)[0];
+  }
   // "Barbeiro-chefe" para quem é dono/admin da barbearia; o resto é barbeiro.
   function _papel(u) {
     return u.papel === 'funcionario' ? 'Barbeiro' : 'Barbeiro-chefe';
+  }
+  // No ladrilho de 104px o papel completo vira reticências — lá vai a versão curta.
+  function _papelCurto(u) {
+    return u.papel === 'funcionario' ? 'barbeiro' : 'chefe';
   }
   function _duracao(min) {
     if (min < 60) return min + ' min';
@@ -17,115 +24,98 @@
   var resumoServicos = servicos.length + ' serviço' + (servicos.length > 1 ? 's' : '') + ' · ' + _duracao(duracaoTotal);
 %>
 
-<%/* TURNO 6 (2026-07-28): a pilha de cards arrastáveis virou um carrossel de
-     RETRATOS REDONDOS com encaixe (scroll-snap) — a única curva do design.
-     Trocar a matemática de arrasto por scroll nativo dá inércia e acessibilidade
-     de graça, e o toque no retrato deixou de escolher: quem confirma é a barra
-     preta embaixo (um só jeito de seguir, igual aos outros passos).
+<%/* SUAVE (pedido do dono, 2026-07-31): o carrossel de retratos de 280px com
+     encaixe virou a TIRA DE LADRILHOS da referência — 104px, retrato de 64px,
+     nome e papel miúdos embaixo. Toda a equipe cabe na tela de uma vez, então
+     escolher deixou de exigir arrasto (e os tracinhos do carrossel, que só
+     existiam pra dizer "tem mais ao lado", saíram junto).
 
-     "Qualquer disponível" entra como o PRIMEIRO retrato do carrossel, em vez
-     de um cartão solto acima — assim as opções ficam todas no mesmo gesto. */%>
+     O ladrilho escolhido inverte pra preto e o cartão abaixo mostra o nome
+     completo, que não cabe em 104px. "Qualquer disponível" continua sendo o
+     PRIMEIRO ladrilho — mesma gramática das outras opções. */%>
 <% if (barbeiros.length === 0) { %>
-  <div class="ag6-rolagem">
-    <p class="ag6-vazio">Nenhum barbeiro disponível no momento.</p>
+  <div class="sv-ag6-rolagem">
+    <p class="sv-ag6-vazio">Nenhum barbeiro disponível no momento.</p>
   </div>
 <% } else { %>
-  <div class="ag6-rolagem">
-    <div class="ag6-barb-trilho ag6-sem-sb" id="ag6-trilho">
+  <div class="sv-ag6-rolagem">
+    <div class="sv-ag6-secao" style="animation-delay:0s">
+      <div class="sv-ag6-secao-tit">Escolha o barbeiro</div>
+    </div>
+
+    <div class="sv-ag6-barb-trilho sv-ag6-sem-sb" id="ag6-trilho">
+      <% var _d = 0; %>
       <% if (mostrarQualquer) { %>
-        <div class="ag6-barb-slide ativo" data-nome="Qualquer disponível" data-papel="Mais rápido para agendar" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=any">
-          <div class="ag6-barb-circulo">
-            <span class="ag6-barb-iniciais" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fafafa" stroke-width="1.4"><path d="M5 20a7 7 0 0 1 14 0"/><circle cx="12" cy="8" r="4"/></svg>
+        <button type="button" class="sv-ag6-barb-tile ativo" data-nome="Qualquer disponível" data-papel="Mais rápido para agendar" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=any" style="animation-delay:0.06s">
+          <span class="sv-ag6-barb-avatar">
+            <span class="sv-ag6-barb-iniciais" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 20a7 7 0 0 1 14 0" /><circle cx="12" cy="8" r="4" /></svg>
             </span>
-          </div>
-        </div>
+          </span>
+          <span class="sv-ag6-barb-tile-nome">Qualquer</span>
+          <span class="sv-ag6-barb-tile-meta">mais rápido</span>
+        </button>
+        <% _d = 1; %>
       <% } %>
       <% barbeiros.forEach(function (b, i) { %>
-        <div class="ag6-barb-slide <%= (!mostrarQualquer && i === 0) ? 'ativo' : '' %>" data-nome="<%= b.nome %>" data-papel="<%= _papel(b) %>" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= b.id %>">
-          <div class="ag6-barb-circulo">
+        <button type="button" class="sv-ag6-barb-tile <%= (!mostrarQualquer && i === 0) ? 'ativo' : '' %>" data-nome="<%= b.nome %>" data-papel="<%= _papel(b) %>" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= b.id %>" style="animation-delay:<%= (0.06 + (i + _d) * 0.06).toFixed(2) %>s">
+          <span class="sv-ag6-barb-avatar">
             <% if (b.fotoUrl) { %>
               <img src="<%= b.fotoUrl %>" alt="<%= b.nome %>" />
             <% } else { %>
-              <span class="ag6-barb-iniciais"><%= _iniciais(b.nome) %></span>
+              <span class="sv-ag6-barb-iniciais"><%= _iniciais(b.nome) %></span>
             <% } %>
-          </div>
-        </div>
+          </span>
+          <span class="sv-ag6-barb-tile-nome"><%= _primeiroNome(b.nome) %></span>
+          <span class="sv-ag6-barb-tile-meta"><%= _papelCurto(b) %></span>
+        </button>
       <% }) %>
     </div>
 
-    <div class="ag6-barb-info">
-      <div>
-        <div class="ag6-barb-nome" id="ag6-barb-nome"><%= mostrarQualquer ? 'Qualquer disponível' : barbeiros[0].nome %></div>
-        <div class="ag6-barb-papel" id="ag6-barb-papel"><%= mostrarQualquer ? 'Mais rápido para agendar' : _papel(barbeiros[0]) %></div>
-      </div>
-      <div class="ag6-barb-pontos" id="ag6-barb-pontos">
-        <% var _total = barbeiros.length + (mostrarQualquer ? 1 : 0); %>
-        <% for (var d = 0; d < _total; d++) { %>
-          <button type="button" class="ag6-barb-ponto <%= d === 0 ? 'sel' : '' %>" data-idx="<%= d %>" aria-label="Barbeiro <%= d + 1 %>"></button>
-        <% } %>
-      </div>
+    <div class="sv-ag6-barb-info">
+      <div class="sv-ag6-barb-nome" id="ag6-barb-nome"><%= mostrarQualquer ? 'Qualquer disponível' : barbeiros[0].nome %></div>
+      <div class="sv-ag6-barb-papel" id="ag6-barb-papel"><%= mostrarQualquer ? 'Mais rápido para agendar' : _papel(barbeiros[0]) %></div>
     </div>
 
-    <div class="ag6-sobrancelha-linha">
-      <span class="ag6-sobrancelha">Escolhido</span>
-      <span class="ag6-sobrancelha-val"><%= servicos.map(function (s) { return s.nome; }).join(' + ') %></span>
+    <div class="sv-ag6-secao">
+      <div class="sv-ag6-secao-tit">Escolhido</div>
+      <div class="sv-ag6-secao-val"><%= servicos.map(function (s) { return s.nome; }).join(' + ') %></div>
     </div>
+    <div style="height:22px"></div>
   </div>
 
-  <div class="ag6-barra">
-    <a class="ag6-acao" id="ag6-barb-cta" href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= mostrarQualquer ? 'any' : barbeiros[0].id %>">
+  <div class="sv-ag6-barra">
+    <a class="sv-ag6-acao" id="ag6-barb-cta" href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= mostrarQualquer ? 'any' : barbeiros[0].id %>">
       <span>
-        <span class="ag6-acao-rot">Escolher horário</span>
-        <span class="ag6-acao-sub"><%= resumoServicos %></span>
+        <span class="sv-ag6-acao-rot">Escolher horário</span>
+        <span class="sv-ag6-acao-sub"><%= resumoServicos %></span>
       </span>
-      <span class="ag6-acao-total"><%= assinatura ? 'Incluso' : fmtT6(valorTotal) %></span>
+      <span class="sv-ag6-acao-total"><%= assinatura ? 'Incluso' : fmtT6(valorTotal) %></span>
     </a>
   </div>
 
   <script>
-    // Carrossel: quem manda é a posição do scroll (encaixe por CSS). O
-    // handler só reflete a página ativa no nome, nos tracinhos e no destino
-    // da barra preta — nada de matemática de arrasto.
+    // O toque no ladrilho só marca a escolha (nome, cartão e destino da barra
+    // preta); quem segue pro horário continua sendo a barra — um só jeito de
+    // avançar, igual aos outros passos.
     (function () {
       var trilho = document.getElementById('ag6-trilho');
       if (!trilho) return;
-      var slides = Array.prototype.slice.call(trilho.querySelectorAll('.ag6-barb-slide'));
-      var pontos = Array.prototype.slice.call(document.querySelectorAll('#ag6-barb-pontos .ag6-barb-ponto'));
+      var tiles = Array.prototype.slice.call(trilho.querySelectorAll('.sv-ag6-barb-tile'));
       var elNome = document.getElementById('ag6-barb-nome');
       var elPapel = document.getElementById('ag6-barb-papel');
       var cta = document.getElementById('ag6-barb-cta');
-      var atual = -1;
 
-      function aplicar(i) {
-        if (i === atual || !slides[i]) return;
-        atual = i;
-        slides.forEach(function (s, k) { s.classList.toggle('ativo', k === i); });
-        pontos.forEach(function (p, k) { p.classList.toggle('sel', k === i); });
-        elNome.textContent = slides[i].dataset.nome;
-        elPapel.textContent = slides[i].dataset.papel;
-        cta.href = slides[i].dataset.href;
-      }
-
-      var pendente = null;
-      trilho.addEventListener('scroll', function () {
-        // rAF pra não recalcular a cada evento de scroll durante a inércia.
-        if (pendente) return;
-        pendente = requestAnimationFrame(function () {
-          pendente = null;
-          aplicar(Math.round(trilho.scrollLeft / Math.max(1, trilho.clientWidth)));
+      tiles.forEach(function (tile) {
+        tile.addEventListener('click', function () {
+          tiles.forEach(function (t) { t.classList.toggle('ativo', t === tile); });
+          elNome.textContent = tile.dataset.nome;
+          elPapel.textContent = tile.dataset.papel;
+          cta.href = tile.dataset.href;
+          // Ladrilho na borda da tira: traz o escolhido inteiro pra vista.
+          if (tile.scrollIntoView) tile.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
         });
       });
-
-      pontos.forEach(function (p) {
-        p.addEventListener('click', function () {
-          var i = Number(p.dataset.idx);
-          trilho.scrollTo({ left: i * trilho.clientWidth, behavior: 'smooth' });
-          aplicar(i);
-        });
-      });
-
-      aplicar(0);
     })();
   </script>
 <% } %>

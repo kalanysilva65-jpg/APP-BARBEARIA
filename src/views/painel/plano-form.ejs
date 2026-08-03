@@ -1,60 +1,62 @@
 <%/* Página de plano (rotas /painel/planos/novo e /painel/planos/:id/editar).
-     A lista de planos edita por pop-up, mas estas rotas continuam existindo —
-     link direto, histórico, e é para onde os erros de validação redirecionam.
-     Turno 6 (2026-07-28): mesma linguagem do pop-up (campos underline, rótulo
-     em caixa alta, CTA preto), num wrapper que traz o próprio fundo claro
-     porque estas URLs não estão na lista de telas Turno 6 do layout. */%>
-<div class="t6-pl-pagina">
-  <a href="/painel/planos" class="t6-pl-voltar" aria-label="Voltar">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+     A lista de planos edita por folha inferior, mas estas rotas continuam
+     existindo — link direto, histórico, e é para onde os erros de validação
+     redirecionam.
+     Design SUAVE (2026-07-31): mesma linguagem da folha (campo cinza de canto
+     14px, rótulo pequeno, CTA preto em pílula), num wrapper que traz os
+     próprios tokens e o próprio fundo — estas URLs não estão na lista de telas
+     "suave" do layout, então o <body> aqui não tem `.pg-sv`. */%>
+<div class="sv-pl-pagina">
+  <a href="/painel/planos" class="sv-pl-voltar" aria-label="Voltar">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
   </a>
 
-  <div class="t6-pl-modal-titulo"><%= plano ? plano.nome : 'Novo plano' %></div>
+  <div class="sv-pl-pagina-titulo"><%= plano ? plano.nome : 'Novo plano' %></div>
 
   <form method="POST" action="<%= plano ? '/painel/planos/' + plano.id : '/painel/planos' %>">
-    <div class="t6-pl-campo">
-      <label class="t6-pl-rot" for="nome">Nome</label>
-      <input class="t6-pl-input" id="nome" name="nome" value="<%= plano ? plano.nome : '' %>" required autofocus />
+    <div class="sv-campo">
+      <label class="sv-campo-rot" for="nome">Nome</label>
+      <input class="sv-campo-input" id="nome" name="nome" value="<%= plano ? plano.nome : '' %>" required autofocus />
     </div>
 
-    <div class="t6-pl-campo">
-      <label class="t6-pl-rot" for="tipo">Tipo de uso</label>
-      <select class="t6-pl-input" id="tipo" name="tipo">
+    <div class="sv-campo">
+      <label class="sv-campo-rot" for="tipo">Tipo de uso</label>
+      <select class="sv-campo-input sv-pl-select" id="tipo" name="tipo">
         <option value="limitado" <%= plano && plano.tipo === 'limitado' ? 'selected' : '' %>>Limitado (nº de usos)</option>
         <option value="ilimitado" <%= plano && plano.tipo === 'ilimitado' ? 'selected' : '' %>>Ilimitado</option>
       </select>
     </div>
 
-    <div class="t6-pl-campo">
-      <label class="t6-pl-rot" for="servicoId">Serviço incluso</label>
-      <select class="t6-pl-input" id="servicoId" name="servicoId">
+    <div class="sv-campo">
+      <label class="sv-campo-rot" for="servicoId">Serviço incluso</label>
+      <select class="sv-campo-input sv-pl-select" id="servicoId" name="servicoId">
         <option value="">Qualquer serviço</option>
         <% servicos.forEach(function (s) { %>
           <option value="<%= s.id %>" <%= plano && plano.servicoId === s.id ? 'selected' : '' %>><%= s.nome %></option>
         <% }) %>
       </select>
-      <div class="t6-pl-ajuda">É o serviço que o cliente agenda usando o plano.</div>
+      <div class="sv-pl-ajuda">É o serviço que o cliente agenda usando o plano.</div>
     </div>
 
-    <div class="t6-pl-dupla">
-      <div class="t6-pl-campo" id="campo-usos">
-        <label class="t6-pl-rot" for="usos">Usos/mês</label>
-        <input class="t6-pl-input" id="usos" name="usos" type="number" min="1" value="<%= plano && plano.usos ? plano.usos : '' %>" />
+    <div class="sv-pl-dupla">
+      <div class="sv-campo" id="campo-usos">
+        <label class="sv-campo-rot" for="usos">Usos/mês</label>
+        <input class="sv-campo-input" id="usos" name="usos" type="number" min="1" value="<%= plano && plano.usos ? plano.usos : '' %>" />
       </div>
-      <div class="t6-pl-campo">
-        <label class="t6-pl-rot" for="validadeDias">Validade (dias)</label>
-        <input class="t6-pl-input" id="validadeDias" name="validadeDias" type="number" min="1" value="<%= plano ? plano.validadeDias : 30 %>" />
+      <div class="sv-campo">
+        <label class="sv-campo-rot" for="validadeDias">Validade (dias)</label>
+        <input class="sv-campo-input" id="validadeDias" name="validadeDias" type="number" min="1" value="<%= plano ? plano.validadeDias : 30 %>" />
       </div>
     </div>
-    <div class="t6-pl-ajuda">Usos só valem para o tipo limitado. Ilimitado costuma ser 30 dias (mensal).</div>
+    <div class="sv-pl-ajuda">Usos só valem para o tipo limitado. Ilimitado costuma ser 30 dias (mensal).</div>
 
-    <div class="t6-pl-campo">
-      <label class="t6-pl-rot" for="valor">Preço (R$)</label>
-      <input class="t6-pl-input" id="valor" name="valor" type="number" step="0.01" min="0" value="<%= plano ? (plano.valor / 100).toFixed(2) : '' %>" />
-      <div class="t6-pl-ajuda">Entra como entrada no caixa quando o cliente adquirir o plano.</div>
+    <div class="sv-campo">
+      <label class="sv-campo-rot" for="valor">Preço (R$)</label>
+      <input class="sv-campo-input" id="valor" name="valor" type="number" step="0.01" min="0" value="<%= plano ? (plano.valor / 100).toFixed(2) : '' %>" />
+      <div class="sv-pl-ajuda">Entra como entrada no caixa quando o cliente adquirir o plano.</div>
     </div>
 
-    <button class="t6-pl-cta" type="submit"><%= plano ? 'Salvar' : 'Criar plano' %></button>
+    <button class="sv-pl-cta" type="submit"><%= plano ? 'Salvar' : 'Criar plano' %></button>
   </form>
 </div>
 

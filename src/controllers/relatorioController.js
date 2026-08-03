@@ -4,12 +4,16 @@
 // Tudo calculado a partir dos dados reais (Agendamento/Caixa/Servico), sem
 // nada fixo — diferente do protótipo, que usava números de exemplo.
 //
-// TURNO 6 (pedido do dono, 2026-07-28): a tela virou uma capa curta (os 6
-// números que importam) + folhas de página inteira com o detalhe de cada um.
-// Por isso o controlador devolve, além dos totais, os RECORTES que cada folha
-// abre — vendas item a item, gastos por categoria, ocupação hora a hora etc.
-// Os valores monetários vão em CENTAVOS: quem escolhe entre `fmtT6` (número
-// grande, sem centavos) e `fmtBRL` (precisão) é a view.
+// A tela é uma capa curta (os números que importam) + folhas com o detalhe de
+// cada um. Por isso o controlador devolve, além dos totais, os RECORTES que
+// cada folha abre — vendas item a item, gastos por categoria, ocupação hora a
+// hora etc. Os valores monetários vão em CENTAVOS: quem escolhe entre `fmtT6`
+// (número grande, sem centavos) e `fmtBRL` (precisão) é a view.
+//
+// SUAVE (pedido do dono, 2026-07-31): o cálculo não mudou; o que mudou foram as
+// CORES que saem daqui. O Turno 6 pintava as faixas com o próprio contraste
+// (#0E0E0E / #ADADAD / #FAFAFA); agora tudo vem da rampa monocromática do
+// design novo, e as folhas de página inteira viraram folhas inferiores.
 const prisma = require('../config/db');
 const { paraMinutos } = require('../services/disponibilidade');
 
@@ -27,15 +31,16 @@ function fmtDataCurta(d) {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// Tons do Turno 6, na ordem em que a referência cicla: cinza-fio, tinta,
-// meio-termo, papel e o quase-preto. A cor NÃO codifica valor nenhum — é
-// ritmo visual, para que faixas seguidas não virem um borrão só.
+// Rampa monocromática do design "suave": do quase-preto ao cinza-fio, sempre
+// com a tinta de texto que dá contraste em cima. A cor NÃO codifica valor —
+// é só o que separa uma faixa da vizinha, já que aqui elas não têm moldura.
+// `text` é a tinta de quem escreve DENTRO da faixa; `muted`, a do rótulo.
 const TONS = [
-  { bg: '#ADADAD', text: '#0E0E0E', muted: '#454545' },
-  { bg: '#0E0E0E', text: '#FAFAFA', muted: '#7B7B7B' },
-  { bg: '#454545', text: '#FAFAFA', muted: '#ADADAD' },
-  { bg: '#FAFAFA', text: '#0E0E0E', muted: '#7B7B7B' },
-  { bg: '#1B1C1D', text: '#FAFAFA', muted: '#7B7B7B' },
+  { bg: '#191919', text: '#E0E0E0', muted: '#9C9C9C' },
+  { bg: '#393939', text: '#E0E0E0', muted: '#9C9C9C' },
+  { bg: '#6B6B6B', text: '#FFFFFF', muted: '#E0E0E0' },
+  { bg: '#9C9C9C', text: '#191919', muted: '#393939' },
+  { bg: '#E0E0E0', text: '#191919', muted: '#6B6B6B' },
 ];
 
 function somarEntradaSaida(lancamentos) {
@@ -148,14 +153,16 @@ async function ver(req, res) {
   // categoria até sobrar o lucro. É a mesma conta do cartão "Lucro", só que
   // mostrada passo a passo — é assim que a referência explica o número.
   const lucroCascata = [
-    { label: 'Faturamento', amount: resumo.entrou, rest: resumo.entrou, w: '100%', bg: '#1B1C1D', text: '#FAFAFA' },
+    { label: 'Faturamento', amount: resumo.entrou, rest: resumo.entrou, w: '100%', bg: TONS[0].bg, text: TONS[0].text },
   ];
   {
     let restante = resumo.entrou;
     const categorias = Array.from(gastosPorCategoria.values()).sort((a, b2) => b2.valor - a.valor);
     categorias.forEach((g, i) => {
       restante -= g.valor;
-      const t = TONS[(i + 2) % TONS.length];
+      // Começa no segundo tom: a primeira faixa (o faturamento cheio) já usou o
+      // mais escuro, e cada desconto vai clareando junto com o que sobra.
+      const t = TONS[(i + 1) % TONS.length];
       lucroCascata.push({
         label: '− ' + g.nome,
         amount: -g.valor,
@@ -210,24 +217,23 @@ async function ver(req, res) {
   }
   const itensVendidos = Array.from(porItem.values()).sort((a, b2) => b2.valor - a.valor);
 
-  // Ranking de serviços da capa: faixas coloridas, uma por serviço, com o %
-  // do faturamento de serviços em corpo grande.
+  // Ranking de serviços da capa: uma barra fina por serviço, com o % do
+  // faturamento de serviços à direita. No Turno 6 cada linha era uma faixa
+  // colorida com o número por dentro; no "suave" a barra é um traço de 7px
+  // sobre trilho cinza, então sobra só a largura — sem tom próprio.
   const topServices = itensVendidos
     .filter((x) => !x.ehProduto)
     .slice(0, 5)
-    .map((x, i) => {
-      const t = TONS[i % TONS.length];
+    .map((x) => {
       const pct = pctDe(x.valor, servicosValor);
       return {
         name: x.nome,
         valor: x.valor,
         qtd: x.qtd,
         pct,
-        // Piso de 26%: com 3% de participação a faixa animada sumiria.
-        w: Math.max(26, pct) + '%',
-        bg: t.bg,
-        text: t.text,
-        muted: t.muted,
+        // Piso de 3%: sem ele um serviço de participação mínima viraria trilho
+        // vazio e pareceria erro de renderização.
+        w: Math.max(3, pct) + '%',
       };
     });
 
@@ -472,12 +478,13 @@ async function ver(req, res) {
     }
   }
   const maxCelula = Math.max(1, ...contagem.flat());
+  // Quatro degraus do mais cheio ao vazio — os mesmos da legenda do mapa.
   function corCelula(n) {
-    if (n === 0) return '#EDEDED';
+    if (n === 0) return '#EBEBEB';
     const r = n / maxCelula;
-    if (r > 0.66) return '#0E0E0E';
-    if (r > 0.33) return '#1B1C1D';
-    return '#ADADAD';
+    if (r > 0.66) return '#191919';
+    if (r > 0.33) return '#393939';
+    return '#9C9C9C';
   }
   // Grade transposta em relação ao layout antigo: hora nas LINHAS e dia nas
   // COLUNAS, como na referência — cabe no celular sem rolagem lateral.
@@ -496,9 +503,9 @@ async function ver(req, res) {
       hour: h + 'h',
       label: String(porHora[hi]),
       w: Math.round((porHora[hi] / maxHora) * 100) + '%',
-      bg: ehPico ? '#0E0E0E' : porHora[hi] > 0 ? '#454545' : '#ADADAD',
-      hourColor: ehPico ? '#0E0E0E' : '#7B7B7B',
-      labelColor: ehPico ? '#0E0E0E' : '#7B7B7B',
+      bg: ehPico ? '#191919' : porHora[hi] > 0 ? '#393939' : '#9C9C9C',
+      hourColor: ehPico ? '#191919' : '#6B6B6B',
+      labelColor: ehPico ? '#191919' : '#6B6B6B',
     };
   });
 
@@ -530,15 +537,23 @@ async function ver(req, res) {
 
   const maxDiaSemana = Math.max(1, ...porDiaSemana);
   const ocupWeekBars = DIAS_GRID.map((dia, i) => {
-    const t = TONS[i % TONS.length];
+    // No Turno 6 cada coluna pegava um tom da paleta só por ritmo visual. Aqui
+    // a cor passa a dizer algo: escura é o dia mais movimentado da semana, o
+    // resto fica no cinza de fundo. Empate pinta os dois — é a leitura certa.
+    const destaque = porDiaSemana[i] === maxDiaSemana && maxDiaSemana > 0;
     return {
       label: dia,
       value: porDiaSemana[i],
-      // Piso de 110px: uma coluna zerada ainda precisa caber número + rótulo.
-      h: Math.max(110, Math.round((porDiaSemana[i] / maxDiaSemana) * 230)),
-      bg: t.bg,
-      text: t.text,
-      muted: t.muted,
+      // Piso de 96px: uma coluna zerada ainda precisa caber número + rótulo.
+      // Teto menor que o do Turno 6 porque agora isto vive dentro da folha
+      // inferior, que só tem 88% da altura da tela.
+      h: Math.max(96, Math.round((porDiaSemana[i] / maxDiaSemana) * 200)),
+      // `#E0E0E0` e não `#F2F2F2` na coluna comum: o detalhe do relatório é
+      // uma página CINZA (#F2F2F2), então a coluna sumia dentro do fundo — o
+      // dono viu as colunas "sem card". Precisa de um degrau acima da página.
+      bg: destaque ? '#191919' : '#E0E0E0',
+      text: destaque ? '#E0E0E0' : '#191919',
+      muted: destaque ? '#9C9C9C' : '#6B6B6B',
     };
   });
 

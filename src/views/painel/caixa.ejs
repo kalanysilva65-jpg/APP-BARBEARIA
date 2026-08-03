@@ -1,293 +1,315 @@
-<%/* CAIXA no design TURNO 6 (pedido do dono, 2026-07-28): segue o HTML de
-     referência. As abas Saldo/Transações e a carteira-cartão saíram — a tela
-     agora é um EXTRATO corrido: saldo do período em manchete, o que ainda
-     falta entrar num bloco preto e a lista de lançamentos com o saldo
-     acumulado ao lado de cada faixa. Nada de cartão nem canto redondo: a
-     separação é por fio de 1px. */%>
+<%/* CAIXA no design SUAVE (pedido do dono, 2026-07-31): troca o Turno 6
+     (manchete de 40px, fio de 1px, canto vivo) pelo HTML de referência que ele
+     anexou — título + "Lançar", faixa rolável de período, bloco cinza do saldo,
+     cartão preto do "a receber" e o extrato em cartõezinhos com sombra.
 
-<div class="t6-cx-topo">
-  <div class="t6-cx-titulo-linha">
-    <div class="t6-cx-titulo">CAIXA</div>
-    <button type="button" class="t6-btn-novo" onclick="abrirModal('novo')">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-      <span>Lançar</span>
-    </button>
-  </div>
+     Nada foi podado: o período personalizado, a composição, a exclusão de
+     lançamento, as formas de pagamento e as categorias continuam aqui — só
+     mudaram de roupa. Os pop-ups viraram FOLHA INFERIOR, que é o formato de
+     sobreposição deste design (no Turno 6 eram diálogos centrados).
 
-  <div class="t6-cx-periodo">
-    <a class="t6-cx-per <%= periodoAtivo === 'hoje' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>">Hoje</a>
-    <a class="t6-cx-per <%= periodoAtivo === 'semana' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetSemana.inicio %>&fim=<%= presetSemana.fim %>">Semana</a>
-    <a class="t6-cx-per <%= periodoAtivo === 'mes' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetMes.inicio %>&fim=<%= presetMes.fim %>">Mês</a>
-    <%/* O período livre é um painel que abre AQUI mesmo (não mais um pop-up):
-         na referência escolher datas faz parte do cabeçalho, não é diálogo. */%>
-    <button type="button" class="t6-cx-per <%= periodoAtivo === 'custom' ? 'ativo' : '' %>" id="cx-per-custom" onclick="cxAlternarPeriodo()">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8h18M7 3v3M17 3v3M4 5h16v16H4z"/></svg>
-      <span><%= periodoCustomLabel %></span>
-    </button>
-  </div>
+     Estilos em public/css/sv-caixa.css; o compartilhado, em suave.css. */%>
 
-  <div class="t6-cx-custom" id="cx-custom" hidden>
-    <form method="GET" action="/painel/caixa">
-      <div class="t6-cx-custom-datas">
+<div class="sv-tela sv-cx-tela">
+
+  <div class="sv-cx-cab sv-reveal">
+    <div class="sv-cx-cab-linha">
+      <div class="sv-titulo">Caixa</div>
+      <button type="button" class="sv-cx-lancar" onclick="cxFolha('novo', true)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Lançar</span>
+      </button>
+    </div>
+
+    <div class="sv-cx-periodos">
+      <a class="sv-cx-per <%= periodoAtivo === 'hoje' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetHoje.inicio %>&fim=<%= presetHoje.fim %>">Hoje</a>
+      <a class="sv-cx-per <%= periodoAtivo === 'semana' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetSemana.inicio %>&fim=<%= presetSemana.fim %>">Semana</a>
+      <a class="sv-cx-per <%= periodoAtivo === 'mes' ? 'ativo' : '' %>" href="/painel/caixa?inicio=<%= presetMes.inicio %>&fim=<%= presetMes.fim %>">Mês</a>
+      <%/* O período livre é um painel que abre AQUI mesmo (não é folha nem
+           pop-up): na referência escolher datas faz parte do cabeçalho. */%>
+      <button type="button" class="sv-cx-per <%= periodoAtivo === 'custom' ? 'ativo' : '' %>" id="cx-per-custom" onclick="cxAlternarPeriodo()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8h18M7 3v3M17 3v3M4 5h16v16H4z"/></svg>
+        <span><%= periodoCustomLabel %></span>
+      </button>
+    </div>
+
+    <form class="sv-cx-custom" id="cx-custom" method="GET" action="/painel/caixa" hidden>
+      <div class="sv-cx-custom-datas">
         <div>
-          <div class="t6-cx-rot">De</div>
-          <input class="t6-cx-inp" id="cx-inicio" type="date" name="inicio" value="<%= inicioStr %>" />
+          <span class="sv-cx-rot">De</span>
+          <input class="sv-cx-data" id="cx-inicio" type="date" name="inicio" value="<%= inicioStr %>" />
         </div>
         <div>
-          <div class="t6-cx-rot">Até</div>
-          <input class="t6-cx-inp" id="cx-fim" type="date" name="fim" value="<%= fimStr %>" />
+          <span class="sv-cx-rot">Até</span>
+          <input class="sv-cx-data" id="cx-fim" type="date" name="fim" value="<%= fimStr %>" />
         </div>
       </div>
-      <div class="t6-cx-atalhos" style="margin-top:14px;">
+      <div class="sv-cx-atalhos">
         <% atalhosPeriodo.forEach(function (a) { %>
-          <button type="button" class="t6-cx-atalho" onclick="cxAtalho('<%= a.inicio %>','<%= a.fim %>')"><%= a.label %></button>
+          <button type="button" class="sv-cx-atalho" onclick="cxAtalho('<%= a.inicio %>','<%= a.fim %>')"><%= a.label %></button>
         <% }) %>
       </div>
-      <button type="submit" class="t6-cx-aplicar" style="margin-top:14px;">Aplicar</button>
+      <button type="submit" class="sv-cx-aplicar">Aplicar período</button>
     </form>
   </div>
-</div>
 
-<div class="t6-cx-corpo">
+  <div class="sv-cx-corpo">
 
-  <div class="t6-cx-saldo t6-reveal">
-    <div class="t6-eyebrow">Saldo <%= periodoLabelCurto %></div>
-    <div class="t6-cx-saldo-num"><%= resumoPeriodo.saldo < 0 ? '−' : '' %><%= fmtT6(Math.abs(resumoPeriodo.saldo)) %></div>
-    <div class="t6-cx-saldo-sub"><%= fmtBRL(resumoPeriodo.entrou) %> de entradas − <%= fmtBRL(resumoPeriodo.saiu) %> de saídas</div>
-  </div>
-
-  <%/* O que a agenda promete e o caixa ainda não viu. Leva pros relatórios,
-       que é onde dá pra olhar o período inteiro. */%>
-  <a href="/painel/relatorios" class="t6-cx-receber t6-reveal">
-    <div>
-      <div class="t6-cx-receber-num"><%= fmtT6(aReceber.valor) %></div>
-      <div class="t6-cx-receber-sub">a receber · <%= aReceber.quantidade %> atendimento<%= aReceber.quantidade === 1 ? '' : 's' %> ainda aberto<%= aReceber.quantidade === 1 ? '' : 's' %></div>
-    </div>
-    <svg class="t6-cx-receber-seta" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-  </a>
-
-  <div class="t6-cx-comp t6-reveal">
-    <div class="t6-eyebrow">Composição do período</div>
-    <div class="t6-cx-comp-grade">
-      <div class="t6-cx-comp-item">
-        <div class="t6-cx-comp-rot">Serviços</div>
-        <div class="t6-cx-comp-val"><%= fmtT6(servicosValor) %></div>
-      </div>
-      <div class="t6-cx-comp-item">
-        <div class="t6-cx-comp-rot">Produtos</div>
-        <div class="t6-cx-comp-val"><%= fmtT6(produtosValor) %></div>
-      </div>
-      <div class="t6-cx-comp-item">
-        <div class="t6-cx-comp-rot">Comissão</div>
-        <div class="t6-cx-comp-val"><%= fmtT6(comissaoValor) %></div>
-      </div>
-      <div class="t6-cx-comp-item">
-        <div class="t6-cx-comp-rot">Saídas</div>
-        <div class="t6-cx-comp-val"><%= fmtT6(resumoPeriodo.saiu) %></div>
+    <div class="sv-cx-saldo sv-reveal sv-cx-p2">
+      <div class="sv-cx-saldo-rot">Saldo <%= periodoLabelCurto %></div>
+      <div class="sv-cx-saldo-num"><%= resumoPeriodo.saldo < 0 ? '−' : '' %><%= fmtT6(Math.abs(resumoPeriodo.saldo)) %></div>
+      <%/* Entradas e saídas viraram duas pílulas em vez da frase "X de entradas
+           − Y de saídas": no tamanho de 11.5px a frase inteira não cabia. */%>
+      <div class="sv-cx-saldo-pills">
+        <span class="sv-cx-saldo-pill">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          <%= fmtBRL(resumoPeriodo.entrou) %>
+        </span>
+        <span class="sv-cx-saldo-pill sv-cx-saldo-pill--saida">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+          <%= fmtBRL(resumoPeriodo.saiu) %>
+        </span>
       </div>
     </div>
-  </div>
 
-  <%/* A animação de entrada fica no bloco, não em cada faixa: com 30 linhas
-       subindo juntas o extrato inteiro tremia. */%>
-  <div class="t6-cx-extrato t6-reveal">
-    <div class="t6-eyebrow t6-cx-extrato-rot"><%= extratoLabel %></div>
-    <% if (extrato.length === 0) { %>
-      <div class="t6-vazio">Nenhum lançamento neste período.</div>
-    <% } else { %>
-      <% extrato.forEach(function (ex) { %>
-        <div class="t6-cx-linha">
-          <div class="t6-cx-linha-quando">
-            <div class="t6-cx-hora"><%= ex.hora %></div>
-            <div class="t6-cx-dia"><%= ex.diaLabel %></div>
-          </div>
-          <div class="t6-cx-linha-corpo">
-            <div class="t6-cx-desc"><%= ex.descricao %></div>
-            <% if (ex.sub) { %><div class="t6-cx-sub"><%= ex.sub %></div><% } %>
-          </div>
-          <div class="t6-cx-linha-valor">
-            <div class="t6-cx-valor <%= ex.entrada ? '' : 't6-cx-valor--saida' %>"><%= ex.entrada ? '+' : '−' %><%= fmtBRL(ex.valor) %></div>
-            <div class="t6-cx-saldo-corrido"><%= fmtBRL(ex.saldo) %></div>
-          </div>
-          <form method="POST" action="/painel/caixa/<%= ex.id %>/remover" onsubmit="return confirm('Excluir este lançamento?')">
-            <input type="hidden" name="inicio" value="<%= inicioStr %>" />
-            <input type="hidden" name="fim" value="<%= fimStr %>" />
-            <button class="t6-cx-linha-x" title="Excluir lançamento">×</button>
-          </form>
+    <%/* O que a agenda promete e o caixa ainda não viu. Leva pros relatórios,
+         que é onde dá pra olhar o período inteiro. */%>
+    <a href="/painel/relatorios" class="sv-cx-receber sv-reveal sv-cx-p3">
+      <span class="sv-cx-receber-corpo">
+        <span class="sv-cx-receber-num"><%= fmtT6(aReceber.valor) %></span>
+        <span class="sv-cx-receber-sub">a receber · <%= aReceber.quantidade %> atendimento<%= aReceber.quantidade === 1 ? '' : 's' %> aberto<%= aReceber.quantidade === 1 ? '' : 's' %></span>
+      </span>
+      <svg class="sv-cx-receber-seta" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+
+    <div class="sv-cx-secao sv-reveal sv-cx-p4">
+      <div class="sv-cx-secao-tit">Composição do período</div>
+      <div class="sv-cx-comp">
+        <div class="sv-cx-comp-item">
+          <div class="sv-cx-comp-rot">Serviços</div>
+          <div class="sv-cx-comp-val"><%= fmtT6(servicosValor) %></div>
         </div>
-      <% }) %>
-      <div class="t6-cx-fim"></div>
-      <% if (extratoRestantes > 0) { %>
-        <div class="t6-cx-mais">+ <%= extratoRestantes %> lançamento<%= extratoRestantes === 1 ? '' : 's' %> anterior<%= extratoRestantes === 1 ? '' : 'es' %> neste período</div>
-      <% } %>
-    <% } %>
-  </div>
-
-  <%/* Configuração do caixa fica no fim, fora do caminho do dia a dia. */%>
-  <div class="t6-cx-ajustes">
-    <div class="t6-eyebrow">Ajustes do caixa</div>
-    <button type="button" class="t6-cx-ajuste" onclick="abrirModal('detalhes')">
-      <span>
-        Formas de pagamento
-        <span class="t6-cx-ajuste-sub">Como entrou o dinheiro do período</span>
-      </span>
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-    </button>
-    <button type="button" class="t6-cx-ajuste" onclick="abrirModal('categorias')">
-      <span>
-        Categorias e automação
-        <span class="t6-cx-ajuste-sub"><%= categorias.length %> categoria<%= categorias.length === 1 ? '' : 's' %> · entrada automática <%= autoLigado ? 'ligada' : 'desligada' %></span>
-      </span>
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-    </button>
-  </div>
-
-</div>
-
-<!-- Pop-up: formas de pagamento do período -->
-<div class="ag-overlay" id="agm-detalhes" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box t6-cx-modal">
-    <div class="ag-modal-topo">
-      <div class="t6-cx-modal-titulo">Formas de pagamento</div>
-      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-    </div>
-    <div class="t6-cx-rot" style="margin-top:10px;"><%= nomePeriodoSel %> · <%= fmtBRL(resumoPeriodo.entrou) %></div>
-    <% if (formasPagamento.length === 0) { %>
-      <div class="t6-vazio">Nenhuma entrada com forma de pagamento registrada neste período.</div>
-    <% } else { %>
-      <div class="t6-cx-pag">
-        <% formasPagamento.forEach(function (f) { %>
-          <div class="t6-cx-pag-item">
-            <span class="t6-cx-pag-nome"><%= f.label %></span>
-            <span class="t6-cx-pag-valor"><%= fmtBRL(f.valorCentavos) %></span>
-          </div>
-        <% }) %>
+        <div class="sv-cx-comp-item">
+          <div class="sv-cx-comp-rot">Produtos</div>
+          <div class="sv-cx-comp-val"><%= fmtT6(produtosValor) %></div>
+        </div>
+        <div class="sv-cx-comp-item">
+          <div class="sv-cx-comp-rot">Comissão</div>
+          <div class="sv-cx-comp-val"><%= fmtT6(comissaoValor) %></div>
+        </div>
+        <div class="sv-cx-comp-item">
+          <div class="sv-cx-comp-rot">Saídas</div>
+          <div class="sv-cx-comp-val"><%= fmtT6(resumoPeriodo.saiu) %></div>
+        </div>
       </div>
-    <% } %>
+    </div>
+
+    <div class="sv-cx-secao">
+      <div class="sv-cx-secao-tit"><%= extratoLabel %></div>
+      <% if (extrato.length === 0) { %>
+        <div class="sv-vazio">Nenhum lançamento neste período.</div>
+      <% } else { %>
+        <div class="sv-cx-lista">
+          <% extrato.forEach(function (ex) { %>
+            <div class="sv-cx-item">
+              <div class="sv-cx-quando">
+                <div class="sv-cx-hora"><%= ex.hora %></div>
+                <div class="sv-cx-dia"><%= ex.diaLabel %></div>
+              </div>
+              <div class="sv-cx-item-corpo">
+                <div class="sv-cx-desc"><%= ex.descricao %></div>
+                <% if (ex.sub) { %><div class="sv-cx-sub"><%= ex.sub %></div><% } %>
+              </div>
+              <div class="sv-cx-valores">
+                <div class="sv-cx-valor <%= ex.entrada ? '' : 'sv-cx-valor--saida' %>"><%= ex.entrada ? '+' : '−' %><%= fmtBRL(ex.valor) %></div>
+                <div class="sv-cx-acum"><%= fmtBRL(ex.saldo) %></div>
+              </div>
+              <form method="POST" action="/painel/caixa/<%= ex.id %>/remover" onsubmit="return confirm('Excluir este lançamento?')">
+                <input type="hidden" name="inicio" value="<%= inicioStr %>" />
+                <input type="hidden" name="fim" value="<%= fimStr %>" />
+                <button class="sv-cx-x" title="Excluir lançamento" aria-label="Excluir lançamento">×</button>
+              </form>
+            </div>
+          <% }) %>
+        </div>
+        <% if (extratoRestantes > 0) { %>
+          <div class="sv-cx-mais">+ <%= extratoRestantes %> lançamento<%= extratoRestantes === 1 ? '' : 's' %> anterior<%= extratoRestantes === 1 ? '' : 'es' %> neste período</div>
+        <% } %>
+      <% } %>
+    </div>
+
+    <%/* Configuração do caixa fica no fim, fora do caminho do dia a dia. */%>
+    <div class="sv-cx-secao">
+      <div class="sv-cx-secao-tit">Ajustes do caixa</div>
+      <div class="sv-cartao sv-cx-ajustes">
+        <button type="button" class="sv-linha" onclick="cxFolha('detalhes', true)">
+          <span class="sv-linha-corpo">
+            <span class="sv-linha-titulo">Formas de pagamento</span>
+            <span class="sv-linha-sub">Como entrou o dinheiro do período</span>
+          </span>
+          <svg class="sv-linha-seta" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button type="button" class="sv-linha" onclick="cxFolha('categorias', true)">
+          <span class="sv-linha-corpo">
+            <span class="sv-linha-titulo">Categorias e automação</span>
+            <span class="sv-linha-sub"><%= categorias.length %> categoria<%= categorias.length === 1 ? '' : 's' %> · entrada automática <%= autoLigado ? 'ligada' : 'desligada' %></span>
+          </span>
+          <svg class="sv-linha-seta" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="sv-cx-fim"></div>
   </div>
 </div>
 
-<%/* Pop-up: Novo lançamento. Entrada/Saída no topo é FILTRO das categorias —
+<%/* FOLHA: novo lançamento. Entrada/Saída no topo é FILTRO das categorias —
      no app o tipo do lançamento vem da categoria, então dois campos separados
      poderiam se contradizer. */%>
-<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box t6-cx-modal">
-    <div class="ag-modal-topo">
-      <div class="t6-cx-modal-titulo">Novo lançamento</div>
-      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-    </div>
+<div class="sv-folha-fundo" id="cx-folha-novo" hidden>
+  <div class="sv-folha">
+    <div class="sv-folha-puxador"></div>
+    <div class="sv-folha-titulo">Novo lançamento</div>
     <% if (categorias.length === 0) { %>
-      <div class="t6-vazio">Cadastre uma categoria pra poder lançar.</div>
+      <div class="sv-vazio">Cadastre uma categoria pra poder lançar.</div>
     <% } else { %>
       <form method="POST" action="/painel/caixa">
         <input type="hidden" name="inicio" value="<%= inicioStr %>" />
         <input type="hidden" name="fim" value="<%= fimStr %>" />
 
-        <div class="t6-cx-modal-campos">
-          <div class="t6-cx-tipo">
-            <button type="button" class="t6-cx-tipo-btn ativo" data-tipo="entrada" onclick="cxFiltrarCategorias('entrada')">Entrada</button>
-            <button type="button" class="t6-cx-tipo-btn" data-tipo="saida" onclick="cxFiltrarCategorias('saida')">Saída</button>
-          </div>
-
-          <div>
-            <div class="t6-cx-rot">Valor</div>
-            <input class="t6-cx-inp t6-cx-inp--grande" id="valor-novo" name="valor" type="number" step="0.01" min="0" placeholder="0,00" required />
-          </div>
-
-          <div>
-            <div class="t6-cx-rot">Descrição</div>
-            <input class="t6-cx-inp" id="descricao-novo" name="descricao" placeholder="Ex.: corte do João" />
-          </div>
-
-          <div>
-            <div class="t6-cx-rot">Categoria</div>
-            <input type="hidden" name="categoriaId" id="categoriaId-novo" required />
-            <div class="pill-group" id="cx-pills-categoria">
-              <% categorias.forEach(function (c) { %>
-                <button type="button" class="pill-opcao" data-tipo="<%= c.tipo %>" data-valor="<%= c.id %>" onclick="selecionarPill(this,'categoriaId-novo')"><%= c.nome %></button>
-              <% }) %>
-            </div>
-          </div>
-
-          <div>
-            <div class="t6-cx-rot">Forma de pagamento (opcional)</div>
-            <input type="hidden" name="formaPagamento" id="formaPagamento-novo" />
-            <div class="pill-group">
-              <% formasPagamentoOpcoes.forEach(function (f) { %>
-                <button type="button" class="pill-opcao" data-valor="<%= f.valor %>" onclick="selecionarPill(this,'formaPagamento-novo')"><%= f.label %></button>
-              <% }) %>
-            </div>
-          </div>
-
-          <div>
-            <div class="t6-cx-rot">Data</div>
-            <input class="t6-cx-inp" id="data-novo" name="data" type="date" value="<%= hojeIso %>" />
-          </div>
-
-          <button class="t6-cx-enviar" type="submit">Lançar</button>
+        <div class="sv-cx-tipo">
+          <button type="button" class="sv-cx-tipo-btn ativo" data-tipo="entrada" onclick="cxFiltrarCategorias('entrada')">Entrada</button>
+          <button type="button" class="sv-cx-tipo-btn" data-tipo="saida" onclick="cxFiltrarCategorias('saida')">Saída</button>
         </div>
+
+        <div class="sv-campo">
+          <label class="sv-campo-rot" for="valor-novo">Valor</label>
+          <input class="sv-campo-input sv-cx-campo-valor" id="valor-novo" name="valor" type="number" step="0.01" min="0" placeholder="0,00" required />
+        </div>
+
+        <div class="sv-campo">
+          <label class="sv-campo-rot" for="descricao-novo">Descrição</label>
+          <input class="sv-campo-input" id="descricao-novo" name="descricao" placeholder="Ex.: corte do João" />
+        </div>
+
+        <div class="sv-campo">
+          <span class="sv-campo-rot">Categoria</span>
+          <input type="hidden" name="categoriaId" id="categoriaId-novo" required />
+          <div class="pill-group" id="cx-pills-categoria">
+            <% categorias.forEach(function (c) { %>
+              <button type="button" class="pill-opcao" data-tipo="<%= c.tipo %>" data-valor="<%= c.id %>" onclick="selecionarPill(this,'categoriaId-novo')"><%= c.nome %></button>
+            <% }) %>
+          </div>
+        </div>
+
+        <div class="sv-campo">
+          <span class="sv-campo-rot">Forma de pagamento (opcional)</span>
+          <input type="hidden" name="formaPagamento" id="formaPagamento-novo" />
+          <div class="pill-group">
+            <% formasPagamentoOpcoes.forEach(function (f) { %>
+              <button type="button" class="pill-opcao" data-valor="<%= f.valor %>" onclick="selecionarPill(this,'formaPagamento-novo')"><%= f.curto %></button>
+            <% }) %>
+          </div>
+        </div>
+
+        <div class="sv-campo">
+          <label class="sv-campo-rot" for="data-novo">Data</label>
+          <input class="sv-campo-input" id="data-novo" name="data" type="date" value="<%= hojeIso %>" />
+        </div>
+
+        <button class="sv-cx-enviar" type="submit">Lançar</button>
       </form>
     <% } %>
   </div>
 </div>
 
-<!-- Pop-up: categorias de caixa + entrada automática -->
-<div class="ag-overlay" id="agm-categorias" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box t6-cx-modal">
-    <div class="ag-modal-topo">
-      <div class="t6-cx-modal-titulo">Categorias de caixa</div>
-      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-    </div>
-    <div class="t6-cx-ajuste-sub" style="margin-top:8px;">Cada categoria é de entrada ou saída. Remover não apaga lançamentos.</div>
+<%/* FOLHA: formas de pagamento do período */%>
+<div class="sv-folha-fundo" id="cx-folha-detalhes" hidden>
+  <div class="sv-folha">
+    <div class="sv-folha-puxador"></div>
+    <div class="sv-folha-titulo">Formas de pagamento</div>
+    <div class="sv-cx-folha-sub"><%= nomePeriodoSel %> · <%= fmtBRL(resumoPeriodo.entrou) %> de entradas</div>
+    <% if (formasPagamento.length === 0) { %>
+      <div class="sv-vazio">Nenhuma entrada com forma de pagamento registrada neste período.</div>
+    <% } else { %>
+      <div class="sv-cx-pag">
+        <% formasPagamento.forEach(function (f) { %>
+          <div class="sv-cx-pag-item">
+            <span class="sv-cx-pag-nome"><%= f.label %></span>
+            <span class="sv-cx-pag-valor"><%= fmtBRL(f.valorCentavos) %></span>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</div>
 
-    <form method="POST" action="/painel/caixa/categorias" class="t6-cx-cat-nova">
-      <input name="nome" placeholder="Nova categoria" required />
-      <select name="tipo">
+<%/* FOLHA: categorias de caixa + entrada automática */%>
+<div class="sv-folha-fundo" id="cx-folha-categorias" hidden>
+  <div class="sv-folha">
+    <div class="sv-folha-puxador"></div>
+    <div class="sv-folha-titulo">Categorias de caixa</div>
+    <div class="sv-cx-folha-sub">Cada categoria é de entrada ou saída. Remover não apaga lançamentos.</div>
+
+    <form method="POST" action="/painel/caixa/categorias" class="sv-cx-cat-nova">
+      <input class="sv-cx-inp" name="nome" placeholder="Nova categoria" required />
+      <select class="sv-cx-sel" name="tipo">
         <option value="entrada">Entrada</option>
         <option value="saida">Saída</option>
       </select>
-      <button class="btn btn-secundario">Adicionar</button>
+      <button class="sv-cx-mini" type="submit">Adicionar</button>
     </form>
 
-    <ul class="t6-cx-cat-lista">
+    <ul class="sv-cx-cat-lista">
       <% categorias.forEach(function (c) { %>
-        <li class="t6-cx-cat-item">
-          <form method="POST" action="/painel/caixa/categorias/<%= c.id %>">
-            <input name="nome" value="<%= c.nome %>" />
-            <select name="tipo">
+        <li class="sv-cx-cat-item">
+          <form class="sv-cx-cat-form" method="POST" action="/painel/caixa/categorias/<%= c.id %>">
+            <input class="sv-cx-inp" name="nome" value="<%= c.nome %>" />
+            <select class="sv-cx-sel" name="tipo">
               <option value="entrada" <%= c.tipo === 'entrada' ? 'selected' : '' %>>Entrada</option>
               <option value="saida" <%= c.tipo === 'saida' ? 'selected' : '' %>>Saída</option>
             </select>
-            <span class="t6-cx-cat-n"><%= c._count.lancamentos %></span>
-            <button class="btn btn-secundario">Salvar</button>
+            <span class="sv-cx-cat-n" title="Lançamentos nesta categoria"><%= c._count.lancamentos %></span>
+            <button class="sv-cx-mini sv-cx-mini--claro" type="submit">Salvar</button>
           </form>
           <form method="POST" action="/painel/caixa/categorias/<%= c.id %>/remover"
                 onsubmit="return confirm('Remover esta categoria?')">
-            <button class="t6-cx-cat-x" title="Remover categoria">×</button>
+            <button class="sv-cx-cat-x" title="Remover categoria" aria-label="Remover categoria">×</button>
           </form>
         </li>
       <% }) %>
       <% if (categorias.length === 0) { %>
-        <li class="t6-vazio">Nenhuma categoria.</li>
+        <li class="sv-vazio">Nenhuma categoria.</li>
       <% } %>
     </ul>
 
-    <form method="POST" action="/painel/caixa/config" class="t6-cx-auto">
+    <form method="POST" action="/painel/caixa/config" class="sv-cx-auto">
       <input type="hidden" name="ligado" value="<%= autoLigado ? 'false' : 'true' %>" />
-      <span class="t6-cx-auto-txt">Entrada automática ao concluir atendimento</span>
-      <button class="btn btn-secundario"><%= autoLigado ? 'Desligar' : 'Ligar' %></button>
+      <span class="sv-cx-auto-txt">Entrada automática ao concluir atendimento</span>
+      <button class="sv-cx-mini <%= autoLigado ? 'sv-cx-mini--claro' : '' %>" type="submit"><%= autoLigado ? 'Desligar' : 'Ligar' %></button>
     </form>
   </div>
 </div>
 
 <script>
-  function abrirModal(id) {
-    var o = document.getElementById('agm-' + id);
-    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+  // As sobreposições agora são FOLHAS que sobem de baixo: quem manda no
+  // aparecer/sumir é o atributo `hidden` (o CSS de .sv-folha-fundo já cuida do
+  // resto), e não `style.display` como no Turno 6.
+  function cxFolha(nome, abrir) {
+    var f = document.getElementById('cx-folha-' + nome);
+    if (!f) return;
+    f.hidden = !abrir;
+    document.body.classList.toggle('modal-aberto', !!abrir);
   }
-  function fecharModal(o) {
-    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+  function cxFecharFolhas() {
+    document.querySelectorAll('.sv-folha-fundo').forEach(function (f) { f.hidden = true; });
+    document.body.classList.remove('modal-aberto');
   }
+  // Só o fundo fecha — clique DENTRO da folha (num campo, por exemplo) não pode.
+  document.querySelectorAll('.sv-folha-fundo').forEach(function (f) {
+    f.addEventListener('click', function (e) { if (e.target === f) cxFecharFolhas(); });
+  });
+
   function selecionarPill(btn, inputId) {
     var grupo = btn.parentElement;
     Array.prototype.forEach.call(grupo.querySelectorAll('.pill-opcao'), function (b) { b.classList.remove('ativo'); });
@@ -295,7 +317,7 @@
     document.getElementById(inputId).value = btn.getAttribute('data-valor');
   }
 
-  // Painel De/Até: enquanto está aberto o selo fica cinza escuro — só vira
+  // Painel De/Até: enquanto está aberto o selo fica cinza claro — só vira
   // preto quando o período for de fato aplicado (aí vem do servidor).
   function cxAlternarPeriodo() {
     var painel = document.getElementById('cx-custom');
@@ -311,7 +333,7 @@
   // Entrada/Saída no "Novo lançamento" só mostra as categorias daquele tipo;
   // trocar de lado limpa a escolha para não enviar uma categoria escondida.
   function cxFiltrarCategorias(tipo) {
-    document.querySelectorAll('.t6-cx-tipo-btn').forEach(function (b) {
+    document.querySelectorAll('.sv-cx-tipo-btn').forEach(function (b) {
       b.classList.toggle('ativo', b.dataset.tipo === tipo);
     });
     var hidden = document.getElementById('categoriaId-novo');
@@ -324,9 +346,6 @@
   cxFiltrarCategorias('entrada');
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
-      document.body.classList.remove('modal-aberto');
-    }
+    if (e.key === 'Escape') cxFecharFolhas();
   });
 </script>

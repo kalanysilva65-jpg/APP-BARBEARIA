@@ -2,38 +2,39 @@
   var nomesServicos = agendamento.itens.map(function (it) { return it.servico.nome; }).join(' + ');
 %>
 
-<%/* TURNO 6 (2026-07-28): o selo redondo de check saiu. A confirmação é a
-     manchete de 80px da referência ("Está / marcado", uma palavra por linha,
-     subindo), com o combinado logo abaixo em fios — sem cartão e sem ícone. */%>
-<div class="ag6-pronto">
+<%/* SUAVE (pedido do dono, 2026-07-31): a manchete de 80px do Turno 6 desceu
+     pros 46px da referência (ainda "Está / marcado", uma palavra por linha,
+     subindo) e o combinado saiu dos fios soltos pra dentro de um cartão
+     branco — o resumo passa a ser um objeto só, e não uma tabela. */%>
+<div class="sv-ag6-pronto">
   <div>
-    <div class="ag6-pronto-manchete">
+    <div class="sv-ag6-pronto-manchete">
       <span>Está</span>
       <span>marcado</span>
     </div>
 
-    <div class="ag6-pronto-quando">
-      <%= dataExtenso %> · <%= agendamento.horaInicio %> · <%= nomesServicos %><br />
-      com <%= agendamento.usuario.nome %>
-    </div>
+    <div class="sv-ag6-pronto-cartao">
+      <div class="sv-ag6-pronto-quando"><%= dataExtenso %> · <%= agendamento.horaInicio %></div>
+      <div class="sv-ag6-pronto-oque"><%= nomesServicos %> · com <%= agendamento.usuario.nome %></div>
 
-    <div class="ag6-pronto-linhas">
-      <div class="ag6-pronto-linha">
-        <span class="ag6-pronto-rot">Cliente</span>
-        <span class="ag6-pronto-val"><%= agendamento.clienteNome %></span>
+      <div class="sv-ag6-pronto-linhas">
+        <div class="sv-ag6-pronto-linha">
+          <span class="sv-ag6-pronto-rot">Cliente</span>
+          <span class="sv-ag6-pronto-val"><%= agendamento.clienteNome %></span>
+        </div>
+        <div class="sv-ag6-pronto-linha">
+          <span class="sv-ag6-pronto-rot"><%= agendamento.itens.length === 1 ? 'Valor' : 'Total' %></span>
+          <span class="sv-ag6-pronto-val"><%= usouPlano ? 'Via plano' : fmtT6(agendamento.valorTotal) %></span>
+        </div>
       </div>
-      <div class="ag6-pronto-linha">
-        <span class="ag6-pronto-rot"><%= agendamento.itens.length === 1 ? 'Valor' : 'Total' %></span>
-        <span class="ag6-pronto-val"><%= usouPlano ? 'Via plano' : fmtT6(agendamento.valorTotal) %></span>
-      </div>
-    </div>
 
-    <div class="ag6-pronto-nota">
-      Enviamos a confirmação no WhatsApp <%= fmtTelefone(agendamento.clienteTelefone) %>. Chegue 5 minutos antes.
+      <div class="sv-ag6-pronto-nota">
+        Enviamos a confirmação no WhatsApp <%= fmtTelefone(agendamento.clienteTelefone) %>. Chegue 5 minutos antes.
+      </div>
     </div>
   </div>
 </div>
 
-<div class="ag6-barra">
-  <a class="ag6-acao ag6-acao--simples" href="/agendar">Marcar outro horário</a>
+<div class="sv-ag6-barra">
+  <a class="sv-ag6-acao sv-ag6-acao--simples" href="/agendar">Marcar outro horário</a>
 </div>

@@ -1,0 +1,48 @@
+# Unit do systemd — mantém o app rodando e reinicia sozinho se cair ou se o
+# servidor reiniciar. Na Hostinger compartilhada isso era o Passenger; num
+# VPS não tem ninguém fazendo esse papel, então precisa deste arquivo.
+#
+# INSTALAÇÃO (uma vez só):
+#   1. Copie este arquivo para /etc/systemd/system/cortavo.service
+#   2. Ajuste WorkingDirectory, User e as variáveis de ambiente abaixo
+#   3. sudo systemctl daemon-reload
+#   4. sudo systemctl enable --now cortavo
+#
+# Depois de cada deploy (git pull + npm install):
+#   sudo systemctl restart cortavo
+#
+# Ver logs:
+#   sudo journalctl -u cortavo -f
+
+[Unit]
+Description=Cortavo - painel de barbearia
+After=network.target
+
+[Service]
+Type=simple
+# Troque pelo caminho real do deploy no VPS.
+WorkingDirectory=/home/cortavo/app
+# Troque pelo usuário do sistema que vai rodar o app (NÃO use root).
+User=cortavo
+
+# As mesmas variáveis do .env de produção. `npm run postinstall` já roda
+# migrate deploy + seed; aqui só sobe o servidor.
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=APP_DOMAIN=cortavo.com.br
+Environment=APP_DATA_DIR=/home/cortavo/cortavo-data
+Environment=DATABASE_URL=file:/home/cortavo/cortavo-data/app.db
+# Gere um valor aleatório de verdade — não reaproveite o de desenvolvimento.
+# Ex.: node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+Environment=SESSION_SECRET=TROQUE_ESTE_VALOR
+
+ExecStart=/usr/bin/node src/server.js
+Restart=on-failure
+RestartSec=3
+
+# Limites básicos de segurança — o processo não precisa de mais que isto.
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

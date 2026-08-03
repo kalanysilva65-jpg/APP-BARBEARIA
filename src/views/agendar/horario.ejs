@@ -5,77 +5,83 @@
     var r = min % 60;
     return h + 'h' + (r ? String(r).padStart(2, '0') : '');
   }
-  var qsVolta = 'servicoIds=' + servicoIdsStr + '&barbeiroId=' + barbeiro.id + (assinatura ? '&assinatura=' + assinatura.id : '');
   var qsPlano = assinatura ? '&assinatura=' + assinatura.id : '';
   var livresManha = horariosManha.filter(function (h) { return h.livre; }).length;
   var livresTarde = horariosTarde.filter(function (h) { return h.livre; }).length;
   var nomesServicos = servicos.map(function (s) { return s.nome; }).join(' + ');
 %>
 
-<%/* TURNO 6 (2026-07-28): o serviço escolhido vira a manchete da tela (36px),
-     os dias viram uma tira de selos de 58px e os horários uma grade de 4
-     colunas — ocupado fica riscado e sem fundo, livre fica com o fundo fio.
+<%/* SUAVE (pedido do dono, 2026-07-31): a manchete de 36px virou o cartão
+     branco de resumo da referência (22px), os dias viraram ladrilhos de canto
+     arredondado e os horários, pílulas. Ocupado fica no cinza fio-claro e
+     riscado — sem sombra, então afunda no fundo em vez de sumir.
+
      Os horários continuam sendo LINKS: um toque marca, sem passo extra de
      "confirmar" (a referência tem um CTA aí porque o protótipo guarda o
      horário em estado; aqui o próprio toque já navega). */%>
-<div class="ag6-rolagem">
-  <div class="ag6-cabeca">
-    <div class="ag6-titulo ag6-titulo--medio"><%= nomesServicos %></div>
-    <div class="ag6-sub"><%= servicos.length %> serviço<%= servicos.length > 1 ? 's' : '' %> · <%= _duracao(duracaoTotal) %> · com <%= barbeiro.nome %></div>
+<div class="sv-ag6-rolagem">
+  <div class="sv-ag6-cartao" style="margin-top:6px">
+    <div class="sv-ag6-cartao-tit"><%= nomesServicos %></div>
+    <div class="sv-ag6-cartao-sub"><%= servicos.length %> serviço<%= servicos.length > 1 ? 's' : '' %> · <%= _duracao(duracaoTotal) %> · com <%= barbeiro.nome %></div>
   </div>
 
   <% if (diasPlanoLabel) { %>
-    <div class="ag6-aviso">Plano <strong><%= assinatura.plano.nome %></strong>: agendamento só <strong><%= diasPlanoLabel %></strong>.</div>
+    <div class="sv-ag6-aviso">Plano <strong><%= assinatura.plano.nome %></strong>: agendamento só <strong><%= diasPlanoLabel %></strong>.</div>
   <% } %>
 
   <% if (datas.length === 0) { %>
-    <p class="ag6-vazio">Sem datas disponíveis<%= diasPlanoLabel ? ' (' + diasPlanoLabel + ')' : '' %>.</p>
+    <p class="sv-ag6-vazio">Sem datas disponíveis<%= diasPlanoLabel ? ' (' + diasPlanoLabel + ')' : '' %>.</p>
   <% } else { %>
-    <div class="ag6-sobrancelha-linha">
-      <span class="ag6-sobrancelha">Dia</span>
+    <div class="sv-ag6-secao" style="animation-delay:0.08s">
+      <div class="sv-ag6-secao-tit">Dia</div>
     </div>
-    <div class="ag6-dias ag6-sem-sb" id="ag6-dias">
+    <div class="sv-ag6-dias sv-ag6-sem-sb" id="ag6-dias">
       <% datas.forEach(function (d, i) { %>
-        <a href="/agendar/horario?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= d.iso %><%= qsPlano %>" class="ag6-dia <%= d.iso === dataSel ? 'sel' : '' %>" style="animation-delay:<%= (0.12 + i * 0.04).toFixed(2) %>s">
-          <div class="ag6-dia-dow"><%= d.dow %></div>
-          <div class="ag6-dia-num"><%= d.dia %></div>
+        <a href="/agendar/horario?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= d.iso %><%= qsPlano %>" class="sv-ag6-dia <%= d.iso === dataSel ? 'sel' : '' %>" style="animation-delay:<%= (0.12 + i * 0.04).toFixed(2) %>s">
+          <div class="sv-ag6-dia-dow"><%= d.dow %></div>
+          <div class="sv-ag6-dia-num"><%= d.dia %></div>
         </a>
       <% }) %>
     </div>
 
     <% if (horariosManha.length === 0 && horariosTarde.length === 0) { %>
-      <p class="ag6-vazio">Sem horários nesta data. Tente outra.</p>
+      <p class="sv-ag6-vazio">Sem horários nesta data. Tente outra.</p>
     <% } else { %>
+      <%/* Manhã e Tarde continuam separadas (o app tem expediente com almoço
+           no meio; a referência tem uma grade só porque o protótipo não tem
+           intervalo). A contagem de livres vai no canto direito da seção. */%>
       <% [['Manhã', horariosManha, livresManha], ['Tarde', horariosTarde, livresTarde]].forEach(function (bloco) { %>
         <% if (bloco[1].length > 0) { %>
-          <div class="ag6-sobrancelha-linha">
-            <span class="ag6-sobrancelha"><%= bloco[0] %> · <%= bloco[2] %> livre<%= bloco[2] === 1 ? '' : 's' %></span>
+          <div class="sv-ag6-secao" style="animation-delay:0.14s">
+            <div class="sv-ag6-secao-tit"><%= bloco[0] %></div>
+            <div class="sv-ag6-secao-val"><%= bloco[2] %> livre<%= bloco[2] === 1 ? '' : 's' %></div>
           </div>
-          <div class="ag6-horarios">
+          <div class="sv-ag6-horarios">
             <% bloco[1].forEach(function (h, i) { %>
               <% if (h.livre) { %>
-                <a class="ag6-hora" style="animation-delay:<%= (0.2 + i * 0.018).toFixed(3) %>s" href="/agendar/dados?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= dataSel %>&hora=<%= h.hora %><%= qsPlano %>"><%= h.hora %></a>
+                <a class="sv-ag6-hora" style="animation-delay:<%= (0.2 + i * 0.018).toFixed(3) %>s" href="/agendar/dados?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= dataSel %>&hora=<%= h.hora %><%= qsPlano %>"><%= h.hora %></a>
               <% } else { %>
-                <span class="ag6-hora ag6-hora--ocupado" style="animation-delay:<%= (0.2 + i * 0.018).toFixed(3) %>s"><%= h.hora %></span>
+                <span class="sv-ag6-hora sv-ag6-hora--ocupado" style="animation-delay:<%= (0.2 + i * 0.018).toFixed(3) %>s"><%= h.hora %></span>
               <% } %>
             <% }) %>
           </div>
         <% } %>
       <% }) %>
+      <div style="height:22px"></div>
     <% } %>
   <% } %>
 </div>
 
-<%/* A barra embaixo não é um botão: é o lembrete do que já foi escolhido (e
-     de quanto vai custar) enquanto o cliente decide o horário. Fica no par de
-     cores inerte pra não parecer clicável. */%>
-<div class="ag6-barra">
-  <div class="ag6-acao ag6-inerte">
+<%/* O rodapé não é um botão: é o lembrete do que já foi escolhido (e de quanto
+     vai custar) enquanto o cliente decide o horário. Cartão branco, e não o
+     cinza inerte da ação — cinza ali leria como botão desligado. */%>
+<div class="sv-ag6-barra">
+  <div class="sv-ag6-lembrete">
     <span>
-      <span class="ag6-acao-rot">Toque num horário livre</span>
-      <span class="ag6-acao-sub"><%= servicos.length %> serviço<%= servicos.length > 1 ? 's' : '' %> · <%= _duracao(duracaoTotal) %></span>
+      <span class="sv-ag6-lembrete-rot">Toque num horário livre</span>
+      <span class="sv-ag6-lembrete-sub"><%= servicos.length %> serviço<%= servicos.length > 1 ? 's' : '' %> · <%= _duracao(duracaoTotal) %></span>
     </span>
-    <span class="ag6-acao-total"><%= assinatura ? 'Incluso' : fmtT6(valorTotal) %></span>
+    <span class="sv-ag6-lembrete-total"><%= assinatura ? 'Incluso' : fmtT6(valorTotal) %></span>
   </div>
 </div>
 
@@ -85,7 +91,7 @@
   (function () {
     var tira = document.getElementById('ag6-dias');
     if (!tira) return;
-    var sel = tira.querySelector('.ag6-dia.sel');
+    var sel = tira.querySelector('.sv-ag6-dia.sel');
     if (sel) tira.scrollLeft = Math.max(0, sel.offsetLeft - tira.clientWidth / 2 + sel.offsetWidth / 2);
   })();
 </script>

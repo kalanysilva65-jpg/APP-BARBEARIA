@@ -6,105 +6,123 @@
   // src/views/layouts/painel.ejs (TELAS_NOVAS).
   var TELAS_NOVAS_PATHS = ['/painel', '/painel/agenda', '/painel/estoque', '/painel/servicos', '/painel/produtos', '/painel/planos', '/painel/clientes', '/painel/equipe', '/painel/caixa', '/painel/relatorios', '/painel/fidelidade'];
   var navNovo = TELAS_NOVAS_PATHS.indexOf(currentPath) !== -1;
-  // Turno 6 (2026-07-28): mesma lista de src/views/layouts/painel.ejs.
-  var TELAS_T6_PATHS = ['/painel', '/painel/agenda', '/painel/caixa', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/relatorios'];
-  var navT6 = TELAS_T6_PATHS.indexOf(currentPath) !== -1;
+  // Design "suave" (2026-07-31): mesma lista de src/views/layouts/painel.ejs.
+  var TELAS_SUAVE_PATHS = ['/painel', '/painel/caixa', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/agenda', '/painel/clientes', '/painel/equipe', '/painel/relatorios'];
+  var navSuave = TELAS_SUAVE_PATHS.indexOf(currentPath) !== -1;
 %>
 
-<% if (navT6) { %>
+<% if (navSuave) { %>
   <%
-    // Barra do Turno 6: preta, chapada, 4 abas de largura igual. A aba ativa
-    // vira um BLOCO BRANCO e é a única que mostra rótulo — é assim na
-    // referência. O 4º botão abre a gaveta "Menu" (o antigo "Mais").
-    var t6Abas = [
+    // Barra "suave": pílula BRANCA FLUTUANTE (não encosta nas bordas), com
+    // sombra alta. A aba ativa ganha fundo cinza e mostra o rótulo AO LADO do
+    // ícone — as inativas ficam só com o ícone. O 4º botão abre a folha
+    // inferior com o resto do menu.
+    var svAbas = [
       { href: '/painel', nome: 'Início', exato: true },
       { href: '/painel/agenda', nome: 'Agenda' },
       { href: '/painel/caixa', nome: 'Caixa', admin: true },
     ];
-    var t6Menu = [
-      { href: '/painel/servicos', nome: 'Serviços' },
-      { href: '/painel/produtos', nome: 'Produtos' },
-      { href: '/painel/estoque', nome: 'Estoque' },
-      { href: '/painel/clientes', nome: 'Clientes' },
-      { href: '/painel/equipe', nome: 'Equipe', admin: true },
-      { href: '/painel/relatorios', nome: 'Relatórios', admin: true },
-      { href: '/painel/planos', nome: 'Planos' },
-      { href: '/painel/fidelidade', nome: 'Fidelidade', admin: true },
-      { href: '/painel/comissoes', nome: 'Comissões' },
-      { href: '/painel/horarios', nome: 'Horários' },
-      { href: '/painel/mais', nome: 'Perfil' },
+    // Grade de ladrilhos (referência, linhas 1882-1931). Cada item traz o
+    // próprio ícone porque na grade o desenho é o que identifica — o rótulo de
+    // 11px é só apoio. "Perfil" fica FORA da grade: é o cartão escuro do pé.
+    var svMenu = [
+      { href: '/painel/servicos', nome: 'Serviços', icone: '<circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><path d="M20 4 8.6 16.5M20 20 8.6 7.5"/>' },
+      { href: '/painel/produtos', nome: 'Produtos', icone: '<path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5z"/><path d="M4 8.5 12 13l8-4.5M12 13v7"/>' },
+      { href: '/painel/estoque', nome: 'Estoque', icone: '<rect x="3.5" y="4" width="17" height="16" rx="3"/><path d="M3.5 9.5h17M9 14h6"/>' },
+      { href: '/painel/clientes', nome: 'Clientes', icone: '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6"/>' },
+      { href: '/painel/equipe', nome: 'Equipe', admin: true, icone: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.2 6-5.2s6 1.9 6 5.2"/><path d="M16 5.4a3.2 3.2 0 0 1 0 6.2M18 20c0-2.6-1-4.2-2.6-5"/>' },
+      { href: '/painel/relatorios', nome: 'Relatórios', admin: true, icone: '<path d="M5 20V11M12 20V5M19 20v-6"/>' },
+      { href: '/painel/planos', nome: 'Planos', icone: '<rect x="3" y="5.5" width="18" height="13" rx="3"/><path d="M3 10h18"/>' },
     ];
-    var t6Icones = {
-      'Início': '<path d="M3 10.5 12 3l9 7.5V21H3z" class="t6-fill"/>',
-      'Agenda': '<rect x="3" y="5" width="18" height="16"/><path d="M3 10h18M8 3v4M16 3v4"/><rect x="3" y="10" width="18" height="11" stroke="none" class="t6-fill"/>',
-      'Caixa': '<rect x="2" y="6" width="20" height="12" class="t6-fill"/><text x="12" y="16.2" text-anchor="middle" font-size="10.5" font-weight="600" stroke="none" class="t6-cifrao">$</text>',
+    // Fidelidade, Comissões e Horários saíram do menu (pedido do dono,
+    // 2026-08-01). A jornada, que era o conteúdo de Horários, passou a ser
+    // editada no próprio Perfil — é ela que define o que o cliente vê como
+    // horário livre no agendamento público.
+    var svIcones = {
+      'Início': '<path d="M3.5 10.6 12 4l8.5 6.6V20a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/>',
+      'Agenda': '<rect x="3" y="5" width="18" height="16" rx="3.5"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+      'Caixa': '<rect x="2.5" y="6" width="19" height="12" rx="3.5"/><text x="12" y="16.2" text-anchor="middle" font-size="10.5" font-weight="600" stroke="none" fill="currentColor">$</text>',
     };
-    function t6Ativa(aba) {
+    function svAtiva(aba) {
       return aba.exato ? currentPath === aba.href : currentPath.indexOf(aba.href) === 0;
     }
   %>
-  <nav class="t6-nav" aria-label="Navegação do painel">
-    <% t6Abas.forEach(function (aba) { %>
+  <nav class="sv-nav" aria-label="Navegação do painel">
+    <% svAbas.forEach(function (aba) { %>
       <% if (!aba.admin || ehAdmin) { %>
-        <% var ativa = t6Ativa(aba); %>
-        <a href="<%= aba.href %>" class="t6-nav-item <%= ativa ? 'ativo' : '' %>" title="<%= aba.nome %>" aria-label="<%= aba.nome %>" <%= ativa ? 'aria-current="page"' : '' %>>
-          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true"><%- t6Icones[aba.nome] %></svg>
-          <span class="t6-nav-label"><%= ativa ? aba.nome : '' %></span>
+        <% var ativa = svAtiva(aba); %>
+        <a href="<%= aba.href %>" class="sv-nav-item <%= ativa ? 'ativo' : '' %>" title="<%= aba.nome %>" aria-label="<%= aba.nome %>" <%= ativa ? 'aria-current="page"' : '' %>>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><%- svIcones[aba.nome] %></svg>
+          <% if (ativa) { %><span class="sv-nav-label"><%= aba.nome %></span><% } %>
         </a>
       <% } %>
     <% }) %>
-    <button type="button" class="t6-nav-item" id="t6-menu-btn" title="Menu" aria-label="Menu" aria-haspopup="true" aria-expanded="false">
-      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="butt" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-      <span class="t6-nav-label"></span>
+    <button type="button" class="sv-nav-item" id="sv-menu-btn" title="Menu" aria-label="Menu" aria-haspopup="true" aria-expanded="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
   </nav>
 
-  <div class="t6-drawer-fundo" id="t6-drawer-fundo" hidden></div>
-  <aside class="t6-drawer" id="t6-drawer" hidden aria-label="Menu">
-    <div class="t6-drawer-topo">
-      <div class="t6-drawer-titulo">Menu</div>
-      <button type="button" class="t6-drawer-fechar" id="t6-drawer-fechar" aria-label="Fechar menu">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-      </button>
-    </div>
-    <div class="t6-drawer-lista">
-      <% t6Menu.forEach(function (item) { %>
-        <% if (!item.admin || ehAdmin) { %>
-          <a href="<%= item.href %>" class="t6-drawer-item">
-            <span><%= item.nome %></span>
-            <% if (item.nome === 'Perfil') { %><span class="t6-drawer-conta">(<%= usuarioPrimeiroNome %>)</span><% } %>
-          </a>
-        <% } %>
-      <% }) %>
-    </div>
-  </aside>
+  <div class="sv-folha-fundo" id="sv-menu-fundo" hidden>
+    <aside class="sv-folha" id="sv-menu-folha" aria-label="Menu">
+      <div class="sv-folha-puxador"></div>
+      <div class="sv-folha-topo">
+        <div class="sv-folha-titulo">Menu</div>
+        <button type="button" class="sv-folha-x" id="sv-menu-x" aria-label="Fechar menu">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+
+      <div class="sv-grade">
+        <% svMenu.forEach(function (item) { %>
+          <% if (!item.admin || ehAdmin) { %>
+            <a href="<%= item.href %>" class="sv-grade-item">
+              <span class="sv-grade-caixa">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><%- item.icone %></svg>
+              </span>
+              <span class="sv-grade-rot"><%= item.nome %></span>
+            </a>
+          <% } %>
+        <% }) %>
+      </div>
+
+      <%/* Perfil não entra na grade: na referência ele é o cartão escuro do
+           rodapé, com o resumo da casa. */%>
+      <a href="/painel/mais" class="sv-folha-perfil">
+        <span class="sv-folha-perfil-av">
+          <% if (usuarioFotoUrl) { %><img src="<%= usuarioFotoUrl %>" alt="" /><% } else { %><%= (usuarioPrimeiroNome || '?').slice(0, 2).toUpperCase() %><% } %>
+        </span>
+        <span class="sv-folha-perfil-corpo">
+          <span class="sv-folha-perfil-nome"><%= usuarioPrimeiroNome %></span>
+          <span class="sv-folha-perfil-sub">Ver perfil e conta</span>
+        </span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E0E0E0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+    </aside>
+  </div>
 
   <script>
     (function () {
-      var btn = document.getElementById('t6-menu-btn');
-      var drawer = document.getElementById('t6-drawer');
-      var fundo = document.getElementById('t6-drawer-fundo');
-      var fechar = document.getElementById('t6-drawer-fechar');
-      if (!btn || !drawer || !fundo) return;
+      var btn = document.getElementById('sv-menu-btn');
+      var fundo = document.getElementById('sv-menu-fundo');
+      var folha = document.getElementById('sv-menu-folha');
+      if (!btn || !fundo || !folha) return;
       function abrir() {
-        drawer.hidden = false;
         fundo.hidden = false;
         btn.classList.add('ativo');
-        btn.querySelector('.t6-nav-label').textContent = 'Menu';
         btn.setAttribute('aria-expanded', 'true');
       }
       function fecha() {
-        drawer.hidden = true;
         fundo.hidden = true;
         btn.classList.remove('ativo');
-        btn.querySelector('.t6-nav-label').textContent = '';
         btn.setAttribute('aria-expanded', 'false');
       }
       btn.addEventListener('click', function () {
-        if (drawer.hidden) abrir(); else fecha();
+        if (fundo.hidden) abrir(); else fecha();
       });
-      fundo.addEventListener('click', fecha);
-      if (fechar) fechar.addEventListener('click', fecha);
+      var x = document.getElementById('sv-menu-x');
+      if (x) x.addEventListener('click', fecha);
+      // Só o fundo fecha — clique DENTRO da folha não deve fechá-la.
+      fundo.addEventListener('click', function (e) { if (e.target === fundo) fecha(); });
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') fecha();
       });

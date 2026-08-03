@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : 'Cortavo' %></title>
+    <%/* Layout próprio do login da EQUIPE (pedido do dono, 2026-07-31). O
+         `blank` continua servindo as páginas de conta do cliente, que seguem
+         no visual antigo — convertê-lo levaria junto telas fora deste escopo. */%>
+    <link rel="stylesheet" href="/css/suave.css" />
+    <link rel="stylesheet" href="/css/sv-login.css" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
+  </head>
+  <body class="pg-sv sv-login-body">
+    <%- include('../partials/flash') %>
+    <%- body %>
+  </body>
+</html>

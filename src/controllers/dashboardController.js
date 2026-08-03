@@ -10,6 +10,19 @@ function inicioDoDia(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+// "João Pedro Silva" -> "JP". Alimenta os avatares do design "suave", que
+// substituíram a foto onde não existe foto (pedido do dono, 2026-07-31).
+function iniciais(nome) {
+  const ini = (nome || '')
+    .split(' ')
+    .filter(Boolean)
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+  return ini || '—';
+}
+
 // Ocupação (%) = minutos atendidos ÷ minutos de jornada disponível no período.
 async function calcularOcupacao(barbeariaId, barbeiroIds, inicio, fimExcl) {
   if (!barbeiroIds.length) return 0;
@@ -94,46 +107,55 @@ async function ver(req, res) {
     const ganhoOntem = caixaOntem._sum.valor || 0;
     if (ganhoOntem > 0) variacaoHojeOntem = Math.round(((ganhoHoje - ganhoOntem) / ganhoOntem) * 100);
 
-    // Semana atual (segunda a domingo)
+    // Semana atual (segunda a domingo) numa consulta só.
+    // Antes eram SETE `aggregate` num laço, um por dia — sete idas ao banco
+    // para somar a mesma semana. Agora vem a semana inteira de uma vez e a
+    // divisão por dia é feita aqui (pedido do dono, 2026-08-01: deixar o app
+    // mais rápido).
     const offSeg = (agora.getDay() + 6) % 7; // 0 = segunda
     const seg = new Date(hoje0);
     seg.setDate(hoje0.getDate() - offSeg);
+    const fimSemana = new Date(seg);
+    fimSemana.setDate(seg.getDate() + 7);
     const rotulos = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+    const lancamentos = await prisma.caixa.findMany({
+      where: { barbeariaId: b, tipo: 'entrada', data: { gte: seg, lt: fimSemana } },
+      select: { valor: true, data: true },
+    });
+    const porDia = new Array(7).fill(0);
+    lancamentos.forEach((l) => {
+      // Diferença em dias a partir da segunda. `Math.floor` sobre o tempo
+      // absoluto erraria na virada do horário de verão; comparar as datas
+      // zeradas evita isso.
+      const d = inicioDoDia(l.data);
+      const i = Math.round((d - seg) / 86400000);
+      if (i >= 0 && i < 7) porDia[i] += l.valor;
+    });
     for (let i = 0; i < 7; i++) {
       const d0 = new Date(seg);
       d0.setDate(seg.getDate() + i);
-      const d1 = new Date(d0);
-      d1.setDate(d0.getDate() + 1);
-      const soma = await prisma.caixa.aggregate({
-        _sum: { valor: true },
-        where: { barbeariaId: b, tipo: 'entrada', data: { gte: d0, lt: d1 } },
-      });
-      barras.push({ rotulo: rotulos[i], valor: soma._sum.valor || 0, hoje: d0.getTime() === hoje0.getTime() });
+      barras.push({ rotulo: rotulos[i], valor: porDia[i], hoje: d0.getTime() === hoje0.getTime() });
     }
     maxBarra = Math.max(1, ...barras.map((x) => x.valor));
   }
 
-  // --- Novos clientes (90 dias) --------------------------------------------
-  const d90 = new Date(hoje0);
-  d90.setDate(d90.getDate() - 90);
-  const novosClientes = await prisma.cliente.count({ where: { barbeariaId: b, criadoEm: { gte: d90 } } });
-
-  // --- Retenção (90 dias): % de clientes com 2+ atendimentos ---------------
-  const ags90 = await prisma.agendamento.findMany({
-    where: { barbeariaId: b, data: { gte: d90 }, status: { not: 'cancelado' }, clienteId: { not: null } },
-    select: { clienteId: true },
-  });
-  const visitas = {};
-  ags90.forEach((a) => (visitas[a.clienteId] = (visitas[a.clienteId] || 0) + 1));
-  const totalComVisita = Object.keys(visitas).length;
-  const recorrentes = Object.values(visitas).filter((n) => n >= 2).length;
-  const retencao = totalComVisita > 0 ? Math.round((recorrentes / totalComVisita) * 100) : 0;
-
-  // --- Produtividade / ocupação (90 dias) ----------------------------------
-  const produtividade = await calcularOcupacao(b, barbeiroIds, d90, amanha0);
+  // "Novos clientes" e "Retenção" (janelas de 90 dias) saíram daqui: nenhuma
+  // das duas era exibida desde que a Home virou o design suave, mas as
+  // consultas continuavam rodando a cada abertura — e a de retenção varria 90
+  // dias de agendamentos. Se voltarem a ser mostradas, voltam com elas.
 
   // --- Ticket médio de hoje (faturado ÷ atendimentos concluídos) -----------
   const ticketMedioHoje = concluidosHoje > 0 ? Math.round(ganhoHoje / concluidosHoje) : 0;
+
+  // --- Ocupação DE HOJE ----------------------------------------------------
+  // O design "suave" põe a barrinha de ocupação dentro do cartão "Resumo de
+  // hoje" (pedido do dono, 2026-07-31) — ali a métrica de 90 dias acima
+  // responderia outra pergunta. A barra satura em 100%: encaixe acima da
+  // jornada (dois barbeiros no mesmo horário, atendimento estendido) é real,
+  // mas não cabe visualmente; o número ao lado continua o verdadeiro.
+  const ocupacaoHoje = await calcularOcupacao(b, barbeiroIds, hoje0, amanha0);
+  const ocupacaoLargura = Math.min(100, ocupacaoHoje);
 
   // --- Saudação pela hora do dia (Bom dia / Boa tarde / Boa noite) ---------
   const hora = new Date().getHours();
@@ -165,33 +187,24 @@ async function ver(req, res) {
       servico: a.itens.map((i) => i.servico.nome).join(' + ') || 'Atendimento',
       diaNum: a.data.getDate(),
       mesLabel: MESES_CURTOS[a.data.getMonth()],
+      iniciais: iniciais(a.clienteNome),
     }));
   const proximoCorte = proximosTodos[0] || null;
   const seguintesCortes = proximosTodos.slice(1);
 
-  // --- Faturamento semanal: total + colunas coloridas ----------------------
-  // Os tons ciclam numa paleta fixa de 5 (igual à referência) — a cor não
-  // codifica valor nenhum, é ritmo visual.
+  // --- Faturamento semanal: total + colunas do gráfico ---------------------
+  // No design "suave" (2026-07-31) as colunas são finas, dentro de uma caixa
+  // de 84px, e só o dia de HOJE é preto — as cores saem do CSS, aqui só sai a
+  // altura. (No Turno 6 cada bloco levava valor e cor próprios.)
   const faturamentoSemanal = barras.reduce((s, x) => s + x.valor, 0);
-  const TONS_BLOCO = [
-    { fundo: '#ADADAD', texto: '#0E0E0E', apoio: '#454545' },
-    { fundo: '#0E0E0E', texto: '#FAFAFA', apoio: '#7B7B7B' },
-    { fundo: '#454545', texto: '#FAFAFA', apoio: '#ADADAD' },
-    { fundo: '#FAFAFA', texto: '#0E0E0E', apoio: '#7B7B7B' },
-    { fundo: '#1B1C1D', texto: '#FAFAFA', apoio: '#7B7B7B' },
-  ];
-  const blocosSemana = barras.map((x, i) => {
-    const t = TONS_BLOCO[i % TONS_BLOCO.length];
-    return {
-      valor: x.valor,
-      label: x.rotulo,
-      // Piso de 120px: uma coluna zerada ainda precisa caber o valor + o dia.
-      altura: Math.max(120, Math.round((x.valor / maxBarra) * 240)),
-      fundo: t.fundo,
-      texto: t.texto,
-      apoio: t.apoio,
-    };
-  });
+  const ALTURA_GRAFICO = 84;
+  const barrasSemana = barras.map((x) => ({
+    label: x.rotulo,
+    // Piso de 5px: um dia zerado ainda precisa existir como traço na base,
+    // senão a semana parece ter menos dias do que tem.
+    altura: Math.max(5, Math.round((x.valor / maxBarra) * ALTURA_GRAFICO)),
+    hoje: x.hoje,
+  }));
 
   // --- Alerta de estoque baixo ---------------------------------------------
   const itensEstoque = await prisma.estoque.findMany({ where: { barbeariaId: b } });
@@ -203,27 +216,24 @@ async function ver(req, res) {
     nomes: emFalta.slice(0, 4).map((e) => e.nome).join(', '),
   };
 
+  // Só o que a view consome. `barras`/`maxBarra` continuam existindo acima,
+  // mas como matéria-prima de `barrasSemana` — não vão para a view.
   res.render('painel/dashboard', {
     titulo: 'Painel',
     totalHoje,
     concluidosHoje,
     restantesHoje,
-    proximosLista,
     ganhoHoje,
-    previstoHoje,
-    variacaoHojeOntem,
-    barras,
-    maxBarra,
-    novosClientes,
-    retencao,
-    produtividade,
     ticketMedioHoje,
+    ocupacaoHoje,
+    ocupacaoLargura,
     saudacao,
     dataLonga,
     proximoCorte,
     seguintesCortes,
+    iniciaisUsuario: iniciais(req.session.usuario.nome),
     faturamentoSemanal,
-    blocosSemana,
+    barrasSemana,
     estoqueBaixo,
   });
 }

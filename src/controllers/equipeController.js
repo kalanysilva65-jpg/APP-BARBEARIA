@@ -34,7 +34,7 @@ async function statsDoMes(barbeariaId, barbeiros) {
   const limite = new Date(Math.min(fimExcl.getTime(), amanha.getTime()));
 
   const porBarbeiro = new Map();
-  for (const b of barbeiros) porBarbeiro.set(b.id, { faturado: 0, ocupadoMin: 0, qtd: 0, dispMin: 0, clientes: new Set(), servicos: new Map() });
+  for (const b of barbeiros) porBarbeiro.set(b.id, { faturado: 0, ocupadoMin: 0, qtd: 0, dispMin: 0, clientes: new Map(), servicos: new Map(), produtos: 0 });
 
   for (const ag of agendamentos) {
     const g = porBarbeiro.get(ag.usuarioId);
@@ -44,8 +44,15 @@ async function statsDoMes(barbeariaId, barbeiros) {
     g.ocupadoMin += ag.itens.reduce((s, it) => s + (it.servico.duracaoMin || 0) * it.quantidade, 0);
     // Cliente distinto pelo telefone normalizado: o mesmo cliente pode voltar
     // várias vezes no mês, e "clientes atendidos" conta pessoas, não visitas.
-    g.clientes.add(ag.clienteTelefone || ag.clienteNome);
-    ag.itens.forEach((it) => g.servicos.set(it.servico.nome, (g.servicos.get(it.servico.nome) || 0) + it.quantidade));
+    // É um Map (e não um Set) porque a contagem por pessoa também alimenta a
+    // taxa de retorno da página do barbeiro (design suave, 2026-07-31).
+    const chaveCliente = ag.clienteTelefone || ag.clienteNome;
+    g.clientes.set(chaveCliente, (g.clientes.get(chaveCliente) || 0) + 1);
+    ag.itens.forEach((it) => {
+      g.servicos.set(it.servico.nome, (g.servicos.get(it.servico.nome) || 0) + it.quantidade);
+      // "Produtos vendidos" conta unidades, não atendimentos com produto.
+      if (it.servico.ehProduto) g.produtos += it.quantidade;
+    });
   }
 
   for (let d = new Date(inicio); d < limite; d.setDate(d.getDate() + 1)) {
@@ -68,10 +75,17 @@ async function statsDoMes(barbeariaId, barbeiros) {
     let servicoTop = null;
     let maxQtd = 0;
     g.servicos.forEach((qtd, nome) => { if (qtd > maxQtd) { maxQtd = qtd; servicoTop = nome; } });
+    // Taxa de retorno: quantos dos clientes atendidos no mês voltaram pelo
+    // menos uma segunda vez COM ESTE barbeiro. Sem cliente no mês não é 0%,
+    // é indefinido (a view mostra "—") — 0% sugeriria que ninguém voltou.
+    let voltaram = 0;
+    g.clientes.forEach((visitas) => { if (visitas >= 2) voltaram += 1; });
     resultado.set(b.id, {
       faturado: g.faturado,
       atendimentos: g.qtd,
       clientesAtendidos: g.clientes.size,
+      produtosVendidos: g.produtos,
+      taxaRetorno: g.clientes.size > 0 ? Math.round((voltaram / g.clientes.size) * 100) : null,
       servicoTop,
       comissaoReceber: Math.round((g.faturado * (b.comissaoPercentual || 0)) / 100),
       ticketMedio: g.qtd > 0 ? Math.round(g.faturado / g.qtd) : 0,
@@ -104,13 +118,53 @@ async function historicoRecente(barbeariaId) {
   }));
 }
 
+const DIAS_ABREV = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+// Resumo da jornada para a pílula da página do barbeiro (design suave,
+// 2026-07-31): "Seg a Sáb · 09:00–19:00". A informação já existia em
+// /painel/horarios; aqui ela só aparece, não se edita.
+async function jornadaPorBarbeiro(barbeariaId) {
+  const jornadas = await prisma.horarioTrabalho.findMany({ where: { barbeariaId } });
+  const porUsuario = new Map();
+  for (const j of jornadas) {
+    if (!j.trabalha) continue;
+    if (!porUsuario.has(j.usuarioId)) porUsuario.set(j.usuarioId, []);
+    porUsuario.get(j.usuarioId).push(j);
+  }
+
+  const rotulos = new Map();
+  porUsuario.forEach((lista, usuarioId) => {
+    lista.sort((a, b) => a.diaSemana - b.diaSemana);
+    const dias = lista.map((j) => j.diaSemana);
+    // Faixa ("Seg a Sáb") só quando os dias são realmente seguidos na ordem
+    // domingo→sábado; qualquer folha no meio vira lista para não mentir.
+    const seguidos = dias.every((d, i) => i === 0 || d === dias[i - 1] + 1);
+    const rotuloDias = dias.length === 7
+      ? 'Todo dia'
+      : seguidos && dias.length > 2
+        ? `${DIAS_ABREV[dias[0]]} a ${DIAS_ABREV[dias[dias.length - 1]]}`
+        : dias.map((d) => DIAS_ABREV[d]).join(', ');
+    const mesmoHorario = lista.every((j) => j.horaInicio === lista[0].horaInicio && j.horaFim === lista[0].horaFim);
+    const rotuloHoras = mesmoHorario ? `${lista[0].horaInicio}–${lista[0].horaFim}` : 'horários variados';
+    rotulos.set(usuarioId, `${rotuloDias} · ${rotuloHoras}`);
+  });
+  return rotulos;
+}
+
 // GET /painel/equipe
 async function listar(req, res) {
   const b = req.barbeariaId;
   const equipe = await prisma.usuario.findMany({ where: { barbeariaId: b, papel: { not: 'dono' } }, orderBy: [{ ativo: 'desc' }, { nome: 'asc' }] });
   const stats = await statsDoMes(b, equipe);
-  const vazio = { faturado: 0, atendimentos: 0, clientesAtendidos: 0, servicoTop: null, comissaoReceber: 0, ticketMedio: 0, ocupacaoPct: null };
-  const membros = equipe.map((m) => ({ ...m, stats: stats.get(m.id) || vazio }));
+  const jornadas = await jornadaPorBarbeiro(b);
+  const vazio = { faturado: 0, atendimentos: 0, clientesAtendidos: 0, produtosVendidos: 0, taxaRetorno: null, servicoTop: null, comissaoReceber: 0, ticketMedio: 0, ocupacaoPct: null };
+  const membros = equipe.map((m) => ({
+    ...m,
+    stats: stats.get(m.id) || vazio,
+    // Avatar da lista quando o barbeiro não tem foto.
+    iniciais: m.nome.split(' ').filter(Boolean).map((p) => p[0]).slice(0, 2).join('').toUpperCase(),
+    jornadaLabel: jornadas.get(m.id) || 'Sem jornada definida',
+  }));
   const historico = await historicoRecente(b);
   // `aba` vem só da querystring pra que um link possa cair direto no Histórico;
   // a troca no dia a dia é no clique, sem recarregar.

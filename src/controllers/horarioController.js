@@ -107,8 +107,15 @@ async function barbeiroDaBarbearia(barbeiroId, barbeariaId) {
 // Funcionário só edita a própria jornada (ignora o barbeiroId do formulário).
 async function salvarJornada(req, res) {
   const b = req.barbeariaId;
-  const barbeiroId = req.ehAdmin ? Number(req.body.barbeiroId) : req.session.usuario.id;
-  if (!(await barbeiroDaBarbearia(barbeiroId, b))) return res.redirect('/painel/horarios');
+  // A jornada agora também é editada no Perfil (pedido do dono, 2026-08-01),
+  // que salva pela mesma rota — `retorno` diz de onde veio para não jogar o
+  // usuário numa tela que saiu do menu. Lista fechada de propósito: `retorno`
+  // vem do formulário, e redirecionar para valor livre seria porta aberta.
+  const RETORNOS = { perfil: '/painel/mais', horarios: '/painel/horarios' };
+  const voltarPara = RETORNOS[req.body.retorno] || '/painel/horarios';
+
+  const barbeiroId = req.ehAdmin && req.body.barbeiroId ? Number(req.body.barbeiroId) : req.session.usuario.id;
+  if (!(await barbeiroDaBarbearia(barbeiroId, b))) return res.redirect(voltarPara);
 
   for (let dia = 0; dia <= 6; dia++) {
     const trabalha = req.body['trabalha_' + dia] === 'on';
@@ -131,7 +138,7 @@ async function salvarJornada(req, res) {
   }
 
   req.session.flash = { tipo: 'sucesso', texto: 'Jornada atualizada.' };
-  res.redirect('/painel/horarios');
+  res.redirect(voltarPara);
 }
 
 // POST /painel/horarios/bloqueios — adiciona um bloqueio.

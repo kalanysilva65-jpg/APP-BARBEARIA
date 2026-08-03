@@ -14,7 +14,9 @@ function destino(usuario) {
 function mostrarLogin(req, res) {
   if (req.session.usuario) return res.redirect(destino(req.session.usuario));
   res.render('auth/login', {
-    layout: 'layouts/blank',
+    // Layout próprio (não o `blank`): o login da equipe foi para o design
+    // "suave" e o `blank` ainda serve as páginas de conta do cliente.
+    layout: 'layouts/auth',
     titulo: 'Entrar',
     barbearia: req.barbearia || null,
   });
@@ -65,6 +67,14 @@ async function fazerLogin(req, res) {
     papel: usuario.papel,
     barbeariaId: usuario.barbeariaId,
   };
+
+  // "Manter conectado" (pedido do dono, 2026-08-01): estende o cookie de 8h
+  // para 30 dias. Sem marcar, segue o padrão curto — é o dono numa máquina
+  // possivelmente compartilhada com a equipe, então a escolha é dele, não
+  // um padrão que o mantém logado para sempre.
+  if (req.body.manterConectado) {
+    req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 30;
+  }
   res.redirect(destino(usuario));
 }
 

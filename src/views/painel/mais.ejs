@@ -1,111 +1,147 @@
-<%/* Perfil no design TURNO 6 (pedido do dono, 2026-07-28): título grande, foto
-     redonda de 110px ao lado do nome, e as seções separadas por sobrancelha em
-     caixa alta — fechando no bloco preto "SUA SEMANA".
-     A foto é editável AQUI porque o cabeçalho antigo (que tinha o campo de
-     upload) fica escondido no Turno 6 — sem isto não haveria mais como o
-     usuário trocar a própria foto. */%>
+<%/* Perfil no design SUAVE (pedido do dono, 2026-07-31): substitui o Turno 6
+     (título em caixa alta, foto de 110px ao lado do nome, seções separadas por
+     sobrancelha) pelo HTML de referência — cartão de identidade centrado no
+     topo, seções com cartões arredondados e o cartão preto "Sua semana"
+     fechando a tela.
+     A foto continua editável AQUI: o cabeçalho antigo, que tinha o campo de
+     upload, fica escondido no design novo (`.pg-sv .app-topo-fixo`), então este
+     é o único lugar onde o usuário troca a própria foto.
+     Estilos em public/css/sv-planos-perfil.css. */%>
 <%
   var cargo = ehDono ? 'Dono do sistema' : (usuario.papel === 'admin' ? 'Admin' : 'Barbeiro');
+  // `usuarioFotoUrl` vem do res.locals (lido do banco a cada requisição).
+  // `usuario.fotoUrl` NÃO existe: a sessão guarda só id/nome/papel.
+  var inicial = (usuario.nome || '?').charAt(0).toUpperCase();
+  var diasTrabalhados = jornada.filter(function (d) { return d.trabalha; });
 %>
 
-<div class="t6-pf-topo">
-  <div class="t6-pf-titulo">PERFIL</div>
-</div>
+<div class="sv-tela">
 
-<div class="t6-pf-corpo">
-
-  <div class="t6-pf-cabeca t6-reveal">
-    <form method="POST" action="/painel/perfil/foto" enctype="multipart/form-data">
-      <label class="t6-pf-foto" title="Trocar foto">
-        <% if (usuarioFotoUrl) { %>
-          <img src="<%= usuarioFotoUrl %>" alt="Foto de <%= usuario.nome %>" />
-        <% } else { %>
-          <span class="t6-pf-foto-inicial"><%= usuario.nome.charAt(0).toUpperCase() %></span>
-        <% } %>
-        <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
-      </label>
-    </form>
-    <div class="t6-pf-cabeca-dados">
-      <div class="t6-pf-nome"><%= usuario.nome %></div>
-      <div class="t6-pf-funcao"><%= cargo %></div>
-      <div class="t6-pf-dica">Toque no círculo para trocar a foto</div>
-    </div>
+  <div class="sv-pf-topo sv-reveal">
+    <div class="sv-titulo">Perfil</div>
+    <%/* O "x" da referência: esta tela abre pelo menu da barra inferior, não
+         por uma aba — a saída natural é a Home. */%>
+    <a href="/painel" class="sv-pf-fechar" title="Início" aria-label="Voltar ao início">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </a>
   </div>
 
-  <div class="t6-pf-secao t6-reveal">
-    <div class="t6-pf-secao-rot">Conta</div>
-    <div class="t6-pf-linha">
-      <span class="t6-pf-linha-rot">Barbearia</span>
-      <span class="t6-pf-linha-val"><%= barbeariaAtual ? barbeariaAtual.nome : '—' %></span>
-    </div>
-    <div class="t6-pf-linha">
-      <span class="t6-pf-linha-rot">Função</span>
-      <span class="t6-pf-linha-val"><%= cargo %></span>
-    </div>
-    <% if (usuario.barbeariaId) { %>
-      <div class="t6-pf-linha">
-        <span class="t6-pf-linha-rot">Atendimentos concluídos</span>
-        <span class="t6-pf-linha-val"><%= atendimentos %></span>
+  <form method="POST" action="/painel/perfil/foto" enctype="multipart/form-data" class="sv-cartao sv-pf-cabeca sv-reveal sv-pf-p2">
+    <label class="sv-pf-foto" title="Trocar foto">
+      <% if (usuarioFotoUrl) { %>
+        <img src="<%= usuarioFotoUrl %>" alt="Foto de <%= usuario.nome %>" />
+      <% } else { %>
+        <span class="sv-pf-foto-inicial"><%= inicial %></span>
+      <% } %>
+      <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
+    </label>
+    <div class="sv-pf-nome"><%= usuario.nome %></div>
+    <div class="sv-pf-funcao"><%= cargo %></div>
+    <div class="sv-pf-dica">Toque no círculo para trocar a foto</div>
+  </form>
+
+  <div class="sv-pf-secao sv-reveal sv-pf-p3">
+    <div class="sv-pf-secao-tit">Conta</div>
+    <div class="sv-cartao sv-pf-lista">
+      <div class="sv-pf-item">
+        <div class="sv-pf-item-rot">Barbearia</div>
+        <div class="sv-pf-item-val"><%= barbeariaAtual ? barbeariaAtual.nome : '—' %></div>
       </div>
-    <% } %>
-    <div class="t6-pf-fio"></div>
+      <div class="sv-pf-item">
+        <div class="sv-pf-item-rot">Função</div>
+        <div class="sv-pf-item-val"><%= cargo %></div>
+      </div>
+      <% if (usuario.barbeariaId) { %>
+        <div class="sv-pf-item">
+          <div class="sv-pf-item-rot">Atendimentos concluídos</div>
+          <div class="sv-pf-item-val"><%= atendimentos %></div>
+        </div>
+      <% } %>
+    </div>
   </div>
 
   <% if (usuario.barbeariaId) { %>
-    <div class="t6-pf-secao t6-reveal">
-      <div class="t6-pf-secao-topo">
-        <div class="t6-pf-secao-rot">Dias de trabalho</div>
-        <div class="t6-pf-secao-lado"><%= semana.dias ? semana.dias + ' dias' : 'nenhum dia' %></div>
+    <%/* Jornada EDITÁVEL aqui (pedido do dono, 2026-08-01): a tela
+         /painel/horarios saiu do menu e a edição veio para o Perfil.
+         Um formulário só para dias e horas: marcar o dia sem definir a hora
+         não faz sentido, e são a mesma decisão ("quando eu atendo").
+         É esta jornada que o agendamento público lê para oferecer horários —
+         desmarcar um dia aqui o fecha para o cliente na hora. */%>
+    <form method="POST" action="/painel/perfil/jornada" class="sv-pf-secao sv-reveal" id="pf-jornada">
+      <input type="hidden" name="retorno" value="perfil" />
+
+      <div class="sv-pf-secao-topo">
+        <div class="sv-pf-secao-tit">Dias de trabalho</div>
+        <div class="sv-pf-secao-lado" id="pf-conta-dias"><%= semana.dias ? semana.dias + ' dias' : 'nenhum dia' %></div>
       </div>
-      <div class="t6-pf-dias">
+
+      <div class="sv-pf-dias">
         <% jornada.forEach(function (d) { %>
-          <span class="t6-pf-dia <%= d.trabalha ? 'on' : '' %>"><%= d.label %></span>
+          <%/* O <input> real carrega o estado e vai no POST; o <label> é o
+               ladrilho visível. `trabalha_<dia>` é o nome que o controller
+               espera. */%>
+          <label class="sv-pf-dia-caixa">
+            <input type="checkbox" name="trabalha_<%= d.dia %>" <%= d.trabalha ? 'checked' : '' %> onchange="pfAtualizarDia(this, <%= d.dia %>)" />
+            <span class="sv-pf-dia <%= d.trabalha ? 'on' : '' %>"><%= d.label %></span>
+          </label>
         <% }) %>
       </div>
-    </div>
 
-    <div class="t6-pf-secao t6-reveal">
-      <div class="t6-pf-secao-rot">Horários</div>
-      <div style="margin-top:14px;">
-        <% jornada.filter(function (d) { return d.trabalha; }).forEach(function (d) { %>
-          <div class="t6-pf-hora">
-            <div class="t6-pf-hora-dia"><%= d.label %></div>
-            <div class="t6-pf-hora-faixa"><%= d.horaInicio %> <span class="t6-pf-hora-sep">às</span> <%= d.horaFim %></div>
+      <div class="sv-pf-secao-tit sv-pf-horas-tit">Horários</div>
+      <% jornada.forEach(function (d) { %>
+        <div class="sv-cartao sv-pf-hora <%= d.trabalha ? '' : 'folga' %>" id="pf-hora-<%= d.dia %>">
+          <div class="sv-pf-hora-dia"><%= d.label %></div>
+          <div class="sv-pf-hora-faixa">
+            <input class="sv-pf-hora-input" type="time" name="inicio_<%= d.dia %>" value="<%= d.horaInicio %>" aria-label="Início <%= d.label %>" />
+            <span class="sv-pf-hora-sep">às</span>
+            <input class="sv-pf-hora-input" type="time" name="fim_<%= d.dia %>" value="<%= d.horaFim %>" aria-label="Fim <%= d.label %>" />
           </div>
-        <% }) %>
-        <div class="t6-pf-fio"></div>
-      </div>
-      <div class="t6-pf-nota">
-        <%= horarioTrabalho %> · <a href="/painel/horarios" class="t6-pf-nota-link">Editar jornada</a>
-      </div>
-    </div>
+        </div>
+      <% }) %>
 
-    <div class="t6-pf-bloco t6-reveal">
-      <div class="t6-pf-bloco-rot">Sua semana</div>
-      <div class="t6-pf-bloco-num"><%= semana.horas %></div>
-      <div class="t6-pf-bloco-linha"><%= semana.linha %></div>
+      <div class="sv-pf-nota"><%= horarioTrabalho %></div>
+      <button type="submit" class="sv-btn sv-pf-salvar">Salvar jornada</button>
+    </form>
+
+    <div class="sv-cartao sv-cartao--escuro sv-pf-semana sv-reveal">
+      <div class="sv-pf-semana-rot">Sua semana</div>
+      <div class="sv-pf-semana-num"><%= semana.horas %></div>
+      <div class="sv-pf-semana-linha"><%= semana.linha %></div>
     </div>
   <% } %>
 
   <% if (ehDono) { %>
     <%/* O aviso de "operando como dono" e a saída para o painel-mestre viviam
-         no cabeçalho fixo, escondido no Turno 6 — passam a morar aqui. */%>
-    <div class="t6-pf-secao">
-      <div class="t6-pf-dono">
-        <div class="t6-pf-dono-txt">
-          Você está operando <strong><%= barbeariaAtual ? barbeariaAtual.nome : 'uma barbearia' %></strong> como dono do sistema.
-        </div>
-        <form method="POST" action="/mestre/sair">
-          <button class="t6-pf-dono-btn" type="submit">← Voltar ao painel-mestre</button>
-        </form>
+         no cabeçalho fixo, escondido neste design — moram aqui. */%>
+    <div class="sv-cartao sv-pf-dono sv-reveal">
+      <div class="sv-pf-dono-txt">
+        Você está operando <strong><%= barbeariaAtual ? barbeariaAtual.nome : 'uma barbearia' %></strong> como dono do sistema.
       </div>
+      <form method="POST" action="/mestre/sair">
+        <button class="sv-pf-dono-btn" type="submit">← Voltar ao painel-mestre</button>
+      </form>
     </div>
   <% } %>
 
-  <div class="t6-pf-rodape">
+  <div class="sv-pf-rodape">
     <form method="POST" action="/logout">
-      <button class="t6-pf-sair" type="submit">Sair da conta</button>
+      <button class="sv-pf-sair" type="submit">Sair da conta</button>
     </form>
   </div>
 
 </div>
+
+<script>
+  // Marcar/desmarcar o dia reflete NA HORA no ladrilho e no cartão de horário
+  // correspondente — sem isso o usuário só descobriria o efeito depois de
+  // salvar. A contagem no topo acompanha pelo mesmo motivo.
+  function pfAtualizarDia(input, dia) {
+    var ladrilho = input.nextElementSibling;
+    if (ladrilho) ladrilho.classList.toggle('on', input.checked);
+    var cartao = document.getElementById('pf-hora-' + dia);
+    if (cartao) cartao.classList.toggle('folga', !input.checked);
+    var marcados = document.querySelectorAll('#pf-jornada input[type=checkbox]:checked').length;
+    var conta = document.getElementById('pf-conta-dias');
+    if (conta) conta.textContent = marcados ? marcados + (marcados === 1 ? ' dia' : ' dias') : 'nenhum dia';
+  }
+</script>

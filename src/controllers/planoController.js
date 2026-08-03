@@ -47,8 +47,7 @@ async function listar(req, res) {
 
   // Assinaturas VIGENTES (ativas e dentro da validade) — são elas que dizem
   // quantos assinantes cada plano tem e quanto de receita recorrente a
-  // barbearia tem por mês, os dois números que o design Turno 6 põe no topo
-  // da tela (pedido do dono, 2026-07-28).
+  // barbearia tem por mês, os dois números do cartão preto no topo da tela.
   const vigentes = await prisma.clientePlano.findMany({
     where: { barbeariaId: req.barbeariaId, ativo: true, dataFim: { gte: new Date() } },
     select: { planoId: true },
@@ -68,6 +67,9 @@ async function listar(req, res) {
     ticket: vigentes.length ? Math.round(mrr / vigentes.length) : 0,
     // Só faz sentido falar em "líder" se alguém tiver assinante.
     lider: lider && lider.assinantes > 0 ? lider : null,
+    // O funcionário não vê receita (design suave, 2026-07-31): o cartão do topo
+    // mostra para ele quantos planos estão no ar, e é este o número.
+    ativos: planos.filter((p) => p.ativo).length,
   };
 
   res.render('painel/planos', {

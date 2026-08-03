@@ -1,30 +1,51 @@
-<div class="card auth-card">
-  <div class="auth-cabecalho">
-    <%/* A logo configurada (marcaLogoUrl) só aparece no agendamento público —
-       aqui no login da equipe é sempre a marca em texto. */%>
-    <% if (barbearia) { %>
-      <div class="logo-flowbarber logo-flowbarber--lg" style="justify-content:center;margin-bottom:4px;"><span class="lf"><%= barbearia.nome %></span></div>
-    <% } else { %>
-      <div class="logo-flowbarber logo-flowbarber--lg" style="justify-content:center;margin-bottom:4px;"><span class="lf">Cortavo</span></div>
-    <% } %>
-    <p class="texto-secundario"><%= barbearia ? barbearia.nome : 'Acesso da equipe' %></p>
+<%/* Login da equipe — desenho que o dono anexou (2026-08-01): alinhado à
+     esquerda, sem cartão, título grande e o formulário empurrado para a parte
+     baixa da tela, onde o polegar alcança.
+     Estilos em public/css/sv-login.css. */%>
+<div class="sv-lg">
+
+  <div class="sv-lg-topo">
+    <h1 class="sv-lg-titulo">Bem-vindo de volta</h1>
+    <p class="sv-lg-sub">Entre para acessar a agenda, o caixa e a equipe da sua barbearia.</p>
   </div>
 
-  <form method="POST" action="/login" class="form">
-    <div class="campo">
-      <label for="email">E-mail</label>
-      <input type="email" id="email" name="email" placeholder="seu@email.com" required autofocus />
+  <form method="POST" action="/login" class="sv-lg-form">
+    <div class="sv-lg-campo">
+      <label class="sv-lg-rot" for="email">E-mail</label>
+      <input class="sv-lg-input" type="email" id="email" name="email" placeholder="voce@barbearia.com" autocomplete="username" inputmode="email" required autofocus />
     </div>
 
-    <div class="campo">
-      <label for="senha">Senha</label>
-      <input type="password" id="senha" name="senha" placeholder="••••••••" required />
+    <div class="sv-lg-campo">
+      <label class="sv-lg-rot" for="senha">Senha</label>
+      <div class="sv-lg-senha">
+        <input class="sv-lg-input" type="password" id="senha" name="senha" placeholder="••••••••" autocomplete="current-password" required />
+        <%/* "Mostrar" em texto, não ícone: é o que o desenho pede, e o rótulo
+             diz o que vai acontecer sem depender de reconhecer um olho. */%>
+        <button type="button" class="sv-lg-mostrar" id="btn-mostrar" onclick="alternarSenha()">Mostrar</button>
+      </div>
     </div>
 
-    <button class="btn btn-primario btn-bloco" type="submit">Entrar</button>
+    <div class="sv-lg-linha">
+      <label class="sv-lg-check">
+        <input type="checkbox" name="manterConectado" value="1" />
+        <span class="sv-lg-check-caixa" aria-hidden="true">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <span class="sv-lg-check-rot">Manter conectado</span>
+      </label>
+    </div>
+
+    <button class="sv-lg-btn" type="submit">Entrar</button>
   </form>
 
-  <div style="text-align:center;margin-top:20px;">
-    <span class="powered-by-marca texto-sutil">Desenvolvido por <span class="logo-flowbarber logo-flowbarber--xs"><span class="lf">Cortavo</span></span></span>
-  </div>
 </div>
+
+<script>
+  function alternarSenha() {
+    var campo = document.getElementById('senha');
+    var btn = document.getElementById('btn-mostrar');
+    var oculta = campo.type === 'password';
+    campo.type = oculta ? 'text' : 'password';
+    btn.textContent = oculta ? 'Ocultar' : 'Mostrar';
+  }
+</script>

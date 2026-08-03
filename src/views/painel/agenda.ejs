@@ -1,157 +1,231 @@
+<%/* Agenda no design SUAVE (pedido do dono, 2026-07-31): substitui o Turno 6
+     (título em caixa alta, dia gigante, faixas de canto vivo) pelo HTML de
+     referência que ele anexou — título discreto, tira de dias em pílulas
+     roláveis e a lista do dia em fichas arredondadas.
+
+     Duas inversões em relação ao resto do app, ambas vindas da referência:
+     a página aqui é BRANCA e as fichas são cinza; e o atendimento da vez sai
+     invertido (preto), sem precisar de ponto nem borda para se destacar.
+
+     Os pop-ups viraram FOLHA INFERIOR (sobem de baixo). No Turno 6 "Novo
+     agendamento" e o detalhe eram página inteira; agora são folha, como todo
+     pop-up do design suave. Os wrappers seguem `.ag-overlay`/`.ag-modal-box`
+     porque `abrirModal`/`fecharModal` e o Esc procuram por esses nomes.
+
+     Estilos em public/css/sv-agenda.css. */%>
 <%
   function _iniciais(nome) {
     var p = String(nome).trim().split(/\s+/);
     return p.length > 1 ? (p[0][0] + p[p.length - 1][0]).toUpperCase() : p[0].slice(0, 2).toUpperCase();
   }
-  function _rotuloStatus(s) {
-    return { concluido: 'Concluído', agendado: 'Agendado', cancelado: 'Cancelado' }[s] || s;
+  // Rótulo do selo da ficha. "Agora" é o atendimento da vez (o mesmo que sai
+  // invertido); os demais abertos são "Confirmado", como na referência.
+  function _selo(ag) {
+    if (ag.status === 'cancelado') return 'Cancelado';
+    if (ag.status === 'concluido') return 'Concluído';
+    return ag.id === proximoId ? 'Agora' : 'Confirmado';
   }
-%>
-
-<%
   var qsBarbeiro = ehAdmin ? '&barbeiro=' + barbeiroSelecionado : '';
+  var mesCurto = mesLabel.toLowerCase().slice(0, 3);
 %>
 
-<%/* Cabeçalho no design TURNO 6 (2026-07-28): título grande + botão "Novo"
-     preto, e o dia selecionado GRANDE com o mês num selo — o dia seguinte
-     aparece em cinza ao lado e avança a data ao ser tocado. A tira de dias do
-     mês inteiro saiu: na referência a troca de dia é pelo dia seguinte / pelo
-     selo do mês (que abre o pop-up de escolher mês/ano). */%>
-<div class="t6-agenda-topo">
-  <div class="t6-agenda-titulo-linha">
-    <div class="t6-agenda-titulo">AGENDA</div>
-    <button type="button" class="t6-btn-novo" onclick="abrirModal('novo')">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-      <span>Novo</span>
-    </button>
-  </div>
+<div class="sv-tela sv-ag-tela">
 
-  <div class="t6-agenda-dica">
-    <%= dataExtenso %><% if (ehAdmin) { %> · <a href="#" onclick="abrirModal('bloqueio');return false;">Bloquear horário</a><% } %>
-  </div>
-
-  <div class="t6-agenda-dias">
-    <div class="t6-agenda-dia-col">
-      <div class="t6-agenda-dia-num"><%= diaNum %></div>
-      <%/* O selo do mês abre o pop-up de mês/ano (o mesmo de antes). */%>
-      <button type="button" class="t6-agenda-mes" onclick="abrirModal('mes')"><%= mesLabel %></button>
+  <div class="sv-ag-topo sv-reveal">
+    <div>
+      <div class="sv-ag-titulo">Agenda</div>
+      <%/* A data é o gatilho da folha de mês — o selo solto do Turno 6 saiu. */%>
+      <button type="button" class="sv-ag-data" onclick="abrirModal('mes')">
+        <%= diaNum %> de <%= mesLabel %>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
     </div>
-    <a href="/painel/agenda?data=<%= dataNext %><%= qsBarbeiro %>" class="t6-agenda-dia-prox" title="Próximo dia"><%= proxDiaNum %></a>
+    <div class="sv-ag-acoes">
+      <% if (ehAdmin) { %>
+        <button type="button" class="sv-ag-bloq" onclick="abrirModal('bloqueio')" title="Bloquear horário" aria-label="Bloquear horário">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10.5" rx="3"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+        </button>
+      <% } %>
+      <button type="button" class="sv-ag-novo" onclick="abrirModal('novo')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Novo</span>
+      </button>
+    </div>
+  </div>
+
+  <%/* Tira de dias: o mês inteiro, rolável (o Turno 6 só oferecia "o dia
+       seguinte"). Um script no fim do arquivo traz o dia selecionado para o
+       centro — sem isso, dia 28 abriria com a tira fora da tela. */%>
+  <div class="sv-ag-dias" id="sv-ag-dias">
+    <% faixaDias.forEach(function (d) { %>
+      <a href="/painel/agenda?data=<%= d.iso %><%= qsBarbeiro %>" class="sv-ag-dia <%= d.selecionado ? 'sel' : '' %>">
+        <%/* "HOJE" no lugar do dia da semana: é a única marca que hoje recebe
+             na tira, e evita inventar mais um ponto/anel só para isso. */%>
+        <span class="sv-ag-dia-rot"><%= d.ehHoje ? 'Hoje' : d.rotulo %></span>
+        <span class="sv-ag-dia-num"><%= d.num %></span>
+      </a>
+    <% }) %>
   </div>
 
   <% if (ehAdmin) { %>
-    <div class="t6-agenda-barbeiros">
-      <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=todos" class="t6-chip <%= barbeiroSelecionado === 'todos' ? 'sel' : '' %>">Todos</a>
+    <div class="sv-ag-filtros">
+      <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=todos" class="sv-ag-filtro <%= barbeiroSelecionado === 'todos' ? 'sel' : '' %>">Todos</a>
       <% barbeiros.forEach(function (b) { %>
-        <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=<%= b.id %>" class="t6-chip <%= barbeiroSelecionado === String(b.id) ? 'sel' : '' %>"><%= b.nome.split(' ')[0] %></a>
+        <a href="/painel/agenda?data=<%= dataStr %>&barbeiro=<%= b.id %>" class="sv-ag-filtro <%= barbeiroSelecionado === String(b.id) ? 'sel' : '' %>"><%= b.nome.split(' ')[0] %></a>
       <% }) %>
     </div>
   <% } %>
+
+  <div class="sv-ag-lista">
+    <% if (agendamentos.length === 0 && bloqueios.length === 0) { %>
+      <div class="sv-vazio">Nada agendado para esta data.</div>
+    <% } else { %>
+      <%
+        // Agendamentos e bloqueios dividem a mesma linha do tempo, ordenados
+        // pela hora de início.
+        function _min(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
+        var eventos = [];
+        agendamentos.forEach(function (ag) { eventos.push({ tipo: 'ag', ag: ag, ini: _min(ag.horaInicio) }); });
+        bloqueios.forEach(function (bl) { eventos.push({ tipo: 'bloq', bl: bl, ini: _min(bl.horaInicio) }); });
+        eventos.sort(function (a, b) { return a.ini - b.ini; });
+      %>
+      <% eventos.forEach(function (e) { %>
+        <% if (e.tipo === 'ag') { var ag = e.ag; %>
+          <% var servicosLabel = ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento'; %>
+          <button type="button" onclick="abrirModal(<%= ag.id %>)"
+                  class="sv-ag-card <%= (ag.id === proximoId && ag.status === 'agendado') ? 'sv-ag-card--agora' : '' %> <%= ag.status === 'concluido' ? 'sv-ag-card--feito' : '' %> <%= ag.status === 'cancelado' ? 'sv-ag-card--cancelado' : '' %>">
+            <span class="sv-ag-card-av"><%= _iniciais(ag.clienteNome) %></span>
+            <span class="sv-ag-card-corpo">
+              <span class="sv-ag-card-linha">
+                <span class="sv-ag-card-nome"><%= ag.clienteNome %></span>
+                <span class="sv-ag-selo"><%= _selo(ag) %></span>
+              </span>
+              <span class="sv-ag-card-sub"><%= servicosLabel %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome.split(' ')[0] %><% } %></span>
+            </span>
+            <span class="sv-ag-card-dir">
+              <span class="sv-ag-card-hora"><%= ag.horaInicio %></span>
+              <span class="sv-ag-card-val"><%= fmtT6(ag.valorTotal) %></span>
+            </span>
+          </button>
+        <% } else { var bl = e.bl; %>
+          <div class="sv-ag-card sv-ag-card--bloq">
+            <span class="sv-ag-card-av">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10.5" rx="3"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+            </span>
+            <span class="sv-ag-card-corpo">
+              <span class="sv-ag-card-linha">
+                <span class="sv-ag-card-nome"><%= bl.motivo || 'Bloqueado' %></span>
+                <span class="sv-ag-selo">Bloqueio</span>
+              </span>
+              <span class="sv-ag-card-sub"><%= bl.horaInicio %>–<%= bl.horaFim %><% if (mostrarBarbeiroNoCard) { %> · <%= bl.usuario.nome.split(' ')[0] %><% } %></span>
+            </span>
+            <% if (ehAdmin) { %>
+              <form method="POST" action="/painel/agenda/bloqueios/<%= bl.id %>/remover" onsubmit="return confirm('Remover este bloqueio?')">
+                <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+                <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+                <button title="Remover bloqueio" type="submit" class="sv-ag-card-x">×</button>
+              </form>
+            <% } %>
+          </div>
+        <% } %>
+      <% }) %>
+    <% } %>
+  </div>
+
 </div>
 
-<!-- Pop-up: escolher mês (ano navegável + grade dos 12 meses) -->
+<%/* ------------------------------------------------------------------------
+     Folha: escolher mês (ano navegável + os 12 meses)
+     --------------------------------------------------------------------- */%>
 <div class="ag-overlay" id="agm-mes" onclick="if(event.target===this)fecharModal(this)">
   <div class="ag-modal-box">
-    <div class="ag-modal-topo">
-      <div class="ag-modal-nome">Escolher mês</div>
-      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-    </div>
-    <div class="ag2-ano-linha">
-      <a href="/painel/agenda?data=<%= dataStr %><%= qsBarbeiro %>&anoPicker=<%= anoPicker - 1 %>" class="ag2-ano-seta" aria-label="Ano anterior">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+    <div class="sv-ag-folha-tit">Escolher mês</div>
+    <div class="sv-ag-ano">
+      <a href="/painel/agenda?data=<%= dataStr %><%= qsBarbeiro %>&anoPicker=<%= anoPicker - 1 %>" class="sv-ag-ano-seta" aria-label="Ano anterior">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
       </a>
-      <span class="ag2-ano-num"><%= anoPicker %></span>
-      <a href="/painel/agenda?data=<%= dataStr %><%= qsBarbeiro %>&anoPicker=<%= anoPicker + 1 %>" class="ag2-ano-seta" aria-label="Próximo ano">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      <span class="sv-ag-ano-num"><%= anoPicker %></span>
+      <a href="/painel/agenda?data=<%= dataStr %><%= qsBarbeiro %>&anoPicker=<%= anoPicker + 1 %>" class="sv-ag-ano-seta" aria-label="Próximo ano">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
       </a>
     </div>
-    <div class="ag2-mes-grid">
+    <div class="sv-ag-meses">
       <% mesesPicker.forEach(function (m) { %>
-        <a href="/painel/agenda?data=<%= m.iso %><%= qsBarbeiro %>" class="ag2-mes-opcao <%= m.atual ? 'sel' : '' %>"><%= m.nome %></a>
+        <a href="/painel/agenda?data=<%= m.iso %><%= qsBarbeiro %>" class="sv-ag-mes <%= m.atual ? 'sel' : '' %>"><%= m.nome %></a>
       <% }) %>
     </div>
   </div>
 </div>
 
-<%/* O botão flutuante "+" saiu no Turno 6 (2026-07-28): o cabeçalho já tem o
-     botão "Novo" preto e o atalho de bloquear horário, então o FAB virava um
-     terceiro jeito de fazer a mesma coisa — e a referência não tem nada
-     flutuando sobre a lista. */%>
-
 <% if (ehAdmin) { %>
+  <%/* Folha: bloquear horário */%>
   <div class="ag-overlay" id="agm-bloqueio" onclick="if(event.target===this)fecharModal(this)">
     <div class="ag-modal-box">
-      <div class="ag-modal-topo">
-        <div class="ag-modal-nome">Bloquear horário</div>
-        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
-      </div>
-      <form method="POST" action="/painel/agenda/bloqueios" class="form mt-16">
+      <div class="sv-ag-folha-tit">Bloquear horário</div>
+      <div class="sv-ag-folha-sub"><%= dataExtenso %></div>
+      <form method="POST" action="/painel/agenda/bloqueios">
         <input type="hidden" name="data" value="<%= dataStr %>" />
         <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
-        <div class="grid-2">
-          <div class="campo">
-            <label for="bloq-barbeiro">Barbeiro</label>
-            <select id="bloq-barbeiro" name="barbeiroId" required>
+        <div class="sv-ag-campos">
+          <div class="sv-ag-campo">
+            <label class="sv-ag-campo-rot" for="bloq-barbeiro">Barbeiro</label>
+            <select id="bloq-barbeiro" name="barbeiroId" class="sv-ag-inp" required>
               <% barbeiros.forEach(function (b) { %>
                 <option value="<%= b.id %>" <%= barbeiroSelecionado === String(b.id) ? 'selected' : '' %>><%= b.nome %></option>
               <% }) %>
             </select>
           </div>
-          <div class="campo">
-            <label for="bloq-motivo">Motivo (opcional)</label>
-            <input id="bloq-motivo" name="motivo" placeholder="Almoço, folga…" />
+          <div class="sv-ag-campo">
+            <label class="sv-ag-campo-rot" for="bloq-ini">Início</label>
+            <input id="bloq-ini" type="time" name="horaInicio" class="sv-ag-inp" required />
+          </div>
+          <div class="sv-ag-campo">
+            <label class="sv-ag-campo-rot" for="bloq-fim">Fim</label>
+            <input id="bloq-fim" type="time" name="horaFim" class="sv-ag-inp" required />
+          </div>
+          <div class="sv-ag-campo">
+            <label class="sv-ag-campo-rot" for="bloq-motivo">Motivo (opcional)</label>
+            <input id="bloq-motivo" name="motivo" class="sv-ag-inp" placeholder="Almoço, folga…" />
           </div>
         </div>
-        <div class="grid-2">
-          <div class="campo">
-            <label for="bloq-ini">Início</label>
-            <input id="bloq-ini" type="time" name="horaInicio" required />
-          </div>
-          <div class="campo">
-            <label for="bloq-fim">Fim</label>
-            <input id="bloq-fim" type="time" name="horaFim" required />
-          </div>
-        </div>
-        <div class="modal-acoes">
-          <button type="button" class="modal-cancelar" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
-          <button class="btn btn-primario">Bloquear</button>
+        <div class="sv-ag-form-pe">
+          <button type="button" class="sv-btn sv-btn--claro" onclick="fecharModal(this.closest('.ag-overlay'))">Cancelar</button>
+          <button type="submit" class="sv-btn">Bloquear</button>
         </div>
       </form>
     </div>
   </div>
 <% } %>
 
-<%/* "Novo agendamento" — FOLHA de página inteira (Turno 6, 2026-07-28): na
-     referência não é diálogo, é uma página branca que entra deslizando e
-     volta pelo quadrado cinza. Os campos são rótulo miúdo + valor grande
-     separados por fio, e o rodapé é o cartão preto de confirmação.
-     As pílulas de serviço/horário/barbeiro ficam (o app precisa delas pra
-     checar disponibilidade — a referência tinha só texto livre). */%>
-<div class="ag-overlay t6-folha" id="agm-novo">
+<%/* ------------------------------------------------------------------------
+     Folha: novo agendamento.
+     As pílulas de serviço/barbeiro/horário ficam (a referência tinha só texto
+     livre, mas o app precisa delas para checar disponibilidade de verdade) —
+     e com elas ficam também os nomes `.pill-group`/`.pill-opcao`, de que os
+     scripts desta tela dependem.
+     --------------------------------------------------------------------- */%>
+<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
   <div class="ag-modal-box">
-    <button class="t6-folha-voltar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Voltar">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-    </button>
+    <div class="sv-ag-folha-tit">Novo agendamento</div>
+    <div class="sv-ag-folha-sub"><%= dataExtenso %></div>
 
     <form method="POST" action="/painel/agenda/novo" id="form-novo-agendamento">
       <input type="hidden" name="data" value="<%= dataStr %>" />
 
-      <div class="t6-folha-titulo">Novo<br>agendamento</div>
-
-      <div style="margin-top:22px;">
-        <div class="t6-campo autocomplete">
-          <div class="t6-campo-rot">Cliente</div>
-          <input class="t6-campo-input" id="cliente_nome-novo" name="cliente_nome" autocomplete="off" placeholder="Nome do cliente" required />
+      <div class="sv-ag-campos">
+        <div class="sv-ag-campo autocomplete">
+          <label class="sv-ag-campo-rot" for="cliente_nome-novo">Cliente</label>
+          <input class="sv-ag-inp" id="cliente_nome-novo" name="cliente_nome" autocomplete="off" placeholder="Nome do cliente" required />
           <div id="sugestoes-cliente-novo" class="sugestoes"></div>
         </div>
 
-        <div class="t6-campo">
-          <div class="t6-campo-rot">Telefone</div>
-          <input class="t6-campo-input" id="cliente_telefone-novo" name="cliente_telefone" inputmode="tel" placeholder="(51) 99999-9999" required />
+        <div class="sv-ag-campo">
+          <label class="sv-ag-campo-rot" for="cliente_telefone-novo">Telefone</label>
+          <input class="sv-ag-inp" id="cliente_telefone-novo" name="cliente_telefone" inputmode="tel" placeholder="(51) 99999-9999" required />
         </div>
 
-        <div class="t6-campo">
-          <div class="t6-campo-rot">Serviço</div>
+        <div class="sv-ag-campo sv-ag-campo--pills">
+          <div class="sv-ag-campo-rot">Serviço</div>
           <input type="hidden" name="servicoId" id="servicoId-novo" required />
           <div class="pill-group" id="pills-servico">
             <% servicos.forEach(function (s) { %>
@@ -161,12 +235,12 @@
         </div>
 
         <% if (ehAdmin) { %>
-          <div class="t6-campo">
-            <div class="t6-campo-rot">Barbeiro</div>
+          <div class="sv-ag-campo sv-ag-campo--pills">
+            <div class="sv-ag-campo-rot">Barbeiro</div>
             <input type="hidden" name="barbeiroId" id="barbeiroId-novo" required value="<%= barbeiroSelecionado !== 'todos' ? barbeiroSelecionado : '' %>" />
             <div class="pill-group" id="pills-barbeiro">
               <% barbeiros.forEach(function (b) { %>
-                <button type="button" class="pill-opcao <%= barbeiroSelecionado === String(b.id) ? 'ativo' : '' %>" data-id="<%= b.id %>"><%= b.nome %></button>
+                <button type="button" class="pill-opcao <%= barbeiroSelecionado === String(b.id) ? 'ativo' : '' %>" data-id="<%= b.id %>"><%= b.nome.split(' ')[0] %></button>
               <% }) %>
             </div>
           </div>
@@ -174,8 +248,8 @@
           <input type="hidden" name="barbeiroId" id="barbeiroId-novo" value="<%= usuario.id %>" />
         <% } %>
 
-        <div class="t6-campo">
-          <div class="t6-campo-rot">Horário disponível <%= dataStr === hojeIso ? 'hoje' : '' %></div>
+        <div class="sv-ag-campo sv-ag-campo--pills">
+          <div class="sv-ag-campo-rot">Horário disponível <%= dataStr === hojeIso ? 'hoje' : '' %></div>
           <input type="hidden" name="hora" id="hora-novo" required />
           <div class="pill-group" id="pills-horario">
             <span class="texto-sutil"><%= ehAdmin ? 'Selecione o barbeiro.' : 'Carregando horários…' %></span>
@@ -183,22 +257,191 @@
         </div>
       </div>
 
-      <div class="t6-confirma-rot">Confirmar agendamento</div>
-      <div class="t6-confirma">
-        <div class="t6-confirma-barbeiro" id="resumo-barbeiro"><%= ehAdmin ? '' : usuario.nome %></div>
-        <div class="t6-confirma-cliente" id="resumo-cliente">—</div>
-        <div class="t6-confirma-servico" id="resumo-servico">Escolha o serviço</div>
-        <div class="t6-confirma-hora" id="resumo-hora">--:--</div>
-        <button class="t6-confirma-btn" type="submit">Agendar</button>
+      <%/* Cartão preto de fecho: repete o que foi escolhido antes de gravar. */%>
+      <div class="sv-ag-preto">
+        <div class="sv-ag-preto-rot">Resumo</div>
+        <div class="sv-ag-preto-linha">
+          <div class="sv-ag-preto-corpo">
+            <div class="sv-ag-preto-tit" id="resumo-cliente">—</div>
+            <div class="sv-ag-preto-sub">
+              <span id="resumo-servico">Escolha o serviço</span><span id="resumo-sep"> · </span><span id="resumo-barbeiro"><%= ehAdmin ? '' : usuario.nome.split(' ')[0] %></span>
+            </div>
+          </div>
+          <div class="sv-ag-preto-num" id="resumo-hora">--:--</div>
+        </div>
+        <button class="sv-ag-cta" type="submit">Confirmar agendamento</button>
       </div>
     </form>
   </div>
 </div>
 
+<%/* ------------------------------------------------------------------------
+     Folha de detalhe — uma por agendamento (concluir/reabrir, forma de
+     pagamento, itens, cancelar e excluir).
+     --------------------------------------------------------------------- */%>
+<% agendamentos.forEach(function (ag) { %>
+  <% var svcLabel = ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento'; %>
+  <div class="ag-overlay" id="agm-<%= ag.id %>" onclick="if(event.target===this)fecharModal(this)">
+    <div class="ag-modal-box">
+      <div class="sv-ag-folha-topo">
+        <div class="sv-ag-folha-tit"><%= ag.clienteNome %></div>
+        <span class="sv-ag-selo"><%= _selo(ag) %></span>
+      </div>
+      <div class="sv-ag-folha-sub"><%= diaNum %> <%= mesCurto %> · <%= ag.horaInicio %></div>
+
+      <div class="sv-ag-campos">
+        <div class="sv-ag-campo">
+          <div class="sv-ag-campo-rot">Serviço</div>
+          <div class="sv-ag-campo-val"><%= svcLabel %></div>
+        </div>
+        <div class="sv-ag-campo">
+          <div class="sv-ag-campo-rot">Barbeiro</div>
+          <div class="sv-ag-campo-val sv-ag-campo-val--sm"><%= ag.usuario.nome %></div>
+        </div>
+        <div class="sv-ag-campo">
+          <div class="sv-ag-campo-rot">Contato</div>
+          <div class="sv-ag-campo-val sv-ag-campo-val--sm"><%= fmtTelefone(ag.clienteTelefone) %></div>
+        </div>
+      </div>
+
+      <div class="sv-ag-preto">
+        <div class="sv-ag-preto-rot">Total a receber</div>
+        <div class="sv-ag-preto-linha">
+          <div class="sv-ag-preto-corpo">
+            <div class="sv-ag-preto-tit"><%= fmtBRL(ag.valorTotal) %></div>
+            <div class="sv-ag-preto-sub"><%= svcLabel %> · <%= ag.usuario.nome.split(' ')[0] %></div>
+          </div>
+        </div>
+
+        <% if (ag.status !== 'concluido') { %>
+          <%/* A forma de pagamento viaja no MESMO POST que conclui: é quando o
+               cliente paga, e é o que alimenta a entrada automática do caixa.
+               São rádios (sem script) — deixar em branco continua valendo. */%>
+          <form method="POST" action="/painel/agenda/<%= ag.id %>/status">
+            <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+            <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+            <input type="hidden" name="status" value="concluido" />
+            <div class="sv-ag-pags">
+              <% formasPagamento.forEach(function (f) { %>
+                <label class="sv-ag-pag">
+                  <input type="radio" name="formaPagamento" value="<%= f.valor %>" <%= ag.formaPagamento === f.valor ? 'checked' : '' %> />
+                  <span><%= f.label %></span>
+                </label>
+              <% }) %>
+            </div>
+            <button type="submit" class="sv-ag-cta">Concluir atendimento</button>
+          </form>
+        <% } else { %>
+          <% var formaFeita = formasPagamento.filter(function (f) { return f.valor === ag.formaPagamento; })[0]; %>
+          <% if (formaFeita) { %>
+            <div class="sv-ag-pag-fixa">Pago em <%= formaFeita.label %></div>
+          <% } %>
+          <form method="POST" action="/painel/agenda/<%= ag.id %>/status">
+            <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+            <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+            <input type="hidden" name="status" value="agendado" />
+            <button type="submit" class="sv-ag-cta sv-ag-cta--vazado">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>Concluído · toque para reabrir</span>
+            </button>
+          </form>
+        <% } %>
+      </div>
+
+      <div class="sv-ag-secao">
+        <div class="sv-ag-secao-rot">Itens</div>
+        <ul class="sv-ag-itens">
+          <% ag.itens.forEach(function (it) { %>
+            <li>
+              <span><%= it.servico.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %></span>
+              <span class="sv-ag-item-dir">
+                <span><%= fmtT6(it.valorUnitario * it.quantidade) %></span>
+                <form method="POST" action="/painel/agenda/itens/<%= it.id %>/remover">
+                  <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+                  <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+                  <button class="sv-ag-item-x" title="Remover item">×</button>
+                </form>
+              </span>
+            </li>
+          <% }) %>
+          <% if (ag.itens.length === 0) { %>
+            <li><span class="texto-sutil">Sem itens.</span></li>
+          <% } %>
+        </ul>
+
+        <form method="POST" action="/painel/agenda/<%= ag.id %>/itens" class="sv-ag-add">
+          <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+          <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+          <div class="sv-ag-campo">
+            <div class="sv-ag-campo-rot">Adicionar</div>
+            <select name="servicoId" class="sv-ag-inp" required>
+              <option value="">Corte/produto…</option>
+              <% servicos.forEach(function (s) { %>
+                <option value="<%= s.id %>"><%= s.nome %> — <%= fmtT6(s.valor) %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="sv-ag-campo sv-ag-campo--qtd">
+            <div class="sv-ag-campo-rot">Qtd</div>
+            <input type="number" name="quantidade" value="1" min="1" class="sv-ag-inp" title="Quantidade" />
+          </div>
+          <button type="submit" class="sv-ag-add-btn">+</button>
+        </form>
+
+        <div class="sv-ag-perigo">
+          <% if (ag.status !== 'cancelado') { %>
+            <form method="POST" action="/painel/agenda/<%= ag.id %>/status">
+              <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+              <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+              <input type="hidden" name="status" value="cancelado" />
+              <button type="submit" class="sv-ag-perigo-btn">Cancelar atendimento</button>
+            </form>
+          <% } %>
+          <form method="POST" action="/painel/agenda/<%= ag.id %>/excluir"
+                onsubmit="return confirm('Excluir este agendamento? Esta ação não pode ser desfeita.')">
+            <input type="hidden" name="retornoData" value="<%= dataStr %>" />
+            <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
+            <button type="submit" class="sv-ag-perigo-btn">Excluir</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+<% }) %>
+
 <script>
-  <%/* Espelha o que já foi preenchido no cartão preto de confirmação — na
-       referência esse cartão mostra barbeiro/cliente/serviço/hora antes de
-       agendar. */%>
+  // Abrir/fechar folha. Os nomes são globais de propósito: os `onclick` do HTML
+  // (fichas, "Novo", data, bloqueio) chamam por aqui.
+  function abrirModal(id) {
+    var o = document.getElementById('agm-' + id);
+    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+  }
+  function fecharModal(o) {
+    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
+      document.body.classList.remove('modal-aberto');
+    }
+  });
+</script>
+
+<script>
+  // A tira cobre o mês inteiro; sem este ajuste o dia 28 abriria com a tira
+  // parada no dia 1. Centraliza o selecionado já na primeira pintura.
+  (function () {
+    var tira = document.getElementById('sv-ag-dias');
+    if (!tira) return;
+    var sel = tira.querySelector('.sv-ag-dia.sel');
+    if (!sel) return;
+    var alvo = sel.offsetLeft - (tira.clientWidth - sel.offsetWidth) / 2;
+    tira.scrollLeft = Math.max(0, Math.min(alvo, tira.scrollWidth - tira.clientWidth));
+  })();
+</script>
+
+<script>
+  // Espelha no cartão preto o que já foi preenchido, antes de confirmar.
   (function () {
     var form = document.getElementById('form-novo-agendamento');
     if (!form) return;
@@ -208,6 +451,7 @@
       servico: document.getElementById('resumo-servico'),
       hora: document.getElementById('resumo-hora'),
       barbeiro: document.getElementById('resumo-barbeiro'),
+      sep: document.getElementById('resumo-sep'),
     };
     function textoAtivo(grupoId) {
       var a = document.querySelector('#' + grupoId + ' .pill-opcao.ativo');
@@ -217,9 +461,11 @@
       resumo.cliente.textContent = (nome && nome.value.trim()) || '—';
       resumo.servico.textContent = textoAtivo('pills-servico') || 'Escolha o serviço';
       resumo.hora.textContent = textoAtivo('pills-horario') || '--:--';
-      if (resumo.barbeiro && document.getElementById('pills-barbeiro')) {
+      if (document.getElementById('pills-barbeiro')) {
         resumo.barbeiro.textContent = textoAtivo('pills-barbeiro');
       }
+      // Sem barbeiro escolhido o " · " ficaria pendurado no fim da linha.
+      resumo.sep.style.display = resumo.barbeiro.textContent ? '' : 'none';
     }
     if (nome) nome.addEventListener('input', atualizar);
     form.addEventListener('click', function (e) {
@@ -230,6 +476,7 @@
 </script>
 
 <script>
+  // Autocomplete de cliente do pop-up "Novo agendamento".
   (function () {
     var clientes = <%- JSON.stringify(clientes) %>;
     var inputNome = document.getElementById('cliente_nome-novo');
@@ -356,206 +603,3 @@
     if (barbeiroInput && barbeiroInput.value) buscarHorarios();
   })();
 </script>
-
-<script>
-  function abrirModal(id) {
-    var o = document.getElementById('agm-' + id);
-    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
-  }
-  function fecharModal(o) {
-    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
-  }
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
-      document.body.classList.remove('modal-aberto');
-    }
-  });
-
-  <%/* A tira de dias rolável e o carrossel com efeito de roleta saíram no
-       Turno 6 (2026-07-28): a referência troca de dia pelo número do dia
-       seguinte / pelo selo do mês, e a lista é de faixas empilhadas. Os
-       scripts que centralizavam a tira e aplicavam scale/opacity nos cards
-       foram removidos junto — não havia mais elemento nenhum pra eles. */%>
-</script>
-
-<div class="t6-agenda-lista">
-<% if (agendamentos.length === 0 && bloqueios.length === 0) { %>
-  <div class="t6-vazio">Nada agendado para esta data.</div>
-<% } else { %>
-  <%
-    function _min(hhmm) { var p = String(hhmm).split(':'); return (+p[0]) * 60 + (+p[1]); }
-    var eventos = [];
-    agendamentos.forEach(function (ag) { eventos.push({ tipo: 'ag', ag: ag, ini: _min(ag.horaInicio) }); });
-    bloqueios.forEach(function (bl) { eventos.push({ tipo: 'bloq', bl: bl, ini: _min(bl.horaInicio) }); });
-    eventos.sort(function (a, b) { return a.ini - b.ini; });
-  %>
-
-  <%/* Turno 6 (2026-07-28): o carrossel vertical com scroll-snap saiu — na
-       referência os atendimentos são faixas empilhadas separadas por fio, e o
-       da vez sai invertido. Tocar numa faixa abre o pop-up de detalhe (que já
-       existia em "Mais opções") — é lá que estão concluir, pagamento, itens e
-       excluir, então nada de função se perdeu com o fim da expansão inline. */%>
-  <div>
-    <% eventos.forEach(function (e, i) { %>
-      <% if (e.tipo === 'ag') { var ag = e.ag; %>
-        <%
-          var servicosLabel = ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento';
-          var formas = [['pix', 'Pix'], ['credito', 'Crédito'], ['debito', 'Débito'], ['dinheiro', 'Dinheiro']];
-        %>
-        <button type="button" onclick="abrirModal(<%= ag.id %>)" class="t6-linha <%= ag.id === proximoId ? 't6-linha--agora' : '' %> <%= ag.status === 'concluido' ? 't6-linha--feito' : '' %>">
-          <span class="t6-linha-corpo">
-            <span class="t6-linha-marca">
-              <span class="t6-linha-ponto"></span>
-              <% if (ag.status === 'concluido') { %>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" opacity="0.55" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              <% } %>
-            </span>
-            <span class="t6-linha-cliente"><%= ag.clienteNome %></span>
-            <span class="t6-linha-sub"><%= servicosLabel %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome.split(' ')[0] %><% } %> · <%= fmtT6(ag.valorTotal) %></span>
-          </span>
-          <span class="t6-linha-hora"><%= ag.horaInicio %></span>
-        </button>
-      <% } else { var bl = e.bl; %>
-        <div class="t6-linha t6-linha--bloqueio">
-          <div class="t6-linha-corpo">
-            <div class="t6-linha-marca"><span class="t6-linha-ponto"></span></div>
-            <div class="t6-linha-cliente"><%= bl.motivo || 'Bloqueado' %></div>
-            <div class="t6-linha-sub"><%= bl.horaInicio %>–<%= bl.horaFim %><% if (mostrarBarbeiroNoCard) { %> · <%= bl.usuario.nome.split(' ')[0] %><% } %></div>
-          </div>
-          <% if (ehAdmin) { %>
-            <form method="POST" action="/painel/agenda/bloqueios/<%= bl.id %>/remover" onsubmit="return confirm('Remover este bloqueio?')">
-              <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-              <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-              <button title="Remover bloqueio" type="submit" class="t6-linha-x">×</button>
-            </form>
-          <% } %>
-        </div>
-      <% } %>
-    <% }) %>
-  </div>
-
-
-  <% agendamentos.forEach(function (ag) { %>
-    <%/* Detalhe do atendimento — FOLHA de página inteira (Turno 6, 2026-07-28):
-         nome do cliente em manchete, os dados em campos separados por fio e o
-         bloco preto do total sangrando até as bordas, com "Concluir
-         atendimento" dentro dele. Itens e as ações destrutivas ficam abaixo. */%>
-    <% var svcLabel = ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento'; %>
-    <div class="ag-overlay t6-folha" id="agm-<%= ag.id %>">
-      <div class="ag-modal-box">
-        <button class="t6-folha-voltar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Voltar">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-        </button>
-
-        <div class="t6-folha-topo">
-          <div class="t6-folha-cliente"><%= ag.clienteNome %></div>
-          <div class="t6-folha-hora"><%= ag.horaInicio %></div>
-        </div>
-
-        <div style="margin-top:22px;">
-          <div class="t6-campo">
-            <div class="t6-campo-rot">Data e horário</div>
-            <%/* Curto de propósito ("28 jul · 23:15"): a 30px, a data por
-                 extenso não cabe na linha e é cortada por reticências. */%>
-            <div class="t6-campo-val"><%= diaNum %> <%= mesLabel.toLowerCase().slice(0, 3) %> · <%= ag.horaInicio %></div>
-          </div>
-          <div class="t6-campo">
-            <div class="t6-campo-rot">Serviço</div>
-            <div class="t6-campo-val t6-campo-val--md"><%= svcLabel %></div>
-          </div>
-          <div class="t6-campo">
-            <div class="t6-campo-rot">Barbeiro</div>
-            <div class="t6-campo-val t6-campo-val--sm"><%= ag.usuario.nome %></div>
-          </div>
-          <div class="t6-campo">
-            <div class="t6-campo-rot">Contato</div>
-            <div class="t6-campo-val t6-campo-val--sm"><%= fmtTelefone(ag.clienteTelefone) %></div>
-          </div>
-        </div>
-
-        <div class="t6-total">
-          <div class="t6-total-linha">
-            <div style="min-width:0;">
-              <div class="t6-total-rot">Total a receber</div>
-              <div class="t6-total-num"><%= fmtT6(ag.valorTotal) %></div>
-            </div>
-            <div class="t6-total-lado"><%= svcLabel %><br><%= ag.usuario.nome.split(' ')[0] %></div>
-          </div>
-
-          <% if (ag.status !== 'concluido') { %>
-            <form method="POST" action="/painel/agenda/<%= ag.id %>/status">
-              <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-              <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-              <input type="hidden" name="status" value="concluido" />
-              <button type="submit" class="t6-cta-claro">Concluir atendimento</button>
-            </form>
-          <% } else { %>
-            <form method="POST" action="/painel/agenda/<%= ag.id %>/status">
-              <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-              <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-              <input type="hidden" name="status" value="agendado" />
-              <button type="submit" class="t6-cta-vazado">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-                <span>Concluído · toque para reabrir</span>
-              </button>
-            </form>
-          <% } %>
-        </div>
-
-        <div style="margin-top:20px;">
-          <div class="t6-campo-rot">Itens</div>
-          <ul class="itens">
-            <% ag.itens.forEach(function (it) { %>
-              <li>
-                <span><%= it.servico.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %></span>
-                <span class="itens-direita">
-                  <span><%= fmtT6(it.valorUnitario * it.quantidade) %></span>
-                  <form method="POST" action="/painel/agenda/itens/<%= it.id %>/remover" class="inline">
-                    <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-                    <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-                    <button class="btn-x" title="Remover item">×</button>
-                  </form>
-                </span>
-              </li>
-            <% }) %>
-            <% if (ag.itens.length === 0) { %>
-              <li><span class="texto-sutil">Sem itens.</span></li>
-            <% } %>
-          </ul>
-
-          <form method="POST" action="/painel/agenda/<%= ag.id %>/itens" class="form-add-item">
-            <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-            <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-            <select name="servicoId" required>
-              <option value="">Adicionar corte/produto…</option>
-              <% servicos.forEach(function (s) { %>
-                <option value="<%= s.id %>"><%= s.nome %> — <%= fmtT6(s.valor) %></option>
-              <% }) %>
-            </select>
-            <input type="number" name="quantidade" value="1" min="1" class="input-qtd" title="Quantidade" />
-            <button class="btn btn-secundario btn-sm">Adicionar</button>
-          </form>
-
-          <div class="agendamento-acoes">
-            <% if (ag.status !== 'cancelado') { %>
-              <form method="POST" action="/painel/agenda/<%= ag.id %>/status" class="inline">
-                <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-                <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-                <input type="hidden" name="status" value="cancelado" />
-                <button class="btn btn-perigo btn-sm">Cancelar</button>
-              </form>
-            <% } %>
-            <form method="POST" action="/painel/agenda/<%= ag.id %>/excluir" class="inline"
-                  onsubmit="return confirm('Excluir este agendamento? Esta ação não pode ser desfeita.')">
-              <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-              <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-              <button class="btn btn-perigo btn-sm">Excluir</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-  <% }) %>
-<% } %>
-</div>

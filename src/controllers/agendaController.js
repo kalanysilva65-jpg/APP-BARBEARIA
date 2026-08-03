@@ -10,6 +10,17 @@ const { normalizarTelefone } = require('../utils/telefone');
 const caixaServ = require('../services/caixa');
 const planoServ = require('../services/plano');
 
+// Formas de pagamento oferecidas ao concluir um atendimento. Rótulos CURTOS
+// (design suave, 2026-07-31): viram pílulas dentro do cartão preto do detalhe,
+// onde "Cartão de Crédito" quebraria a linha. Os VALORES são os mesmos do
+// caixa — é o que o serviço de caixa lê ao gerar a entrada automática.
+const FORMAS_PAGAMENTO = [
+  { valor: 'pix', label: 'Pix' },
+  { valor: 'credito', label: 'Crédito' },
+  { valor: 'debito', label: 'Débito' },
+  { valor: 'dinheiro', label: 'Dinheiro' },
+];
+
 // Date -> "YYYY-MM-DD"
 function iso(data) {
   const a = data.getFullYear();
@@ -142,11 +153,11 @@ async function verAgenda(req, res) {
     atual: anoPicker === anoMes && i === mesMes,
   }));
 
-  // --- Turno 6 (2026-07-28) ------------------------------------------------
-  // O cabeçalho novo não tem tira de dias: mostra o dia selecionado GRANDE, o
-  // mês num selo e o dia seguinte em cinza ao lado (toque = avança). E o
-  // agendamento "da vez" (o próximo que ainda não passou) sai INVERTIDO na
-  // lista, que é como a referência destaca o atendimento atual.
+  // --- Atendimento "da vez" ------------------------------------------------
+  // O próximo que ainda não passou sai INVERTIDO (preto) na lista — é assim
+  // que a referência do design suave destaca o atendimento atual, sem precisar
+  // de ponto, borda ou cor de status (pedido do dono, 2026-07-31). Em um dia
+  // que não é hoje, "da vez" é simplesmente o primeiro em aberto.
   function _minT6(hhmm) {
     const p = String(hhmm).split(':');
     return (+p[0]) * 60 + (+p[1]);
@@ -175,6 +186,9 @@ async function verAgenda(req, res) {
     barbeiros,
     servicos,
     clientes,
+    // Pílulas de forma de pagamento no detalhe do atendimento: viajam no mesmo
+    // POST que conclui, que é quando o cliente paga.
+    formasPagamento: FORMAS_PAGAMENTO,
     dataStr,
     dataExtenso: `${DIAS_SEMANA[dataObj.getDay()]}, ${res.locals.fmtData(dataObj)}`,
     barbeiroSelecionado,
@@ -246,10 +260,11 @@ async function mudarStatus(req, res) {
     // Forma de pagamento: registrada junto ao concluir (é quando o cliente paga).
     // Reabrir/cancelar limpa o registro, senão ficaria uma forma de pagamento
     // pendurada num atendimento que não aconteceu.
-    const FORMAS = ['pix', 'credito', 'debito', 'dinheiro'];
     const dados = { status: novo };
     if (novo === 'concluido') {
-      if (FORMAS.includes(req.body.formaPagamento)) dados.formaPagamento = req.body.formaPagamento;
+      if (FORMAS_PAGAMENTO.some((f) => f.valor === req.body.formaPagamento)) {
+        dados.formaPagamento = req.body.formaPagamento;
+      }
     } else {
       dados.formaPagamento = null;
     }

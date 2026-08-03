@@ -45,11 +45,22 @@ function calcularStats(agendamentos) {
     totalGasto,
     visitas: concluidos.length,
     diasDesdeUltima,
+    ultimaVisitaLabel: rotuloVisita(diasDesdeUltima),
     frequenciaDias,
     servicoFavorito: maisFrequente(contagemServico),
     barbeiroFavorito: maisFrequente(contagemBarbeiro),
     sumido: diasDesdeUltima !== null && diasDesdeUltima >= DIAS_SUMIDO,
   };
+}
+
+// "há 12 dias" / "ontem" / "nunca veio". Vem do controller (e não da view)
+// porque o design suave (2026-07-31) mostra o mesmo rótulo em dois lugares —
+// no cartão da lista e no subtítulo da folha de detalhe.
+function rotuloVisita(dias) {
+  if (dias === null) return 'nunca veio';
+  if (dias === 0) return 'hoje';
+  if (dias === 1) return 'ontem';
+  return 'há ' + dias + ' dias';
 }
 
 function iniciais(nome) {
@@ -91,7 +102,11 @@ async function listar(req, res) {
       vigente: a.ativo && new Date(a.dataFim) >= hoje && (a.usosRestantes === null || a.usosRestantes > 0),
     }));
     const aniversarianteMes = !!c.dataNascimento && new Date(c.dataNascimento).getMonth() === mesAtual;
-    return { ...c, iniciais: iniciais(c.nome), stats, assinaturas, aniversarianteMes };
+    // "YYYY-MM-DD" para o <input type="date"> da folha de detalhe. A data é
+    // gravada ao meio-dia local justamente para que o corte em UTC não puxe
+    // o dia para trás aqui.
+    const nascimentoIso = c.dataNascimento ? new Date(c.dataNascimento).toISOString().slice(0, 10) : '';
+    return { ...c, iniciais: iniciais(c.nome), stats, assinaturas, aniversarianteMes, nascimentoIso };
   });
 
   // Resumo do topo ("Na base"): o número grande é o tamanho da carteira, e as

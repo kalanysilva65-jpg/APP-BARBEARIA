@@ -1,200 +1,222 @@
 <%
   // Nomes dos itens em falta para o bloco preto de reposição: a referência
-  // resume em uma frase, então corta em 3 e conta o resto.
+  // resume em UMA linha (corta com reticências), então mostra os 3 primeiros
+  // e conta o resto.
   var nomesBaixo = baixoEstoque.slice(0, 3).map(function (i) { return i.nome; }).join(', ');
   var restoBaixo = baixoEstoque.length - Math.min(3, baixoEstoque.length);
 %>
 
-<%/* Estoque no design TURNO 6 (pedido do dono, 2026-07-28): manchete com o
-     valor gasto em compras, o bloco PRETO de reposição logo abaixo (é assim
-     que a referência grita "falta coisa") e a lista em linhas compactas —
-     nome à esquerda, quantidade grande à direita. Sem cartão, sem avatar
-     redondo: a separação é por fio. */%>
-<div class="t6-cat-tela">
-  <div class="t6-cat-topo">
-    <div class="t6-cat-titulo-linha">
-      <div class="t6-cat-titulo">ESTOQUE</div>
-      <button type="button" class="t6-btn-novo" onclick="abrirModal('novo')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+<%/* Estoque no design SUAVE (pedido do dono, 2026-07-31): substitui as linhas
+     sem cartão do Turno 6 (nome à esquerda, quantidade em 40px à direita)
+     pelo HTML de referência — cartão de resumo, o bloco PRETO de reposição
+     logo abaixo e a lista em cartões brancos com a caixinha cinza da
+     quantidade na ponta direita.
+     O pop-up virou FOLHA INFERIOR. Nada de função saiu: criar, editar,
+     excluir, alerta de reposição e as categorias continuam.
+     Estilos em public/css/sv-catalogo.css. */%>
+<div class="sv-tela sv-cat-tela">
+  <div class="sv-cat-topo sv-reveal">
+    <div class="sv-cat-topo-linha">
+      <h1 class="sv-cat-titulo">Estoque</h1>
+      <button type="button" class="sv-cat-novo" onclick="abrirFolha('novo')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
         <span>Novo</span>
       </button>
     </div>
-    <div class="t6-cat-dica">
-      Toque em um item para editar · <a href="#" onclick="abrirModal('categorias');return false;">Categorias</a>
+    <div class="sv-cat-dica">
+      Toque em um item para editar · <a href="#" onclick="abrirFolha('categorias');return false;">Categorias</a>
     </div>
   </div>
 
-  <div class="t6-es-lista">
-    <div class="t6-cat-resumo">
-      <%/* "Valor gasto" e não "valor em estoque": o model guarda o custo da
-           compra, não um preço de venda por unidade — dizer "em estoque"
-           sugeriria um valor de revenda que o app não conhece. */%>
-      <div class="t6-cat-resumo-rot">Valor gasto em compras</div>
-      <div class="t6-cat-resumo-num"><%= fmtT6(resumo.valorGasto) %></div>
-      <div class="t6-cat-resumo-sub">
-        <%= resumo.unidades %> unidade<%= resumo.unidades === 1 ? '' : 's' %> em <%= resumo.itens %> ite<%= resumo.itens === 1 ? 'm' : 'ns' %>
-      </div>
-    </div>
-
-    <% if (baixoEstoque.length > 0) { %>
-      <div class="t6-es-alerta">
-        <div class="t6-es-alerta-num"><%= baixoEstoque.length %></div>
-        <div class="t6-es-alerta-label">
-          <%= baixoEstoque.length === 1 ? 'item chegou' : 'itens chegaram' %> no mínimo e precisa<%= baixoEstoque.length === 1 ? '' : 'm' %> de reposição<br>
-          <%= nomesBaixo %><% if (restoBaixo > 0) { %> e mais <%= restoBaixo %><% } %>
-        </div>
-      </div>
-    <% } %>
-
-    <div class="t6-es-itens">
-      <% if (itens.length === 0) { %>
-        <div class="t6-vazio">Nenhum item no estoque ainda.</div>
-      <% } else { %>
-        <% itens.forEach(function (i) { var baixo = i.quantidade <= i.quantidadeMinima; %>
-          <button type="button" class="t6-es-linha" onclick="abrirModal(<%= i.id %>)">
-            <span class="t6-es-corpo">
-              <span class="t6-es-nome"><%= i.nome %></span>
-              <span class="t6-es-sub"><%= i.categoria ? i.categoria.nome : 'Sem categoria' %> · alerta em <%= i.quantidadeMinima %> un</span>
-            </span>
-            <span class="t6-es-direita">
-              <span class="t6-es-qtd"><%= i.quantidade %></span>
-              <% if (baixo) { %>
-                <span class="t6-es-selo-linha"><span class="t6-cat-selo">Repor</span></span>
-              <% } %>
-            </span>
-          </button>
-        <% }) %>
-        <div class="t6-cat-fim"></div>
-      <% } %>
+  <div class="sv-cartao sv-cat-resumo sv-reveal">
+    <%/* "Valor gasto" e não "valor em estoque" (como diz a referência): o
+         model guarda o custo da compra, não um preço de venda por unidade —
+         dizer "em estoque" sugeriria um valor de revenda que o app não tem. */%>
+    <div class="sv-cat-resumo-rot">Valor gasto em compras</div>
+    <div class="sv-cat-resumo-num"><%= fmtT6(resumo.valorGasto) %></div>
+    <div class="sv-cat-resumo-selos">
+      <span class="sv-cat-resumo-selo"><%= resumo.unidades %> unidade<%= resumo.unidades === 1 ? '' : 's' %></span>
+      <span class="sv-cat-resumo-selo"><%= resumo.itens %> ite<%= resumo.itens === 1 ? 'm' : 'ns' %></span>
     </div>
   </div>
+
+  <% if (baixoEstoque.length > 0) { %>
+    <div class="sv-es-alerta sv-reveal">
+      <span class="sv-es-alerta-ic">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17.3A1.9 1.9 0 0 0 4.2 20h15.6a1.9 1.9 0 0 0 1.6-2.7L13.7 3.9a1.9 1.9 0 0 0-3.4 0z"/></svg>
+      </span>
+      <span class="sv-es-alerta-corpo">
+        <span class="sv-es-alerta-tit"><%= baixoEstoque.length %> para repor</span>
+        <span class="sv-es-alerta-sub"><%= nomesBaixo %><% if (restoBaixo > 0) { %> e mais <%= restoBaixo %><% } %></span>
+      </span>
+    </div>
+  <% } %>
+
+  <% if (itens.length === 0) { %>
+    <div class="sv-cartao sv-cat-vazio sv-reveal">Nenhum item no estoque ainda.</div>
+  <% } else { %>
+    <div class="sv-cat-lista">
+      <% itens.forEach(function (i) { var baixo = i.quantidade <= i.quantidadeMinima; %>
+        <button type="button" class="sv-cat-item sv-es-item" onclick="abrirFolha(<%= i.id %>)">
+          <span class="sv-es-corpo">
+            <span class="sv-es-nome-linha">
+              <span class="sv-es-nome"><%= i.nome %></span>
+              <% if (baixo) { %><span class="sv-cat-selo">Repor</span><% } %>
+            </span>
+            <%/* A referência põe o preço aqui; no nosso model o único valor é
+                 o CUSTO da compra inteira, que não faz sentido por linha —
+                 no lugar dele vai a categoria, que é o que agrupa a lista. */%>
+            <span class="sv-es-sub"><%= i.categoria ? i.categoria.nome : 'Sem categoria' %> · alerta em <%= i.quantidadeMinima %> un</span>
+          </span>
+          <span class="sv-es-qtd">
+            <span class="sv-es-qtd-num"><%= i.quantidade %></span>
+            <span class="sv-es-qtd-rot">un</span>
+          </span>
+        </button>
+      <% }) %>
+      <div class="sv-cat-fim"></div>
+    </div>
+  <% } %>
 </div>
 
-<!-- Pop-up: novo item de estoque -->
-<div class="ag-overlay" id="agm-novo" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
-    <div class="ag-modal-topo">
-      <div class="t6-cat-dlg-titulo">Novo item</div>
-      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+<!-- Folha: novo item de estoque -->
+<div class="sv-folha-fundo" id="svf-novo" hidden onclick="if(event.target===this)fecharFolha(this)">
+  <div class="sv-folha">
+    <div class="sv-folha-puxador"></div>
+    <div class="sv-cat-folha-topo">
+      <div class="sv-folha-titulo">Novo item</div>
+      <button type="button" class="sv-cat-folha-x" onclick="fecharFolha(this.closest('.sv-folha-fundo'))" aria-label="Fechar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
-    <form method="POST" action="/painel/estoque" style="margin-top:16px;">
-      <div class="t6-cat-campo">
-        <label class="t6-cat-rot" for="nome-novo">Nome</label>
-        <input class="t6-cat-input" id="nome-novo" name="nome" placeholder="Ex.: Lâmina descartável" required />
+    <form method="POST" action="/painel/estoque">
+      <div class="sv-campo">
+        <label class="sv-campo-rot" for="nome-novo">Nome</label>
+        <input class="sv-campo-input" id="nome-novo" name="nome" placeholder="Ex.: Lâmina descartável" required />
       </div>
-      <div class="t6-cat-campo">
-        <label class="t6-cat-rot" for="categoriaId-novo">Categoria</label>
-        <select class="t6-cat-input" id="categoriaId-novo" name="categoriaId">
+      <div class="sv-campo">
+        <label class="sv-campo-rot" for="categoriaId-novo">Categoria</label>
+        <select class="sv-campo-input sv-cat-select" id="categoriaId-novo" name="categoriaId">
           <option value="">Sem categoria</option>
           <% categorias.forEach(function (c) { %>
             <option value="<%= c.id %>"><%= c.nome %></option>
           <% }) %>
         </select>
       </div>
-      <div class="t6-cat-dupla">
-        <div class="t6-cat-campo">
-          <label class="t6-cat-rot" for="quantidade-novo">Quantidade</label>
-          <input class="t6-cat-input" id="quantidade-novo" name="quantidade" type="number" min="0" value="0" />
+      <div class="sv-cat-dupla">
+        <div class="sv-campo">
+          <label class="sv-campo-rot" for="quantidade-novo">Quantidade</label>
+          <input class="sv-campo-input" id="quantidade-novo" name="quantidade" type="number" min="0" value="0" />
         </div>
-        <div class="t6-cat-campo">
-          <label class="t6-cat-rot" for="quantidadeMinima-novo">Alertar em</label>
-          <input class="t6-cat-input" id="quantidadeMinima-novo" name="quantidadeMinima" type="number" min="0" value="0" />
+        <div class="sv-campo">
+          <label class="sv-campo-rot" for="quantidadeMinima-novo">Alertar em</label>
+          <input class="sv-campo-input" id="quantidadeMinima-novo" name="quantidadeMinima" type="number" min="0" value="0" />
         </div>
       </div>
-      <div class="t6-cat-campo">
-        <label class="t6-cat-rot" for="valorGasto-novo">Valor gasto na compra (R$)</label>
-        <input class="t6-cat-input" id="valorGasto-novo" name="valorGasto" type="number" step="0.01" min="0" placeholder="0,00" />
+      <div class="sv-campo">
+        <label class="sv-campo-rot" for="valorGasto-novo">Valor gasto na compra (R$)</label>
+        <input class="sv-campo-input" id="valorGasto-novo" name="valorGasto" type="number" step="0.01" min="0" placeholder="0,00" />
       </div>
-      <button class="t6-cat-btn" type="submit">Adicionar</button>
+      <button class="sv-btn sv-cat-btn" type="submit">Adicionar</button>
     </form>
   </div>
 </div>
 
-<!-- Pop-up de edição: um por item -->
+<!-- Folha de edição: uma por item -->
 <% itens.forEach(function (i) { %>
-  <div class="ag-overlay" id="agm-<%= i.id %>" onclick="if(event.target===this)fecharModal(this)">
-    <div class="ag-modal-box">
-      <div class="ag-modal-topo">
-        <div class="t6-cat-dlg-titulo"><%= i.nome %></div>
-        <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+  <div class="sv-folha-fundo" id="svf-<%= i.id %>" hidden onclick="if(event.target===this)fecharFolha(this)">
+    <div class="sv-folha">
+      <div class="sv-folha-puxador"></div>
+      <div class="sv-cat-folha-topo">
+        <div class="sv-folha-titulo"><%= i.nome %></div>
+        <button type="button" class="sv-cat-folha-x" onclick="fecharFolha(this.closest('.sv-folha-fundo'))" aria-label="Fechar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
       </div>
-      <form method="POST" action="/painel/estoque/<%= i.id %>" style="margin-top:16px;">
-        <div class="t6-cat-campo">
-          <label class="t6-cat-rot" for="nome-<%= i.id %>">Nome</label>
-          <input class="t6-cat-input" id="nome-<%= i.id %>" name="nome" value="<%= i.nome %>" required />
+      <form method="POST" action="/painel/estoque/<%= i.id %>">
+        <div class="sv-campo">
+          <label class="sv-campo-rot" for="nome-<%= i.id %>">Nome</label>
+          <input class="sv-campo-input" id="nome-<%= i.id %>" name="nome" value="<%= i.nome %>" required />
         </div>
-        <div class="t6-cat-campo">
-          <label class="t6-cat-rot" for="categoriaId-<%= i.id %>">Categoria</label>
-          <select class="t6-cat-input" id="categoriaId-<%= i.id %>" name="categoriaId">
+        <div class="sv-campo">
+          <label class="sv-campo-rot" for="categoriaId-<%= i.id %>">Categoria</label>
+          <select class="sv-campo-input sv-cat-select" id="categoriaId-<%= i.id %>" name="categoriaId">
             <option value="">Sem categoria</option>
             <% categorias.forEach(function (c) { %>
               <option value="<%= c.id %>" <%= i.categoriaId === c.id ? 'selected' : '' %>><%= c.nome %></option>
             <% }) %>
           </select>
         </div>
-        <div class="t6-cat-dupla">
-          <div class="t6-cat-campo">
-            <label class="t6-cat-rot" for="quantidade-<%= i.id %>">Quantidade</label>
-            <input class="t6-cat-input" id="quantidade-<%= i.id %>" name="quantidade" type="number" min="0" value="<%= i.quantidade %>" />
+        <div class="sv-cat-dupla">
+          <div class="sv-campo">
+            <label class="sv-campo-rot" for="quantidade-<%= i.id %>">Quantidade</label>
+            <input class="sv-campo-input" id="quantidade-<%= i.id %>" name="quantidade" type="number" min="0" value="<%= i.quantidade %>" />
           </div>
-          <div class="t6-cat-campo">
-            <label class="t6-cat-rot" for="quantidadeMinima-<%= i.id %>">Alertar em</label>
-            <input class="t6-cat-input" id="quantidadeMinima-<%= i.id %>" name="quantidadeMinima" type="number" min="0" value="<%= i.quantidadeMinima %>" />
+          <div class="sv-campo">
+            <label class="sv-campo-rot" for="quantidadeMinima-<%= i.id %>">Alertar em</label>
+            <input class="sv-campo-input" id="quantidadeMinima-<%= i.id %>" name="quantidadeMinima" type="number" min="0" value="<%= i.quantidadeMinima %>" />
           </div>
         </div>
-        <div class="t6-cat-campo">
-          <label class="t6-cat-rot" for="valorGasto-<%= i.id %>">Valor gasto na compra (R$)</label>
-          <input class="t6-cat-input" id="valorGasto-<%= i.id %>" name="valorGasto" type="number" step="0.01" min="0" value="<%= (i.valorGasto / 100).toFixed(2) %>" />
+        <div class="sv-campo">
+          <label class="sv-campo-rot" for="valorGasto-<%= i.id %>">Valor gasto na compra (R$)</label>
+          <input class="sv-campo-input" id="valorGasto-<%= i.id %>" name="valorGasto" type="number" step="0.01" min="0" value="<%= (i.valorGasto / 100).toFixed(2) %>" />
         </div>
-        <button class="t6-cat-btn" type="submit">Salvar alterações</button>
+        <button class="sv-btn sv-cat-btn" type="submit">Salvar alterações</button>
       </form>
-      <form method="POST" action="/painel/estoque/<%= i.id %>/remover"
-            onsubmit="return confirm('Excluir este item?')">
-        <button class="t6-cat-btn t6-cat-btn--vazado" type="submit">Excluir item</button>
-      </form>
+      <div class="sv-cat-acoes">
+        <form method="POST" action="/painel/estoque/<%= i.id %>/remover"
+              onsubmit="return confirm('Excluir este item?')">
+          <button class="sv-btn sv-cat-btn sv-cat-btn--sec" type="submit">Excluir item</button>
+        </form>
+      </div>
     </div>
   </div>
 <% }) %>
 
-<!-- Pop-up: categorias de estoque -->
-<div class="ag-overlay" id="agm-categorias" onclick="if(event.target===this)fecharModal(this)">
-  <div class="ag-modal-box">
-    <div class="ag-modal-topo">
-      <div class="t6-cat-dlg-titulo">Categorias</div>
-      <button class="ag-modal-fechar" type="button" onclick="fecharModal(this.closest('.ag-overlay'))" aria-label="Fechar">×</button>
+<!-- Folha: categorias de estoque -->
+<div class="sv-folha-fundo" id="svf-categorias" hidden onclick="if(event.target===this)fecharFolha(this)">
+  <div class="sv-folha">
+    <div class="sv-folha-puxador"></div>
+    <div class="sv-cat-folha-topo">
+      <div class="sv-folha-titulo">Categorias</div>
+      <button type="button" class="sv-cat-folha-x" onclick="fecharFolha(this.closest('.sv-folha-fundo'))" aria-label="Fechar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
-    <p class="t6-cat-cats-sub">Remover uma categoria não apaga os itens — eles ficam "sem categoria".</p>
-    <form method="POST" action="/painel/estoque/categorias" class="t6-cat-cat-form">
-      <input class="t6-cat-input" name="nome" placeholder="Nova categoria" required />
-      <button class="t6-cat-cat-btn" type="submit">Adicionar</button>
+    <p class="sv-cat-cats-sub">Remover uma categoria não apaga os itens — eles ficam "sem categoria".</p>
+    <form method="POST" action="/painel/estoque/categorias" class="sv-cat-cat-form">
+      <input class="sv-campo-input" name="nome" placeholder="Nova categoria" required />
+      <button class="sv-cat-cat-btn" type="submit">Adicionar</button>
     </form>
     <% categorias.forEach(function (c) { %>
-      <div class="t6-cat-cat-linha">
-        <form method="POST" action="/painel/estoque/categorias/<%= c.id %>" class="t6-cat-cat-form">
-          <input class="t6-cat-input" name="nome" value="<%= c.nome %>" aria-label="Nome da categoria" />
-          <span class="t6-cat-cat-conta"><%= c._count.itens %></span>
-          <button class="t6-cat-cat-btn" type="submit">Salvar</button>
+      <div class="sv-cat-cat-linha">
+        <form method="POST" action="/painel/estoque/categorias/<%= c.id %>" class="sv-cat-cat-form">
+          <input class="sv-campo-input" name="nome" value="<%= c.nome %>" aria-label="Nome da categoria" />
+          <span class="sv-cat-cat-conta"><%= c._count.itens %></span>
+          <button class="sv-cat-cat-btn" type="submit">Salvar</button>
         </form>
         <form method="POST" action="/painel/estoque/categorias/<%= c.id %>/remover" onsubmit="return confirm('Remover esta categoria?')">
-          <button class="t6-cat-cat-x" type="submit" title="Remover categoria">×</button>
+          <button class="sv-cat-cat-x" type="submit" title="Remover categoria">×</button>
         </form>
       </div>
     <% }) %>
-    <% if (categorias.length === 0) { %><p class="t6-cat-cats-sub">Nenhuma categoria.</p><% } %>
+    <% if (categorias.length === 0) { %><p class="sv-cat-cats-sub">Nenhuma categoria.</p><% } %>
   </div>
 </div>
 
 <script>
-  function abrirModal(id) {
-    var o = document.getElementById('agm-' + id);
-    if (o) { o.style.display = 'flex'; document.body.classList.add('modal-aberto'); }
+  // A folha usa o atributo `hidden` (e não style.display) porque é assim que
+  // o suave.css a esconde: `.sv-folha-fundo[hidden] { display:none }`.
+  function abrirFolha(id) {
+    var f = document.getElementById('svf-' + id);
+    if (f) { f.hidden = false; document.body.classList.add('modal-aberto'); }
   }
-  function fecharModal(o) {
-    if (o) { o.style.display = 'none'; document.body.classList.remove('modal-aberto'); }
+  function fecharFolha(f) {
+    if (f) { f.hidden = true; document.body.classList.remove('modal-aberto'); }
   }
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
-      document.querySelectorAll('.ag-overlay').forEach(function (o) { o.style.display = 'none'; });
+      document.querySelectorAll('.sv-folha-fundo').forEach(function (f) { f.hidden = true; });
       document.body.classList.remove('modal-aberto');
     }
   });

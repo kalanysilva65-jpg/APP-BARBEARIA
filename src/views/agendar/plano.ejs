@@ -9,54 +9,52 @@
   }
 %>
 
-<%/* TURNO 6 (2026-07-28): mesma gramática dos outros passos — manchete grande,
-     campo só com fio embaixo e a consulta na barra preta do rodapé. Os planos
-     encontrados viram linhas separadas por fio, como os serviços. */%>
-<form method="GET" action="/agendar/plano" class="ag6-corpo">
-  <div class="ag6-rolagem">
-    <div class="ag6-cabeca">
-      <div class="ag6-titulo">Meu plano</div>
-      <div class="ag6-sub">Informe seu telefone para verificarmos seu plano ativo.</div>
+<%/* SUAVE (pedido do dono, 2026-07-31): mesma gramática dos outros passos —
+     título de 28px, o campo dentro de um cartão branco e a consulta na pílula
+     preta do rodapé. Os planos encontrados viram cartões, como os serviços. */%>
+<form method="GET" action="/agendar/plano" class="sv-ag6-corpo">
+  <div class="sv-ag6-rolagem">
+    <div class="sv-ag6-cabeca">
+      <div class="sv-ag6-titulo">Meu plano</div>
+      <div class="sv-ag6-sub">Informe seu telefone para verificarmos seu plano ativo.</div>
     </div>
 
-    <div class="ag6-campos">
-      <div class="ag6-campo" style="animation-delay:0.06s">
-        <label class="ag6-campo-rot" for="telefone">Telefone / WhatsApp</label>
-        <input class="ag6-input" id="telefone" name="telefone" inputmode="tel" autocomplete="tel" placeholder="(11) 90000-0000" value="<%= telefoneDigitado %>" required autofocus />
-      </div>
+    <div class="sv-ag6-cartao" style="margin-top:18px">
+      <label class="sv-ag6-campo-rot" for="telefone">Telefone / WhatsApp</label>
+      <input class="sv-ag6-input" id="telefone" name="telefone" inputmode="tel" autocomplete="tel" placeholder="(11) 90000-0000" value="<%= telefoneDigitado %>" required autofocus />
     </div>
 
     <% if (resultado) { %>
       <% if (resultado.assinaturas.length === 0) { %>
-        <div class="ag6-aviso">Nenhum plano ativo encontrado para esse telefone.</div>
-        <div class="ag6-cabeca" style="padding-top:16px">
-          <a href="/agendar" class="ag6-selo">Agendar sem plano</a>
+        <div class="sv-ag6-aviso">Nenhum plano ativo encontrado para esse telefone.</div>
+        <div class="sv-ag6-cabeca" style="padding-top:16px">
+          <a href="/agendar" class="sv-ag6-chip">Agendar sem plano</a>
         </div>
       <% } else { %>
-        <div class="ag6-sobrancelha-linha">
-          <span class="ag6-sobrancelha">Olá, <%= resultado.cliente.nome.split(' ')[0] %></span>
-          <span class="ag6-sobrancelha-val"><%= resultado.assinaturas.length %> plano<%= resultado.assinaturas.length > 1 ? 's' : '' %></span>
+        <div class="sv-ag6-secao">
+          <div class="sv-ag6-secao-tit">Olá, <%= resultado.cliente.nome.split(' ')[0] %></div>
+          <div class="sv-ag6-secao-val"><%= resultado.assinaturas.length %> plano<%= resultado.assinaturas.length > 1 ? 's' : '' %></div>
         </div>
-        <div class="ag6-lista">
+        <div class="sv-ag6-lista">
           <% resultado.assinaturas.forEach(function (a, i) { %>
-            <a class="ag6-item" href="<%= a.plano.servicoId ? '/agendar/barbeiro?servicoId=' + a.plano.servicoId + '&assinatura=' + a.id : '/agendar?assinatura=' + a.id %>" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
+            <a class="sv-ag6-item" href="<%= a.plano.servicoId ? '/agendar/barbeiro?servicoId=' + a.plano.servicoId + '&assinatura=' + a.id : '/agendar?assinatura=' + a.id %>" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
               <span>
-                <span class="ag6-item-nome"><%= a.plano.nome %></span>
-                <span class="ag6-item-sub">
+                <span class="sv-ag6-item-nome"><%= a.plano.nome %></span>
+                <span class="sv-ag6-item-sub">
                   <%= a.plano.tipo === 'ilimitado' ? 'Ilimitado · ' + _diasPlanoLabel(a.plano.diasSemana) : a.usosRestantes + ' uso(s) restante(s)' %>
                   · até <%= fmtData(a.dataFim) %><%= a.plano.servico ? ' · ' + a.plano.servico.nome : '' %>
                 </span>
               </span>
-              <span class="ag6-item-acao">Usar →</span>
+              <span class="sv-ag6-item-acao">Usar →</span>
             </a>
           <% }) %>
-          <div class="ag6-lista-fim"></div>
         </div>
       <% } %>
     <% } %>
+    <div style="height:20px"></div>
   </div>
 
-  <div class="ag6-barra">
-    <button class="ag6-acao ag6-acao--simples" type="submit">Consultar</button>
+  <div class="sv-ag6-barra">
+    <button class="sv-ag6-acao sv-ag6-acao--simples" type="submit">Consultar</button>
   </div>
 </form>
