@@ -183,6 +183,52 @@ async function resolverBarbeiroQualquer(barbeariaId, dataStr, hora, duracaoTotal
   return null;
 }
 
+// Só os horários de UMA data, em JSON — usado pela troca de dia na tela de
+// agendamento (passo 3).
+//
+// Antes, trocar de dia era uma navegação completa: o cliente pagava a transição
+// de tela (~0,44s de fade), o download e re-render do HTML inteiro e as
+// animações de entrada de tudo de novo — só para mudar a lista de horários.
+// Era isso que o dono sentia como "lento ao trocar o dia" (as consultas em si
+// levam poucos milissegundos). Aqui volta só o que muda.
+//
+// O escopo por barbearia continua vindo de `exigeBarbeariaPublica`
+// (req.barbeariaId), então esta rota não enxerga outra barbearia.
+async function horariosJson(req, res) {
+  const dataSel = String(req.query.data || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dataSel)) return res.status(400).json({ erro: 'data' });
+
+  const ids = parseIds(req.query.servicoIds || req.query.servicoId);
+  const servicos = await prisma.servico.findMany({
+    where: { id: { in: ids }, barbeariaId: req.barbeariaId, ativo: true },
+    select: { duracaoMin: true },
+  });
+  if (!servicos.length) return res.status(400).json({ erro: 'servico' });
+  const duracaoTotal = servicos.reduce((s, x) => s + x.duracaoMin, 0);
+
+  let todos;
+  if (req.query.barbeiroId === 'any') {
+    const barbeiros = await prisma.usuario.findMany({
+      where: { barbeariaId: req.barbeariaId, ativo: true },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+    });
+    todos = await todosHorariosQualquer(barbeiros.map((b) => b.id), dataSel, duracaoTotal);
+  } else {
+    const barbeiro = await prisma.usuario.findFirst({
+      where: { id: Number(req.query.barbeiroId), barbeariaId: req.barbeariaId, ativo: true },
+      select: { id: true },
+    });
+    if (!barbeiro) return res.status(400).json({ erro: 'barbeiro' });
+    todos = await todosHorarios(barbeiro.id, dataSel, duracaoTotal);
+  }
+
+  res.json({
+    manha: todos.filter((h) => Number(h.hora.slice(0, 2)) < 12),
+    tarde: todos.filter((h) => Number(h.hora.slice(0, 2)) >= 12),
+  });
+}
+
 // Passo 3 — escolher data e horário
 async function passoHorario(req, res) {
   const assinatura = await carregarAssinatura(req.query.assinatura, req.barbeariaId);
@@ -453,4 +499,4 @@ async function sucesso(req, res) {
   });
 }
 
-module.exports = { passoPlano, passoServico, passoBarbeiro, passoHorario, passoDados, confirmar, sucesso };
+module.exports = { passoPlano, passoServico, passoBarbeiro, passoHorario, horariosJson, passoDados, confirmar, sucesso };

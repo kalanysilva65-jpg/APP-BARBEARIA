@@ -93,6 +93,9 @@ model HorarioTrabalho {
   barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
+  // A tela de agendamento consulta a jornada por (barbeiro, dia da semana) a
+  // cada troca de dia. Sem índice o SQLite varre a tabela inteira.
+  @@index([usuarioId, diaSemana])
   @@map("horarios_trabalho")
 }
 
@@ -109,6 +112,7 @@ model Bloqueio {
   barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
+  @@index([usuarioId, data])
   @@map("bloqueios")
 }
 
@@ -173,6 +177,11 @@ model Agendamento {
   itens        AgendamentoItem[]
   caixa        Caixa[]
 
+  // `agendamentos` é a tabela que mais cresce (nunca é limpa). Os dois filtros
+  // quentes são: disponibilidade do barbeiro numa data (agendamento público) e
+  // a agenda do dia da barbearia (painel).
+  @@index([usuarioId, data])
+  @@index([barbeariaId, data])
   @@map("agendamentos")
 }
 
@@ -304,6 +313,8 @@ model AgendamentoItem {
   agendamento Agendamento @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
   servico     Servico     @relation(fields: [servicoId], references: [id])
 
+  // Carregado junto de todo agendamento (include: itens) para somar a duração.
+  @@index([agendamentoId])
   @@map("agendamento_itens")
 }
 

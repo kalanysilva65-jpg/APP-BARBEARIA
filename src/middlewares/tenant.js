@@ -22,6 +22,15 @@ const REGEX_IPV4 = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
 // então "contar partes" confundiria o domínio raiz com um subdomínio.
 const APP_DOMAIN = (process.env.APP_DOMAIN || '').toLowerCase().replace(/^www\./, '');
 
+// O atalho `?b=<slug>` é uma muleta de DESENVOLVIMENTO (localhost não tem
+// subdomínio real). Em produção ele não só é desnecessário como quebra o
+// login: o slug fica guardado na sessão e, se não existir nenhuma barbearia
+// com ele, o authController passa a recusar TODO login no domínio raiz com a
+// mensagem enganosa "e-mail ou senha inválidos" — o usuário nunca descobre que
+// o problema foi uma URL antiga que ele abriu antes. Mesmo critério de
+// `config/paths.js`: com APP_DOMAIN definido, o subdomínio já resolve tudo.
+const EH_PRODUCAO = process.env.NODE_ENV === 'production' || !!APP_DOMAIN;
+
 // Extrai o slug da barbearia a partir do hostname.
 // Ex.: "barbearia1.seuapp.com" -> "barbearia1"; "barbearia1.localhost" -> "barbearia1".
 // localhost puro / IP / domínio raiz não têm subdomínio utilizável -> null.
@@ -58,14 +67,16 @@ function extrairSlug(req) {
 async function resolverBarbearia(req, res, next) {
   // Dev: ?b=slug fixa a barbearia na sessão (facilita testar sem subdomínio real).
   // ?b=mestre limpa o contexto (permite logar como dono do sistema em dev).
-  if (req.query.b !== undefined) {
+  // Em produção é ignorado por completo — inclusive um valor que já tenha
+  // sobrado na sessão de antes (ver EH_PRODUCAO no topo do arquivo).
+  if (!EH_PRODUCAO && req.query.b !== undefined) {
     const val = String(req.query.b).toLowerCase();
     if (!val || SUBDOMINIOS_RESERVADOS.has(val)) delete req.session.devBarbeariaSlug;
     else req.session.devBarbeariaSlug = val;
   }
 
   let slug = extrairSlug(req);
-  if (!slug && req.session.devBarbeariaSlug) slug = req.session.devBarbeariaSlug;
+  if (!EH_PRODUCAO && !slug && req.session.devBarbeariaSlug) slug = req.session.devBarbeariaSlug;
 
   // slug informado (subdomínio ou dev) — mesmo que aponte para barbearia inexistente/inativa.
   req.slugBarbearia = slug || null;

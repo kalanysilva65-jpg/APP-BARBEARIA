@@ -37,13 +37,16 @@
     </div>
     <div class="sv-ag6-dias sv-ag6-sem-sb" id="ag6-dias">
       <% datas.forEach(function (d, i) { %>
-        <a href="/agendar/horario?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= d.iso %><%= qsPlano %>" class="sv-ag6-dia <%= d.iso === dataSel ? 'sel' : '' %>" style="animation-delay:<%= (0.12 + i * 0.04).toFixed(2) %>s">
+        <a href="/agendar/horario?servicoIds=<%= servicoIdsStr %>&barbeiroId=<%= barbeiro.id %>&data=<%= d.iso %><%= qsPlano %>" data-iso="<%= d.iso %>" class="sv-ag6-dia <%= d.iso === dataSel ? 'sel' : '' %>" style="animation-delay:<%= (0.12 + i * 0.04).toFixed(2) %>s">
           <div class="sv-ag6-dia-dow"><%= d.dow %></div>
           <div class="sv-ag6-dia-num"><%= d.dia %></div>
         </a>
       <% }) %>
     </div>
 
+    <%/* Container isolado: trocar de dia reescreve SÓ ele (ver script no fim
+         do arquivo), em vez de recarregar a tela inteira. */%>
+    <div id="ag6-slots" data-iso="<%= dataSel %>">
     <% if (horariosManha.length === 0 && horariosTarde.length === 0) { %>
       <p class="sv-ag6-vazio">Sem horários nesta data. Tente outra.</p>
     <% } else { %>
@@ -69,6 +72,7 @@
       <% }) %>
       <div style="height:22px"></div>
     <% } %>
+    </div>
   <% } %>
 </div>
 
@@ -93,5 +97,88 @@
     if (!tira) return;
     var sel = tira.querySelector('.sv-ag6-dia.sel');
     if (sel) tira.scrollLeft = Math.max(0, sel.offsetLeft - tira.clientWidth / 2 + sel.offsetWidth / 2);
+  })();
+
+  // Troca de dia sem recarregar a tela.
+  //
+  // Os ladrilhos continuam sendo <a href> de verdade: se o JS falhar, se a rede
+  // cair no meio ou se o navegador for antigo, o clique navega como antes e a
+  // tela funciona igual. Aqui só interceptamos quando dá para fazer melhor —
+  // buscar os horários da data e reescrever a lista, sem pagar a transição de
+  // tela, o re-render completo e as animações de entrada de tudo de novo.
+  (function () {
+    var tira = document.getElementById('ag6-dias');
+    var alvo = document.getElementById('ag6-slots');
+    if (!tira || !alvo || !window.fetch) return;
+
+    var BASE = <%- JSON.stringify('servicoIds=' + servicoIdsStr + '&barbeiroId=' + barbeiro.id + qsPlano) %>;
+    var emVoo = null;
+
+    function esc(s) {
+      return String(s).replace(/[&<>"]/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+      });
+    }
+
+    // Mesma marcação (e mesmos atrasos de animação) que o EJS gera no servidor,
+    // para o bloco reescrito entrar igual ao que veio na carga inicial.
+    function bloco(titulo, lista) {
+      if (!lista.length) return '';
+      var livres = lista.filter(function (h) { return h.livre; }).length;
+      var html =
+        '<div class="sv-ag6-secao" style="animation-delay:0.14s">' +
+        '<div class="sv-ag6-secao-tit">' + esc(titulo) + '</div>' +
+        '<div class="sv-ag6-secao-val">' + livres + ' livre' + (livres === 1 ? '' : 's') + '</div>' +
+        '</div><div class="sv-ag6-horarios">';
+      lista.forEach(function (h, i) {
+        var atraso = 'animation-delay:' + (0.2 + i * 0.018).toFixed(3) + 's';
+        if (h.livre) {
+          var href = '/agendar/dados?' + BASE + '&data=' + encodeURIComponent(alvo.dataset.iso) + '&hora=' + encodeURIComponent(h.hora);
+          html += '<a class="sv-ag6-hora" style="' + atraso + '" href="' + esc(href) + '">' + esc(h.hora) + '</a>';
+        } else {
+          html += '<span class="sv-ag6-hora sv-ag6-hora--ocupado" style="' + atraso + '">' + esc(h.hora) + '</span>';
+        }
+      });
+      return html + '</div>';
+    }
+
+    function pintar(dados) {
+      if (!dados.manha.length && !dados.tarde.length) {
+        alvo.innerHTML = '<p class="sv-ag6-vazio">Sem horários nesta data. Tente outra.</p>';
+        return;
+      }
+      alvo.innerHTML = bloco('Manhã', dados.manha) + bloco('Tarde', dados.tarde) + '<div style="height:22px"></div>';
+    }
+
+    tira.addEventListener('click', function (ev) {
+      var tile = ev.target.closest ? ev.target.closest('.sv-ag6-dia') : null;
+      if (!tile || !tile.dataset.iso) return;
+      if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button) return; // abrir em nova aba: deixa o navegador
+      if (tile.classList.contains('sel')) { ev.preventDefault(); return; }
+
+      ev.preventDefault();
+      var iso = tile.dataset.iso;
+
+      tira.querySelectorAll('.sv-ag6-dia.sel').forEach(function (e) { e.classList.remove('sel'); });
+      tile.classList.add('sel');
+      alvo.dataset.iso = iso;
+      alvo.style.opacity = '0.45';
+
+      var url = '/agendar/horarios.json?' + BASE + '&data=' + encodeURIComponent(iso);
+      var meu = (emVoo = url);
+      fetch(url, { headers: { Accept: 'application/json' } })
+        .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+        .then(function (dados) {
+          if (meu !== emVoo) return; // o cliente já clicou noutro dia: descarta o antigo
+          pintar(dados);
+          alvo.style.opacity = '';
+          history.replaceState(null, '', '/agendar/horario?' + BASE + '&data=' + encodeURIComponent(iso));
+        })
+        .catch(function () {
+          // Qualquer falha: cai no comportamento antigo (navegação completa),
+          // que sempre funcionou — nunca deixa o cliente numa tela quebrada.
+          window.location.href = tile.href;
+        });
+    });
   })();
 </script>
