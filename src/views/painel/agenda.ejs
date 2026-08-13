@@ -759,6 +759,12 @@
         return;
       }
 
+      // Desfaz o ajuste do total: volta a seguir a soma dos itens.
+      if ((btn = ev.target.closest('[data-total-auto]'))) {
+        agir(btn, '/painel/agenda/' + id + '/total', { auto: true });
+        return;
+      }
+
       if ((btn = ev.target.closest('[data-reabrir]'))) {
         agir(btn, '/painel/agenda/' + id + '/status', { status: 'agendado' });
         return;

@@ -23,12 +23,11 @@
     var achou = formasPagamento.filter(function (f) { return f.valor === v; })[0];
     return achou ? achou.label : v;
   }
-  // O total normalmente É a soma dos itens. Divergir quer dizer que alguém
-  // ajustou à mão (desconto no pacote, arredondamento) — não precisa de coluna
-  // pra marcar isso, a diferença já conta a história. E mexer nos itens depois
-  // devolve o total à soma, porque as rotas de item recalculam.
+  // Com o total ajustado à mão, ele é a referência do atendimento e a soma dos
+  // itens vira só informação — por isso a soma aparece na legenda, para o
+  // ajuste nunca ficar invisível, com um atalho para voltar a segui-la.
   var somaItens = ag.itens.reduce(function (s, it) { return s + it.valorUnitario * it.quantidade; }, 0);
-  var totalAjustado = somaItens !== ag.valorTotal;
+  var totalAjustado = !!ag.totalManual;
 %>
 <div class="sv-ag-folha-topo">
   <div class="sv-ag-folha-tit"><%= ag.clienteNome %></div>
@@ -66,7 +65,8 @@
       </div>
       <div class="sv-ag-preto-sub">
         <% if (totalAjustado) { %>
-          ajustado · soma dos itens <%= fmtBRL(somaItens) %>
+          valor combinado · itens somam <%= fmtBRL(somaItens) %>
+          <button type="button" class="sv-ag-total-desfazer" data-total-auto>usar a soma</button>
         <% } else { %>
           <%= svcLabel %> · <%= ag.usuario.nome.split(' ')[0] %>
         <% } %>

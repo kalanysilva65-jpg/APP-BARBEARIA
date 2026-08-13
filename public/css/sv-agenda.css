@@ -856,3 +856,20 @@
   border-color: var(--sv-surface);
 }
 .pg-sv .sv-ag-total-valor:disabled { opacity: 0.5; }
+
+/* Atalho para o total voltar a seguir a soma dos itens. Discreto: fica ao lado
+   da legenda, não compete com o número nem com o botão de concluir. */
+.pg-sv .sv-ag-total-desfazer {
+  margin-left: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--sv-line);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.pg-sv .sv-ag-total-desfazer:active { opacity: 0.6; }

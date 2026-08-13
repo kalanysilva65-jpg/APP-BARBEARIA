@@ -162,7 +162,12 @@ model Agendamento {
   data            DateTime // dia do agendamento (00:00)
   horaInicio      String   @map("hora_inicio")
   status          String   @default("agendado") // agendado | concluido | cancelado
-  valorTotal      Int      @default(0) @map("valor_total") // centavos, recalculado pelos itens
+  valorTotal      Int      @default(0) @map("valor_total") // centavos; soma dos itens, salvo se totalManual
+  // Total digitado à mão na folha de detalhe (desconto no pacote, valor
+  // combinado). Quando ligado, o total MANDA: somar ou remover item não o
+  // recalcula mais, porque o combinado com o cliente é que vale — a lista de
+  // itens continua registrando o que foi feito, sem mexer no que se cobra.
+  totalManual     Boolean  @default(false) @map("total_manual")
   // Como o cliente pagou (registrado ao concluir): pix | credito | debito | dinheiro.
   formaPagamento  String?  @map("forma_pagamento")
   clienteId       Int?     @map("cliente_id") // vínculo opcional ao cadastro LOCAL (CRM) da barbearia

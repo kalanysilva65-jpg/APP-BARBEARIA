@@ -95,11 +95,23 @@ function iso(data) {
 }
 
 // Recalcula o valor_total do agendamento a partir dos seus itens.
+//
+// EXCEÇÃO: se o total foi ajustado à mão (`totalManual`), ele MANDA e não é
+// recalculado — decisão do dono em 2026-08-13: "o valor lá de cima tem que ser
+// o principal". A lista de itens continua registrando o que foi feito no
+// atendimento; ela só deixa de mandar no que se cobra.
 async function recalcularTotal(agendamentoId) {
   const itens = await prisma.agendamentoItem.findMany({ where: { agendamentoId } });
-  const total = itens.reduce((s, it) => s + it.valorUnitario * it.quantidade, 0);
-  await prisma.agendamento.update({ where: { id: agendamentoId }, data: { valorTotal: total } });
-  return total;
+  const soma = itens.reduce((s, it) => s + it.valorUnitario * it.quantidade, 0);
+
+  const ag = await prisma.agendamento.findUnique({
+    where: { id: agendamentoId },
+    select: { totalManual: true, valorTotal: true },
+  });
+  if (ag && ag.totalManual) return ag.valorTotal;
+
+  await prisma.agendamento.update({ where: { id: agendamentoId }, data: { valorTotal: soma } });
+  return soma;
 }
 
 // Depois de QUALQUER mudança no total (item somado, removido ou com o valor
@@ -429,12 +441,13 @@ async function alterarValorItem(req, res) {
 
 // POST /painel/agenda/:id/total — ajusta o total a receber deste atendimento.
 //
-// Normalmente o total É a soma dos itens. Ajustar aqui é para o caso em que o
-// combinado com o cliente não sai dessa conta (desconto no pacote, arredondar
-// pra baixo). Não precisa de coluna nova para marcar "ajustado": basta o total
-// diferir da soma dos itens — e é por isso que mexer nos itens depois devolve o
-// total à soma (o `recalcularTotal` das rotas de item já faz isso), como o dono
-// pediu em 2026-08-13.
+// Ajustado aqui, o total vira a REFERÊNCIA do atendimento: mexer nos itens
+// depois não o recalcula mais (ver `recalcularTotal`). É o que o dono pediu em
+// 2026-08-13 — o valor do topo é o combinado com o cliente, e a lista de itens
+// serve para registrar o que foi feito, não para mandar no preço.
+//
+// `auto: true` desfaz o ajuste e devolve o total a seguir a soma dos itens —
+// sem isso não haveria volta depois de digitar um valor.
 async function alterarTotal(req, res) {
   const b = req.barbeariaId;
   const agendamento = await prisma.agendamento.findFirst({
@@ -443,17 +456,29 @@ async function alterarTotal(req, res) {
   if (!agendamento) return falhar(req, res, 'Atendimento não encontrado.');
   if (!podeAlterar(req, agendamento)) return negarAcesso(res);
 
-  const centavos =
-    req.body.valorCentavos !== undefined
-      ? Math.trunc(Number(req.body.valorCentavos))
-      : Math.round(parseFloat(String(req.body.valor).replace(',', '.')) * 100);
+  if (req.body.auto) {
+    await prisma.agendamento.update({
+      where: { id: agendamento.id },
+      data: { totalManual: false },
+    });
+    await recalcularTotal(agendamento.id);
+  } else {
+    const centavos =
+      req.body.valorCentavos !== undefined
+        ? Math.trunc(Number(req.body.valorCentavos))
+        : Math.round(parseFloat(String(req.body.valor).replace(',', '.')) * 100);
 
-  // Zero é válido (cortesia); negativo não existe.
-  if (!Number.isFinite(centavos) || centavos < 0) {
-    return falhar(req, res, 'Informe um valor válido.');
+    // Zero é válido (cortesia); negativo não existe.
+    if (!Number.isFinite(centavos) || centavos < 0) {
+      return falhar(req, res, 'Informe um valor válido.');
+    }
+
+    await prisma.agendamento.update({
+      where: { id: agendamento.id },
+      data: { valorTotal: centavos, totalManual: true },
+    });
   }
 
-  await prisma.agendamento.update({ where: { id: agendamento.id }, data: { valorTotal: centavos } });
   const aviso = await reconciliarPagamentos(agendamento.id);
   responderOk(req, res, aviso);
 }
