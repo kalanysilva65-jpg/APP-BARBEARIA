@@ -102,6 +102,49 @@ async function recalcularTotal(agendamentoId) {
   return total;
 }
 
+// Depois de QUALQUER mudança no total (item somado, removido ou com o valor
+// alterado), a divisão de pagamento de um atendimento já CONCLUÍDO pode não
+// fechar mais com o total. Deixar assim faria o caixa guardar um valor
+// diferente do atendimento — receita errada, e em silêncio.
+//
+// Uma forma só: o novo total foi todo nela, sem ambiguidade — ajusta e pronto.
+// Dividido em várias: não há como saber como o novo total se reparte entre
+// elas, e "chutar" a divisão seria inventar registro financeiro. Nesse caso
+// limpa a divisão e devolve o atendimento para "agendado", para ser concluído
+// de novo com o pagamento certo.
+async function reconciliarPagamentos(agendamentoId) {
+  const ag = await prisma.agendamento.findUnique({
+    where: { id: agendamentoId },
+    include: { pagamentos: true },
+  });
+  if (!ag || ag.status !== 'concluido') return null;
+
+  const soma = ag.pagamentos.reduce((s, p) => s + p.valor, 0);
+  if (soma === ag.valorTotal) return null; // continua fechando: nada a fazer
+
+  if (ag.pagamentos.length <= 1) {
+    if (ag.pagamentos.length === 1) {
+      await prisma.pagamentoAgendamento.update({
+        where: { id: ag.pagamentos[0].id },
+        data: { valor: ag.valorTotal },
+      });
+    }
+    if (await caixaServ.caixaAutomaticoLigado(ag.barbeariaId)) {
+      const atual = await prisma.agendamento.findUnique({ where: { id: agendamentoId } });
+      await caixaServ.registrarEntradaAgendamento(atual);
+    }
+    return null;
+  }
+
+  await prisma.pagamentoAgendamento.deleteMany({ where: { agendamentoId } });
+  await caixaServ.removerEntradaAgendamento(agendamentoId);
+  await prisma.agendamento.update({
+    where: { id: agendamentoId },
+    data: { status: 'agendado', formaPagamento: null },
+  });
+  return 'O total mudou e o pagamento estava dividido em mais de uma forma. O atendimento voltou para "em aberto" — conclua de novo informando como ficou o pagamento.';
+}
+
 // Confere se o usuário logado pode mexer no agendamento (admin/dono, ou o próprio barbeiro).
 function podeAlterar(req, agendamento) {
   return req.ehAdmin || agendamento.usuarioId === req.session.usuario.id;
@@ -138,8 +181,9 @@ function querJson(req) {
   return (req.get('Accept') || '').includes('application/json');
 }
 
-function responderOk(req, res) {
-  if (querJson(req)) return res.json({ ok: true });
+function responderOk(req, res, aviso) {
+  if (querJson(req)) return res.json(aviso ? { ok: true, aviso } : { ok: true });
+  if (aviso) req.session.flash = { tipo: 'erro', texto: aviso };
   return res.redirect(urlRetorno(req));
 }
 
@@ -309,21 +353,23 @@ async function adicionarItem(req, res) {
   });
   const quantidade = Math.max(1, Number(req.body.quantidade) || 1);
 
+  let aviso = null;
   if (servico) {
     await prisma.agendamentoItem.create({
       data: {
         agendamentoId: agendamento.id,
         servicoId: servico.id,
-        valorUnitario: servico.valor, // congela o preço atual
+        valorUnitario: servico.valor, // congela o preço atual (editável depois)
         quantidade,
       },
     });
     await recalcularTotal(agendamento.id);
+    aviso = await reconciliarPagamentos(agendamento.id);
     req.session.flash = { tipo: 'sucesso', texto: 'Item adicionado.' };
   } else {
     req.session.flash = { tipo: 'erro', texto: 'Selecione um item válido.' };
   }
-  responderOk(req, res);
+  responderOk(req, res, aviso);
 }
 
 // POST /painel/agenda/itens/:id/remover — remove um item do agendamento
@@ -337,8 +383,48 @@ async function removerItem(req, res) {
 
   await prisma.agendamentoItem.delete({ where: { id: item.id } });
   await recalcularTotal(item.agendamentoId);
+  const aviso = await reconciliarPagamentos(item.agendamentoId);
   req.session.flash = { tipo: 'sucesso', texto: 'Item removido.' };
-  responderOk(req, res);
+  responderOk(req, res, aviso);
+}
+
+// POST /painel/agenda/itens/:id/valor — muda o preço de um item DENTRO deste
+// atendimento (desconto, cobrança a mais, combinado com o cliente).
+//
+// Mexe só em `valorUnitario` do item, nunca no catálogo: o preço do serviço
+// para os próximos atendimentos continua o mesmo. Era justamente para isso que
+// o valor já era "congelado" na criação do item.
+async function alterarValorItem(req, res) {
+  const item = await prisma.agendamentoItem.findUnique({
+    where: { id: idNum(req.params.id) },
+    include: { agendamento: true },
+  });
+  if (!item || item.agendamento.barbeariaId !== req.barbeariaId) {
+    return falhar(req, res, 'Item não encontrado.');
+  }
+  if (!podeAlterar(req, item.agendamento)) return negarAcesso(res);
+
+  // Mesma convenção do pagamento: `valorCentavos` (do pop-up, já em centavos)
+  // ou `valor` (de formulário, em reais).
+  const centavos =
+    req.body.valorCentavos !== undefined
+      ? Math.trunc(Number(req.body.valorCentavos))
+      : Math.round(parseFloat(String(req.body.valor).replace(',', '.')) * 100);
+
+  // Zero é válido (cortesia); negativo não existe.
+  if (!Number.isFinite(centavos) || centavos < 0) {
+    return falhar(req, res, 'Informe um valor válido.');
+  }
+
+  const quantidade = Math.max(1, Math.trunc(Number(req.body.quantidade) || item.quantidade));
+
+  await prisma.agendamentoItem.update({
+    where: { id: item.id },
+    data: { valorUnitario: centavos, quantidade },
+  });
+  await recalcularTotal(item.agendamentoId);
+  const aviso = await reconciliarPagamentos(item.agendamentoId);
+  responderOk(req, res, aviso);
 }
 
 // POST /painel/agenda/:id/status — muda o status do agendamento
@@ -671,4 +757,4 @@ async function removerBloqueio(req, res) {
   res.redirect('/painel/agenda' + (s ? '?' + s : ''));
 }
 
-module.exports = { verAgenda, adicionarItem, removerItem, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson };
+module.exports = { verAgenda, adicionarItem, removerItem, alterarValorItem, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson };

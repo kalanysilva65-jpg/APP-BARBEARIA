@@ -98,12 +98,25 @@
 
 <div class="sv-ag-secao">
   <div class="sv-ag-secao-rot">Itens</div>
+  <%/* O preço é editável AQUI, dentro do atendimento: desconto, cortesia ou
+       cobrança combinada com o cliente. Mexe só neste item — o preço do
+       serviço no catálogo continua o mesmo para os próximos atendimentos.
+       O campo mostra o valor UNITÁRIO; com quantidade > 1 o total da linha
+       aparece ao lado, senão editar um item "×2" seria adivinhação. */%>
   <ul class="sv-ag-itens">
     <% ag.itens.forEach(function (it) { %>
       <li>
-        <span><%= it.servico.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %></span>
+        <span class="sv-ag-item-nome"><%= it.servico.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %></span>
         <span class="sv-ag-item-dir">
-          <span><%= fmtT6(it.valorUnitario * it.quantidade) %></span>
+          <% if (it.quantidade > 1) { %>
+            <span class="sv-ag-item-linha-total"><%= fmtT6(it.valorUnitario * it.quantidade) %></span>
+          <% } %>
+          <input class="sv-ag-item-valor"
+                 type="text"
+                 inputmode="decimal"
+                 data-item-valor="<%= it.id %>"
+                 value="<%= (it.valorUnitario / 100).toFixed(2).replace('.', ',') %>"
+                 aria-label="Valor de <%= it.servico.nome %> neste atendimento" />
           <button type="button" class="sv-ag-item-x" title="Remover item" data-remover-item="<%= it.id %>">×</button>
         </span>
       </li>

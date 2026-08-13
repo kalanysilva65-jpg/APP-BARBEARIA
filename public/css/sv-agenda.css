@@ -791,3 +791,34 @@
   font-weight: 600;
   margin-bottom: 12px;
 }
+
+/* --- Preço do item, editável dentro do atendimento ------------------------
+   Fica no fundo claro da folha (não no cartão preto), então segue as cores
+   normais da tela. Parece um campo só quando recebe foco: em repouso tem que
+   ler como o preço que já estava ali, não como um formulário a preencher. */
+.pg-sv .sv-ag-item-nome { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pg-sv .sv-ag-item-linha-total {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--sv-muted);
+}
+.pg-sv .sv-ag-item-valor {
+  width: 74px;
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sv-ink);
+  text-align: right;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 5px 8px;
+}
+.pg-sv .sv-ag-item-valor:hover { border-color: var(--sv-line-2); }
+.pg-sv .sv-ag-item-valor:focus {
+  outline: none;
+  background: var(--sv-bg);
+  border-color: var(--sv-ink);
+}
+.pg-sv .sv-ag-item-valor:disabled { opacity: 0.5; }

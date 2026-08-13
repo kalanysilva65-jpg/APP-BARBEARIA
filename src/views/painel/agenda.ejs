@@ -684,6 +684,33 @@
       faixa.textContent = msg;
     }
 
+    // Preço do item, editado direto na lista. Salva ao sair do campo (change),
+    // não a cada tecla: senão "45" viraria um salvamento no caminho para
+    // "45,50". `change` só dispara se o valor realmente mudou.
+    document.addEventListener('change', function (ev) {
+      var campo = ev.target;
+      if (!campo || !campo.dataset || campo.dataset.itemValor === undefined) return;
+      var box = caixa(campo);
+      if (!box || !box.dataset.detalhe) return;
+      var id = box.dataset.detalhe;
+
+      var centavos = textoParaCentavos(campo.value);
+      if (centavos < 0 || campo.value.trim() === '') {
+        erro(box, 'Informe um valor válido para o item.');
+        return;
+      }
+      campo.disabled = true;
+      enviar('/painel/agenda/itens/' + campo.dataset.itemValor + '/valor', { valorCentavos: centavos })
+        .then(function (r) {
+          return recarregar(id).then(function () {
+            // O total mudou e a divisão não fechava mais: o servidor reabriu o
+            // atendimento e avisa por quê.
+            if (r && r.aviso) erro(document.querySelector('.ag-modal-box[data-detalhe="' + id + '"]'), r.aviso);
+          });
+        })
+        .catch(function (e) { campo.disabled = false; erro(box, e.message); });
+    });
+
     document.addEventListener('click', function (ev) {
       if (!ev.target || !ev.target.closest) return;
       var box = caixa(ev.target);
@@ -694,7 +721,14 @@
         ev.preventDefault();
         travar(btn, true);
         enviar(url, corpo)
-          .then(function () { return depois ? depois() : recarregar(id); })
+          .then(function (r) {
+            if (depois) return depois();
+            return recarregar(id).then(function () {
+              // Somar/remover item pode ter mudado o total a ponto de a divisão
+              // de pagamento não fechar mais; o servidor avisa o que fez.
+              if (r && r.aviso) erro(document.querySelector('.ag-modal-box[data-detalhe="' + id + '"]'), r.aviso);
+            });
+          })
           .catch(function (e) { travar(btn, false); erro(box, e.message); });
       }
 
