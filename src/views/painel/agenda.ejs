@@ -630,6 +630,18 @@
           .filter(function (l) { return l.forma && l.valor > 0; })
           .map(function (l) { return { forma: l.forma, valorCentavos: l.valor, parcelas: l.parcelas }; });
       };
+
+      // Linhas com valor mas sem forma escolhida. São descartadas na hora de
+      // enviar, então sem avisar disso a conta "não fecha" por um motivo que
+      // não está escrito em lugar nenhum.
+      raiz._pendentes = function () {
+        return linhas.filter(function (l) { return !l.forma && l.valor > 0; });
+      };
+      raiz._marcarPendentes = function () {
+        Array.prototype.forEach.call(alvo.querySelectorAll('.sv-ag-pagto-forma'), function (sel) {
+          sel.classList.toggle('sv-ag-pagto-forma--falta', !sel.value);
+        });
+      };
       raiz._total = total;
       desenhar();
     }
@@ -673,15 +685,25 @@
       btn.style.opacity = ligado ? '0.55' : '';
     }
 
-    function erro(box, msg) {
-      var faixa = box.querySelector('[data-erro]');
-      if (!faixa) {
-        faixa = document.createElement('div');
-        faixa.className = 'sv-ag-pagto-erro';
-        faixa.setAttribute('data-erro', '');
-        box.insertBefore(faixa, box.firstChild);
-      }
+    // Mostra o aviso JUNTO da ação que falhou, não no topo da folha.
+    //
+    // A folha rola, e o pagamento fica no fim dela: um aviso preso no topo
+    // aparecia centenas de pixels acima da área visível justamente quando a
+    // pessoa estava olhando o botão de concluir. O efeito era o pior possível —
+    // o botão animava, nada mudava, e o motivo estava fora da tela.
+    function erro(box, msg, ancora) {
+      var anterior = box.querySelector('[data-erro]');
+      if (anterior) anterior.remove();
+
+      var faixa = document.createElement('div');
+      faixa.className = 'sv-ag-pagto-erro';
+      faixa.setAttribute('data-erro', '');
       faixa.textContent = msg;
+
+      if (ancora && ancora.parentNode) ancora.parentNode.insertBefore(faixa, ancora);
+      else box.insertBefore(faixa, box.firstChild);
+
+      faixa.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
 
     // Preço do item e total do atendimento, editados direto na folha. Salvam ao
@@ -701,7 +723,7 @@
 
       var centavos = textoParaCentavos(campo.value);
       if (centavos < 0 || campo.value.trim() === '') {
-        erro(box, ehTotal ? 'Informe um total válido.' : 'Informe um valor válido para o item.');
+        erro(box, ehTotal ? 'Informe um total válido.' : 'Informe um valor válido para o item.', campo);
         return;
       }
 
@@ -718,7 +740,7 @@
             if (r && r.aviso) erro(document.querySelector('.ag-modal-box[data-detalhe="' + id + '"]'), r.aviso);
           });
         })
-        .catch(function (e) { campo.disabled = false; erro(box, e.message); });
+        .catch(function (e) { campo.disabled = false; erro(box, e.message, campo); });
     });
 
     document.addEventListener('click', function (ev) {
@@ -739,7 +761,7 @@
               if (r && r.aviso) erro(document.querySelector('.ag-modal-box[data-detalhe="' + id + '"]'), r.aviso);
             });
           })
-          .catch(function (e) { travar(btn, false); erro(box, e.message); });
+          .catch(function (e) { travar(btn, false); erro(box, e.message, btn); });
       }
 
       var btn;
@@ -748,10 +770,27 @@
         ev.preventDefault();
         var raiz = box.querySelector('[data-pagto]');
         var partes = raiz && raiz._coletar ? raiz._coletar() : [];
+        var pendentes = raiz && raiz._pendentes ? raiz._pendentes() : [];
+
+        // Linha dividida sem forma escolhida é o engano mais comum aqui.
+        // Reclamar da SOMA nesse caso esconderia a causa: a parte existe, só
+        // não tem como ser registrada.
+        if (partes.length && pendentes.length) {
+          if (raiz._marcarPendentes) raiz._marcarPendentes();
+          erro(
+            box,
+            pendentes.length === 1
+              ? 'Escolha a forma de pagamento da outra parte (ou remova-a no ×).'
+              : 'Escolha a forma de pagamento das outras ' + pendentes.length + ' partes (ou remova-as no ×).',
+            btn
+          );
+          return;
+        }
+
         if (partes.length) {
           var soma = partes.reduce(function (s, p) { return s + p.valorCentavos; }, 0);
           if (soma !== raiz._total) {
-            erro(box, 'A divisao soma ' + fmt(soma) + ', mas o atendimento e ' + fmt(raiz._total) + '.');
+            erro(box, 'A divisão soma ' + fmt(soma) + ', mas o atendimento é ' + fmt(raiz._total) + '.', btn);
             return;
           }
         }
@@ -781,7 +820,7 @@
         ev.preventDefault();
         var sel = box.querySelector('[data-novo-servico]');
         var qtd = box.querySelector('[data-nova-qtd]');
-        if (!sel || !sel.value) { erro(box, 'Escolha um item para adicionar.'); return; }
+        if (!sel || !sel.value) { erro(box, 'Escolha um item para adicionar.', btn); return; }
         agir(btn, '/painel/agenda/' + id + '/itens', { servicoId: sel.value, quantidade: qtd ? qtd.value : 1 });
         return;
       }

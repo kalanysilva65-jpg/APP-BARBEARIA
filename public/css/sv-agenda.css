@@ -873,3 +873,10 @@
   cursor: pointer;
 }
 .pg-sv .sv-ag-total-desfazer:active { opacity: 0.6; }
+
+/* Linha de pagamento sem forma escolhida, destacada quando o Concluir esbarra
+   nela — o campo em falta tem que se identificar sozinho. */
+.pg-sv .sv-ag-pagto-forma--falta {
+  outline: 2px solid #f0b46b;
+  outline-offset: 1px;
+}
