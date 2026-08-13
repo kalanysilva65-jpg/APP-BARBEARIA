@@ -684,23 +684,33 @@
       faixa.textContent = msg;
     }
 
-    // Preço do item, editado direto na lista. Salva ao sair do campo (change),
-    // não a cada tecla: senão "45" viraria um salvamento no caminho para
-    // "45,50". `change` só dispara se o valor realmente mudou.
+    // Preço do item e total do atendimento, editados direto na folha. Salvam ao
+    // sair do campo (change), não a cada tecla: senão "45" viraria um
+    // salvamento no caminho para "45,50". `change` só dispara se o valor
+    // realmente mudou.
     document.addEventListener('change', function (ev) {
       var campo = ev.target;
-      if (!campo || !campo.dataset || campo.dataset.itemValor === undefined) return;
+      if (!campo || !campo.dataset) return;
+      var ehItem = campo.dataset.itemValor !== undefined;
+      var ehTotal = campo.dataset.totalValor !== undefined;
+      if (!ehItem && !ehTotal) return;
+
       var box = caixa(campo);
       if (!box || !box.dataset.detalhe) return;
       var id = box.dataset.detalhe;
 
       var centavos = textoParaCentavos(campo.value);
       if (centavos < 0 || campo.value.trim() === '') {
-        erro(box, 'Informe um valor válido para o item.');
+        erro(box, ehTotal ? 'Informe um total válido.' : 'Informe um valor válido para o item.');
         return;
       }
+
+      var url = ehTotal
+        ? '/painel/agenda/' + id + '/total'
+        : '/painel/agenda/itens/' + campo.dataset.itemValor + '/valor';
+
       campo.disabled = true;
-      enviar('/painel/agenda/itens/' + campo.dataset.itemValor + '/valor', { valorCentavos: centavos })
+      enviar(url, { valorCentavos: centavos })
         .then(function (r) {
           return recarregar(id).then(function () {
             // O total mudou e a divisão não fechava mais: o servidor reabriu o

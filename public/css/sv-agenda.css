@@ -822,3 +822,37 @@
   border-color: var(--sv-ink);
 }
 .pg-sv .sv-ag-item-valor:disabled { opacity: 0.5; }
+
+/* --- Total a receber, editável --------------------------------------------
+   Mantém o peso visual do número grande que estava aqui (19px/600): em
+   repouso tem que continuar lendo como "o total", não como um formulário.
+   A moldura só aparece no hover/foco. */
+.pg-sv .sv-ag-total-edit { display: flex; align-items: baseline; gap: 4px; }
+.pg-sv .sv-ag-total-cifrao {
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--sv-line);
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+}
+.pg-sv .sv-ag-total-valor {
+  width: 100%;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--sv-line);
+  letter-spacing: -0.5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 2px 6px;
+  margin-left: -6px; /* alinha com o cifrão sem o padding empurrar */
+}
+.pg-sv .sv-ag-total-valor:hover { border-color: rgba(224, 224, 224, 0.28); }
+.pg-sv .sv-ag-total-valor:focus {
+  outline: none;
+  background: rgba(224, 224, 224, 0.16);
+  border-color: var(--sv-surface);
+}
+.pg-sv .sv-ag-total-valor:disabled { opacity: 0.5; }

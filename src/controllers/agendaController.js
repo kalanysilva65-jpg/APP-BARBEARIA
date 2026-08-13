@@ -427,6 +427,37 @@ async function alterarValorItem(req, res) {
   responderOk(req, res, aviso);
 }
 
+// POST /painel/agenda/:id/total — ajusta o total a receber deste atendimento.
+//
+// Normalmente o total É a soma dos itens. Ajustar aqui é para o caso em que o
+// combinado com o cliente não sai dessa conta (desconto no pacote, arredondar
+// pra baixo). Não precisa de coluna nova para marcar "ajustado": basta o total
+// diferir da soma dos itens — e é por isso que mexer nos itens depois devolve o
+// total à soma (o `recalcularTotal` das rotas de item já faz isso), como o dono
+// pediu em 2026-08-13.
+async function alterarTotal(req, res) {
+  const b = req.barbeariaId;
+  const agendamento = await prisma.agendamento.findFirst({
+    where: { id: idNum(req.params.id), barbeariaId: b },
+  });
+  if (!agendamento) return falhar(req, res, 'Atendimento não encontrado.');
+  if (!podeAlterar(req, agendamento)) return negarAcesso(res);
+
+  const centavos =
+    req.body.valorCentavos !== undefined
+      ? Math.trunc(Number(req.body.valorCentavos))
+      : Math.round(parseFloat(String(req.body.valor).replace(',', '.')) * 100);
+
+  // Zero é válido (cortesia); negativo não existe.
+  if (!Number.isFinite(centavos) || centavos < 0) {
+    return falhar(req, res, 'Informe um valor válido.');
+  }
+
+  await prisma.agendamento.update({ where: { id: agendamento.id }, data: { valorTotal: centavos } });
+  const aviso = await reconciliarPagamentos(agendamento.id);
+  responderOk(req, res, aviso);
+}
+
 // POST /painel/agenda/:id/status — muda o status do agendamento
 async function mudarStatus(req, res) {
   const b = req.barbeariaId;
@@ -757,4 +788,4 @@ async function removerBloqueio(req, res) {
   res.redirect('/painel/agenda' + (s ? '?' + s : ''));
 }
 
-module.exports = { verAgenda, adicionarItem, removerItem, alterarValorItem, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson };
+module.exports = { verAgenda, adicionarItem, removerItem, alterarValorItem, alterarTotal, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson };

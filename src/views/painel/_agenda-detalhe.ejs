@@ -23,6 +23,12 @@
     var achou = formasPagamento.filter(function (f) { return f.valor === v; })[0];
     return achou ? achou.label : v;
   }
+  // O total normalmente É a soma dos itens. Divergir quer dizer que alguém
+  // ajustou à mão (desconto no pacote, arredondamento) — não precisa de coluna
+  // pra marcar isso, a diferença já conta a história. E mexer nos itens depois
+  // devolve o total à soma, porque as rotas de item recalculam.
+  var somaItens = ag.itens.reduce(function (s, it) { return s + it.valorUnitario * it.quantidade; }, 0);
+  var totalAjustado = somaItens !== ag.valorTotal;
 %>
 <div class="sv-ag-folha-topo">
   <div class="sv-ag-folha-tit"><%= ag.clienteNome %></div>
@@ -49,8 +55,22 @@
   <div class="sv-ag-preto-rot">Total a receber</div>
   <div class="sv-ag-preto-linha">
     <div class="sv-ag-preto-corpo">
-      <div class="sv-ag-preto-tit"><%= fmtBRL(ag.valorTotal) %></div>
-      <div class="sv-ag-preto-sub"><%= svcLabel %> · <%= ag.usuario.nome.split(' ')[0] %></div>
+      <div class="sv-ag-total-edit">
+        <span class="sv-ag-total-cifrao">R$</span>
+        <input class="sv-ag-total-valor"
+               type="text"
+               inputmode="decimal"
+               data-total-valor
+               value="<%= (ag.valorTotal / 100).toFixed(2).replace('.', ',') %>"
+               aria-label="Total a receber" />
+      </div>
+      <div class="sv-ag-preto-sub">
+        <% if (totalAjustado) { %>
+          ajustado · soma dos itens <%= fmtBRL(somaItens) %>
+        <% } else { %>
+          <%= svcLabel %> · <%= ag.usuario.nome.split(' ')[0] %>
+        <% } %>
+      </div>
     </div>
   </div>
 
