@@ -280,131 +280,13 @@
      pagamento, itens, cancelar e excluir).
      --------------------------------------------------------------------- */%>
 <% agendamentos.forEach(function (ag) { %>
-  <% var svcLabel = ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento'; %>
   <div class="ag-overlay" id="agm-<%= ag.id %>" onclick="if(event.target===this)fecharModal(this)">
-    <div class="ag-modal-box">
-      <div class="sv-ag-folha-topo">
-        <div class="sv-ag-folha-tit"><%= ag.clienteNome %></div>
-        <span class="sv-ag-selo"><%= _selo(ag) %></span>
-      </div>
-      <div class="sv-ag-folha-sub"><%= diaNum %> <%= mesCurto %> · <%= ag.horaInicio %></div>
-
-      <div class="sv-ag-campos">
-        <div class="sv-ag-campo">
-          <div class="sv-ag-campo-rot">Serviço</div>
-          <div class="sv-ag-campo-val"><%= svcLabel %></div>
-        </div>
-        <div class="sv-ag-campo">
-          <div class="sv-ag-campo-rot">Barbeiro</div>
-          <div class="sv-ag-campo-val sv-ag-campo-val--sm"><%= ag.usuario.nome %></div>
-        </div>
-        <div class="sv-ag-campo">
-          <div class="sv-ag-campo-rot">Contato</div>
-          <div class="sv-ag-campo-val sv-ag-campo-val--sm"><%= fmtTelefone(ag.clienteTelefone) %></div>
-        </div>
-      </div>
-
-      <div class="sv-ag-preto">
-        <div class="sv-ag-preto-rot">Total a receber</div>
-        <div class="sv-ag-preto-linha">
-          <div class="sv-ag-preto-corpo">
-            <div class="sv-ag-preto-tit"><%= fmtBRL(ag.valorTotal) %></div>
-            <div class="sv-ag-preto-sub"><%= svcLabel %> · <%= ag.usuario.nome.split(' ')[0] %></div>
-          </div>
-        </div>
-
-        <% if (ag.status !== 'concluido') { %>
-          <%/* A forma de pagamento viaja no MESMO POST que conclui: é quando o
-               cliente paga, e é o que alimenta a entrada automática do caixa.
-               São rádios (sem script) — deixar em branco continua valendo. */%>
-          <form method="POST" action="/painel/agenda/<%= ag.id %>/status">
-            <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-            <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-            <input type="hidden" name="status" value="concluido" />
-            <div class="sv-ag-pags">
-              <% formasPagamento.forEach(function (f) { %>
-                <label class="sv-ag-pag">
-                  <input type="radio" name="formaPagamento" value="<%= f.valor %>" <%= ag.formaPagamento === f.valor ? 'checked' : '' %> />
-                  <span><%= f.label %></span>
-                </label>
-              <% }) %>
-            </div>
-            <button type="submit" class="sv-ag-cta">Concluir atendimento</button>
-          </form>
-        <% } else { %>
-          <% var formaFeita = formasPagamento.filter(function (f) { return f.valor === ag.formaPagamento; })[0]; %>
-          <% if (formaFeita) { %>
-            <div class="sv-ag-pag-fixa">Pago em <%= formaFeita.label %></div>
-          <% } %>
-          <form method="POST" action="/painel/agenda/<%= ag.id %>/status">
-            <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-            <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-            <input type="hidden" name="status" value="agendado" />
-            <button type="submit" class="sv-ag-cta sv-ag-cta--vazado">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              <span>Concluído · toque para reabrir</span>
-            </button>
-          </form>
-        <% } %>
-      </div>
-
-      <div class="sv-ag-secao">
-        <div class="sv-ag-secao-rot">Itens</div>
-        <ul class="sv-ag-itens">
-          <% ag.itens.forEach(function (it) { %>
-            <li>
-              <span><%= it.servico.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %></span>
-              <span class="sv-ag-item-dir">
-                <span><%= fmtT6(it.valorUnitario * it.quantidade) %></span>
-                <form method="POST" action="/painel/agenda/itens/<%= it.id %>/remover">
-                  <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-                  <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-                  <button class="sv-ag-item-x" title="Remover item">×</button>
-                </form>
-              </span>
-            </li>
-          <% }) %>
-          <% if (ag.itens.length === 0) { %>
-            <li><span class="texto-sutil">Sem itens.</span></li>
-          <% } %>
-        </ul>
-
-        <form method="POST" action="/painel/agenda/<%= ag.id %>/itens" class="sv-ag-add">
-          <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-          <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-          <div class="sv-ag-campo">
-            <div class="sv-ag-campo-rot">Adicionar</div>
-            <select name="servicoId" class="sv-ag-inp" required>
-              <option value="">Corte/produto…</option>
-              <% servicos.forEach(function (s) { %>
-                <option value="<%= s.id %>"><%= s.nome %> — <%= fmtT6(s.valor) %></option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="sv-ag-campo sv-ag-campo--qtd">
-            <div class="sv-ag-campo-rot">Qtd</div>
-            <input type="number" name="quantidade" value="1" min="1" class="sv-ag-inp" title="Quantidade" />
-          </div>
-          <button type="submit" class="sv-ag-add-btn">+</button>
-        </form>
-
-        <div class="sv-ag-perigo">
-          <% if (ag.status !== 'cancelado') { %>
-            <form method="POST" action="/painel/agenda/<%= ag.id %>/status">
-              <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-              <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-              <input type="hidden" name="status" value="cancelado" />
-              <button type="submit" class="sv-ag-perigo-btn">Cancelar atendimento</button>
-            </form>
-          <% } %>
-          <form method="POST" action="/painel/agenda/<%= ag.id %>/excluir"
-                onsubmit="return confirm('Excluir este agendamento? Esta ação não pode ser desfeita.')">
-            <input type="hidden" name="retornoData" value="<%= dataStr %>" />
-            <input type="hidden" name="retornoBarbeiro" value="<%= barbeiroSelecionado %>" />
-            <button type="submit" class="sv-ag-perigo-btn">Excluir</button>
-          </form>
-        </div>
-      </div>
+    <div class="ag-modal-box" data-detalhe="<%= ag.id %>">
+      <%- include("_agenda-detalhe", {
+            ag: ag, selo: _selo(ag), dataStr: dataStr,
+            barbeiroSelecionado: barbeiroSelecionado, diaNum: diaNum, mesCurto: mesCurto,
+            formasPagamento: formasPagamento, servicos: servicos, maxParcelas: maxParcelas
+          }) %>
     </div>
   </div>
 <% }) %>
@@ -601,5 +483,274 @@
     // Se já há um barbeiro pré-selecionado (funcionário, ou admin filtrando um
     // barbeiro específico na Agenda), já carrega os horários ao abrir.
     if (barbeiroInput && barbeiroInput.value) buscarHorarios();
+  })();
+</script>
+
+<script>
+  // Folha de detalhe: divisão de pagamento e ações sem sair da folha.
+  //
+  // Antes, cada botão daqui era um <form> que dava POST e redirecionava para a
+  // agenda — o que fechava a folha e devolvia o usuário à lista a cada item
+  // somado. Agora as ações vão por fetch e a folha se redesenha no lugar,
+  // buscando o miolo em /painel/agenda/:id/detalhe.
+  //
+  // Tudo é por delegação no document: o miolo é substituído a cada ação, então
+  // listener preso no elemento morreria na primeira troca.
+  (function () {
+    var BARBEIRO = <%- JSON.stringify(String(barbeiroSelecionado || '')) %>;
+
+    function caixa(el) { return el.closest('.ag-modal-box'); }
+    function centavosParaTexto(c) { return (c / 100).toFixed(2).replace('.', ','); }
+    function textoParaCentavos(t) {
+      var n = parseFloat(String(t).replace(/\./g, '').replace(',', '.'));
+      return Number.isFinite(n) ? Math.round(n * 100) : 0;
+    }
+    function fmt(c) { return 'R$ ' + centavosParaTexto(c); }
+
+    // ---- Divisão de pagamento ---------------------------------------------
+    function montarPagto(raiz) {
+      var total = Number(raiz.dataset.total) || 0;
+      var formas = JSON.parse(raiz.dataset.formas || '[]');
+      var parcelaveis = JSON.parse(raiz.dataset.parcelaveis || '[]');
+      var maxP = Number(raiz.dataset.maxParcelas) || 1;
+      var alvo = raiz.querySelector('[data-linhas]');
+      var saldoEl = raiz.querySelector('[data-saldo]');
+
+      var linhas = JSON.parse(raiz.dataset.inicial || '[]');
+      if (!linhas.length) linhas = [{ forma: '', valor: total, parcelas: 1 }];
+
+      function pintarSaldo() {
+        var usadas = linhas.filter(function (l) { return l.forma; });
+        if (!usadas.length) { saldoEl.textContent = ''; saldoEl.className = 'sv-ag-pagto-saldo'; return; }
+        var soma = linhas.reduce(function (s, l) { return s + (l.forma ? l.valor : 0); }, 0);
+        var dif = total - soma;
+        if (dif === 0) {
+          saldoEl.textContent = 'fecha certo';
+          saldoEl.className = 'sv-ag-pagto-saldo sv-ag-pagto-saldo--ok';
+        } else {
+          saldoEl.textContent = (dif > 0 ? 'falta ' : 'passou ') + fmt(Math.abs(dif));
+          saldoEl.className = 'sv-ag-pagto-saldo sv-ag-pagto-saldo--alerta';
+        }
+      }
+
+      function desenhar() {
+        alvo.innerHTML = '';
+        linhas.forEach(function (l, i) {
+          var linha = document.createElement('div');
+          linha.className = 'sv-ag-pagto-linha';
+
+          var val = document.createElement('input');
+          val.type = 'text';
+          val.inputMode = 'decimal';
+          val.className = 'sv-ag-pagto-valor';
+          val.value = centavosParaTexto(l.valor);
+          val.setAttribute('aria-label', 'Valor');
+          val.addEventListener('input', function () { l.valor = textoParaCentavos(val.value); pintarSaldo(); });
+          linha.appendChild(val);
+
+          var sel = document.createElement('select');
+          sel.className = 'sv-ag-pagto-forma';
+          sel.setAttribute('aria-label', 'Forma de pagamento');
+          sel.appendChild(new Option('Forma...', ''));
+          formas.forEach(function (f) {
+            var o = new Option(f.label, f.valor);
+            if (f.valor === l.forma) o.selected = true;
+            sel.appendChild(o);
+          });
+          sel.addEventListener('change', function () {
+            l.forma = sel.value;
+            if (parcelaveis.indexOf(l.forma) === -1) l.parcelas = 1;
+            desenhar();
+          });
+          linha.appendChild(sel);
+
+          // Parcelas só aparecem onde fazem sentido (crédito): num Pix ou em
+          // dinheiro o campo seria só ruído na tela.
+          if (parcelaveis.indexOf(l.forma) !== -1) {
+            var par = document.createElement('select');
+            par.className = 'sv-ag-pagto-parcelas';
+            par.setAttribute('aria-label', 'Parcelas');
+            for (var n = 1; n <= maxP; n++) {
+              var op = new Option(n + 'x', String(n));
+              if (n === l.parcelas) op.selected = true;
+              par.appendChild(op);
+            }
+            par.addEventListener('change', function () { l.parcelas = Number(par.value) || 1; desenhar(); });
+            linha.appendChild(par);
+
+            if (l.parcelas > 1) {
+              var nota = document.createElement('span');
+              nota.className = 'sv-ag-pagto-nota';
+              nota.textContent = l.parcelas + 'x de ' + fmt(Math.round(l.valor / l.parcelas));
+              linha.appendChild(nota);
+            }
+          }
+
+          if (linhas.length > 1) {
+            var x = document.createElement('button');
+            x.type = 'button';
+            x.className = 'sv-ag-pagto-x';
+            x.title = 'Remover esta forma';
+            x.textContent = 'x';
+            x.addEventListener('click', function () {
+              linhas.splice(i, 1);
+              // O que sobrou volta pra primeira linha, senão a soma quebraria
+              // sem o usuário entender por quê.
+              var resto = total - linhas.reduce(function (s, y) { return s + y.valor; }, 0);
+              if (resto !== 0 && linhas.length) linhas[0].valor += resto;
+              desenhar();
+            });
+            linha.appendChild(x);
+          }
+
+          alvo.appendChild(linha);
+        });
+        pintarSaldo();
+      }
+
+      raiz.querySelector('[data-add]').addEventListener('click', function () {
+        var usado = linhas.reduce(function (s, l) { return s + l.valor; }, 0);
+        var sobra = Math.max(total - usado, 0);
+        // Nada sobrando: tira metade da primeira linha, que é o que a pessoa
+        // quer dizer com "dividir" quando o total já está todo numa forma.
+        if (sobra === 0 && linhas.length) {
+          var meta = Math.floor(linhas[0].valor / 2);
+          linhas[0].valor -= meta;
+          sobra = meta;
+        }
+        linhas.push({ forma: '', valor: sobra, parcelas: 1 });
+        desenhar();
+      });
+
+      // `valorCentavos` no nome: aqui dentro dinheiro é sempre centavos, e o
+      // servidor precisa saber disso sem adivinhar (o campo `valor` no POST de
+      // formulário significa reais).
+      raiz._coletar = function () {
+        return linhas
+          .filter(function (l) { return l.forma && l.valor > 0; })
+          .map(function (l) { return { forma: l.forma, valorCentavos: l.valor, parcelas: l.parcelas }; });
+      };
+      raiz._total = total;
+      desenhar();
+    }
+
+    function montarTudo(escopo) {
+      Array.prototype.forEach.call(escopo.querySelectorAll('[data-pagto]'), montarPagto);
+    }
+
+    // ---- Ações -------------------------------------------------------------
+    function recarregar(id) {
+      return fetch('/painel/agenda/' + id + '/detalhe?barbeiro=' + encodeURIComponent(BARBEIRO), {
+        headers: { Accept: 'text/html' },
+        credentials: 'same-origin',
+      })
+        .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.text(); })
+        .then(function (html) {
+          var box = document.querySelector('.ag-modal-box[data-detalhe="' + id + '"]');
+          if (!box) return;
+          box.innerHTML = html;
+          montarTudo(box);
+        });
+    }
+
+    function enviar(url, corpo) {
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(corpo || {}),
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (!r.ok) throw new Error(j.erro || 'Nao deu para salvar. Tente de novo.');
+          return j;
+        });
+      });
+    }
+
+    function travar(btn, ligado) {
+      if (!btn) return;
+      btn.disabled = ligado;
+      btn.style.opacity = ligado ? '0.55' : '';
+    }
+
+    function erro(box, msg) {
+      var faixa = box.querySelector('[data-erro]');
+      if (!faixa) {
+        faixa = document.createElement('div');
+        faixa.className = 'sv-ag-pagto-erro';
+        faixa.setAttribute('data-erro', '');
+        box.insertBefore(faixa, box.firstChild);
+      }
+      faixa.textContent = msg;
+    }
+
+    document.addEventListener('click', function (ev) {
+      if (!ev.target || !ev.target.closest) return;
+      var box = caixa(ev.target);
+      if (!box || !box.dataset.detalhe) return;
+      var id = box.dataset.detalhe;
+
+      function agir(btn, url, corpo, depois) {
+        ev.preventDefault();
+        travar(btn, true);
+        enviar(url, corpo)
+          .then(function () { return depois ? depois() : recarregar(id); })
+          .catch(function (e) { travar(btn, false); erro(box, e.message); });
+      }
+
+      var btn;
+
+      if ((btn = ev.target.closest('[data-concluir]'))) {
+        ev.preventDefault();
+        var raiz = box.querySelector('[data-pagto]');
+        var partes = raiz && raiz._coletar ? raiz._coletar() : [];
+        if (partes.length) {
+          var soma = partes.reduce(function (s, p) { return s + p.valorCentavos; }, 0);
+          if (soma !== raiz._total) {
+            erro(box, 'A divisao soma ' + fmt(soma) + ', mas o atendimento e ' + fmt(raiz._total) + '.');
+            return;
+          }
+        }
+        agir(btn, '/painel/agenda/' + id + '/status', { status: 'concluido', pagamentos: partes });
+        return;
+      }
+
+      if ((btn = ev.target.closest('[data-reabrir]'))) {
+        agir(btn, '/painel/agenda/' + id + '/status', { status: 'agendado' });
+        return;
+      }
+
+      if ((btn = ev.target.closest('[data-cancelar]'))) {
+        ev.preventDefault();
+        if (!confirm('Cancelar este atendimento?')) return;
+        agir(btn, '/painel/agenda/' + id + '/status', { status: 'cancelado' });
+        return;
+      }
+
+      if ((btn = ev.target.closest('[data-add-item]'))) {
+        ev.preventDefault();
+        var sel = box.querySelector('[data-novo-servico]');
+        var qtd = box.querySelector('[data-nova-qtd]');
+        if (!sel || !sel.value) { erro(box, 'Escolha um item para adicionar.'); return; }
+        agir(btn, '/painel/agenda/' + id + '/itens', { servicoId: sel.value, quantidade: qtd ? qtd.value : 1 });
+        return;
+      }
+
+      if ((btn = ev.target.closest('[data-remover-item]'))) {
+        agir(btn, '/painel/agenda/itens/' + btn.dataset.removerItem + '/remover', {});
+        return;
+      }
+
+      // Excluir é o único que fecha a folha: o atendimento deixa de existir,
+      // não há o que redesenhar, e a lista atrás precisa refletir a remoção.
+      if ((btn = ev.target.closest('[data-excluir]'))) {
+        ev.preventDefault();
+        if (!confirm('Excluir este agendamento? Esta acao nao pode ser desfeita.')) return;
+        agir(btn, '/painel/agenda/' + id + '/excluir', {}, function () { window.location.reload(); });
+        return;
+      }
+    });
+
+    montarTudo(document);
   })();
 </script>

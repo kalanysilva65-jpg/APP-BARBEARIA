@@ -1,0 +1,139 @@
+<%/* Conteúdo da folha de detalhe de UM agendamento.
+
+     Vive num parcial próprio porque é renderizado em dois momentos: junto da
+     agenda (carga inicial) e sozinho, por `GET /painel/agenda/:id/detalhe`,
+     quando a folha se atualiza depois de uma ação. Antes toda ação aqui era
+     POST + redirect, o que fechava a folha e jogava o usuário de volta pra
+     lista; agora a folha se redesenha no lugar.
+
+     Recebe tudo explicitamente (ag, selo, dataStr, barbeiroSelecionado,
+     diaNum, mesCurto, formasPagamento, servicos, maxParcelas) — variáveis
+     locais do EJS pai não atravessam o include. */%>
+<%
+  var svcLabel = ag.itens.map(function (it) { return it.servico.nome; }).join(' + ') || 'Atendimento';
+  var pagos = (ag.pagamentos || []).map(function (p) {
+    return { forma: p.formaPagamento, valor: p.valor, parcelas: p.parcelas };
+  });
+  // Sem divisão gravada, mas com a forma antiga preenchida: mostra como uma
+  // parte só, para os atendimentos concluídos antes desta tela existir.
+  if (!pagos.length && ag.formaPagamento) {
+    pagos = [{ forma: ag.formaPagamento, valor: ag.valorTotal, parcelas: 1 }];
+  }
+  function _rotuloForma(v) {
+    var achou = formasPagamento.filter(function (f) { return f.valor === v; })[0];
+    return achou ? achou.label : v;
+  }
+%>
+<div class="sv-ag-folha-topo">
+  <div class="sv-ag-folha-tit"><%= ag.clienteNome %></div>
+  <span class="sv-ag-selo"><%= selo %></span>
+</div>
+<div class="sv-ag-folha-sub"><%= diaNum %> <%= mesCurto %> · <%= ag.horaInicio %></div>
+
+<div class="sv-ag-campos">
+  <div class="sv-ag-campo">
+    <div class="sv-ag-campo-rot">Serviço</div>
+    <div class="sv-ag-campo-val"><%= svcLabel %></div>
+  </div>
+  <div class="sv-ag-campo">
+    <div class="sv-ag-campo-rot">Barbeiro</div>
+    <div class="sv-ag-campo-val sv-ag-campo-val--sm"><%= ag.usuario.nome %></div>
+  </div>
+  <div class="sv-ag-campo">
+    <div class="sv-ag-campo-rot">Contato</div>
+    <div class="sv-ag-campo-val sv-ag-campo-val--sm"><%= fmtTelefone(ag.clienteTelefone) %></div>
+  </div>
+</div>
+
+<div class="sv-ag-preto">
+  <div class="sv-ag-preto-rot">Total a receber</div>
+  <div class="sv-ag-preto-linha">
+    <div class="sv-ag-preto-corpo">
+      <div class="sv-ag-preto-tit"><%= fmtBRL(ag.valorTotal) %></div>
+      <div class="sv-ag-preto-sub"><%= svcLabel %> · <%= ag.usuario.nome.split(' ')[0] %></div>
+    </div>
+  </div>
+
+  <% if (ag.status !== 'concluido') { %>
+    <%/* A divisão do pagamento é montada por script (linhas entram e saem), e
+         o "Concluir" manda tudo junto — é no fim do atendimento que se sabe
+         como o cliente pagou. Continua valendo concluir sem informar nada. */%>
+    <div class="sv-ag-pagto"
+         data-pagto
+         data-ag="<%= ag.id %>"
+         data-total="<%= ag.valorTotal %>"
+         data-max-parcelas="<%= maxParcelas %>"
+         data-formas='<%- JSON.stringify(formasPagamento) %>'
+         data-parcelaveis='<%- JSON.stringify(["credito"]) %>'
+         data-inicial='<%- JSON.stringify(pagos) %>'>
+      <div class="sv-ag-pagto-topo">
+        <span class="sv-ag-preto-rot">Pagamento</span>
+        <span class="sv-ag-pagto-saldo" data-saldo></span>
+      </div>
+      <div class="sv-ag-pagto-linhas" data-linhas></div>
+      <button type="button" class="sv-ag-pagto-add" data-add>+ Dividir em outra forma</button>
+    </div>
+    <button type="button" class="sv-ag-cta" data-concluir>Concluir atendimento</button>
+  <% } else { %>
+    <% if (pagos.length === 1) { %>
+      <div class="sv-ag-pag-fixa">
+        Pago em <%= _rotuloForma(pagos[0].forma) %><%= pagos[0].parcelas > 1 ? ' · ' + pagos[0].parcelas + 'x' : '' %>
+      </div>
+    <% } else if (pagos.length > 1) { %>
+      <div class="sv-ag-pagto-resumo">
+        <% pagos.forEach(function (p) { %>
+          <div class="sv-ag-pagto-resumo-linha">
+            <span><%= _rotuloForma(p.forma) %><%= p.parcelas > 1 ? ' · ' + p.parcelas + 'x' : '' %></span>
+            <span><%= fmtBRL(p.valor) %></span>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+    <button type="button" class="sv-ag-cta sv-ag-cta--vazado" data-reabrir>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+      <span>Concluído · toque para reabrir</span>
+    </button>
+  <% } %>
+</div>
+
+<div class="sv-ag-secao">
+  <div class="sv-ag-secao-rot">Itens</div>
+  <ul class="sv-ag-itens">
+    <% ag.itens.forEach(function (it) { %>
+      <li>
+        <span><%= it.servico.nome %><%= it.quantidade > 1 ? ' ×' + it.quantidade : '' %></span>
+        <span class="sv-ag-item-dir">
+          <span><%= fmtT6(it.valorUnitario * it.quantidade) %></span>
+          <button type="button" class="sv-ag-item-x" title="Remover item" data-remover-item="<%= it.id %>">×</button>
+        </span>
+      </li>
+    <% }) %>
+    <% if (ag.itens.length === 0) { %>
+      <li><span class="texto-sutil">Sem itens.</span></li>
+    <% } %>
+  </ul>
+
+  <div class="sv-ag-add">
+    <div class="sv-ag-campo">
+      <div class="sv-ag-campo-rot">Adicionar</div>
+      <select class="sv-ag-inp" data-novo-servico>
+        <option value="">Corte/produto…</option>
+        <% servicos.forEach(function (s) { %>
+          <option value="<%= s.id %>"><%= s.nome %> — <%= fmtT6(s.valor) %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="sv-ag-campo sv-ag-campo--qtd">
+      <div class="sv-ag-campo-rot">Qtd</div>
+      <input type="number" value="1" min="1" class="sv-ag-inp" title="Quantidade" data-nova-qtd />
+    </div>
+    <button type="button" class="sv-ag-add-btn" data-add-item>+</button>
+  </div>
+
+  <div class="sv-ag-perigo">
+    <% if (ag.status !== 'cancelado') { %>
+      <button type="button" class="sv-ag-perigo-btn" data-cancelar>Cancelar atendimento</button>
+    <% } %>
+    <button type="button" class="sv-ag-perigo-btn" data-excluir>Excluir</button>
+  </div>
+</div>

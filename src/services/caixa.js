@@ -22,24 +22,52 @@ async function definirCaixaAutomatico(barbeariaId, ligado) {
   });
 }
 
-// Cria a entrada automática de um agendamento concluído (idempotente: não duplica).
-// A barbearia vem do próprio agendamento.
+// Cria a(s) entrada(s) automática(s) de um agendamento concluído.
+//
+// Quando a conta foi dividida (ex.: R$20 em dinheiro + R$25 no crédito), gera
+// UMA entrada por forma de pagamento, e não uma só com o total. É isso que
+// mantém o relatório "por forma de pagamento" correto — ele agrupa pela coluna
+// `formaPagamento` do caixa, então um lançamento único com o total inteiro
+// atribuiria toda a receita a uma forma só.
+//
+// Recria em vez de só ignorar quando já existe: reconcluir um atendimento com
+// pagamento diferente precisa atualizar o caixa, senão fica valendo a divisão
+// antiga.
 async function registrarEntradaAgendamento(agendamento) {
   if (!agendamento || agendamento.valorTotal <= 0) return;
-  const existente = await prisma.caixa.findFirst({ where: { agendamentoId: agendamento.id } });
-  if (existente) return; // já lançado
-  await prisma.caixa.create({
-    data: {
-      barbeariaId: agendamento.barbeariaId,
-      descricao: 'Atendimento — ' + agendamento.clienteNome,
-      valor: agendamento.valorTotal,
-      tipo: 'entrada',
-      data: new Date(),
-      agendamentoId: agendamento.id,
-      categoriaId: null,
-      formaPagamento: agendamento.formaPagamento || null,
-    },
+
+  const partes = await prisma.pagamentoAgendamento.findMany({
+    where: { agendamentoId: agendamento.id },
+    orderBy: { id: 'asc' },
   });
+
+  // Sem divisão registrada (fluxo antigo ou nenhuma forma escolhida): mantém o
+  // comportamento de sempre — uma entrada com o total.
+  const linhas = partes.length
+    ? partes.map((p) => ({
+        valor: p.valor,
+        formaPagamento: p.formaPagamento,
+        sufixo: p.parcelas > 1 ? ` (${p.parcelas}x)` : '',
+      }))
+    : [{ valor: agendamento.valorTotal, formaPagamento: agendamento.formaPagamento || null, sufixo: '' }];
+
+  await prisma.caixa.deleteMany({ where: { agendamentoId: agendamento.id } });
+  const agora = new Date();
+  for (const l of linhas) {
+    if (l.valor <= 0) continue;
+    await prisma.caixa.create({
+      data: {
+        barbeariaId: agendamento.barbeariaId,
+        descricao: 'Atendimento — ' + agendamento.clienteNome + l.sufixo,
+        valor: l.valor,
+        tipo: 'entrada',
+        data: agora,
+        agendamentoId: agendamento.id,
+        categoriaId: null,
+        formaPagamento: l.formaPagamento,
+      },
+    });
+  }
 }
 
 // Remove a entrada automática vinculada a um agendamento (ao cancelar/reabrir).

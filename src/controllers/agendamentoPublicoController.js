@@ -17,6 +17,18 @@ const JANELA_DIAS = { semana: 7, duas_semanas: 14, sem_limite: 60 };
 
 const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
+// Id vindo da URL -> inteiro, ou 0 se não for um número.
+//
+// Sem isto, um link torto (ex.: "?barbeiroId=2?b=x", que acontece quando alguém
+// cola duas querystrings juntas) vira `Number(...) === NaN`, e o Prisma recusa
+// NaN com um erro não tratado: o cliente leva uma tela de erro 500 no meio do
+// agendamento. Com 0, a busca simplesmente não acha ninguém e o fluxo cai no
+// redirecionamento normal de volta.
+function idNum(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.trunc(n) : 0;
+}
+
 // Date -> "YYYY-MM-DD"
 function iso(data) {
   const a = data.getFullYear();
@@ -216,7 +228,7 @@ async function horariosJson(req, res) {
     todos = await todosHorariosQualquer(barbeiros.map((b) => b.id), dataSel, duracaoTotal);
   } else {
     const barbeiro = await prisma.usuario.findFirst({
-      where: { id: Number(req.query.barbeiroId), barbeariaId: req.barbeariaId, ativo: true },
+      where: { id: idNum(req.query.barbeiroId), barbeariaId: req.barbeariaId, ativo: true },
       select: { id: true },
     });
     if (!barbeiro) return res.status(400).json({ erro: 'barbeiro' });
@@ -245,7 +257,7 @@ async function passoHorario(req, res) {
   const barbeirosAtivos = await prisma.usuario.findMany({ where: { barbeariaId: req.barbeariaId, ativo: true }, orderBy: { id: 'asc' } });
   const barbeiro = ehQualquer
     ? { id: 'any', nome: 'Qualquer disponível' }
-    : await prisma.usuario.findFirst({ where: { id: Number(req.query.barbeiroId), barbeariaId: req.barbeariaId, ativo: true } });
+    : await prisma.usuario.findFirst({ where: { id: idNum(req.query.barbeiroId), barbeariaId: req.barbeariaId, ativo: true } });
   if (!servicos.length || !barbeiro) return res.redirect('/agendar');
 
   const servicoIdsStr = servicos.map((s) => s.id).join(',');
@@ -390,7 +402,7 @@ async function confirmar(req, res) {
   if (ehQualquer) {
     if (data && hora && servicos.length) barbeiro = await resolverBarbeiroQualquer(b, data, hora, duracaoTotal);
   } else {
-    barbeiro = await prisma.usuario.findFirst({ where: { id: Number(req.body.barbeiroId), barbeariaId: b, ativo: true } });
+    barbeiro = await prisma.usuario.findFirst({ where: { id: idNum(req.body.barbeiroId), barbeariaId: b, ativo: true } });
   }
 
   // Agendamento via plano usa os dados do cliente do plano.
@@ -484,7 +496,7 @@ async function confirmar(req, res) {
 // Tela de sucesso
 async function sucesso(req, res) {
   const agendamento = await prisma.agendamento.findFirst({
-    where: { id: Number(req.params.id), barbeariaId: req.barbeariaId },
+    where: { id: idNum(req.params.id), barbeariaId: req.barbeariaId },
     include: { usuario: true, itens: { include: { servico: true } } },
   });
   if (!agendamento) return res.redirect('/agendar');

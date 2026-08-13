@@ -51,6 +51,7 @@ model Barbearia {
   configuracoes      Configuracao[]
   cupons             Cupom[]
   resgatesFidelidade FidelidadeResgate[]
+  pagamentos         PagamentoAgendamento[]
 
   @@map("barbearias")
 }
@@ -176,6 +177,7 @@ model Agendamento {
   clientePlano ClientePlano?     @relation(fields: [clientePlanoId], references: [id], onDelete: SetNull)
   itens        AgendamentoItem[]
   caixa        Caixa[]
+  pagamentos   PagamentoAgendamento[]
 
   // `agendamentos` é a tabela que mais cresce (nunca é limpa). Os dois filtros
   // quentes são: disponibilidade do barbeiro numa data (agendamento público) e
@@ -183,6 +185,28 @@ model Agendamento {
   @@index([usuarioId, data])
   @@index([barbeariaId, data])
   @@map("agendamentos")
+}
+
+/// Como um atendimento foi pago. Uma linha por FORMA usada: o cliente pode
+/// dividir a conta (ex.: R$20 em dinheiro + R$25 em 2x no crédito), e cada
+/// pedaço vira uma linha aqui e uma entrada própria no caixa — é o que mantém
+/// o relatório "por forma de pagamento" correto quando a conta é dividida.
+///
+/// `Agendamento.formaPagamento` continua existindo como resumo do caso simples
+/// (uma forma só) e para os registros antigos, anteriores a esta tabela.
+model PagamentoAgendamento {
+  id             Int    @id @default(autoincrement())
+  barbeariaId    Int    @map("barbearia_id")
+  agendamentoId  Int    @map("agendamento_id")
+  valor          Int // centavos
+  formaPagamento String @map("forma_pagamento") // pix | credito | debito | dinheiro
+  parcelas       Int    @default(1) // só faz sentido no crédito; 1 = à vista
+
+  barbearia   Barbearia   @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  agendamento Agendamento @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
+
+  @@index([agendamentoId])
+  @@map("agendamento_pagamentos")
 }
 
 /// Conta de cliente do MARKETPLACE (app do cliente). GLOBAL: um login por e-mail

@@ -681,3 +681,113 @@
 }
 .pg-sv .sv-ag-mes.sel { background: var(--sv-ink); color: var(--sv-line); }
 .pg-sv .sv-ag-mes:active { transform: scale(0.96); }
+
+/* --- Divisão de pagamento (dentro do cartão preto do detalhe) --------------
+   A conta pode ser paga em mais de uma forma (ex.: parte no dinheiro, parte
+   no crédito parcelado). Cada linha é uma forma; o saldo à direita do rótulo
+   avisa se a divisão fecha com o total antes de concluir. */
+.pg-sv .sv-ag-pagto { margin-top: 16px; }
+.pg-sv .sv-ag-pagto-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pg-sv .sv-ag-pagto-saldo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.pg-sv .sv-ag-pagto-saldo--ok { color: #8fd39a; }
+.pg-sv .sv-ag-pagto-saldo--alerta { color: #f0b46b; }
+
+.pg-sv .sv-ag-pagto-linhas { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.pg-sv .sv-ag-pagto-linha {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pg-sv .sv-ag-pagto-valor,
+.pg-sv .sv-ag-pagto-forma,
+.pg-sv .sv-ag-pagto-parcelas {
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sv-line);
+  background: rgba(224, 224, 224, 0.16);
+  border: none;
+  border-radius: 12px;
+  padding: 9px 11px;
+  min-width: 0;
+}
+/* O valor é o campo que mais se digita: ganha o maior alvo de toque. */
+.pg-sv .sv-ag-pagto-valor { width: 88px; flex-shrink: 0; }
+.pg-sv .sv-ag-pagto-forma { flex: 1; min-width: 104px; }
+.pg-sv .sv-ag-pagto-parcelas { width: 68px; flex-shrink: 0; }
+.pg-sv .sv-ag-pagto-valor:focus,
+.pg-sv .sv-ag-pagto-forma:focus,
+.pg-sv .sv-ag-pagto-parcelas:focus {
+  outline: 2px solid var(--sv-surface);
+  outline-offset: 1px;
+}
+.pg-sv .sv-ag-pagto-nota {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--sv-muted-2);
+  flex-basis: 100%;
+}
+.pg-sv .sv-ag-pagto-x {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(224, 224, 224, 0.16);
+  color: var(--sv-muted-2);
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pg-sv .sv-ag-pagto-x:active { transform: scale(0.92); }
+
+.pg-sv .sv-ag-pagto-add {
+  margin-top: 10px;
+  background: none;
+  border: 1px dashed rgba(224, 224, 224, 0.34);
+  border-radius: 999px;
+  color: var(--sv-muted-2);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 8px 13px;
+  cursor: pointer;
+}
+.pg-sv .sv-ag-pagto-add:active { transform: scale(0.97); }
+
+/* Já concluído e dividido: o resumo do que entrou em cada forma. */
+.pg-sv .sv-ag-pagto-resumo { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.pg-sv .sv-ag-pagto-resumo-linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sv-line);
+  background: rgba(224, 224, 224, 0.16);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+
+/* Erro de ação da folha (divisão que não fecha, item não escolhido...).
+   Fica no topo da folha, sobre o fundo claro — não dentro do cartão preto. */
+.pg-sv .sv-ag-pagto-erro {
+  background: #fdecec;
+  color: #8c2f2f;
+  border-radius: 14px;
+  padding: 10px 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}

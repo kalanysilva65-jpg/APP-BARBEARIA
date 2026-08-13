@@ -21,6 +21,71 @@ const FORMAS_PAGAMENTO = [
   { valor: 'dinheiro', label: 'Dinheiro' },
 ];
 
+const MESES_EXT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+// Date -> meia-noite local do mesmo dia.
+function inicioDoDia(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+// Id vindo da URL -> inteiro, ou 0 se não for número. `Number('abc')` é NaN, e
+// o Prisma recusa NaN com erro não tratado (tela de 500 em vez de "não achei").
+function idNum(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.trunc(n) : 0;
+}
+
+// Parcelamento só faz sentido no crédito; nas outras formas fica travado em 1.
+const MAX_PARCELAS = 12;
+const FORMAS_PARCELAVEIS = new Set(['credito']);
+
+// Normaliza a divisão de pagamento vinda do formulário.
+//
+// Aceita duas formas porque o mesmo endpoint atende o pop-up (que manda JSON,
+// para não recarregar a tela) e um POST comum de formulário:
+//   - JSON:  pagamentos: [{ forma, valorCentavos, parcelas }]
+//   - form:  pagForma[]=pix&pagValor[]=20,00&pagParcelas[]=1
+//
+// A unidade vai no NOME do campo de propósito. Quando os dois caminhos usavam
+// só `valor`, o pop-up mandava centavos e o servidor lia como reais: R$30
+// virava R$3.000 e a conclusão era recusada por "não fechar". Com
+// `valorCentavos` separado de `valor` (reais, como o usuário digita) não dá
+// para confundir de novo.
+function lerPagamentos(body) {
+  let brutos = [];
+  if (Array.isArray(body.pagamentos)) {
+    brutos = body.pagamentos;
+  } else {
+    const formas = [].concat(body.pagForma || []);
+    const valores = [].concat(body.pagValor || []);
+    const parcelas = [].concat(body.pagParcelas || []);
+    brutos = formas.map((f, i) => ({ forma: f, valor: valores[i], parcelas: parcelas[i] }));
+  }
+
+  const partes = [];
+  for (const b of brutos) {
+    const forma = String(b.forma || '').trim();
+    if (!FORMAS_PAGAMENTO.some((f) => f.valor === forma)) continue;
+
+    // "45,90" e "45.90" são a mesma coisa para quem digita; só o ponto é que o
+    // parseFloat entende.
+    const centavos =
+      b.valorCentavos !== undefined
+        ? Math.trunc(Number(b.valorCentavos))
+        : Math.round(parseFloat(String(b.valor).replace(',', '.')) * 100);
+    if (!Number.isFinite(centavos) || centavos <= 0) continue;
+
+    let parcelas = Math.trunc(Number(b.parcelas) || 1);
+    if (!FORMAS_PARCELAVEIS.has(forma) || parcelas < 1) parcelas = 1;
+    if (parcelas > MAX_PARCELAS) parcelas = MAX_PARCELAS;
+
+    partes.push({ formaPagamento: forma, valor: centavos, parcelas });
+  }
+  return partes;
+}
+
 // Date -> "YYYY-MM-DD"
 function iso(data) {
   const a = data.getFullYear();
@@ -59,6 +124,31 @@ function urlRetorno(req) {
   return '/painel/agenda' + (s ? '?' + s : '');
 }
 
+// "4500" (centavos) -> "R$ 45,00"
+function fmtBRL(centavos) {
+  return 'R$ ' + (Number(centavos || 0) / 100).toFixed(2).replace('.', ',');
+}
+
+// A folha de detalhe da agenda conversa por fetch, para que mexer nela (somar
+// item, concluir, cancelar) não jogue o usuário de volta pra lista — era o que
+// acontecia quando toda ação era POST + redirect. O resto do painel continua
+// mandando formulário comum, então os mesmos controllers respondem dos dois
+// jeitos conforme o `Accept` da requisição.
+function querJson(req) {
+  return (req.get('Accept') || '').includes('application/json');
+}
+
+function responderOk(req, res) {
+  if (querJson(req)) return res.json({ ok: true });
+  return res.redirect(urlRetorno(req));
+}
+
+function falhar(req, res, texto) {
+  if (querJson(req)) return res.status(400).json({ erro: texto });
+  req.session.flash = { tipo: 'erro', texto };
+  return res.redirect(urlRetorno(req));
+}
+
 // GET /painel/agenda
 async function verAgenda(req, res) {
   const usuario = req.session.usuario;
@@ -93,7 +183,11 @@ async function verAgenda(req, res) {
 
   const agendamentos = await prisma.agendamento.findMany({
     where,
-    include: { usuario: true, itens: { include: { servico: true } } },
+    include: {
+      usuario: true,
+      itens: { include: { servico: true } },
+      pagamentos: { orderBy: { id: 'asc' } },
+    },
     orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
   });
 
@@ -123,7 +217,6 @@ async function verAgenda(req, res) {
   const next = new Date(dataObj);
   next.setDate(next.getDate() + 1);
 
-  const MESES_EXT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const hoje0 = new Date();
   hoje0.setHours(0, 0, 0, 0);
 
@@ -186,9 +279,11 @@ async function verAgenda(req, res) {
     barbeiros,
     servicos,
     clientes,
-    // Pílulas de forma de pagamento no detalhe do atendimento: viajam no mesmo
-    // POST que conclui, que é quando o cliente paga.
+    // Formas de pagamento do detalhe do atendimento: viajam no mesmo POST que
+    // conclui, que é quando o cliente paga. A conta pode ser dividida em
+    // várias formas, e a parte no crédito pode ser parcelada.
     formasPagamento: FORMAS_PAGAMENTO,
+    maxParcelas: MAX_PARCELAS,
     dataStr,
     dataExtenso: `${DIAS_SEMANA[dataObj.getDay()]}, ${res.locals.fmtData(dataObj)}`,
     barbeiroSelecionado,
@@ -228,7 +323,7 @@ async function adicionarItem(req, res) {
   } else {
     req.session.flash = { tipo: 'erro', texto: 'Selecione um item válido.' };
   }
-  res.redirect(urlRetorno(req));
+  responderOk(req, res);
 }
 
 // POST /painel/agenda/itens/:id/remover — remove um item do agendamento
@@ -243,7 +338,7 @@ async function removerItem(req, res) {
   await prisma.agendamentoItem.delete({ where: { id: item.id } });
   await recalcularTotal(item.agendamentoId);
   req.session.flash = { tipo: 'sucesso', texto: 'Item removido.' };
-  res.redirect(urlRetorno(req));
+  responderOk(req, res);
 }
 
 // POST /painel/agenda/:id/status — muda o status do agendamento
@@ -261,14 +356,49 @@ async function mudarStatus(req, res) {
     // Reabrir/cancelar limpa o registro, senão ficaria uma forma de pagamento
     // pendurada num atendimento que não aconteceu.
     const dados = { status: novo };
+    let partes = [];
+
     if (novo === 'concluido') {
-      if (FORMAS_PAGAMENTO.some((f) => f.valor === req.body.formaPagamento)) {
-        dados.formaPagamento = req.body.formaPagamento;
+      partes = lerPagamentos(req.body);
+
+      // Formulário antigo (uma forma só, sem valor): vira uma parte com o total.
+      if (!partes.length && FORMAS_PAGAMENTO.some((f) => f.valor === req.body.formaPagamento)) {
+        partes = [{ formaPagamento: req.body.formaPagamento, valor: agendamento.valorTotal, parcelas: 1 }];
       }
+
+      // A soma das partes tem que fechar com o total: o caixa é alimentado a
+      // partir delas, então divergir aqui faria a receita do dia não bater com
+      // os atendimentos. Continua valendo concluir SEM informar pagamento
+      // (partes vazias) — é o comportamento de sempre.
+      if (partes.length) {
+        const soma = partes.reduce((s, p) => s + p.valor, 0);
+        if (soma !== agendamento.valorTotal) {
+          return falhar(
+            req,
+            res,
+            `A divisão soma ${fmtBRL(soma)}, mas o atendimento é ${fmtBRL(agendamento.valorTotal)}.`
+          );
+        }
+      }
+
+      // Resumo no próprio agendamento: com uma forma só, guarda qual foi (é o
+      // que as telas antigas leem). Dividido, fica nulo — a verdade está em
+      // `pagamentos`, e eleger "a" forma de um pagamento dividido seria mentira.
+      dados.formaPagamento = partes.length === 1 ? partes[0].formaPagamento : null;
     } else {
       dados.formaPagamento = null;
     }
+
     await prisma.agendamento.update({ where: { id: agendamento.id }, data: dados });
+
+    // Regrava a divisão do zero: reconcluir com outro pagamento tem que
+    // substituir o anterior, não somar em cima.
+    await prisma.pagamentoAgendamento.deleteMany({ where: { agendamentoId: agendamento.id } });
+    if (partes.length) {
+      await prisma.pagamentoAgendamento.createMany({
+        data: partes.map((p) => ({ ...p, barbeariaId: b, agendamentoId: agendamento.id })),
+      });
+    }
 
     // Integração com o caixa (toggle "caixa automático"):
     if (novo === 'concluido') {
@@ -290,7 +420,69 @@ async function mudarStatus(req, res) {
       else if (!eraAtivo && ficaAtivo) await planoServ.ajustarUso(agendamento.clientePlanoId, -1);
     }
   }
-  res.redirect(urlRetorno(req));
+  responderOk(req, res);
+}
+
+// GET /painel/agenda/:id/detalhe — só o miolo da folha de detalhe, em HTML.
+//
+// É o que permite mexer no atendimento sem sair da folha: depois de somar um
+// item, concluir ou cancelar, a tela busca este pedaço e troca no lugar, em vez
+// de recarregar a agenda inteira (que fechava a folha e voltava pra lista).
+async function detalheFragmento(req, res) {
+  const b = req.barbeariaId;
+  const ag = await prisma.agendamento.findFirst({
+    where: { id: idNum(req.params.id), barbeariaId: b },
+    include: {
+      usuario: true,
+      itens: { include: { servico: true } },
+      pagamentos: { orderBy: { id: 'asc' } },
+    },
+  });
+  if (!ag) return res.status(404).send('');
+  if (!podeAlterar(req, ag)) return res.status(403).send('');
+
+  // "Agora" é o próximo atendimento em aberto do dia — mesmo critério da lista,
+  // senão o selo mudaria sozinho ao atualizar a folha.
+  const inicioDia = new Date(ag.data);
+  const fimDia = new Date(inicioDia);
+  fimDia.setDate(fimDia.getDate() + 1);
+  const doDia = await prisma.agendamento.findMany({
+    where: { barbeariaId: b, usuarioId: ag.usuarioId, data: { gte: inicioDia, lt: fimDia }, status: 'agendado' },
+    orderBy: { horaInicio: 'asc' },
+    select: { id: true, horaInicio: true },
+  });
+  const emMin = (h) => Number(String(h).slice(0, 2)) * 60 + Number(String(h).slice(3, 5));
+  const hoje0 = inicioDoDia(new Date());
+  const ehHoje = inicioDoDia(new Date(ag.data)).getTime() === hoje0.getTime();
+  const agora = new Date();
+  const minutoAgora = agora.getHours() * 60 + agora.getMinutes();
+  const proximo = ehHoje
+    ? doDia.find((a) => emMin(a.horaInicio) >= minutoAgora) || null
+    : doDia[0] || null;
+
+  let selo = 'Confirmado';
+  if (ag.status === 'cancelado') selo = 'Cancelado';
+  else if (ag.status === 'concluido') selo = 'Concluído';
+  else if (proximo && proximo.id === ag.id) selo = 'Agora';
+
+  const servicos = await prisma.servico.findMany({
+    where: { barbeariaId: b, ativo: true },
+    orderBy: { nome: 'asc' },
+  });
+
+  const d = new Date(ag.data);
+  res.render('painel/_agenda-detalhe', {
+    layout: false,
+    ag,
+    selo,
+    dataStr: iso(d),
+    barbeiroSelecionado: String(req.query.barbeiro || ''),
+    diaNum: d.getDate(),
+    mesCurto: MESES_EXT[d.getMonth()].toLowerCase().slice(0, 3),
+    formasPagamento: FORMAS_PAGAMENTO,
+    servicos,
+    maxParcelas: MAX_PARCELAS,
+  });
 }
 
 // POST /painel/agenda/:id/excluir — exclui o agendamento (qualquer status)
@@ -311,7 +503,7 @@ async function excluir(req, res) {
   await prisma.agendamento.delete({ where: { id: agendamento.id } });
 
   req.session.flash = { tipo: 'sucesso', texto: 'Agendamento excluído.' };
-  res.redirect(urlRetorno(req));
+  responderOk(req, res);
 }
 
 // Carrega os dados auxiliares do formulário de agendamento manual.
@@ -479,4 +671,4 @@ async function removerBloqueio(req, res) {
   res.redirect('/painel/agenda' + (s ? '?' + s : ''));
 }
 
-module.exports = { verAgenda, adicionarItem, removerItem, mudarStatus, excluir, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson };
+module.exports = { verAgenda, adicionarItem, removerItem, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson };
