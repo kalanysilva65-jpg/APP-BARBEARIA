@@ -9,6 +9,7 @@ const { horariosDisponiveis, todosHorarios, dataLocal } = require('../services/d
 const { DIAS_SEMANA } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const planoServ = require('../services/plano');
+const notifServ = require('../services/notificacoes');
 const { lerJanelaAgendamento } = require('./horarioController');
 
 // Até quantos dias no futuro o cliente pode marcar, de acordo com a janela
@@ -489,6 +490,11 @@ async function confirmar(req, res) {
 
   // Consome 1 uso do plano (limitado; ilimitado não desconta).
   if (usaPlano) await planoServ.ajustarUso(assinatura.id, -1);
+
+  // Avisa o barbeiro no aparelho dele. Sem `await`: o cliente não pode esperar
+  // (nem levar erro) por causa de um push — o agendamento já está criado, e o
+  // serviço engole as próprias falhas.
+  notifServ.notificarNovoAgendamento(agendamento, servicos.map((s) => s.nome).join(' + '));
 
   res.redirect('/agendar/sucesso/' + agendamento.id);
 }

@@ -75,10 +75,37 @@ model Usuario {
   horariosTrabalho HorarioTrabalho[]
   bloqueios        Bloqueio[]
   agendamentos     Agendamento[]
+  dispositivosPush DispositivoPush[]
 
   // E-mail único DENTRO de cada barbearia (o mesmo e-mail pode existir em barbearias diferentes).
   @@unique([barbeariaId, email])
   @@map("usuarios")
+}
+
+/// Aparelho autorizado a receber aviso de agendamento novo.
+///
+/// Um usuário pode ter vários (celular, tablet, o computador da barbearia), e
+/// cada um é uma inscrição independente — desligar o aviso num aparelho não
+/// pode calar os outros.
+///
+/// Serve aos dois mundos: no navegador (Web Push) `endpoint` é a URL que o
+/// próprio navegador fornece e p256dh/auth são as chaves de cifragem dela; no
+/// app nativo (APNs/FCM, quando existir) `endpoint` guarda o token do aparelho
+/// e as chaves ficam nulas. `plataforma` diz qual dos dois é, para o serviço de
+/// envio saber por onde mandar.
+model DispositivoPush {
+  id         Int      @id @default(autoincrement())
+  usuarioId  Int      @map("usuario_id")
+  endpoint   String   @unique // URL do Web Push, ou token do aparelho no nativo
+  p256dh     String? // só Web Push
+  auth       String? // só Web Push
+  plataforma String   @default("web") // web | ios | android
+  criadoEm   DateTime @default(now()) @map("criado_em")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("dispositivos_push")
 }
 
 /// Jornada de trabalho de cada barbeiro (um registro por dia da semana).

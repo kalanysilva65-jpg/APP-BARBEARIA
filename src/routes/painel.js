@@ -17,6 +17,7 @@ const perfilController = require('../controllers/perfilController');
 const equipeController = require('../controllers/equipeController');
 const relatorioController = require('../controllers/relatorioController');
 const fidelidadeController = require('../controllers/fidelidadeController');
+const notificacaoController = require('../controllers/notificacaoController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -110,6 +111,14 @@ router.post('/perfil/jornada', horarioController.salvarJornada);
 
 // "Mais" — menu com as demais seções (acesso pela navegação inferior).
 router.get('/mais', perfilController.ver);
+
+// --- Avisos no aparelho ----------------------------------------------------
+// Agem sempre sobre o usuário logado (nunca sobre um id vindo do corpo), senão
+// daria para inscrever o aparelho de um barbeiro na conta de outro.
+router.get('/notificacoes/chave', notificacaoController.chave);
+router.post('/notificacoes/inscrever', notificacaoController.inscrever);
+router.post('/notificacoes/cancelar', notificacaoController.cancelar);
+router.post('/notificacoes/testar', notificacaoController.testar);
 
 // --- Agenda (todos: funcionário vê a sua, admin vê todas) -----------------
 router.get('/agenda', agendaController.verAgenda);

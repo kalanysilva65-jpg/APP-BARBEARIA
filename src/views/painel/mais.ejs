@@ -60,6 +60,27 @@
     </div>
   </div>
 
+  <%/* Avisos no aparelho. A permissão de notificação só pode ser pedida a
+       partir de um TOQUE do usuário — navegador nenhum concede no carregamento
+       da página —, então isto é um botão de verdade, não um interruptor que
+       "já vem ligado". O estado real é lido do navegador ao abrir a tela. */%>
+  <div class="sv-pf-secao sv-reveal" id="pf-avisos" hidden>
+    <div class="sv-pf-secao-topo">
+      <div class="sv-pf-secao-tit">Avisos</div>
+      <div class="sv-pf-secao-lado" id="pf-avisos-estado"></div>
+    </div>
+    <div class="sv-cartao sv-pf-avisos">
+      <div class="sv-pf-avisos-texto" id="pf-avisos-texto">
+        Receba um aviso neste aparelho quando cair um agendamento novo na sua agenda.
+      </div>
+      <div class="sv-pf-avisos-botoes">
+        <button type="button" class="sv-btn sv-pf-avisos-btn" id="pf-avisos-ligar">Ativar avisos</button>
+        <button type="button" class="sv-pf-avisos-sec" id="pf-avisos-testar" hidden>Enviar teste</button>
+        <button type="button" class="sv-pf-avisos-sec" id="pf-avisos-desligar" hidden>Desativar</button>
+      </div>
+    </div>
+  </div>
+
   <% if (usuario.barbeariaId) { %>
     <%/* Jornada EDITÁVEL aqui (pedido do dono, 2026-08-01): a tela
          /painel/horarios saiu do menu e a edição veio para o Perfil.
@@ -144,4 +165,139 @@
     var conta = document.getElementById('pf-conta-dias');
     if (conta) conta.textContent = marcados ? marcados + (marcados === 1 ? ' dia' : ' dias') : 'nenhum dia';
   }
+</script>
+
+<script>
+  // Avisos no aparelho (Web Push).
+  //
+  // A seção nasce escondida e só aparece se este navegador souber receber
+  // avisos E o servidor tiver as chaves VAPID configuradas — oferecer um botão
+  // que não tem como funcionar é pior do que não oferecer nada.
+  //
+  // A permissão só pode ser pedida a partir de um toque do usuário: navegador
+  // nenhum concede no carregamento da página. Por isso "Ativar" é um botão de
+  // verdade, e não um interruptor que tenta se ligar sozinho.
+  (function () {
+    var secao = document.getElementById('pf-avisos');
+    if (!secao) return;
+
+    var suportado = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    if (!suportado) return;
+
+    var btnLigar = document.getElementById('pf-avisos-ligar');
+    var btnTestar = document.getElementById('pf-avisos-testar');
+    var btnDesligar = document.getElementById('pf-avisos-desligar');
+    var estado = document.getElementById('pf-avisos-estado');
+    var texto = document.getElementById('pf-avisos-texto');
+    var chavePublica = null;
+
+    function base64ParaUint8(base64) {
+      var pad = '='.repeat((4 - (base64.length % 4)) % 4);
+      var b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+      var cru = atob(b64);
+      var saida = new Uint8Array(cru.length);
+      for (var i = 0; i < cru.length; i++) saida[i] = cru.charCodeAt(i);
+      return saida;
+    }
+
+    function pintar(ligado) {
+      estado.textContent = ligado ? 'ligados' : 'desligados';
+      btnLigar.hidden = ligado;
+      btnTestar.hidden = !ligado;
+      btnDesligar.hidden = !ligado;
+      texto.textContent = ligado
+        ? 'Este aparelho vai avisar quando cair um agendamento novo na sua agenda.'
+        : 'Receba um aviso neste aparelho quando cair um agendamento novo na sua agenda.';
+    }
+
+    function inscricaoAtual() {
+      return navigator.serviceWorker.ready.then(function (reg) {
+        return reg.pushManager.getSubscription();
+      });
+    }
+
+    // Estado inicial: o navegador é a fonte da verdade sobre este aparelho.
+    // O servidor sabe quantos aparelhos existem, mas não qual é este.
+    fetch('/painel/notificacoes/chave', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (info) {
+        if (!info.configurado) return; // servidor sem VAPID: seção segue escondida
+        chavePublica = info.chave;
+        secao.hidden = false;
+        return inscricaoAtual().then(function (ins) {
+          pintar(!!ins && Notification.permission === 'granted');
+        });
+      })
+      .catch(function () { /* sem avisos: a seção só não aparece */ });
+
+    btnLigar.addEventListener('click', function () {
+      btnLigar.disabled = true;
+      Notification.requestPermission()
+        .then(function (permissao) {
+          if (permissao !== 'granted') {
+            // Negado é decisão do usuário; explicar onde reverter é mais útil
+            // do que insistir (o navegador não pergunta duas vezes).
+            texto.textContent =
+              'Os avisos foram bloqueados para este site. Para reativar, libere as notificações nas configurações do navegador e volte aqui.';
+            throw new Error('permissao negada');
+          }
+          return navigator.serviceWorker.ready;
+        })
+        .then(function (reg) {
+          return reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: base64ParaUint8(chavePublica),
+          });
+        })
+        .then(function (ins) {
+          return fetch('/painel/notificacoes/inscrever', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ inscricao: ins.toJSON(), plataforma: 'web' }),
+          });
+        })
+        .then(function (r) { if (!r.ok) throw new Error('falha ao registrar'); return r.json(); })
+        .then(function () { pintar(true); })
+        .catch(function () { /* o texto já explica */ })
+        .then(function () { btnLigar.disabled = false; });
+    });
+
+    btnDesligar.addEventListener('click', function () {
+      btnDesligar.disabled = true;
+      inscricaoAtual()
+        .then(function (ins) {
+          if (!ins) return null;
+          var endpoint = ins.endpoint;
+          // Cancela nos dois lados: só no navegador deixaria o servidor
+          // mandando para um endereço morto; só no servidor deixaria o
+          // navegador achando que está inscrito.
+          return ins.unsubscribe().then(function () {
+            return fetch('/painel/notificacoes/cancelar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ endpoint: endpoint }),
+            });
+          });
+        })
+        .then(function () { pintar(false); })
+        .catch(function () { /* silêncio: o estado é repintado ao reabrir */ })
+        .then(function () { btnDesligar.disabled = false; });
+    });
+
+    btnTestar.addEventListener('click', function () {
+      btnTestar.disabled = true;
+      var rotulo = btnTestar.textContent;
+      fetch('/painel/notificacoes/testar', { method: 'POST', credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          btnTestar.textContent = j.entregues > 0 ? 'Enviado!' : 'Nenhum aparelho';
+        })
+        .catch(function () { btnTestar.textContent = 'Falhou'; })
+        .then(function () {
+          setTimeout(function () { btnTestar.textContent = rotulo; btnTestar.disabled = false; }, 2200);
+        });
+    });
+  })();
 </script>
