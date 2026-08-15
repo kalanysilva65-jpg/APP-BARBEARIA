@@ -1,0 +1,80 @@
+<%/* Política de privacidade.
+
+     Existe porque a App Store e a Play Store EXIGEM uma URL pública de
+     política de privacidade no formulário de submissão — sem ela o app nem
+     entra em revisão. Também é o que a LGPD pede de quem guarda dado de
+     cliente.
+
+     O conteúdo descreve o que o app REALMENTE faz hoje (conferido contra
+     prisma/schema.prisma). Se o app passar a coletar outra coisa, esta página
+     precisa acompanhar — é declaração pública, não texto de enfeite.
+
+     ATENÇÃO: isto é um rascunho técnico honesto, não parecer jurídico.
+     Convém uma revisão de advogado antes de publicar nas lojas. */%>
+<div class="sv-legal">
+  <h1 class="sv-legal-tit">Política de Privacidade</h1>
+  <p class="sv-legal-data">Última atualização: <%= atualizadoEm %></p>
+
+  <p>
+    O <strong>Cortavo</strong> é um sistema de gestão e agendamento para barbearias.
+    Esta política explica quais dados o sistema guarda, para quê, e o que você pode
+    pedir a respeito deles.
+  </p>
+
+  <h2>Quem é responsável pelos dados</h2>
+  <p>
+    Cada barbearia é responsável pelos dados dos seus próprios clientes. O Cortavo
+    fornece o sistema e a infraestrutura onde esses dados ficam armazenados, e trata
+    os dados apenas para operar o serviço.
+  </p>
+
+  <h2>Que dados são coletados</h2>
+  <ul>
+    <li><strong>De quem agenda:</strong> nome, telefone e, quando informado, e-mail e data de nascimento.</li>
+    <li><strong>Dos agendamentos:</strong> data, horário, serviços escolhidos, barbeiro, valor e forma de pagamento.</li>
+    <li><strong>Da equipe da barbearia:</strong> nome, e-mail, senha (guardada apenas de forma cifrada) e, se enviada, foto de perfil.</li>
+    <li><strong>Da barbearia:</strong> nome, endereço e coordenadas geográficas do estabelecimento, usadas para exibi-la na busca por proximidade.</li>
+    <li><strong>Técnicos:</strong> um cookie de sessão, necessário para manter você conectado.</li>
+  </ul>
+
+  <h2>Para que os dados são usados</h2>
+  <p>
+    Exclusivamente para operar o serviço: marcar e gerenciar atendimentos, manter o
+    histórico e o cadastro de clientes da barbearia, controlar caixa e comissões, e
+    permitir o acesso da equipe ao painel.
+  </p>
+
+  <h2>O que o sistema NÃO faz</h2>
+  <ul>
+    <li>Não vende nem compartilha dados com terceiros para publicidade.</li>
+    <li>Não usa os dados para traçar perfis fora do contexto da barbearia.</li>
+    <li>Não coleta localização do aparelho do usuário.</li>
+    <li>Não guarda dados de cartão de crédito. O pagamento acontece presencialmente na barbearia; o sistema registra apenas a forma escolhida (ex.: "Pix", "Crédito"), nunca números de cartão.</li>
+  </ul>
+
+  <h2>Por quanto tempo ficam guardados</h2>
+  <p>
+    Enquanto a barbearia mantiver a conta ativa, já que o histórico de atendimentos
+    é parte do serviço. Encerrada a conta, os dados podem ser apagados a pedido.
+  </p>
+
+  <h2>Seus direitos</h2>
+  <p>
+    Você pode pedir acesso, correção ou exclusão dos seus dados. O caminho mais
+    direto é falar com a barbearia onde você é cliente, que administra o próprio
+    cadastro. Também é possível escrever para o endereço abaixo.
+  </p>
+
+  <h2>Segurança</h2>
+  <p>
+    O acesso ao sistema acontece sempre por conexão cifrada (HTTPS). As senhas são
+    guardadas com hash e não podem ser lidas, nem por quem opera o sistema. Cada
+    barbearia enxerga somente os próprios dados.
+  </p>
+
+  <h2>Contato</h2>
+  <p>
+    Dúvidas sobre esta política ou sobre seus dados:
+    <a href="mailto:<%= emailContato %>"><%= emailContato %></a>
+  </p>
+</div>
