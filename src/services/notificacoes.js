@@ -10,6 +10,7 @@
 // disparou. Um push que não sai não pode impedir um agendamento de ser criado.
 const webpush = require('web-push');
 const prisma = require('../config/db');
+const apns = require('./apns');
 
 const PUBLICA = process.env.VAPID_PUBLIC_KEY || '';
 const PRIVADA = process.env.VAPID_PRIVATE_KEY || '';
@@ -29,23 +30,32 @@ function chavePublica() {
   return PUBLICA;
 }
 
+// Plataformas que o serviço sabe entregar. Fechada de propósito: um valor
+// desconhecido aqui viraria um aparelho que nunca recebe nada e ninguém
+// descobre por quê.
+const PLATAFORMAS = new Set(['web', 'ios', 'android']);
+
 // Guarda (ou atualiza) a inscrição de um aparelho.
 // O endpoint é único: reinscrever o mesmo aparelho atualiza em vez de duplicar.
+// No iOS o "endpoint" é o token do aparelho e não há chaves de cifragem — quem
+// cifra é o próprio APNs.
 async function registrarDispositivo(usuarioId, inscricao, plataforma) {
   const endpoint = String(inscricao && inscricao.endpoint ? inscricao.endpoint : '').trim();
   if (!endpoint) return null;
 
+  const plat = PLATAFORMAS.has(plataforma) ? plataforma : 'web';
   const chaves = inscricao.keys || {};
+  const dados = {
+    usuarioId,
+    p256dh: chaves.p256dh || null,
+    auth: chaves.auth || null,
+    plataforma: plat,
+  };
+
   return prisma.dispositivoPush.upsert({
     where: { endpoint },
-    update: { usuarioId, p256dh: chaves.p256dh || null, auth: chaves.auth || null, plataforma: plataforma || 'web' },
-    create: {
-      usuarioId,
-      endpoint,
-      p256dh: chaves.p256dh || null,
-      auth: chaves.auth || null,
-      plataforma: plataforma || 'web',
-    },
+    update: dados,
+    create: { endpoint, ...dados },
   });
 }
 
@@ -58,10 +68,21 @@ async function contarDispositivos(usuarioId) {
   return prisma.dispositivoPush.count({ where: { usuarioId } });
 }
 
+// Há como enviar por ALGUM transporte? (VAPID para navegador, APNs para iPhone)
+function algumTransporteAtivo() {
+  return configurado || apns.estaConfigurado();
+}
+
 // Envia um aviso para todos os aparelhos de um usuário.
+//
+// Cada aparelho é entregue pelo transporte da sua plataforma: navegador vai por
+// Web Push, app iOS vai por APNs. Um transporte desligado não impede o outro —
+// o barbeiro pode ter o app no iPhone e o navegador no computador da barbearia,
+// e desligar um dos dois não pode calar o outro.
+//
 // Retorna quantos receberam — útil para testar e para o log.
 async function enviarParaUsuario(usuarioId, aviso) {
-  if (!configurado || !usuarioId) return 0;
+  if (!algumTransporteAtivo() || !usuarioId) return 0;
 
   const aparelhos = await prisma.dispositivoPush.findMany({ where: { usuarioId } });
   if (!aparelhos.length) return 0;
@@ -75,7 +96,20 @@ async function enviarParaUsuario(usuarioId, aviso) {
 
   let entregues = 0;
   for (const ap of aparelhos) {
-    if (ap.plataforma !== 'web') continue; // APNs/FCM entram aqui quando existirem
+    // --- app iOS (APNs) ---
+    if (ap.plataforma === 'ios') {
+      if (!apns.estaConfigurado()) continue;
+      const r = await apns.enviar(ap.endpoint, aviso);
+      if (r.ok) entregues++;
+      else if (r.removerToken) {
+        await prisma.dispositivoPush.deleteMany({ where: { endpoint: ap.endpoint } });
+      }
+      continue;
+    }
+
+    // --- navegador (Web Push) ---
+    if (ap.plataforma !== 'web') continue; // android/FCM entra aqui quando existir
+    if (!configurado) continue;
 
     try {
       await webpush.sendNotification(

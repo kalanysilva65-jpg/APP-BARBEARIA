@@ -19,6 +19,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@parse/node-apn": "^8.1.0",
     "@prisma/client": "^6.2.1",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.7",

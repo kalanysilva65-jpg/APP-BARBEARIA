@@ -53,6 +53,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}</script>
+    <%/* Avisos nativos: só age dentro do app da loja (Capacitor). No navegador
+         o arquivo sai sem fazer nada — lá quem cuida é o Web Push do Perfil. */%>
+    <script defer src="/js/push-nativo.js"></script>
     <%/* Motor de animação do design suave: dispara as entradas por `data-*`
          quando o elemento aparece na tela. `defer` porque ele varre o DOM —
          precisa do documento montado, mas não deve segurar a pintura. */%>

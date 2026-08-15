@@ -31,22 +31,79 @@ A Apple **rejeita apps que são só um site dentro de uma janela**. É a regra 4
 ("Minimum Functionality"), e é a causa mais comum de reprovação de apps como
 este. Um Capacitor apontando para uma URL é exatamente o que ela descreve.
 
-Não adianta descobrir isso depois de pagar os US$ 99. O que reduz o risco, em
-ordem de eficácia:
+**O que já foi feito contra isso:** notificações push nativas (APNs) — o
+barbeiro é avisado no celular quando cai um agendamento. É a funcionalidade que
+mais claramente justifica ser um app, e é útil de verdade aqui. Falta ligar as
+credenciais (seção abaixo).
 
-- **Notificações push nativas** — avisar o barbeiro de um agendamento novo. É a
-  funcionalidade que mais claramente justifica ser um app, e é útil de verdade
-  aqui. Exige `@capacitor/push-notifications` + Firebase/APNs.
-- **Login com Face ID / Touch ID** (`@capacitor/biometric` ou equivalente).
-- **Adicionar o atendimento ao calendário do aparelho**, compartilhar via folha
-  nativa (`@capacitor/share`), abrir o WhatsApp do cliente direto.
+Se ainda assim vier rejeição, os próximos candidatos, em ordem de esforço:
+Face ID para entrar, adicionar o atendimento ao calendário do aparelho,
+compartilhar via folha nativa (`@capacitor/share`).
 
-Recomendação honesta: **resolva o push antes de submeter**. Submeter sem nenhuma
-integração nativa é apostar os US$ 99 e algumas semanas numa regra que a Apple
-aplica com frequência.
+## Avisos no app (APNs) — o que falta ligar
 
-A Play Store é bem mais tolerante nesse ponto — se quiser começar por algum
-lugar, comece pelo Android.
+O código está pronto (`src/services/apns.js`, `public/js/push-nativo.js`); falta
+a credencial, que só existe depois da conta de desenvolvedor.
+
+Por que um caminho separado do Web Push que já funciona no navegador: o
+Capacitor roda a página num **WKWebView, que não implementa Web Push**. O aviso
+que chega no Safari com o site na tela de início fica mudo dentro do app. Daí o
+APNs.
+
+**1. Gerar a chave** (Apple Developer → Certificates, Identifiers & Profiles →
+   **Keys** → **+**): marque **Apple Push Notifications service (APNs)**,
+   registre e baixe o arquivo `.p8`.
+   O download acontece **UMA VEZ SÓ** — perdeu, tem que gerar outra. Guarde bem.
+   Anote também o **Key ID** (aparece no nome do arquivo) e o **Team ID** (canto
+   superior direito do painel).
+
+**2. No Xcode**, na aba **Signing & Capabilities**: adicione **Push
+   Notifications** e, em **Background Modes**, marque **Remote notifications**.
+
+**3. Instalar o plugin** (no Mac, junto do `cap add ios`):
+
+```bash
+npm install @capacitor/push-notifications
+npx cap sync ios
+```
+
+**4. No servidor**, envie o `.p8` para fora da pasta de deploy (ela é
+   sobrescrita a cada `git pull`) e restrinja o acesso:
+
+```bash
+mkdir -p ~/segredos && chmod 700 ~/segredos
+# copie o .p8 para ~/segredos/apns.p8 e então:
+chmod 600 ~/segredos/apns.p8
+```
+
+**5. Adicionar ao `~/app/.env`** (trocando pelos seus valores):
+
+```
+APNS_KEY_PATH=/home/cortavo/segredos/apns.p8
+APNS_KEY_ID=SEU_KEY_ID
+APNS_TEAM_ID=SEU_TEAM_ID
+APNS_BUNDLE_ID=br.com.cortavo.app
+APNS_PRODUCTION=false
+```
+
+`APNS_PRODUCTION=false` enquanto você testa por TestFlight/Xcode; vira `true`
+quando o app sair na App Store. **Errar isso é a causa nº 1 de "o push não
+chega"**: token de build de teste não funciona no servidor de produção da Apple,
+e vice-versa.
+
+Depois, `sudo systemctl restart cortavo`.
+
+**6. Testar**: abra o app no iPhone, aceite a permissão, entre no painel. O
+   token é registrado sozinho. Confira no servidor:
+
+```bash
+sqlite3 ~/cortavo-data/app.db "SELECT id, plataforma, substr(endpoint,1,12) || '...' FROM dispositivos_push;"
+```
+
+Aparecendo uma linha `ios`, use o botão **Enviar teste** no Perfil.
+
+Sem essas variáveis o servidor sobe igual e os aparelhos iOS ficam guardados
+esperando — nada quebra, os avisos só não saem.
 
 ## Passo a passo, quando tiver conta e Mac
 
