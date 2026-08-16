@@ -388,6 +388,22 @@ async function confirmar(req, res) {
   const ehQualquer = req.body.barbeiroId === 'any';
   const data = req.body.data;
   const hora = req.body.hora;
+
+  // A data precisa ser conferida ANTES de qualquer consulta que a use.
+  //
+  // Duas coisas passavam por aqui, e esta rota é PÚBLICA e sem login — quem
+  // posta não precisa ter visto a tela:
+  //  - `data=lixo` virava `Invalid Date` e estourava lá dentro do Prisma, com
+  //    tela de erro 500 no meio do agendamento do cliente;
+  //  - data no PASSADO era aceita numa boa (dava para criar agendamento em
+  //    2020). O cálculo de disponibilidade só marca horário vencido quando o
+  //    dia É hoje; dias que já passaram inteiros escapavam.
+  const dataFormatoOk = /^\d{4}-\d{2}-\d{2}$/.test(String(data || ''));
+  const dataObj = dataFormatoOk ? dataLocal(data) : null;
+  const dataOk = Boolean(dataObj) && !isNaN(dataObj.getTime());
+  const hoje0 = new Date();
+  hoje0.setHours(0, 0, 0, 0);
+  const dataNoPassado = dataOk && dataObj < hoje0;
   let nome = (req.body.cliente_nome || '').trim();
   let telefone = (req.body.cliente_telefone || '').trim();
   const nascimentoStr = (req.body.cliente_nascimento || '').trim();
@@ -401,7 +417,11 @@ async function confirmar(req, res) {
   // o mesmo barbeiro se dois clientes escolherem "qualquer" ao mesmo tempo.
   let barbeiro = null;
   if (ehQualquer) {
-    if (data && hora && servicos.length) barbeiro = await resolverBarbeiroQualquer(b, data, hora, duracaoTotal);
+    // Só resolve se a data for utilizável — senão a consulta de
+    // disponibilidade recebe uma data inválida e quebra.
+    if (dataOk && !dataNoPassado && hora && servicos.length) {
+      barbeiro = await resolverBarbeiroQualquer(b, data, hora, duracaoTotal);
+    }
   } else {
     barbeiro = await prisma.usuario.findFirst({ where: { id: idNum(req.body.barbeiroId), barbeariaId: b, ativo: true } });
   }
@@ -418,18 +438,20 @@ async function confirmar(req, res) {
   if (!servicos.length) erros.push('Serviço inválido.');
   if (!barbeiro) erros.push(ehQualquer ? 'Nenhum barbeiro está mais disponível nesse horário. Escolha outro.' : 'Selecione um barbeiro.');
   if (!data || !hora) erros.push('Selecione data e horário.');
+  else if (!dataOk) erros.push('Data inválida.');
+  else if (dataNoPassado) erros.push('Escolha uma data a partir de hoje.');
   if (!nome) erros.push('Informe seu nome.');
   if (!telefone) erros.push('Informe seu telefone.');
   if (!assinatura && req.body.assinatura) erros.push('Seu plano não está mais ativo.');
-  if (assinatura && data) {
-    const dow = dataLocal(data).getDay();
+  if (assinatura && dataOk) {
+    const dow = dataObj.getDay();
     const diasPermitidos = new Set(assinatura.plano.diasSemana.split(',').map(Number));
     if (!diasPermitidos.has(dow)) erros.push('Esse plano não pode ser usado nesse dia da semana.');
   }
 
   // Revalida a disponibilidade real (soma das durações de todos os serviços).
   // Pra "qualquer" já foi revalidado dentro de resolverBarbeiroQualquer.
-  if (!ehQualquer && servicos.length && barbeiro && data && hora) {
+  if (!ehQualquer && servicos.length && barbeiro && dataOk && !dataNoPassado && hora) {
     const livres = await horariosDisponiveis(barbeiro.id, data, duracaoTotal);
     if (!livres.includes(hora)) erros.push('Esse horário não está mais disponível. Escolha outro.');
   }

@@ -34,7 +34,17 @@ async function definirCaixaAutomatico(barbeariaId, ligado) {
 // pagamento diferente precisa atualizar o caixa, senão fica valendo a divisão
 // antiga.
 async function registrarEntradaAgendamento(agendamento) {
-  if (!agendamento || agendamento.valorTotal <= 0) return;
+  if (!agendamento) return;
+
+  // Limpa ANTES de decidir se há o que lançar.
+  //
+  // A versão anterior saía cedo quando o total era zero, e nesse caminho o
+  // `deleteMany` lá embaixo nunca rodava: zerar o total de um atendimento já
+  // concluído (ou remover o último item) deixava a entrada ANTIGA pendurada no
+  // caixa. A receita do dia ficava inflada por um lançamento que não
+  // correspondia a nada, sem erro nenhum no log.
+  await prisma.caixa.deleteMany({ where: { agendamentoId: agendamento.id } });
+  if (agendamento.valorTotal <= 0) return;
 
   const partes = await prisma.pagamentoAgendamento.findMany({
     where: { agendamentoId: agendamento.id },
