@@ -39,7 +39,8 @@
 .pg-sv .sv-cl-topo,
 .pg-sv .sv-eq-topo {
   flex-shrink: 0;
-  padding: calc(54px + env(safe-area-inset-top, 0px)) 20px 0;
+  /* 34px: mesmo topo do `.sv-topo` do suave.css (o porquê está lá). */
+  padding: calc(34px + env(safe-area-inset-top, 0px)) 20px 0;
 }
 .pg-sv .sv-cl-topo-linha,
 .pg-sv .sv-eq-topo-linha {
@@ -59,14 +60,14 @@
   flex-shrink: 0;
 }
 
-/* Corpo rolável das duas telas. O padding de 118px embaixo é o espaço da
-   barra inferior flutuante. */
+/* Corpo rolável das duas telas. O padding de 106px embaixo é o espaço da
+   barra inferior flutuante (era 118px; desceu junto com a barra). */
 .pg-sv .sv-cl-corpo,
 .pg-sv .sv-eq-painel {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding-bottom: calc(118px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(106px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Entrada das listas: as faixas deslizam da direita (teamIn da referência),
@@ -616,7 +617,7 @@
    EQUIPE — página do barbeiro (tela cheia sobre a lista)
    ========================================================================= */
 /* z-index 35 fica ABAIXO da barra inferior (40) de propósito: a barra
-   continua utilizável e o padding de 118px do corpo garante que ela não
+   continua utilizável e o padding de 106px do corpo garante que ela não
    cubra nada. É o comportamento da referência. */
 .pg-sv .sv-eq-pg {
   position: fixed;
@@ -636,10 +637,14 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding-bottom: calc(118px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(106px + env(safe-area-inset-bottom, 0px));
 }
 .pg-sv .sv-eq-pg-topo {
-  padding: calc(46px + env(safe-area-inset-top, 0px)) 20px 0;
+  /* 26px, era 46px: mesmos -20px que o topo das telas principais levou (ver
+     `.sv-topo` no suave.css). Esta página é `inset:0`, então não herda o topo
+     de lá; sem baixar junto ela ficaria com MAIS branco no topo que a lista
+     que a abriu — antes era 8px mais justa que o topo padrão e continua. */
+  padding: calc(26px + env(safe-area-inset-top, 0px)) 20px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;

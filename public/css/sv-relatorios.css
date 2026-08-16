@@ -18,14 +18,15 @@
    ========================================================================= */
 .pg-sv .sv-rl {
   background: var(--sv-surface);
-  /* `.sv-tela` rola o conteúdo inteiro e reserva 118px pra barra inferior;
+  /* `.sv-tela` rola o conteúdo inteiro e reserva 106px pra barra inferior;
      aqui quem rola é só o corpo, então a reserva desce pra ele. */
   overflow: hidden;
   padding-bottom: 0;
 }
 
 .pg-sv .sv-rl-topo {
-  padding: calc(54px + env(safe-area-inset-top, 0px)) 20px 0;
+  /* 34px: mesmo topo do `.sv-topo` do suave.css (o porquê está lá). */
+  padding: calc(34px + env(safe-area-inset-top, 0px)) 20px 0;
   flex-shrink: 0;
 }
 .pg-sv .sv-rl-topo-linha {
@@ -153,7 +154,9 @@
   min-height: 0;
   overflow-y: auto;
   margin-top: 16px;
-  padding-bottom: 118px;
+  /* 106px: mesma reserva da barra do `.sv-tela` no suave.css. Aqui quem rola
+     é o corpo, então a reserva mora nele. */
+  padding-bottom: calc(106px + env(safe-area-inset-bottom, 0px));
 }
 /* Escalonamento da entrada, igual à Home: os blocos do topo sobem em cascata. */
 .pg-sv .sv-rl-p2 { animation-delay: 0.05s; }
@@ -1073,7 +1076,10 @@
   border-radius: 0;
   box-shadow: none;
   background: #f2f2f2;
-  padding: calc(46px + env(safe-area-inset-top, 0px)) 22px calc(92px + env(safe-area-inset-bottom, 0px));
+  /* 26px no topo, era 46px: mesmos -20px do topo das telas principais (ver
+     `.sv-topo` no suave.css) — esta é a página cheia do detalhe, `inset:0`,
+     e sem baixar junto sobraria mais branco aqui que na tela que a abriu. */
+  padding: calc(26px + env(safe-area-inset-top, 0px)) 22px calc(92px + env(safe-area-inset-bottom, 0px));
   animation: none;
 }
 /* O puxador é afordância de folha que se arrasta — numa página inteira ele

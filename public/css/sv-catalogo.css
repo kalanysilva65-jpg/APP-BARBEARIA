@@ -23,7 +23,8 @@
    TOPO — título + botão "Novo" + dica
    ========================================================================= */
 .pg-sv .sv-cat-topo {
-  padding: calc(54px + env(safe-area-inset-top, 0px)) 20px 0;
+  /* 34px: mesmo topo do `.sv-topo` do suave.css (o porquê está lá). */
+  padding: calc(34px + env(safe-area-inset-top, 0px)) 20px 0;
 }
 .pg-sv .sv-cat-topo-linha {
   display: flex;
@@ -176,7 +177,7 @@
   font-weight: 500;
   color: var(--sv-muted);
 }
-/* Respiro no fim: a barra inferior flutua sobre os últimos 118px. */
+/* Respiro no fim: a barra inferior flutua sobre os últimos 106px. */
 .pg-sv .sv-cat-fim { height: 26px; }
 
 /* =========================================================================

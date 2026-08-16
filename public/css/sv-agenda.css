@@ -25,7 +25,8 @@
    CABEÇALHO — título + data (abre o seletor de mês) + ações à direita
    ========================================================================= */
 .pg-sv .sv-ag-topo {
-  padding: calc(54px + env(safe-area-inset-top, 0px)) 20px 0;
+  /* 34px: mesmo topo do `.sv-topo` do suave.css (o porquê está lá). */
+  padding: calc(34px + env(safe-area-inset-top, 0px)) 20px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;

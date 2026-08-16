@@ -118,7 +118,14 @@
 .sv-tela {
   position: relative;
   flex: 1;
-  padding: 0 0 118px;
+  /* Reserva pra barra inferior flutuante, que passa por cima do conteúdo.
+     106px, era 118px: acompanha a descida da barra (bottom 26px -> 14px) pra
+     manter o MESMO respiro de 34px entre a última linha e a barra —
+     14 (vão) + 58 (altura da barra) + 34 (respiro) = 106.
+     O `env(safe-area-inset-bottom)` entrou junto porque a barra também soma
+     esse inset: sem ele, no iPhone com barra de gestos a reserva ficava curta
+     e a última linha da lista sumia atrás da barra. */
+  padding: 0 0 calc(106px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   background: var(--sv-bg);
@@ -131,8 +138,17 @@
 .sv-reveal { animation: svRevealUp 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.05) backwards; }
 
 /* Topo padrão: avatar + saudação/nome + ação à direita. */
+/* 34px, era 54px: o dono reclamou de "espaço muito grande em branco" acima do
+   título de cada tela. Medido no celular (375x812), o título assentava a 54px
+   do topo — quase 7% da altura da tela em branco antes de qualquer conteúdo.
+   34px encurta esse vão em 20px e ainda deixa uma faixa de respiro clara.
+   O `env(safe-area-inset-top)` CONTINUA somando: é ele que desvia do notch no
+   iPhone em tela cheia (lá o total vira ~34+47px). Mexer só no valor fixo.
+   Este é o valor de referência do topo — as telas com CSS próprio
+   (sv-agenda, sv-caixa, sv-catalogo, sv-clientes-equipe, sv-planos-perfil,
+   sv-relatorios) repetem os mesmos 34px e devem mudar junto. */
 .sv-topo {
-  padding: calc(54px + env(safe-area-inset-top, 0px)) 20px 0;
+  padding: calc(34px + env(safe-area-inset-top, 0px)) 20px 0;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -335,7 +351,12 @@
   position: fixed;
   left: 14px;
   right: 14px;
-  bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+  /* 14px, era 26px: o dono achou a barra "muito pra cima". 14px é o MESMO
+     recuo do `left`/`right` logo acima, então a barra flutua com folga igual
+     nos três lados em vez de sobrar um vão maior embaixo.
+     O `env(safe-area-inset-bottom)` continua somando: no iPhone com barra de
+     gestos ela sobe os ~34px do indicador e não encosta nele. */
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   z-index: 40;
   background: var(--sv-surface);
   border-radius: 28px;
