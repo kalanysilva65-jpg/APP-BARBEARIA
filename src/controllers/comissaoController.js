@@ -92,14 +92,38 @@ async function ver(req, res) {
         planosCreditados.add(ag.clientePlanoId);
       }
     } else {
+      // Total ajustado à mão MANDA sobre a soma dos itens.
+      //
+      // A comissão tem que sair do que foi cobrado do cliente. Sem isto, um
+      // atendimento com R$45 de itens cobrado a R$100 pagava comissão sobre
+      // R$45 — a 50%, R$22,50 em vez de R$50. O barbeiro recebia menos do que
+      // devia, e o caixa (que registra o cobrado) não batia com esta tela.
+      //
+      // O ajuste é distribuído na PROPORÇÃO dos itens para a parte de produto
+      // continuar recebendo a comissão própria dela, que é diferente da do
+      // barbeiro. Sem nenhum item com valor (tudo cortesia), não há proporção
+      // de onde partir e o valor cobrado conta como serviço.
+      const somaItens = ag.itens.reduce((s, it) => s + it.valorUnitario * it.quantidade, 0);
+      const ajustado = ag.totalManual && somaItens > 0;
+      const fator = ajustado ? ag.valorTotal / somaItens : 1;
+
       let comissaoProdutosSub = 0;
       for (const it of ag.itens) {
-        const valor = it.valorUnitario * it.quantidade;
+        const valor = Math.round(it.valorUnitario * it.quantidade * fator);
         if (it.servico.ehProduto) {
           produtosSub += valor;
           comissaoProdutosSub += Math.round(valor * ((it.servico.comissaoPercentual ?? 10) / 100));
         } else servicosSub += valor;
       }
+
+      if (ajustado) {
+        // Arredondar item a item pode sobrar (ou faltar) centavo. O resto vai
+        // para serviços, senão o "Faturado" da tela não fecharia com o total.
+        servicosSub += ag.valorTotal - (servicosSub + produtosSub);
+      } else if (ag.totalManual) {
+        servicosSub = ag.valorTotal; // ajustado, mas sem itens com valor
+      }
+
       grupo.comissaoProdutosTotal += comissaoProdutosSub;
     }
 
