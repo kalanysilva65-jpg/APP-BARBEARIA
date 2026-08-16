@@ -47,7 +47,10 @@ async function ver(req, res) {
   const barbeiros = await prisma.usuario.findMany({ where: { barbeariaId: b, ativo: true }, orderBy: { id: 'asc' } });
 
   const agendamentos = await prisma.agendamento.findMany({
-    where: { barbeariaId: b, status: 'concluido', data: { gte: inicio, lt: fimExcl } },
+    // Por CONCLUSAO, igual ao relatorio e ao caixa: a comissao acompanha o
+    // dinheiro que entrou no periodo. Contar pelo dia do atendimento faria esta
+    // tela discordar do faturamento que a alimenta.
+    where: { barbeariaId: b, status: 'concluido', concluidoEm: { gte: inicio, lt: fimExcl } },
     include: {
       usuario: true,
       itens: { include: { servico: true } },
@@ -171,6 +174,15 @@ async function ver(req, res) {
     const comissaoServicos = Math.round(g.servicosTotal * (pct / 100));
     const comissaoProdutos = g.comissaoProdutosTotal;
     const faturadoTotal = g.servicosTotal + g.produtosTotal;
+
+    // % que a tela REALMENTE pagou sobre produtos no período.
+    //
+    // O rótulo mostrava um valor fixo (a constante COMISSAO_PRODUTO_PERCENTUAL,
+    // 10%) que não era o que a conta usava: cada produto tem a sua própria %.
+    // Um produto a 15% fazia a linha dizer "10%" ao lado de um valor calculado
+    // a 15% — quem conferisse na mão achava erro onde não havia. Null quando
+    // não houve produto no período: aí não há percentual nenhum a mostrar.
+    const produtoPct = g.produtosTotal > 0 ? Math.round((comissaoProdutos / g.produtosTotal) * 100) : null;
     // Ticket médio = faturado total ÷ atendimentos concluídos no período.
     const ticketMedio = g.qtd > 0 ? Math.round(faturadoTotal / g.qtd) : 0;
     // Ocupação = tempo ocupado ÷ jornada disponível (null se não há jornada no período).
@@ -190,6 +202,7 @@ async function ver(req, res) {
       ...g,
       comissaoServicos,
       comissaoProdutos,
+      produtoPct,
       comissao: comissaoServicos + comissaoProdutos,
       faturadoTotal,
       ticketMedio,

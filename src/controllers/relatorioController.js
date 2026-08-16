@@ -70,8 +70,15 @@ async function ver(req, res) {
 
   // --- Período -----------------------------------------------------------
   const periodo = ['hoje', 'semana', 'mes', 'ano', 'custom'].includes(req.query.periodo) ? req.query.periodo : 'mes';
+  // Data digitada na URL precisa ser conferida: sem isto, `?de=lixo` virava
+  // `Invalid Date`, o Prisma recusava e a tela inteira caía com erro 500. O
+  // Caixa já validava assim; os relatórios não.
+  const DATA_OK = /^\d{4}-\d{2}-\d{2}$/;
+  const customValido =
+    periodo === 'custom' && DATA_OK.test(req.query.de || '') && DATA_OK.test(req.query.ate || '');
+
   let inicio, fimExcl, rotulo;
-  if (periodo === 'custom' && req.query.de && req.query.ate) {
+  if (customValido) {
     inicio = dataLocal(req.query.de);
     fimExcl = dataLocal(req.query.ate);
     fimExcl.setDate(fimExcl.getDate() + 1);
@@ -83,7 +90,12 @@ async function ver(req, res) {
     rotulo = 'Hoje';
   } else if (periodo === 'semana') {
     inicio = new Date(hoje0);
-    inicio.setDate(hoje0.getDate() - hoje0.getDay());
+    // Semana começa na SEGUNDA, igual ao Caixa e ao painel. Aqui começava no
+    // domingo (`- getDay()`), então "esta semana" queria dizer coisas
+    // diferentes em telas diferentes: num domingo, o relatório abria a semana
+    // que ainda ia começar (com dias futuros) enquanto o caixa mostrava a que
+    // estava terminando — R$100 de diferença no caso medido.
+    inicio.setDate(hoje0.getDate() - ((hoje0.getDay() + 6) % 7));
     fimExcl = new Date(inicio);
     fimExcl.setDate(inicio.getDate() + 7);
     rotulo = 'Esta semana';
@@ -176,16 +188,22 @@ async function ver(req, res) {
 
   // --- Agendamentos concluídos do período (base pra ticket médio, top
   //     serviços/produtos, desempenho por barbeiro, clientes novos/recorrentes) ---
+  // Filtra por `concluidoEm`, não por `data`: o faturamento conta no dia em que
+  // o atendimento foi CONCLUÍDO (decisão do dono, 2026-08-16). Como as entradas
+  // do caixa também são gravadas no instante da conclusão, as duas metades
+  // desta tela passam a falar do mesmo período — antes, um atendimento de
+  // ontem concluído hoje aparecia como "R$0 e 1 atendimento" ontem e
+  // "R$150 e 0 atendimentos" hoje.
   const agendamentos = await prisma.agendamento.findMany({
-    where: { barbeariaId: b, status: 'concluido', data: { gte: inicio, lt: fimExcl } },
+    where: { barbeariaId: b, status: 'concluido', concluidoEm: { gte: inicio, lt: fimExcl } },
     include: { usuario: true, itens: { include: { servico: true } }, cliente: true },
-    orderBy: [{ data: 'desc' }, { horaInicio: 'desc' }],
+    orderBy: [{ concluidoEm: 'desc' }, { horaInicio: 'desc' }],
   });
 
   const atendimentos = agendamentos.length;
   const ticketMedio = atendimentos > 0 ? Math.round(resumo.entrou / atendimentos) : 0;
   const agendamentosAnterior = await prisma.agendamento.count({
-    where: { barbeariaId: b, status: 'concluido', data: { gte: inicioAnterior, lt: fimAnteriorExcl } },
+    where: { barbeariaId: b, status: 'concluido', concluidoEm: { gte: inicioAnterior, lt: fimAnteriorExcl } },
   });
   const ticketMedioAnterior = agendamentosAnterior > 0 ? Math.round(resumoAnterior.entrou / agendamentosAnterior) : 0;
   const variacaoTicket = variacaoPct(ticketMedio, ticketMedioAnterior);

@@ -157,9 +157,12 @@
               <span class="pill-opcao pill-opcao--estatico"><%= g.barbeiro.comissaoPercentual %>%</span>
             <% } %>
           </div>
+          <%/* A % de produto é a de CADA produto, não uma taxa única da casa —
+               então aqui vai a que realmente foi paga no período. Sem produto
+               vendido não há percentual a mostrar. */%>
           <div class="linha-simples">
             <span class="linha-simples-titulo">Produtos</span>
-            <span class="pill-opcao pill-opcao--estatico"><%= comissaoProdutoPct %>%</span>
+            <span class="pill-opcao pill-opcao--estatico"><%= g.produtoPct === null ? '—' : g.produtoPct + '%' %></span>
           </div>
         </div>
 

@@ -37,6 +37,14 @@ function idNum(v) {
   return Number.isFinite(n) ? Math.trunc(n) : 0;
 }
 
+// A data veio no formato certo? Mesma razão do `idNum`: `dataLocal('lixo')` dá
+// `Invalid Date`, que o Prisma recusa com erro não tratado. `?data=lixo`
+// derrubava a agenda inteira com tela de erro em vez de simplesmente cair no
+// dia de hoje.
+function dataValida(s) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) && !isNaN(dataLocal(s).getTime());
+}
+
 // Parcelamento só faz sentido no crédito; nas outras formas fica travado em 1.
 const MAX_PARCELAS = 12;
 const FORMAS_PARCELAVEIS = new Set(['credito']);
@@ -152,7 +160,9 @@ async function reconciliarPagamentos(agendamentoId) {
   await caixaServ.removerEntradaAgendamento(agendamentoId);
   await prisma.agendamento.update({
     where: { id: agendamentoId },
-    data: { status: 'agendado', formaPagamento: null },
+    // `concluidoEm` sai junto: o atendimento deixou de estar concluído, e o
+    // faturamento dele precisa sair do dia em que estava contado.
+    data: { status: 'agendado', formaPagamento: null, concluidoEm: null },
   });
   return 'O total mudou e o pagamento estava dividido em mais de uma forma. O atendimento voltou para "em aberto" — conclua de novo informando como ficou o pagamento.';
 }
@@ -212,7 +222,7 @@ async function verAgenda(req, res) {
   const b = req.barbeariaId;
 
   // Data selecionada (padrão: hoje)
-  const dataStr = req.query.data || iso(new Date());
+  const dataStr = dataValida(req.query.data) ? req.query.data : iso(new Date());
   const dataObj = dataLocal(dataStr);
 
   // Mostra sempre um dia só (como sempre foi) — a faixa de dias é que agora
@@ -355,13 +365,13 @@ async function verAgenda(req, res) {
 async function adicionarItem(req, res) {
   const b = req.barbeariaId;
   const agendamento = await prisma.agendamento.findFirst({
-    where: { id: Number(req.params.id), barbeariaId: b },
+    where: { id: idNum(req.params.id), barbeariaId: b },
   });
   if (!agendamento) return res.redirect('/painel/agenda');
   if (!podeAlterar(req, agendamento)) return negarAcesso(res);
 
   const servico = await prisma.servico.findFirst({
-    where: { id: Number(req.body.servicoId), barbeariaId: b, ativo: true },
+    where: { id: idNum(req.body.servicoId), barbeariaId: b, ativo: true },
   });
   const quantidade = Math.max(1, Number(req.body.quantidade) || 1);
 
@@ -387,7 +397,7 @@ async function adicionarItem(req, res) {
 // POST /painel/agenda/itens/:id/remover — remove um item do agendamento
 async function removerItem(req, res) {
   const item = await prisma.agendamentoItem.findUnique({
-    where: { id: Number(req.params.id) },
+    where: { id: idNum(req.params.id) },
     include: { agendamento: true },
   });
   if (!item || item.agendamento.barbeariaId !== req.barbeariaId) return res.redirect('/painel/agenda');
@@ -487,7 +497,7 @@ async function alterarTotal(req, res) {
 async function mudarStatus(req, res) {
   const b = req.barbeariaId;
   const agendamento = await prisma.agendamento.findFirst({
-    where: { id: Number(req.params.id), barbeariaId: b },
+    where: { id: idNum(req.params.id), barbeariaId: b },
   });
   if (!agendamento) return res.redirect('/painel/agenda');
   if (!podeAlterar(req, agendamento)) return negarAcesso(res);
@@ -527,8 +537,19 @@ async function mudarStatus(req, res) {
       // que as telas antigas leem). Dividido, fica nulo — a verdade está em
       // `pagamentos`, e eleger "a" forma de um pagamento dividido seria mentira.
       dados.formaPagamento = partes.length === 1 ? partes[0].formaPagamento : null;
+
+      // Carimba QUANDO foi concluído — é por este instante que o faturamento é
+      // contado, não pelo dia do atendimento. Reconcluir um atendimento que já
+      // estava concluído (ex.: para trocar a forma de pagamento) NÃO remarca a
+      // data: o dinheiro entrou na primeira vez, e remarcar moveria receita
+      // já fechada de um dia para outro.
+      if (agendamento.status !== 'concluido') dados.concluidoEm = new Date();
     } else {
       dados.formaPagamento = null;
+      // Reabrir ou cancelar desfaz a conclusão: o valor sai do dia em que
+      // estava contado, senão sobraria faturamento de um atendimento que não
+      // aconteceu.
+      dados.concluidoEm = null;
     }
 
     await prisma.agendamento.update({ where: { id: agendamento.id }, data: dados });
@@ -630,7 +651,7 @@ async function detalheFragmento(req, res) {
 // POST /painel/agenda/:id/excluir — exclui o agendamento (qualquer status)
 async function excluir(req, res) {
   const agendamento = await prisma.agendamento.findFirst({
-    where: { id: Number(req.params.id), barbeariaId: req.barbeariaId },
+    where: { id: idNum(req.params.id), barbeariaId: req.barbeariaId },
   });
   if (!agendamento) return res.redirect('/painel/agenda');
   if (!podeAlterar(req, agendamento)) return negarAcesso(res);
@@ -669,13 +690,16 @@ async function dadosForm(req) {
 // pra atualizar as pílulas de horário quando o barbeiro/serviço mudam.
 async function horariosJson(req, res) {
   const b = req.barbeariaId;
-  const barbeiroId = Number(req.query.barbeiroId);
+  const barbeiroId = idNum(req.query.barbeiroId);
   const data = req.query.data;
-  const servicoId = Number(req.query.servicoId);
+  const servicoId = idNum(req.query.servicoId);
 
   const barbeiro = await prisma.usuario.findFirst({ where: { id: barbeiroId, barbeariaId: b, ativo: true } });
   if (!req.ehAdmin && barbeiro && barbeiro.id !== req.session.usuario.id) return res.json({ horarios: [] });
-  if (!barbeiro || !data) return res.json({ horarios: [] });
+  // Data inválida devolve lista vazia, não erro: este endpoint alimenta o
+  // pop-up "Novo agendamento" por fetch, e um 500 aqui chegava como página HTML
+  // de erro dentro de uma resposta que o script espera que seja JSON.
+  if (!barbeiro || !dataValida(data)) return res.json({ horarios: [] });
 
   const servico = servicoId ? await prisma.servico.findFirst({ where: { id: servicoId, barbeariaId: b } }) : null;
   const horarios = await todosHorarios(barbeiroId, data, servico ? servico.duracaoMin : 0);
@@ -701,8 +725,8 @@ async function criarManual(req, res) {
   const b = req.barbeariaId;
 
   // Barbeiro: admin escolhe; funcionário agenda sempre para si.
-  const usuarioId = ehAdmin ? Number(req.body.barbeiroId) : usuario.id;
-  const servicoId = Number(req.body.servicoId);
+  const usuarioId = ehAdmin ? idNum(req.body.barbeiroId) : usuario.id;
+  const servicoId = idNum(req.body.servicoId);
   const data = req.body.data;
   const hora = req.body.hora;
   const nome = (req.body.cliente_nome || '').trim();
@@ -720,7 +744,7 @@ async function criarManual(req, res) {
   if (!telefone) erros.push('Informe o telefone do cliente.');
 
   // Bloqueio de conflito: o novo horário não pode sobrepor outro atendimento do barbeiro.
-  if (barbeiro && servico && data && hora) {
+  if (barbeiro && servico && dataValida(data) && hora) {
     const iniNovo = paraMinutos(hora);
     const fimNovo = iniNovo + duracaoEfetiva(servico.duracaoMin);
     const existentes = await prisma.agendamento.findMany({
@@ -780,14 +804,14 @@ async function criarManual(req, res) {
 // Admin escolhe o barbeiro; funcionário bloqueia sempre a PRÓPRIA agenda.
 async function criarBloqueio(req, res) {
   const b = req.barbeariaId;
-  const barbeiroId = req.ehAdmin ? Number(req.body.barbeiroId) : req.session.usuario.id;
+  const barbeiroId = req.ehAdmin ? idNum(req.body.barbeiroId) : req.session.usuario.id;
   const data = req.body.data;
   const horaInicio = req.body.horaInicio;
   const horaFim = req.body.horaFim;
   const motivo = (req.body.motivo || '').trim() || null;
   const barbeiro = await prisma.usuario.findFirst({ where: { id: barbeiroId, barbeariaId: b } });
 
-  if (barbeiro && data && horaInicio && horaFim && horaInicio < horaFim) {
+  if (barbeiro && dataValida(data) && horaInicio && horaFim && horaInicio < horaFim) {
     await prisma.bloqueio.create({
       data: { barbeariaId: b, usuarioId: barbeiroId, data: dataLocal(data), horaInicio, horaFim, motivo },
     });
@@ -802,7 +826,7 @@ async function criarBloqueio(req, res) {
 // POST /painel/agenda/bloqueios/:id/remover — remove um bloqueio.
 // Funcionário só remove os PRÓPRIOS bloqueios; admin remove qualquer um.
 async function removerBloqueio(req, res) {
-  const where = { id: Number(req.params.id), barbeariaId: req.barbeariaId };
+  const where = { id: idNum(req.params.id), barbeariaId: req.barbeariaId };
   if (!req.ehAdmin) where.usuarioId = req.session.usuario.id;
   await prisma.bloqueio.deleteMany({ where }).catch(() => {});
   req.session.flash = { tipo: 'sucesso', texto: 'Bloqueio removido.' };
