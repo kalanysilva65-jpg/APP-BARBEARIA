@@ -139,10 +139,10 @@ router.post('/agenda/bloqueios/:id/remover', agendaController.removerBloqueio);
 // --- Clientes (admin + funcionários) --------------------------------------
 // Específicas (/:id/editar, /:id/remover) antes da paramétrica de update (/:id).
 router.get('/clientes', clienteController.listar);
-router.post('/clientes/planos/:id/remover', clienteController.removerPlano);
-router.post('/clientes/:id/planos', clienteController.adicionarPlano);
+router.post('/clientes/planos/:id/remover', exigeAdmin, clienteController.removerPlano);
+router.post('/clientes/:id/planos', exigeAdmin, clienteController.adicionarPlano);
 router.post('/clientes', clienteController.criar);
-router.post('/clientes/:id/remover', clienteController.remover);
+router.post('/clientes/:id/remover', exigeAdmin, clienteController.remover);
 router.post('/clientes/:id', clienteController.atualizar);
 
 // --- Planos: ver para todos; criar/editar só admin ------------------------
@@ -185,31 +185,31 @@ router.post('/horarios/janela', exigeAdmin, horarioController.salvarJanela);
 // vêm ANTES das paramétricas (/:id).
 router.get('/servicos', servicoController.listar);
 router.get('/produtos', servicoController.listarProdutos);
-router.get('/servicos/novo', servicoController.formNovo);
-router.post('/servicos', uploadFoto, servicoController.criar);
+router.get('/servicos/novo', exigeAdmin, servicoController.formNovo);
+router.post('/servicos', exigeAdmin, uploadFoto, servicoController.criar);
 // Categorias do catálogo (compartilhadas entre serviços e produtos)
-router.post('/servicos/categorias', servicoController.criarCategoria);
-router.post('/servicos/categorias/:id/remover', servicoController.removerCategoria);
-router.post('/servicos/categorias/:id', servicoController.renomearCategoria);
+router.post('/servicos/categorias', exigeAdmin, servicoController.criarCategoria);
+router.post('/servicos/categorias/:id/remover', exigeAdmin, servicoController.removerCategoria);
+router.post('/servicos/categorias/:id', exigeAdmin, servicoController.renomearCategoria);
 // Item específico (serviço ou produto — o redirect depois de salvar volta
 // para a tela certa, conforme o ehProduto do registro)
-router.get('/servicos/:id/editar', servicoController.formEditar);
-router.post('/servicos/:id/toggle', servicoController.alternarAtivo);
-router.post('/servicos/:id/remover', servicoController.remover);
-router.post('/servicos/:id', uploadFoto, servicoController.atualizar);
+router.get('/servicos/:id/editar', exigeAdmin, servicoController.formEditar);
+router.post('/servicos/:id/toggle', exigeAdmin, servicoController.alternarAtivo);
+router.post('/servicos/:id/remover', exigeAdmin, servicoController.remover);
+router.post('/servicos/:id', exigeAdmin, uploadFoto, servicoController.atualizar);
 
 // --- Estoque (admin + barbeiros) ------------------------------------------
 // Específicas (/novo, /categorias) antes das paramétricas (/:id).
 router.get('/estoque', estoqueController.listar);
-router.get('/estoque/novo', estoqueController.formNovo);
-router.post('/estoque', estoqueController.criar);
-router.post('/estoque/categorias', estoqueController.criarCategoria);
-router.post('/estoque/categorias/:id/remover', estoqueController.removerCategoria);
-router.post('/estoque/categorias/:id', estoqueController.renomearCategoria);
-router.get('/estoque/:id/editar', estoqueController.formEditar);
-router.post('/estoque/:id/ajuste', estoqueController.ajustar);
-router.post('/estoque/:id/remover', estoqueController.remover);
-router.post('/estoque/:id', estoqueController.atualizar);
+router.get('/estoque/novo', exigeAdmin, estoqueController.formNovo);
+router.post('/estoque', exigeAdmin, estoqueController.criar);
+router.post('/estoque/categorias', exigeAdmin, estoqueController.criarCategoria);
+router.post('/estoque/categorias/:id/remover', exigeAdmin, estoqueController.removerCategoria);
+router.post('/estoque/categorias/:id', exigeAdmin, estoqueController.renomearCategoria);
+router.get('/estoque/:id/editar', exigeAdmin, estoqueController.formEditar);
+router.post('/estoque/:id/ajuste', exigeAdmin, estoqueController.ajustar);
+router.post('/estoque/:id/remover', exigeAdmin, estoqueController.remover);
+router.post('/estoque/:id', exigeAdmin, estoqueController.atualizar);
 
 // Equipe (barbeiros) e Marca são gerenciadas apenas no painel-mestre (dono do
 // sistema), em /mestre/barbearias/:id — por isso não há rotas delas aqui.

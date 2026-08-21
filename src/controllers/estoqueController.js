@@ -1,5 +1,6 @@
 // Controlador do controle de estoque (insumos internos) e suas categorias.
-// Acesso exclusivo do admin (garantido pelas rotas com exigeAdmin).
+// Alterar é exclusivo do admin (rotas com exigeAdmin). LISTAR é aberto ao
+// funcionário: ver o que está acabando não faz mal, mexer no estoque faz.
 const prisma = require('../config/db');
 
 // "12,50" / "12" -> 1250 (centavos). Vazio/inválido -> 0.

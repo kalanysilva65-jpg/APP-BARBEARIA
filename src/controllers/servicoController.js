@@ -1,5 +1,6 @@
 // Controlador do catálogo de serviços/produtos e suas categorias.
-// Acesso exclusivo do admin (garantido pelas rotas com exigeAdmin).
+// Alterar é exclusivo do admin (rotas com exigeAdmin). LISTAR é aberto ao
+// funcionário: ele precisa do catálogo e dos preços para montar o atendimento.
 const prisma = require('../config/db');
 const fs = require('fs');
 const { caminhoDoUpload } = require('../config/paths');

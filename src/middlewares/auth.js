@@ -11,7 +11,12 @@ function exigeLogin(req, res, next) {
 }
 
 // Exige que o usuário logado seja admin (chefe).
-// Funcionários não acessam estoque, caixa, serviços nem configurações.
+// Funcionário NÃO altera catálogo, estoque, caixa, equipe, planos, fidelidade
+// nem configurações da barbearia — só quem administra mexe no que a casa
+// vende e no que ela guarda. Ele CONSULTA catálogo e estoque (precisa dos
+// preços para montar o atendimento) e cadastra/edita clientes, que é trabalho
+// dele no balcão. Excluir cliente e vender plano ficaram com o admin: são
+// ações que apagam histórico ou geram dinheiro no caixa, que ele nem vê.
 function exigeAdmin(req, res, next) {
   if (!req.session.usuario) {
     req.session.flash = { tipo: 'erro', texto: 'Faça login para continuar.' };
