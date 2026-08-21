@@ -88,7 +88,12 @@ async function main() {
   await garantirJornada(andrade.id, bruno.id);
 
   // Configurações básicas (não sobrescrevem se já existirem).
-  await garantirConfig(andrade.id, 'caixa_automatico', 'false');
+  // Ligado por padrao: concluir um atendimento e o momento em que o dinheiro
+  // entra, e e o que qualquer dono espera ver no caixa e nos relatorios. Com
+  // isto desligado a barbearia nova mostrava R$0 de faturamento para sempre,
+  // sem pista de que faltava uma chave escondida na tela de Caixa. Quem
+  // registra o caixa a mao desliga em Caixa > 'Entrada automatica'.
+  await garantirConfig(andrade.id, 'caixa_automatico', 'true');
   await garantirConfig(andrade.id, 'logo_url', '');
   await garantirConfig(andrade.id, 'mostrar_powered_by', 'true');
 

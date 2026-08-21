@@ -9,7 +9,9 @@ async function caixaAutomaticoLigado(barbeariaId) {
   const c = await prisma.configuracao.findUnique({
     where: { barbeariaId_chave: { barbeariaId, chave: 'caixa_automatico' } },
   });
-  return c ? c.valor === 'true' : false;
+  // Sem configuracao gravada, LIGADO: e o comportamento esperado, e o
+  // contrario fazia a barbearia parecer nao faturar nada.
+  return c ? c.valor === 'true' : true;
 }
 
 // Liga/desliga o toggle de uma barbearia.
