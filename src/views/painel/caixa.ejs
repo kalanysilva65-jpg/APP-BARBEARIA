@@ -149,10 +149,23 @@
           </span>
           <svg class="sv-linha-seta" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
         </button>
+        <%/* A entrada automática decide se o atendimento concluído vira dinheiro no
+             caixa — ou seja, se a barbearia "fatura" ou mostra R$0. Estava
+             dentro da folha de Categorias, onde ninguém procuraria: quem quer
+             descobrir por que o faturamento está zerado nao abre "Categorias de
+             caixa". Fica no primeiro nível, com o estado escrito por extenso. */%>
+        <form method="POST" action="/painel/caixa/config" class="sv-linha sv-cx-auto-linha">
+          <input type="hidden" name="ligado" value="<%= autoLigado ? 'false' : 'true' %>" />
+          <span class="sv-linha-corpo">
+            <span class="sv-linha-titulo">Entrada automática</span>
+            <span class="sv-linha-sub"><%= autoLigado ? 'Atendimento concluído entra no caixa sozinho' : 'Desligada — atendimento concluído não entra no caixa' %></span>
+          </span>
+          <button class="sv-cx-mini <%= autoLigado ? 'sv-cx-mini--claro' : '' %>" type="submit"><%= autoLigado ? 'Desligar' : 'Ligar' %></button>
+        </form>
         <button type="button" class="sv-linha" onclick="cxFolha('categorias', true)">
           <span class="sv-linha-corpo">
-            <span class="sv-linha-titulo">Categorias e automação</span>
-            <span class="sv-linha-sub"><%= categorias.length %> categoria<%= categorias.length === 1 ? '' : 's' %> · entrada automática <%= autoLigado ? 'ligada' : 'desligada' %></span>
+            <span class="sv-linha-titulo">Categorias</span>
+            <span class="sv-linha-sub"><%= categorias.length %> categoria<%= categorias.length === 1 ? '' : 's' %> de entrada e saída</span>
           </span>
           <svg class="sv-linha-seta" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
         </button>
@@ -283,11 +296,6 @@
       <% } %>
     </ul>
 
-    <form method="POST" action="/painel/caixa/config" class="sv-cx-auto">
-      <input type="hidden" name="ligado" value="<%= autoLigado ? 'false' : 'true' %>" />
-      <span class="sv-cx-auto-txt">Entrada automática ao concluir atendimento</span>
-      <button class="sv-cx-mini <%= autoLigado ? 'sv-cx-mini--claro' : '' %>" type="submit"><%= autoLigado ? 'Desligar' : 'Ligar' %></button>
-    </form>
   </div>
 </div>
 

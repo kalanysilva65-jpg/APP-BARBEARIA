@@ -576,3 +576,15 @@
   font-weight: 500;
   color: var(--sv-ink-2);
 }
+
+/* A entrada automática é uma LINHA de ajuste como as vizinhas, mas é um
+   formulário (o botão alterna na hora) em vez de abrir uma folha. Herda
+   `.sv-linha` e só reacerta o que o <form> não traz de graça. */
+.pg-sv .sv-cx-auto-linha {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  gap: 12px;
+}
+.pg-sv .sv-cx-auto-linha .sv-cx-mini { flex-shrink: 0; }
