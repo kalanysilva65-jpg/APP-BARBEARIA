@@ -100,6 +100,10 @@ repositório: gerada no Windows sairia quebrada.
    `design/icone-1024-appstore.png` para o slot único. Não precisa de gerador
    de tamanhos.
 5. **Display Name**: `Cortavo`. **Deployment Target**: iOS 14 ou superior.
+6. No `Info.plist`, adicione `ITSAppUsesNonExemptEncryption` = `NO`
+   (Boolean). Sem isso, o App Store Connect faz a pergunta de conformidade de
+   exportação **a cada envio**, e o build fica parado até você responder. `NO`
+   é a resposta correta aqui: o app só usa HTTPS, que é isento.
 
 ## Passo 4 — Ligar os avisos (APNs)
 
@@ -135,10 +139,25 @@ APNS_BUNDLE_ID=br.com.cortavo.app
 APNS_PRODUCTION=false
 ```
 
-`APNS_PRODUCTION=false` enquanto você testa por TestFlight ou direto do Xcode;
-vira `true` quando o app sair na App Store. **Errar isso é a causa nº 1 de "o
-push não chega"**: token de build de teste não funciona no servidor de produção
-da Apple, e vice-versa. Depois, `sudo systemctl restart cortavo`.
+**Errar `APNS_PRODUCTION` é a causa nº 1 de "o push não chega"**, e a regra não
+é a intuitiva. Quem decide o ambiente não é "estou testando ou publicando" — é
+o **perfil de assinatura** com que o app foi compilado, via a entitlement
+`aps-environment`:
+
+| Como o app chegou no iPhone | Ambiente APNs | `APNS_PRODUCTION` |
+|---|---|---|
+| Rodado direto do Xcode (perfil de desenvolvimento) | sandbox | `false` |
+| **TestFlight** (perfil de distribuição) | **produção** | **`true`** |
+| App Store | produção | `true` |
+
+Ou seja: **TestFlight já usa o servidor de produção da Apple**. Um token de
+TestFlight enviado para o sandbox volta como `BadDeviceToken`, e o aviso
+simplesmente não sai — sem erro visível no app.
+
+Como você vai testar primeiro rodando do Xcode no seu iPhone, comece com
+`false` e mude para `true` antes de mandar para o TestFlight.
+
+Depois de qualquer troca, `sudo systemctl restart cortavo`.
 
 **4.4 — Testar.** Abra o app no iPhone, aceite a permissão, entre no painel.
 O token é registrado sozinho:
