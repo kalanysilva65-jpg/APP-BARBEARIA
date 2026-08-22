@@ -1,29 +1,26 @@
-# Publicar o Cortavo na App Store (e na Play Store)
+# Publicar o Cortavo na App Store
 
-O que está pronto neste repositório e o que ainda depende de você.
+Guia de execução. Cada passo é uma coisa para fazer, na ordem em que precisa
+ser feita.
 
-## O que JÁ está configurado aqui
+## O que já está pronto no repositório
 
 - `capacitor.config.json` — a casca nativa aponta para `https://cortavo.com.br`.
   O app não embute o site: carrega o servidor. Consequência boa: **corrigir um
-  bug no VPS conserta o app instalado**, sem nova revisão da Apple. Consequência
-  ruim: sem internet o app não abre (por isso a tela de `capacitor-web/`).
-- `capacitor-web/index.html` — tela de "sem conexão", para o usuário offline não
-  ver o erro cru do navegador dentro do app.
-- `GET /privacidade` — política de privacidade pública, sem login. As duas lojas
-  **exigem** essa URL no formulário, e o revisor precisa abri-la sem conta.
-  URL final: `https://cortavo.com.br/privacidade`.
-
-## O que você precisa providenciar (não dá para fazer por código)
-
-1. **Conta no Apple Developer Program** — US$ 99/ano, em
-   [developer.apple.com/programs](https://developer.apple.com/programs/).
-   Pessoa física resolve; empresa (CNPJ) exige verificação e demora mais dias.
-2. **Um Mac com Xcode.** É exigência da Apple: só dá para compilar e enviar app
-   iOS a partir do macOS. Se você não tem, as saídas são:
-   - Mac emprestado por alguns dias (basta para a primeira submissão);
-   - Mac na nuvem (MacStadium, MacinCloud) — dezenas de dólares por mês;
-   - serviço de build na nuvem (Codemagic, Expo EAS) — compila sem Mac próprio.
+  bug no VPS conserta o app já instalado**, sem passar por nova revisão da
+  Apple. Consequência ruim: sem internet o app não abre — por isso a tela de
+  `capacitor-web/`.
+- `capacitor-web/index.html` — tela de "sem conexão", para o usuário offline
+  não ver o erro cru do navegador dentro do app.
+- `GET /privacidade` — política pública, sem login. As duas lojas **exigem**
+  essa URL, e o revisor precisa abri-la sem conta.
+  Final: `https://cortavo.com.br/privacidade`.
+- `design/icone-1024-appstore.png` — ícone 1024×1024, RGB **sem canal alfa**
+  (a App Store rejeita PNG com transparência no ícone).
+- `deploy/conta-revisor-apple.js` — cria a conta de demonstração para o revisor
+  (ver passo 1).
+- APNs no servidor: `src/services/apns.js` e `public/js/push-nativo.js`.
+  Falta só a credencial, que só existe depois da conta de desenvolvedor.
 
 ## ⚠️ O risco real de rejeição: guideline 4.2
 
@@ -32,43 +29,95 @@ A Apple **rejeita apps que são só um site dentro de uma janela**. É a regra 4
 este. Um Capacitor apontando para uma URL é exatamente o que ela descreve.
 
 **O que já foi feito contra isso:** notificações push nativas (APNs) — o
-barbeiro é avisado no celular quando cai um agendamento. É a funcionalidade que
-mais claramente justifica ser um app, e é útil de verdade aqui. Falta ligar as
-credenciais (seção abaixo).
+barbeiro é avisado no celular quando cai um agendamento, com o app fechado.
+É a funcionalidade que mais claramente justifica ser um app, e é útil de
+verdade aqui. **Não pule o passo 4.**
 
 Se ainda assim vier rejeição, os próximos candidatos, em ordem de esforço:
 Face ID para entrar, adicionar o atendimento ao calendário do aparelho,
 compartilhar via folha nativa (`@capacitor/share`).
 
-## Avisos no app (APNs) — o que falta ligar
+---
 
-O código está pronto (`src/services/apns.js`, `public/js/push-nativo.js`); falta
-a credencial, que só existe depois da conta de desenvolvedor.
+## Passo 1 — Conta de demonstração para o revisor (no VPS)
+
+A Apple testa o app **logado**. O formulário tem um campo obrigatório
+"Sign-In Information", e sem uma conta que funcione a rejeição é automática.
+
+**Não entregue a conta do Bruno.** O revisor conclui, cancela e apaga coisas —
+e a tela de Clientes mostra nome e telefone de pessoas reais. Isso é vazamento
+de dado pessoal, e contradiz a política de privacidade que declaramos no mesmo
+formulário.
+
+No servidor:
+
+```bash
+cd ~/app && node deploy/conta-revisor-apple.js
+```
+
+Cria a "Barbearia Demonstração" com gente inventada: 10 atendimentos
+concluídos, 5 agendados, 6 clientes, catálogo, estoque com um alerta e caixa
+batendo com os atendimentos. Painel cheio, que é o que evita a queixa de
+"conteúdo insuficiente".
+
+A barbearia nasce com `ativo = false` de propósito: isso **não** bloqueia o
+login no painel, mas some com ela da listagem do app do cliente e do
+agendamento público. Nenhum cliente real vai esbarrar numa barbearia de
+mentira.
+
+A senha é sorteada e **impressa uma única vez** — anote. Depois de publicar,
+`node deploy/conta-revisor-apple.js --remover` apaga tudo.
+
+## Passo 2 — Preparar o projeto iOS (no Mac)
+
+```bash
+git clone https://github.com/kalanysilva65-jpg/cortavo.git
+cd cortavo
+npm install --ignore-scripts
+npm install @capacitor/core @capacitor/cli @capacitor/ios @capacitor/push-notifications
+npx cap add ios
+npx cap sync ios
+npx cap open ios
+```
+
+**`--ignore-scripts` no primeiro `npm install` não é opcional.** O
+`postinstall` deste projeto roda `prisma migrate deploy` e o seed — ele quer um
+banco e um `.env` que no Mac não existem, e aborta a instalação inteira. Você
+não precisa do servidor no Mac: só do Capacitor.
+
+`npx cap add ios` **tem que rodar no Mac** — instala dependências via
+CocoaPods, que não existe no Windows. Por isso a pasta `ios/` não estava no
+repositório: gerada no Windows sairia quebrada.
+
+## Passo 3 — Configurar no Xcode
+
+1. **Signing & Capabilities** → escolha seu Team. Deixe "Automatically manage
+   signing" ligado.
+2. Ainda em Capabilities, **+ Capability** → **Push Notifications**.
+3. **+ Capability** → **Background Modes** → marque **Remote notifications**.
+4. **Ícone**: no painel esquerdo, `App > Assets > AppIcon`. Do Xcode 14 em
+   diante basta **um** arquivo de 1024×1024 — arraste
+   `design/icone-1024-appstore.png` para o slot único. Não precisa de gerador
+   de tamanhos.
+5. **Display Name**: `Cortavo`. **Deployment Target**: iOS 14 ou superior.
+
+## Passo 4 — Ligar os avisos (APNs)
+
+O código do servidor está pronto; falta a credencial.
 
 Por que um caminho separado do Web Push que já funciona no navegador: o
 Capacitor roda a página num **WKWebView, que não implementa Web Push**. O aviso
-que chega no Safari com o site na tela de início fica mudo dentro do app. Daí o
-APNs.
+que chega no Safari com o site na tela de início fica mudo dentro do app.
 
-**1. Gerar a chave** (Apple Developer → Certificates, Identifiers & Profiles →
-   **Keys** → **+**): marque **Apple Push Notifications service (APNs)**,
-   registre e baixe o arquivo `.p8`.
-   O download acontece **UMA VEZ SÓ** — perdeu, tem que gerar outra. Guarde bem.
-   Anote também o **Key ID** (aparece no nome do arquivo) e o **Team ID** (canto
-   superior direito do painel).
+**4.1 — Gerar a chave.** Apple Developer → Certificates, Identifiers &
+Profiles → **Keys** → **+**. Marque **Apple Push Notifications service
+(APNs)**, registre e baixe o `.p8`.
+O download acontece **UMA VEZ SÓ** — perdeu, tem que gerar outra. Anote o
+**Key ID** (está no nome do arquivo) e o **Team ID** (canto superior direito
+do painel).
 
-**2. No Xcode**, na aba **Signing & Capabilities**: adicione **Push
-   Notifications** e, em **Background Modes**, marque **Remote notifications**.
-
-**3. Instalar o plugin** (no Mac, junto do `cap add ios`):
-
-```bash
-npm install @capacitor/push-notifications
-npx cap sync ios
-```
-
-**4. No servidor**, envie o `.p8` para fora da pasta de deploy (ela é
-   sobrescrita a cada `git pull`) e restrinja o acesso:
+**4.2 — Guardar no servidor**, fora da pasta de deploy (ela é sobrescrita a
+cada `git pull`):
 
 ```bash
 mkdir -p ~/segredos && chmod 700 ~/segredos
@@ -76,7 +125,7 @@ mkdir -p ~/segredos && chmod 700 ~/segredos
 chmod 600 ~/segredos/apns.p8
 ```
 
-**5. Adicionar ao `~/app/.env`** (trocando pelos seus valores):
+**4.3 — Adicionar ao `~/app/.env`:**
 
 ```
 APNS_KEY_PATH=/home/cortavo/segredos/apns.p8
@@ -86,15 +135,13 @@ APNS_BUNDLE_ID=br.com.cortavo.app
 APNS_PRODUCTION=false
 ```
 
-`APNS_PRODUCTION=false` enquanto você testa por TestFlight/Xcode; vira `true`
-quando o app sair na App Store. **Errar isso é a causa nº 1 de "o push não
-chega"**: token de build de teste não funciona no servidor de produção da Apple,
-e vice-versa.
+`APNS_PRODUCTION=false` enquanto você testa por TestFlight ou direto do Xcode;
+vira `true` quando o app sair na App Store. **Errar isso é a causa nº 1 de "o
+push não chega"**: token de build de teste não funciona no servidor de produção
+da Apple, e vice-versa. Depois, `sudo systemctl restart cortavo`.
 
-Depois, `sudo systemctl restart cortavo`.
-
-**6. Testar**: abra o app no iPhone, aceite a permissão, entre no painel. O
-   token é registrado sozinho. Confira no servidor:
+**4.4 — Testar.** Abra o app no iPhone, aceite a permissão, entre no painel.
+O token é registrado sozinho:
 
 ```bash
 sqlite3 ~/cortavo-data/app.db "SELECT id, plataforma, substr(endpoint,1,12) || '...' FROM dispositivos_push;"
@@ -105,56 +152,45 @@ Aparecendo uma linha `ios`, use o botão **Enviar teste** no Perfil.
 Sem essas variáveis o servidor sobe igual e os aparelhos iOS ficam guardados
 esperando — nada quebra, os avisos só não saem.
 
-## Passo a passo, quando tiver conta e Mac
-
-No Mac, com o repositório clonado:
-
-```bash
-npm install
-npm install @capacitor/core @capacitor/cli @capacitor/ios
-npx cap add ios
-npx cap sync ios
-npx cap open ios
-```
-
-`npx cap add ios` precisa rodar **no Mac** — ele instala dependências via
-CocoaPods, que não existe no Windows. Por isso a pasta `ios/` não está
-versionada aqui: gerada no Windows sairia quebrada.
-
-No Xcode:
-
-1. **Signing & Capabilities** → escolha seu Team (a conta de desenvolvedor).
-2. **Ícone**: use `public/icon-512.png` como base. O Xcode pede vários tamanhos;
-   qualquer gerador de "App Icon Set" resolve.
-3. **Display Name**: `Cortavo`.
-4. **Deployment Target**: iOS 14 ou superior.
-
-Depois, em [App Store Connect](https://appstoreconnect.apple.com):
+## Passo 5 — App Store Connect
 
 1. **My Apps → +** → novo app, bundle ID `br.com.cortavo.app`.
-2. **Capturas de tela**: obrigatórias para iPhone 6.7" e 6.5". Tire do simulador
-   do Xcode ou de um iPhone real.
+2. **Capturas de tela**: obrigatórias para iPhone 6.7" e 6.5". Tire do
+   simulador do Xcode, logado na conta de demonstração do passo 1.
 3. **Privacy Policy URL**: `https://cortavo.com.br/privacidade`.
 4. **App Privacy**: declare o que a política diz — nome, e-mail, telefone e
    histórico de agendamentos, vinculados ao usuário, usados só para operar o
-   serviço. Não declare rastreamento (o app não rastreia).
-5. **Conta de teste para o revisor** (campo "Sign-In Information"): a Apple
-   testa o app logado. Crie um usuário só para isso — **não** entregue a conta
-   real do Bruno.
-6. No Xcode: **Product → Archive → Distribute App**.
+   serviço. **Não** declare rastreamento: o app não rastreia.
+5. **Sign-In Information**: o e-mail e a senha impressos no passo 1.
+6. **Notes for Review**: vale escrever, em inglês, que o app é a ferramenta de
+   gestão que barbearias usam para operar (agenda, caixa, comissões,
+   estoque) e que recebe avisos push de novos agendamentos. É onde você
+   responde a 4.2 antes de ser perguntado.
+7. No Xcode: **Product → Archive → Distribute App**.
 
 Revisão costuma levar de 1 a 3 dias.
 
-## Antes de submeter
+---
 
-- [ ] Trocar as senhas padrão do seed (`dono123`, `admin123`) — pendência antiga.
-- [ ] Criar o usuário de teste para o revisor da Apple.
+## Antes de apertar "Submit"
+
+- [ ] Trocar as senhas padrão do seed (`dono123`, `admin123`) — pendência
+      antiga, e agora tem gente de fora com acesso ao sistema.
+- [ ] Rodar o passo 1 e guardar a senha.
 - [ ] Revisar `/privacidade` com um advogado. O texto de lá é um rascunho
       técnico honesto do que o app faz, não parecer jurídico.
-- [ ] Decidir sobre o push (ver guideline 4.2 acima).
+- [ ] Confirmar que o push chega no iPhone (passo 4.4).
 
 ## Se o bundle ID mudar
 
 `br.com.cortavo.app` está gravado em `capacitor.config.json`. **Depois de
-publicado, o bundle ID não pode ser alterado** — mudá-lo cria outro app na loja,
-do zero. Se for para mudar, mude agora.
+publicado, o bundle ID não pode ser alterado** — mudá-lo cria outro app na
+loja, do zero. Se for para mudar, mude agora.
+
+## Sobre a pasta `ios/`
+
+Passa a ser versionada, **menos** `Pods/`, `build/` e os `xcuserdata` (ver
+`.gitignore`). O motivo: assinatura, capabilities e ícone ficam gravados no
+projeto do Xcode, e sem versionar isso tudo se perde a cada `npx cap add ios`.
+O que fica de fora é o que o CocoaPods e o Xcode regeneram sozinhos — e que
+pesaria centenas de MB no repositório que o VPS puxa.

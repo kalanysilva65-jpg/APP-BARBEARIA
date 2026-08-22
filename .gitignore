@@ -27,3 +27,21 @@ data/sessions/
 
 # Config local do preview (dev server)
 .claude/
+
+# Projeto nativo iOS (Capacitor).
+# A pasta ios/ EM SI e versionada de proposito: nela ficam a assinatura, as
+# capabilities (Push Notifications) e o icone configurados no Xcode — perder
+# isso obriga a refazer tudo a cada `npx cap add ios`.
+# O que NAO entra: dependencias e saidas de build, que o Xcode e o CocoaPods
+# regeneram sozinhos e pesam centenas de MB no repositorio que o VPS puxa.
+ios/App/Pods/
+ios/App/App/public/
+ios/App/build/
+ios/App/output/
+ios/DerivedData/
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/App.xcworkspace/xcuserdata/
+*.xcuserstate
+
+# macOS
+.DS_Store
