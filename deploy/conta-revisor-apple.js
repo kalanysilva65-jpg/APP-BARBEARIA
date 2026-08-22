@@ -68,7 +68,11 @@ function instante(data, hora) {
   const [h, m] = hora.split(':').map(Number);
   const d = new Date(data);
   d.setHours(h, m, 0, 0);
-  return d;
+  // Os atendimentos de HOJE usam horas da manhã. Rodando o script às 7h, um
+  // "concluído às 09:00" ficaria no futuro — atendimento fechado que ainda não
+  // aconteceu. Trava no instante atual.
+  const agora = new Date();
+  return d > agora ? agora : d;
 }
 
 async function remover() {
@@ -218,6 +222,12 @@ async function criar() {
     [3, '10:00', 2, ['Corte + barba'], 'pix'],
     [2, '17:30', 1, ['Barba completa', 'Pomada modeladora'], 'credito'],
     [1, '13:00', 3, ['Corte social'], 'debito'],
+    // HOJE. A Home abre com "Faturamento hoje" como número principal — sem
+    // atendimento concluído no próprio dia ela mostra R$ 0,00 em destaque, e a
+    // primeira tela que o revisor vê é a de uma barbearia parada.
+    [0, '09:00', 5, ['Corte social'], 'pix'],
+    [0, '10:30', 0, ['Corte + barba', 'Pomada modeladora'], 'credito'],
+    [0, '12:00', 4, ['Pezinho'], 'dinheiro'],
   ];
 
   let faturado = 0;
@@ -259,6 +269,21 @@ async function criar() {
     // da demo nasce exatamente como o de uma barbearia real (uma linha por
     // forma de pagamento), e o relatório "por forma" sai coerente.
     await registrarEntradaAgendamento(ag);
+
+    // ...mas o serviço carimba `data: new Date()`, que é o certo em produção
+    // (o dinheiro entra quando o atendimento é concluído, agora) e errado aqui:
+    // os 10 atendimentos são retroativos, e todos caíam no dia da EXECUÇÃO do
+    // script. A Home abria com "Faturamento hoje R$ 615,00" — o histórico
+    // inteiro empilhado num dia só.
+    //
+    // Pior que feio, era incoerente: os relatórios contam por `concluidoEm` e
+    // mostrariam o valor espalhado por 14 dias, enquanto o caixa mostraria tudo
+    // hoje. Duas telas do mesmo app discordando é exatamente o tipo de coisa
+    // que um revisor abre e reprova.
+    await prisma.caixa.updateMany({
+      where: { agendamentoId: ag.id },
+      data: { data: instante(data, hora) },
+    });
   }
 
   // Agenda à frente: sem isso o revisor abre o app num dia vazio.
