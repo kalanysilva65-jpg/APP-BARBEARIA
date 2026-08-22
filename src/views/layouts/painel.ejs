@@ -39,6 +39,9 @@
     <% if (ehSuave) { %>
       <link rel="stylesheet" href="/css/suave.css" />
       <% if (cssDaTela) { %><link rel="stylesheet" href="/css/<%= cssDaTela %>.css" /><% } %>
+      <%/* Por ULTIMO: so contem uma media query de min-width 1024px, e precisa
+           poder sobrescrever o que as folhas de tela definiram acima. */%>
+      <link rel="stylesheet" href="/css/sv-desktop.css" />
     <% } else { %>
       <%/* Telas ainda não migradas (fidelidade, comissões, horários e os
            formulários órfãos) seguem na pilha antiga — inteira, porque elas
