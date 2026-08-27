@@ -60,6 +60,30 @@
     </div>
   </div>
 
+  <% if (ehAdmin) { %>
+    <%/* Backup manual dos dados (só admin: inclui financeiro e todos os
+         clientes). Dois formatos com propósitos diferentes — o PDF é para ler
+         e imprimir; o JSON é o que realmente permite restaurar se o banco for
+         perdido. São <a download> apontando para as rotas de exportação.
+         Observação: o download funciona no NAVEGADOR; dentro do app da loja
+         (WKWebView) o arquivo pode abrir em vez de baixar — por isso o texto
+         sugere fazer pelo navegador. */%>
+    <div class="sv-pf-secao sv-reveal">
+      <div class="sv-pf-secao-tit">Backup dos dados</div>
+      <div class="sv-cartao sv-pf-avisos">
+        <div class="sv-pf-avisos-texto">
+          Baixe uma cópia de todos os dados desta barbearia — clientes, agenda, caixa, catálogo, estoque e equipe.
+          O <strong>PDF</strong> é para ler, imprimir e arquivar. O <strong>arquivo de dados</strong> é o que permite recuperar tudo caso algo se perca — guarde-o num lugar seguro.
+        </div>
+        <div class="sv-pf-avisos-botoes">
+          <a class="sv-btn sv-pf-avisos-btn" href="/painel/exportar/relatorio.pdf" download>Baixar PDF</a>
+          <a class="sv-pf-avisos-sec" href="/painel/exportar/dados.json" download>Baixar dados (backup)</a>
+        </div>
+        <div class="sv-pf-dica" style="margin-top:10px;">Dica: faça pelo navegador (cortavo.com.br) para o download funcionar melhor.</div>
+      </div>
+    </div>
+  <% } %>
+
   <%/* Avisos no aparelho. A permissão de notificação só pode ser pedida a
        partir de um TOQUE do usuário — navegador nenhum concede no carregamento
        da página —, então isto é um botão de verdade, não um interruptor que

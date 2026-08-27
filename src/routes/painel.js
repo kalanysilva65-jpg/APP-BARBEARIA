@@ -18,6 +18,7 @@ const equipeController = require('../controllers/equipeController');
 const relatorioController = require('../controllers/relatorioController');
 const fidelidadeController = require('../controllers/fidelidadeController');
 const notificacaoController = require('../controllers/notificacaoController');
+const exportacaoController = require('../controllers/exportacaoController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -111,6 +112,11 @@ router.post('/perfil/jornada', horarioController.salvarJornada);
 
 // "Mais" — menu com as demais seções (acesso pela navegação inferior).
 router.get('/mais', perfilController.ver);
+
+// Backup manual dos dados (só admin — inclui financeiro e todos os clientes).
+// JSON = cópia fiel para restaurar; PDF = documento legível para arquivo.
+router.get('/exportar/dados.json', exigeAdmin, exportacaoController.json);
+router.get('/exportar/relatorio.pdf', exigeAdmin, exportacaoController.pdf);
 
 // --- Avisos no aparelho ----------------------------------------------------
 // Agem sempre sobre o usuário logado (nunca sobre um id vindo do corpo), senão
