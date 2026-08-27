@@ -3,10 +3,23 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 
-// Raiz: dono -> painel-mestre; equipe logada -> painel; visitante -> agendamento.
+// Raiz: dono -> painel-mestre; equipe logada -> painel; visitante -> depende
+// do contexto (ver abaixo).
 router.get('/', (req, res) => {
   const u = req.session.usuario;
   if (u) return res.redirect(u.papel === 'dono' ? '/mestre' : '/painel');
+
+  // Sem barbearia no contexto = domínio RAIZ (cortavo.com.br sem subdomínio).
+  // É assim que o APP DA EQUIPE abre: ele carrega a raiz. Mandar um visitante
+  // não logado para /agendar aqui levava direto para "Barbearia não
+  // encontrada" (o agendamento público exige uma barbearia no subdomínio), e
+  // o app travava nessa tela logo na abertura — o revisor da Apple nunca
+  // chegava no login (rejeição 2.1a, 2026-08-27). Na raiz, o destino certo é
+  // o login da equipe.
+  //
+  // Num subdomínio de barbearia (andrade.cortavo.com.br) req.barbearia existe,
+  // e aí o comportamento continua o de antes: o cliente cai no agendamento.
+  if (!req.barbearia) return res.redirect('/login');
   res.redirect('/agendar');
 });
 
