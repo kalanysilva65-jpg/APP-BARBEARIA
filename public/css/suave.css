@@ -383,17 +383,17 @@ html:has(> body.pg-sv) {
      gestos ela sobe os ~34px do indicador e não encosta nele. */
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   z-index: 40;
-  /* Vidro fosco (design "Glass" do dono, 2026-09-02), adaptado ao app CLARO:
-     o mockup era vidro BRANCO sobre fundo escuro; aqui, sobre telas claras, um
-     vidro branco com ícone branco sumiria. Então é vidro CLARO translúcido
-     (deixa o conteúdo borrar por trás via backdrop-filter) com ícones ESCUROS
-     — o efeito glass de verdade, coerente com o app e legível.
-     `-webkit-backdrop-filter` é o que vale no iOS (WKWebView). Onde não houver
-     suporte, o rgba(250,250,250,.72) sozinho já dá um fundo claro legível. */
-  background: rgba(250, 250, 250, 0.72);
+  /* Vidro fosco ESCURO (design "Glass" do dono, 2026-09-02).
+     Primeira tentativa foi vidro claro, mas "ficou branco no fundo branco" —
+     invisível sobre as telas claras do app. Vidro escuro resolve o contraste e
+     casa com o ícone BRANCO do mockup original: barra translúcida escura que
+     borra o conteúdo por trás (backdrop-filter) e flutua sobre o app claro.
+     `-webkit-backdrop-filter` é o que vale no iOS (WKWebView); sem suporte, o
+     rgba(24,24,24,.72) sozinho já é um fundo escuro legível. */
+  background: rgba(24, 24, 24, 0.72);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
   backdrop-filter: blur(28px) saturate(160%);
-  border: 1px solid rgba(14, 14, 14, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 24px;
   display: flex;
   justify-content: center;
@@ -416,14 +416,16 @@ html:has(> body.pg-sv) {
   padding: 6px 8px;
   border-radius: 14px;
   background: transparent;
-  color: #7b7b7b;
+  /* Ícones/rótulos BRANCOS: a barra agora é vidro escuro. Inativo translúcido,
+     ativo branco cheio. */
+  color: rgba(255, 255, 255, 0.6);
   border: none;
   font-family: inherit;
   cursor: pointer;
 }
-/* Ativo: tinta preta no ícone (fill=currentColor) e no rótulo. Sem fundo/pílula
-   — o design novo distingue por cor e peso, não por realce de fundo. */
-.pg-sv .sv-nav-item.ativo { color: #0e0e0e; }
+/* Ativo: branco cheio no ícone (stroke=currentColor) e no rótulo. Sem
+   fundo/pílula — distingue por cor e peso, mais o "pop" do ícone. */
+.pg-sv .sv-nav-item.ativo { color: #ffffff; }
 .pg-sv .sv-nav-item:active { opacity: 0.75; }
 .sv-nav-ic { display: block; }
 /* "Pop" no ícone da aba ATIVA — cada página é um carregamento novo, então a
@@ -467,14 +469,18 @@ html:has(> body.pg-sv) {
 }
 .pg-sv .sv-folha-fundo[hidden] { display: none; }
 
-/* Enquanto QUALQUER pop-up (folha) está aberto, some com a barra inferior. Ela
-   é position:fixed e tem view-transition-name próprio (sv-barra), o que cria um
+/* Enquanto QUALQUER pop-up está aberto, some com a barra inferior. Ela é
+   position:fixed e tem view-transition-name próprio (sv-barra), o que cria um
    contexto de empilhamento — por isso o z-index maior da folha nem sempre a
    cobria, e a barra aparecia por cima/ao lado do pop-up atrapalhando o uso
-   (dono, 2026-09-02). Com um pop-up aberto a barra não serve para nada, então
-   escondê-la é o comportamento certo. Todas as folhas do app usam
-   `.sv-folha-fundo`, então esta regra vale para todas. */
-.pg-sv:has(.sv-folha-fundo:not([hidden])) .sv-nav { display: none; }
+   (dono, 2026-09-02). Com um pop-up aberto a barra não serve para nada.
+   DOIS mecanismos de pop-up no app:
+   - folha do menu e afins: overlay `.sv-folha-fundo` (alterna [hidden]);
+   - modais da agenda/caixa/comissões/etc.: o script põe `modal-aberto` no body.
+   Cobrir os dois pega TODOS os pop-ups (o do agendamento usava `.ag-overlay`,
+   fora do seletor antigo — por isso a barra ainda aparecia nele). */
+.pg-sv:has(.sv-folha-fundo:not([hidden])) .sv-nav,
+.pg-sv.modal-aberto .sv-nav { display: none; }
 .sv-folha {
   width: 100%;
   /* dvh pelo mesmo motivo do fundo: 88vh media o viewport "grande" e deixava a

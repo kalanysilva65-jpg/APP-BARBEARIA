@@ -307,6 +307,20 @@
       document.body.classList.remove('modal-aberto');
     }
   });
+
+  // Botão X de fechar em cada folha (pedido do dono, 2026-09-02). Antes só
+  // dava para fechar tocando fora ou com Esc — sem um alvo claro no celular.
+  // Todas as folhas já estão no DOM (display:none), então injeta uma vez.
+  document.querySelectorAll('.ag-modal-box').forEach(function (box) {
+    if (box.querySelector('.ag-modal-x')) return;
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ag-modal-x';
+    b.setAttribute('aria-label', 'Fechar');
+    b.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    b.addEventListener('click', function () { fecharModal(box.closest('.ag-overlay')); });
+    box.insertBefore(b, box.firstChild);
+  });
 </script>
 
 <script>

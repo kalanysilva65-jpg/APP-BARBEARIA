@@ -320,6 +320,7 @@
   padding: 0;
 }
 .pg-sv .ag-modal-box {
+  position: relative; /* âncora do botão X de fechar (.ag-modal-x) */
   width: 100%;
   max-width: 560px;
   max-height: 88vh;
@@ -335,6 +336,27 @@
   animation: svSheetUp 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.02) both;
 }
 .pg-sv .ag-modal-box::-webkit-scrollbar { display: none; width: 0; height: 0; }
+/* Botão X de fechar, no canto superior direito da folha (pedido do dono,
+   2026-09-02: as folhas fechavam só por fora/Esc). Injetado por script em
+   cada .ag-modal-box; ver o <script> no fim de agenda.ejs. */
+.pg-sv .ag-modal-x {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--sv-bloco);
+  color: var(--sv-muted);
+  cursor: pointer;
+}
+.pg-sv .ag-modal-x:active { transform: scale(0.94); }
 /* O puxador já existia como ::before no painel-app.css (alcinha clara sobre
    fundo escuro) — aqui só troca a pele em vez de virar um <div> em cada folha. */
 .pg-sv .ag-modal-box::before {

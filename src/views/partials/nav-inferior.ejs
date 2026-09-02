@@ -25,17 +25,18 @@
     // Grade de ladrilhos (referência, linhas 1882-1931). Cada item traz o
     // próprio ícone porque na grade o desenho é o que identifica — o rótulo de
     // 11px é só apoio. "Perfil" fica FORA da grade: é o cartão escuro do pé.
-    // Ícones PREENCHIDOS (design novo do dono, 2026-09-02). Conteúdo interno dos
-    // SVGs enviados pelo dono. A grade renderiza com fill=currentColor (sem
-    // stroke) — ver .sv-grade-caixa svg no CSS.
+    // Ícones VAZADOS (contorno), para combinar com a barra glass (pedido do
+    // dono, 2026-09-02: "deixe os icons do mais vazados tambem como a nav bar").
+    // Antes eram preenchidos; voltaram ao conjunto de contorno. Renderizam com
+    // fill=none stroke=currentColor — ver .sv-grade-caixa svg no CSS.
     var svMenu = [
-      { href: '/painel/servicos', nome: 'Serviços', icone: '<path d="M19.06 3.44a1.2 1.2 0 0 1 1.7 1.7L8.9 17a1.2 1.2 0 0 1-1.7-1.7z"/><path d="M13.2 13.1 20.76 20.66a1.2 1.2 0 0 1-1.7 1.7L11.5 14.8z"/><path fill-rule="evenodd" d="M6.2 2.4a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6zm0 2.2a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2z"/><path fill-rule="evenodd" d="M6.2 14a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6zm0 2.2a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2z"/>' },
-      { href: '/painel/produtos', nome: 'Produtos', icone: '<path d="M9.8 2.2h4.4v3.1H9.8z"/><path fill-rule="evenodd" d="M9.2 6.6h5.6l1.7 3.6v10a1.6 1.6 0 0 1-1.6 1.6H9.1a1.6 1.6 0 0 1-1.6-1.6v-10zm-.1 6.4v2.9h5.8V13z"/>' },
-      { href: '/painel/estoque', nome: 'Estoque', icone: '<path d="M12 2.4 21 6.5 12 10.6 3 6.5z"/><path d="M2.6 8.5 11 12.2v9.4l-8.4-3.8z"/><path d="M21.4 8.5 13 12.2v9.4l8.4-3.8z"/>' },
-      { href: '/painel/clientes', nome: 'Clientes', icone: '<circle cx="9.3" cy="8" r="3.7"/><path d="M9.3 13.5c3 0 5.4 1.7 6.1 4.6.3 1.2-.3 2.3-1.6 2.3H4.8c-1.3 0-1.9-1.1-1.6-2.3.7-2.9 3.1-4.6 6.1-4.6z"/><path d="M16.6 4.4a3.6 3.6 0 0 1 0 7.2 1 1 0 0 1 0-2 1.6 1.6 0 0 0 0-3.2 1 1 0 0 1 0-2z"/><path d="M17 14.1c2.6.3 4.3 2 4.8 4.3.2 1.1-.4 2-1.5 2h-2.6c.3-2.3-.2-4.4-1.5-6.2z"/>' },
-      { href: '/painel/equipe', nome: 'Equipe', admin: true, icone: '<path fill-rule="evenodd" d="M9 2.2h6v1.6h4.4A2.6 2.6 0 0 1 22 6.4v12.4a2.6 2.6 0 0 1-2.6 2.6H4.6A2.6 2.6 0 0 1 2 18.8V6.4a2.6 2.6 0 0 1 2.6-2.6H9zm3 5.1a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4zm0 6.6c-2.9 0-5.1 1.7-5.1 4.4h10.2c0-2.7-2.2-4.4-5.1-4.4z"/>' },
-      { href: '/painel/relatorios', nome: 'Relatórios', admin: true, icone: '<path d="M3.5 19.2h17a1.15 1.15 0 0 1 0 2.3h-17a1.15 1.15 0 0 1 0-2.3z"/><path d="M5.9 11.3h2.4v6.2H5.9zM10.8 5.9h2.4v11.6h-2.4zM15.7 12.8h2.4v4.7h-2.4z"/>' },
-      { href: '/painel/planos', nome: 'Planos', icone: '<path fill-rule="evenodd" d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm3 2.9v1.6h10V8.9zm0 4.6v1.6h10v-1.6zM2 9.7a2.3 2.3 0 0 1 0 4.6zm20 0a2.3 2.3 0 0 0 0 4.6z"/>' },
+      { href: '/painel/servicos', nome: 'Serviços', icone: '<circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><path d="M20 4 8.6 16.5M20 20 8.6 7.5"/>' },
+      { href: '/painel/produtos', nome: 'Produtos', icone: '<path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5z"/><path d="M4 8.5 12 13l8-4.5M12 13v7"/>' },
+      { href: '/painel/estoque', nome: 'Estoque', icone: '<rect x="3.5" y="4" width="17" height="16" rx="3"/><path d="M3.5 9.5h17M9 14h6"/>' },
+      { href: '/painel/clientes', nome: 'Clientes', icone: '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6"/>' },
+      { href: '/painel/equipe', nome: 'Equipe', admin: true, icone: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.2 6-5.2s6 1.9 6 5.2"/><path d="M16 5.4a3.2 3.2 0 0 1 0 6.2M18 20c0-2.6-1-4.2-2.6-5"/>' },
+      { href: '/painel/relatorios', nome: 'Relatórios', admin: true, icone: '<path d="M5 20V11M12 20V5M19 20v-6"/>' },
+      { href: '/painel/planos', nome: 'Planos', icone: '<rect x="3" y="5.5" width="18" height="13" rx="3"/><path d="M3 10h18"/>' },
     ];
     // Fidelidade, Comissões e Horários saíram do menu (pedido do dono,
     // 2026-08-01). A jornada, que era o conteúdo de Horários, passou a ser
@@ -84,7 +85,7 @@
           <% if (!item.admin || ehAdmin) { %>
             <a href="<%= item.href %>" class="sv-grade-item">
               <span class="sv-grade-caixa">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><%- item.icone %></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><%- item.icone %></svg>
               </span>
               <span class="sv-grade-rot"><%= item.nome %></span>
             </a>

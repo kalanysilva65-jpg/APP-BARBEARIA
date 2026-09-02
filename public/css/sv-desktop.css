@@ -67,13 +67,16 @@
     gap: 12px;
     padding: 11px 14px;
     border-radius: 14px;
+    /* No celular a barra é vidro ESCURO com ícone BRANCO. A coluna lateral do
+       PC é painel CLARO — branco sumiria. Volta a tinta escura no desktop. */
+    color: var(--sv-muted);
   }
 
   /* No celular a aba ativa se distingue só por cor/peso (sem realce de fundo).
      Na coluna lateral, sem o "pop" e com todos os rótulos lado a lado, um item
      realçado ajuda a localizar onde se está — devolve a pílula cinza que o
      design de PC já usava. */
-  .pg-sv .sv-nav-item.ativo { background: var(--sv-line); }
+  .pg-sv .sv-nav-item.ativo { background: var(--sv-line); color: var(--sv-ink-2); }
 
   /* No celular o rótulo só aparece na aba ativa (o resto é ícone puro, por
      falta de espaço). Aqui há espaço de sobra e ler "Relatórios" é mais rápido
