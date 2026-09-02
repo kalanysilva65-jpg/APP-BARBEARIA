@@ -383,15 +383,23 @@ html:has(> body.pg-sv) {
      gestos ela sobe os ~34px do indicador e não encosta nele. */
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   z-index: 40;
-  /* Cartão do design novo: fundo levemente rebaixado (#FAFAFA), canto 24px e
-     sombra alta. Valores LITERAIS do mockup de referência. */
-  background: #fafafa;
+  /* Vidro fosco (design "Glass" do dono, 2026-09-02), adaptado ao app CLARO:
+     o mockup era vidro BRANCO sobre fundo escuro; aqui, sobre telas claras, um
+     vidro branco com ícone branco sumiria. Então é vidro CLARO translúcido
+     (deixa o conteúdo borrar por trás via backdrop-filter) com ícones ESCUROS
+     — o efeito glass de verdade, coerente com o app e legível.
+     `-webkit-backdrop-filter` é o que vale no iOS (WKWebView). Onde não houver
+     suporte, o rgba(250,250,250,.72) sozinho já dá um fundo claro legível. */
+  background: rgba(250, 250, 250, 0.72);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgba(14, 14, 14, 0.06);
   border-radius: 24px;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   gap: 2px;
-  padding: 14px 8px 12px;
+  padding: 10px 8px;
   box-shadow: 0 12px 30px rgba(14, 14, 14, 0.10);
 }
 /* Cada aba é uma COLUNA: ícone em cima, rótulo embaixo, ambos SEMPRE visíveis
@@ -403,10 +411,10 @@ html:has(> body.pg-sv) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: 4px;
-  padding: 0 2px;
-  border-radius: 0;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 14px;
   background: transparent;
   color: #7b7b7b;
   border: none;
@@ -431,8 +439,8 @@ html:has(> body.pg-sv) {
 @media (prefers-reduced-motion: reduce) {
   .pg-sv .sv-nav-item.ativo .sv-nav-ic { animation: none; }
 }
-/* Rótulo SEMPRE visível (11px), mais forte quando ativo. */
-.sv-nav-label { font-size: 11px; font-weight: 500; letter-spacing: -0.1px; color: inherit; }
+/* Rótulo SEMPRE visível (10px, design Glass), mais forte quando ativo. */
+.sv-nav-label { font-size: 10px; font-weight: 500; letter-spacing: -0.1px; color: inherit; }
 .pg-sv .sv-nav-item.ativo .sv-nav-label { font-weight: 600; }
 
 /* =========================================================================

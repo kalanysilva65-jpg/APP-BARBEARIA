@@ -38,6 +38,13 @@
        lateral esses dois atrapalhariam (empurrariam o painel), então reseta. */
     max-width: none;
     margin: 0;
+    /* No celular a barra é vidro fosco (translúcido + blur). Numa coluna de
+       altura inteira colada à borda, o vidro não faz sentido (borraria o
+       conteúdo atrás de uma faixa grande) — volta a ser um painel SÓLIDO claro. */
+    background: var(--sv-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: none;
     width: var(--sv-lateral);
     flex-direction: column;
     align-items: stretch;
