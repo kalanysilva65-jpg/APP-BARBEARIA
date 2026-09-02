@@ -366,9 +366,13 @@ html:has(> body.pg-sv) {
    A aba ativa ganha fundo cinza e mostra o rótulo AO LADO do ícone.
    ========================================================================= */
 .sv-nav {
+  /* FLUTUANTE de novo (dono, 2026-09-02): a barra colada em bottom:0 deixava
+     aparecer a faixa da safe-area embaixo (limitação do webview no build atual).
+     Flutuando acima da borda, a faixa some. Largura quase total (recuo de 14px
+     nas laterais), cantos arredondados, mesmo material fosco. */
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 14px;
+  right: 14px;
   /* Centralizada com teto de ~358px (design do dono, 2026-09-02): num celular
      largo a barra não estica de ponta a ponta, fica um cartão flutuante. Com
      left/right:14px o box disponível é (viewport − 28px); o max-width corta em
@@ -381,7 +385,7 @@ html:has(> body.pg-sv) {
      nos três lados em vez de sobrar um vão maior embaixo.
      O `env(safe-area-inset-bottom)` continua somando: no iPhone com barra de
      gestos ela sobe os ~34px do indicador e não encosta nele. */
-  bottom: 0;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   z-index: 40;
   /* "Liquid glass" CLARO (estilo Apple, referência do dono 2026-09-02).
      Histórico: vidro claro sumiu ("branco no branco"); vidro escuro ficou
@@ -412,16 +416,15 @@ html:has(> body.pg-sv) {
   background: rgba(250, 250, 250, 0.88);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   backdrop-filter: blur(30px) saturate(180%);
-  border: none;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 0;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 24px;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 2px;
   /* Colada em baixo: o padding-bottom inclui a safe-area (barra de gestos). */
-  padding: 7px 0 calc(6px + env(safe-area-inset-bottom, 0px));
-  box-shadow: none;
+  padding: 8px 6px;
+  box-shadow: 0 8px 30px rgba(14, 14, 14, 0.14);
 }
 /* Cada aba é uma COLUNA: ícone em cima, rótulo embaixo, ambos SEMPRE visíveis
    (design novo). flex:1 divide a largura igualmente — adapta-se a 3 itens
