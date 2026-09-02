@@ -367,21 +367,21 @@ html:has(> body.pg-sv) {
    ========================================================================= */
 .sv-nav {
   position: fixed;
-  left: 14px;
-  right: 14px;
+  left: 0;
+  right: 0;
   /* Centralizada com teto de ~358px (design do dono, 2026-09-02): num celular
      largo a barra não estica de ponta a ponta, fica um cartão flutuante. Com
      left/right:14px o box disponível é (viewport − 28px); o max-width corta em
      358px e a margem automática centraliza o que sobrar. No PC (sv-desktop.css)
      estes três são reescritos para a coluna lateral, então isto é só do celular. */
-  max-width: 358px;
-  margin-inline: auto;
+  /* Barra de abas NATIVA (referência do dono: a barra da App Store):
+     largura total, colada nas bordas — sem teto/centralização de pílula. */
   /* 14px, era 26px: o dono achou a barra "muito pra cima". 14px é o MESMO
      recuo do `left`/`right` logo acima, então a barra flutua com folga igual
      nos três lados em vez de sobrar um vão maior embaixo.
      O `env(safe-area-inset-bottom)` continua somando: no iPhone com barra de
      gestos ela sobe os ~34px do indicador e não encosta nele. */
-  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  bottom: 0;
   z-index: 40;
   /* "Liquid glass" CLARO (estilo Apple, referência do dono 2026-09-02).
      Histórico: vidro claro sumiu ("branco no branco"); vidro escuro ficou
@@ -399,21 +399,23 @@ html:has(> body.pg-sv) {
      ícones/texto BRANCOS. Sobre o app claro, o tom cinza (60,60,67) a 55% se
      mistura com o branco de trás e assenta num cinza médio bem visível; o blur
      forte dá o frost. Ícones brancos e a pílula do item ativo (regras abaixo). */
-  background: rgba(60, 60, 67, 0.3);
-  -webkit-backdrop-filter: blur(48px) saturate(180%);
-  backdrop-filter: blur(48px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 24px;
+  /* Material fosco CLARO da barra nativa (a App Store no modo claro): frost
+     translúcido que borra o conteúdo por trás, e um FILETE fino no topo que a
+     separa da tela — é o filete + a largura total que a fazem "aparecer" (não
+     depende de flutuar). Sem cantos, sem sombra de flutuar. */
+  background: rgba(250, 250, 250, 0.72);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 2px;
-  padding: 10px 8px;
-  /* Sombra ampla para o painel flutuar sobre o conteúdo; brilho interno no topo
-     (sheen de vidro sobre o tom fumê). */
-  box-shadow:
-    0 10px 34px rgba(14, 14, 14, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  /* Colada em baixo: o padding-bottom inclui a safe-area (barra de gestos). */
+  padding: 7px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+  box-shadow: none;
 }
 /* Cada aba é uma COLUNA: ícone em cima, rótulo embaixo, ambos SEMPRE visíveis
    (design novo). flex:1 divide a largura igualmente — adapta-se a 3 itens
@@ -429,24 +431,20 @@ html:has(> body.pg-sv) {
   padding: 6px 8px;
   border-radius: 14px;
   background: transparent;
-  /* Ícones/rótulos BRANCOS: a barra é vidro cinza-fumê. Inativo branco
-     translúcido, ativo branco cheio. */
-  color: rgba(255, 255, 255, 0.7);
+  /* Barra clara nativa: ícone/rótulo CINZA quando inativo, ESCURO quando ativo
+     (como a App Store no modo claro). Sem pílula/fundo no ativo. */
+  color: #8e8e93;
   border: none;
   font-family: inherit;
   cursor: pointer;
 }
-/* Ativo: só branco cheio (sem pílula/fundo — pedido do dono "deixa só a nav bar
-   e os ícones"), distinguido pela cor, pelo peso do rótulo e pelo "pop". */
-.pg-sv .sv-nav-item.ativo { color: #ffffff; }
+/* Ativo: tinta escura (a App Store usa a cor de destaque; este app é
+   monocromático, então quase-preto), distinguido por cor, peso e "pop". */
+.pg-sv .sv-nav-item.ativo { color: #1a1a1a; }
 .pg-sv .sv-nav-item:active { opacity: 0.75; }
-.sv-nav-ic {
-  display: block;
-  /* Sombra sutil: com a barra bem transparente, o ícone branco poderia sumir
-     sobre uma área clara borrada. Um halo escuro fraco mantém a legibilidade
-     sobre qualquer fundo (mesmo truque do iOS). */
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
-}
+/* Barra clara nativa: ícones chapados, sem sombra (a sombra era do ícone branco
+   sobre vidro transparente). */
+.sv-nav-ic { display: block; }
 /* "Pop" no ícone da aba ATIVA — cada página é um carregamento novo, então a
    animação toca uma vez ao abrir a tela. */
 .pg-sv .sv-nav-item.ativo .sv-nav-ic {
@@ -461,7 +459,7 @@ html:has(> body.pg-sv) {
   .pg-sv .sv-nav-item.ativo .sv-nav-ic { animation: none; }
 }
 /* Rótulo SEMPRE visível (10px, design Glass), mais forte quando ativo. */
-.sv-nav-label { font-size: 10px; font-weight: 500; letter-spacing: -0.1px; color: inherit; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+.sv-nav-label { font-size: 10px; font-weight: 500; letter-spacing: -0.1px; color: inherit; }
 .pg-sv .sv-nav-item.ativo .sv-nav-label { font-weight: 600; }
 
 /* =========================================================================
