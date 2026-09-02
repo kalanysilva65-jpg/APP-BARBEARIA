@@ -403,7 +403,13 @@ html:has(> body.pg-sv) {
      translúcido que borra o conteúdo por trás, e um FILETE fino no topo que a
      separa da tela — é o filete + a largura total que a fazem "aparecer" (não
      depende de flutuar). Sem cantos, sem sombra de flutuar. */
-  background: rgba(250, 250, 250, 0.72);
+  /* 0.88 (era 0.72): as 7 telas do "Mais" têm container de altura fixa (100dvh)
+     que não cobre a faixa da safe-area atrás da barra — a barra translúcida
+     mostrava dois fundos (conteúdo x faixa vazia) e sobrava um "pedaço" de cor
+     diferente embaixo. Como cada tela tem um fundo (cinza/branco), não há uma
+     cor única para igualar; deixar o frost mais opaco cobre a diferença — e é
+     como a barra da App Store é de fato (bem fosca, quase sólida). */
+  background: rgba(250, 250, 250, 0.88);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   backdrop-filter: blur(30px) saturate(180%);
   border: none;
