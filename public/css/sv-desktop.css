@@ -34,6 +34,10 @@
     bottom: 0;
     left: 0;
     right: auto;
+    /* O celular centraliza a pílula com max-width:358 + margin auto. Na coluna
+       lateral esses dois atrapalhariam (empurrariam o painel), então reseta. */
+    max-width: none;
+    margin: 0;
     width: var(--sv-lateral);
     flex-direction: column;
     align-items: stretch;
@@ -51,11 +55,18 @@
   .pg-sv .sv-nav-item {
     flex: none;
     flex-direction: row;
+    align-items: center;
     justify-content: flex-start;
     gap: 12px;
     padding: 11px 14px;
     border-radius: 14px;
   }
+
+  /* No celular a aba ativa se distingue só por cor/peso (sem realce de fundo).
+     Na coluna lateral, sem o "pop" e com todos os rótulos lado a lado, um item
+     realçado ajuda a localizar onde se está — devolve a pílula cinza que o
+     design de PC já usava. */
+  .pg-sv .sv-nav-item.ativo { background: var(--sv-line); }
 
   /* No celular o rótulo só aparece na aba ativa (o resto é ícone puro, por
      falta de espaço). Aqui há espaço de sobra e ler "Relatórios" é mais rápido

@@ -369,6 +369,13 @@ html:has(> body.pg-sv) {
   position: fixed;
   left: 14px;
   right: 14px;
+  /* Centralizada com teto de ~358px (design do dono, 2026-09-02): num celular
+     largo a barra não estica de ponta a ponta, fica um cartão flutuante. Com
+     left/right:14px o box disponível é (viewport − 28px); o max-width corta em
+     358px e a margem automática centraliza o que sobrar. No PC (sv-desktop.css)
+     estes três são reescritos para a coluna lateral, então isto é só do celular. */
+  max-width: 358px;
+  margin-inline: auto;
   /* 14px, era 26px: o dono achou a barra "muito pra cima". 14px é o MESMO
      recuo do `left`/`right` logo acima, então a barra flutua com folga igual
      nos três lados em vez de sobrar um vão maior embaixo.
@@ -376,37 +383,57 @@ html:has(> body.pg-sv) {
      gestos ela sobe os ~34px do indicador e não encosta nele. */
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   z-index: 40;
-  background: var(--sv-surface);
-  border-radius: 28px;
+  /* Cartão do design novo: fundo levemente rebaixado (#FAFAFA), canto 24px e
+     sombra alta. Valores LITERAIS do mockup de referência. */
+  background: #fafafa;
+  border-radius: 24px;
   display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 7px;
-  box-shadow: var(--sv-sombra-barra);
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 8px 12px;
+  box-shadow: 0 12px 30px rgba(14, 14, 14, 0.10);
 }
+/* Cada aba é uma COLUNA: ícone em cima, rótulo embaixo, ambos SEMPRE visíveis
+   (design novo). flex:1 divide a largura igualmente — adapta-se a 3 itens
+   (funcionário: Início/Agenda/Mais) ou 4 (admin: + Caixa) sem gap fixo que
+   estoure a largura. */
 .pg-sv .sv-nav-item {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 12px 0;
-  border-radius: 21px;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 0 2px;
+  border-radius: 0;
   background: transparent;
-  color: var(--sv-muted);
+  color: #7b7b7b;
   border: none;
   font-family: inherit;
   cursor: pointer;
 }
-.pg-sv .sv-nav-item.ativo { background: var(--sv-line); color: var(--sv-ink-2); }
+/* Ativo: tinta preta no ícone (fill=currentColor) e no rótulo. Sem fundo/pílula
+   — o design novo distingue por cor e peso, não por realce de fundo. */
+.pg-sv .sv-nav-item.ativo { color: #0e0e0e; }
 .pg-sv .sv-nav-item:active { opacity: 0.75; }
-.sv-nav-label { font-size: 12.5px; font-weight: 600; letter-spacing: -0.1px; color: inherit; }
-/* O rotulo existe no HTML de TODA aba, porque a coluna lateral do PC mostra
-   todos (ver sv-desktop.css). No celular nao cabe: a barra tem 4 itens numa
-   pilula de 347px, entao so a aba ATIVA mostra o texto e o resto fica no icone.
-   Renderizar so quando ativa resolveria aqui e impediria o PC — CSS nao
-   consegue exibir um elemento que o template nao gerou. */
-.pg-sv .sv-nav-item:not(.ativo) .sv-nav-label { display: none; }
+.sv-nav-ic { display: block; }
+/* "Pop" no ícone da aba ATIVA — cada página é um carregamento novo, então a
+   animação toca uma vez ao abrir a tela. */
+.pg-sv .sv-nav-item.ativo .sv-nav-ic {
+  animation: ctPop 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+}
+@keyframes ctPop {
+  0% { transform: scale(0.72); }
+  55% { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-sv .sv-nav-item.ativo .sv-nav-ic { animation: none; }
+}
+/* Rótulo SEMPRE visível (11px), mais forte quando ativo. */
+.sv-nav-label { font-size: 11px; font-weight: 500; letter-spacing: -0.1px; color: inherit; }
+.pg-sv .sv-nav-item.ativo .sv-nav-label { font-weight: 600; }
 
 /* =========================================================================
    FOLHA INFERIOR (bottom sheet) — o pop-up deste design. Sobe de baixo, com
