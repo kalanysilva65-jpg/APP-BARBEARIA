@@ -25,33 +25,9 @@
   font-display: swap;
 }
 
-/* Transicao SUAVE entre as telas (pedido do dono, 2026-09-01: primeiro "ele
-   pisca", depois "colocar uma animacao de rolar para o lado").
-   Cada tela do painel e uma pagina inteira nova (o servidor entrega o HTML),
-   entao trocar de aba trocava um documento pelo outro com um flash no meio.
-   `@view-transition { navigation: auto }` liga a transicao entre paginas
-   (iOS 18+/navegadores modernos; ignorado em versoes antigas, sem quebrar). */
-@view-transition {
-  navigation: auto;
-}
-
-/* A tela nova entra DESLIZANDO da direita e a antiga sai para a esquerda —
-   sensacao de "avancar" de app nativo, no lugar do fade padrao.
-   So quando o usuario nao pediu menos movimento; nesse caso fica o fade. */
-@media (prefers-reduced-motion: no-preference) {
-  @keyframes sv-vt-sai-esquerda {
-    to { transform: translateX(-24%); opacity: 0; }
-  }
-  @keyframes sv-vt-entra-direita {
-    from { transform: translateX(100%); }
-  }
-  ::view-transition-old(root) {
-    animation: sv-vt-sai-esquerda 0.26s cubic-bezier(0.4, 0, 0.2, 1) both;
-  }
-  ::view-transition-new(root) {
-    animation: sv-vt-entra-direita 0.26s cubic-bezier(0.4, 0, 0.2, 1) both;
-  }
-}
+/* A transição entre telas (deslizar) fica toda no bloco "TRANSIÇÃO ENTRE
+   TELAS", mais abaixo neste arquivo — um lugar só, para não duplicar/conflitar
+   as regras de `::view-transition`. */
 
 /* O overscroll do app mostrava o fundo preto do WKWebView nas bordas. O fundo
    no <html> (styles.css) ja pinta esse vao; aqui o html das telas do painel
@@ -95,6 +71,11 @@ html:has(> body.pg-sv) {
   color: var(--sv-ink);
   font-family: var(--sv-fonte);
   -webkit-font-smoothing: antialiased;
+  /* Mata o retangulo cinza que o iOS pinta ao TOCAR num botao/label (o realce
+     de toque padrao). Aparecia ao tocar "atras" dos icones no Perfil/Mais,
+     porque este arquivo — o unico CSS das telas novas — nao zerava isso (so o
+     CSS antigo, que estas telas nao carregam). Herda para os descendentes. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* O cabeçalho fixo antigo não existe: cada tela traz o próprio topo. */
@@ -433,7 +414,16 @@ html:has(> body.pg-sv) {
    ========================================================================= */
 .pg-sv .sv-folha-fundo {
   position: fixed;
-  inset: 0;
+  /* Antes: `inset: 0`. No iOS, o viewport de `vh`/inset e o "grande" (como se a
+     barra do sistema estivesse escondida), entao o fundo — e a folha alinhada
+     nele por `flex-end` — terminava ABAIXO da area visivel, cortando o pe do
+     pop-up. `dvh` (viewport dinamico) usa o que esta de fato visivel, e encolhe
+     quando o teclado abre. `vh` fica de fallback p/ iOS < 15.4. */
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
   z-index: 60;
   background: rgba(25, 25, 25, 0.35);
   display: flex;
@@ -443,7 +433,10 @@ html:has(> body.pg-sv) {
 .pg-sv .sv-folha-fundo[hidden] { display: none; }
 .sv-folha {
   width: 100%;
+  /* dvh pelo mesmo motivo do fundo: 88vh media o viewport "grande" e deixava a
+     folha alta passar do fim da tela. */
   max-height: 88vh;
+  max-height: 88dvh;
   overflow-y: auto;
   background: var(--sv-surface);
   border-radius: 28px 28px 0 0;
@@ -673,19 +666,24 @@ html:has(> body.pg-sv) {
    ========================================================================= */
 @view-transition { navigation: auto; }
 
-::view-transition-old(root) {
-  animation: svSaiTela 0.18s cubic-bezier(0.4, 0, 1, 1) both;
+/* DESLIZA SÓ O CONTEÚDO (pedido do dono, 2026-09-01: "animação de rolar para o
+   lado"). Antes era um fade vertical da `root`; virou slide da direita.
+   Anima o `.conteudo`, NÃO a `root`: a barra inferior é `position: fixed`, e
+   mover a página inteira fazia o iOS reposicionar a barra fixa (ela aparecia
+   "mais alta ou mais baixa" em algumas telas). Nomeando só o conteúdo, a barra
+   (sv-barra, logo abaixo) fica de fora e parada. */
+.pg-sv .conteudo { view-transition-name: sv-conteudo; }
+@keyframes sv-vt-sai-esquerda {
+  to { transform: translateX(-24%); opacity: 0; }
 }
-::view-transition-new(root) {
-  animation: svEntraTela 0.26s cubic-bezier(0, 0, 0.2, 1) both;
+@keyframes sv-vt-entra-direita {
+  from { transform: translateX(100%); }
 }
-@keyframes svSaiTela {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-6px); }
+::view-transition-old(sv-conteudo) {
+  animation: sv-vt-sai-esquerda 0.26s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
-@keyframes svEntraTela {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+::view-transition-new(sv-conteudo) {
+  animation: sv-vt-entra-direita 0.26s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* A barra some da transição e é desenhada só uma vez, por cima. */
@@ -694,8 +692,8 @@ html:has(> body.pg-sv) {
 ::view-transition-old(sv-barra),
 ::view-transition-new(sv-barra) { animation: none; mix-blend-mode: normal; }
 
-/* Quem pediu menos movimento navega sem transição nenhuma. */
+/* Quem pediu menos movimento navega sem o deslize. */
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) { animation: none; }
+  ::view-transition-old(sv-conteudo),
+  ::view-transition-new(sv-conteudo) { animation: none; }
 }
