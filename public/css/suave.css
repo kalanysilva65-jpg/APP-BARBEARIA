@@ -394,22 +394,26 @@ html:has(> body.pg-sv) {
      - brilho interno no topo (sheen de vidro).
      Ícones ESCUROS (regra abaixo), legíveis sobre o frost claro.
      `-webkit-backdrop-filter` é o que vale no iOS (WKWebView). */
-  background: rgba(255, 255, 255, 0.6);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  backdrop-filter: blur(30px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  /* Vidro cinza-FUMÊ (referência do dono, 2026-09-02): nem branco (sumia no
+     app claro), nem preto (ficava pesado) — um cinza médio translúcido com
+     ícones/texto BRANCOS. Sobre o app claro, o tom cinza (60,60,67) a 55% se
+     mistura com o branco de trás e assenta num cinza médio bem visível; o blur
+     forte dá o frost. Ícones brancos e a pílula do item ativo (regras abaixo). */
+  background: rgba(60, 60, 67, 0.55);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 24px;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 2px;
   padding: 10px 8px;
-  /* A sombra ampla + o filete de 0.5px definem a borda do painel sobre o app
-     claro; o inset no topo é o brilho de vidro. Sem isso o vidro claro sumia. */
+  /* Sombra ampla para o painel flutuar sobre o conteúdo; brilho interno no topo
+     (sheen de vidro sobre o tom fumê). */
   box-shadow:
-    0 8px 32px rgba(14, 14, 14, 0.18),
-    0 0 0 0.5px rgba(14, 14, 14, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    0 10px 34px rgba(14, 14, 14, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 /* Cada aba é uma COLUNA: ícone em cima, rótulo embaixo, ambos SEMPRE visíveis
    (design novo). flex:1 divide a largura igualmente — adapta-se a 3 itens
@@ -425,16 +429,19 @@ html:has(> body.pg-sv) {
   padding: 6px 8px;
   border-radius: 14px;
   background: transparent;
-  /* Ícones/rótulos ESCUROS: a barra é vidro CLARO. Inativo cinza médio, ativo
-     quase preto — legíveis sobre o frost claro. */
-  color: #6b6b6b;
+  /* Ícones/rótulos BRANCOS: a barra é vidro cinza-fumê. Inativo branco
+     translúcido, ativo branco cheio. */
+  color: rgba(255, 255, 255, 0.7);
   border: none;
   font-family: inherit;
   cursor: pointer;
 }
-/* Ativo: tinta quase preta no ícone (stroke=currentColor) e no rótulo. Sem
-   fundo/pílula — distingue por cor e peso, mais o "pop" do ícone. */
-.pg-sv .sv-nav-item.ativo { color: #0e0e0e; }
+/* Ativo: branco cheio + PÍLULA translúcida clara atrás (como na referência),
+   além do "pop" do ícone. */
+.pg-sv .sv-nav-item.ativo {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+}
 .pg-sv .sv-nav-item:active { opacity: 0.75; }
 .sv-nav-ic { display: block; }
 /* "Pop" no ícone da aba ATIVA — cada página é um carregamento novo, então a
