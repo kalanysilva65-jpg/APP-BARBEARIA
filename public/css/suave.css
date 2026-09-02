@@ -399,7 +399,7 @@ html:has(> body.pg-sv) {
      ícones/texto BRANCOS. Sobre o app claro, o tom cinza (60,60,67) a 55% se
      mistura com o branco de trás e assenta num cinza médio bem visível; o blur
      forte dá o frost. Ícones brancos e a pílula do item ativo (regras abaixo). */
-  background: rgba(60, 60, 67, 0.55);
+  background: rgba(60, 60, 67, 0.48);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   backdrop-filter: blur(40px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -436,12 +436,9 @@ html:has(> body.pg-sv) {
   font-family: inherit;
   cursor: pointer;
 }
-/* Ativo: branco cheio + PÍLULA translúcida clara atrás (como na referência),
-   além do "pop" do ícone. */
-.pg-sv .sv-nav-item.ativo {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.16);
-}
+/* Ativo: só branco cheio (sem pílula/fundo — pedido do dono "deixa só a nav bar
+   e os ícones"), distinguido pela cor, pelo peso do rótulo e pelo "pop". */
+.pg-sv .sv-nav-item.ativo { color: #ffffff; }
 .pg-sv .sv-nav-item:active { opacity: 0.75; }
 .sv-nav-ic { display: block; }
 /* "Pop" no ícone da aba ATIVA — cada página é um carregamento novo, então a
