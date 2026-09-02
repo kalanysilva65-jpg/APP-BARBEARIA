@@ -78,6 +78,11 @@
      design de PC já usava. */
   .pg-sv .sv-nav-item.ativo { background: var(--sv-line); color: var(--sv-ink-2); }
 
+  /* A sombra dos ícones/rótulos existe no celular (barra transparente escura,
+     ícone branco). Aqui a sidebar é clara com tinta escura — sombra sujaria. */
+  .pg-sv .sv-nav-ic { filter: none; }
+  .pg-sv .sv-nav-label { text-shadow: none; }
+
   /* No celular o rótulo só aparece na aba ativa (o resto é ícone puro, por
      falta de espaço). Aqui há espaço de sobra e ler "Relatórios" é mais rápido
      do que decifrar um ícone. */
