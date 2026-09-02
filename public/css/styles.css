@@ -49,6 +49,10 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Pinta o "repique" do overscroll e o vao entre paginas. Sem isto, no app
+     (WKWebView) o iOS mostra o fundo preto dele por tras do conteudo quando a
+     rolagem passa do fim — as "bordas pretas" em cima e embaixo. */
+  background: var(--fundo);
 }
 
 body {

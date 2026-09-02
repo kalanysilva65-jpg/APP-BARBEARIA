@@ -25,6 +25,25 @@
   font-display: swap;
 }
 
+/* Transicao SUAVE entre as telas (pedido do dono, 2026-09-01: "ao trocar de
+   secao ele pisca").
+   Cada tela do painel e uma pagina inteira nova (o servidor entrega o HTML),
+   entao trocar de aba trocava um documento pelo outro com um flash no meio.
+   `@view-transition { navigation: auto }` faz o iOS/navegador aplicar um
+   crossfade entre as duas paginas. Ignorado em iOS antigo, sem quebrar nada. */
+@view-transition {
+  navigation: auto;
+}
+
+/* O overscroll do app mostrava o fundo preto do WKWebView nas bordas. O fundo
+   no <html> (styles.css) ja pinta esse vao; aqui o html das telas do painel
+   recebe a cor CINZA da pagina. Valor LITERAL de propósito: --sv-bg e definido
+   em .pg-sv (o body), e variavel CSS nao sobe para o html (pai). Manter igual
+   ao --sv-bg (#f2f2f2). */
+html:has(> body.pg-sv) {
+  background: #f2f2f2;
+}
+
 .pg-sv {
   /* Página CINZA, cartão BRANCO.
      A referência faz o inverso (contêiner #FFFFFF e blocos rebaixados em
