@@ -25,14 +25,32 @@
   font-display: swap;
 }
 
-/* Transicao SUAVE entre as telas (pedido do dono, 2026-09-01: "ao trocar de
-   secao ele pisca").
+/* Transicao SUAVE entre as telas (pedido do dono, 2026-09-01: primeiro "ele
+   pisca", depois "colocar uma animacao de rolar para o lado").
    Cada tela do painel e uma pagina inteira nova (o servidor entrega o HTML),
    entao trocar de aba trocava um documento pelo outro com um flash no meio.
-   `@view-transition { navigation: auto }` faz o iOS/navegador aplicar um
-   crossfade entre as duas paginas. Ignorado em iOS antigo, sem quebrar nada. */
+   `@view-transition { navigation: auto }` liga a transicao entre paginas
+   (iOS 18+/navegadores modernos; ignorado em versoes antigas, sem quebrar). */
 @view-transition {
   navigation: auto;
+}
+
+/* A tela nova entra DESLIZANDO da direita e a antiga sai para a esquerda —
+   sensacao de "avancar" de app nativo, no lugar do fade padrao.
+   So quando o usuario nao pediu menos movimento; nesse caso fica o fade. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes sv-vt-sai-esquerda {
+    to { transform: translateX(-24%); opacity: 0; }
+  }
+  @keyframes sv-vt-entra-direita {
+    from { transform: translateX(100%); }
+  }
+  ::view-transition-old(root) {
+    animation: sv-vt-sai-esquerda 0.26s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  ::view-transition-new(root) {
+    animation: sv-vt-entra-direita 0.26s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
 }
 
 /* O overscroll do app mostrava o fundo preto do WKWebView nas bordas. O fundo

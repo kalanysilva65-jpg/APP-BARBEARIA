@@ -196,7 +196,10 @@ async function ver(req, res) {
   // "R$150 e 0 atendimentos" hoje.
   const agendamentos = await prisma.agendamento.findMany({
     where: { barbeariaId: b, status: 'concluido', concluidoEm: { gte: inicio, lt: fimExcl } },
-    include: { usuario: true, itens: { include: { servico: true } }, cliente: true },
+    // `cliente: true` foi removido: a relação era hidratada e nunca lida (só
+    // se usa ag.clienteId e ag.clienteNome, que são colunas do próprio
+    // agendamento). Era um join + objeto a mais por linha, à toa.
+    include: { usuario: true, itens: { include: { servico: true } } },
     orderBy: [{ concluidoEm: 'desc' }, { horaInicio: 'desc' }],
   });
 
@@ -329,13 +332,22 @@ async function ver(req, res) {
   let clientesRecorrentes = 0;
   let receitaNovos = 0;
   let receitaRecorrentes = 0;
+  // Antes: um findFirst por cliente (N+1 — num mês cheio, centenas de idas ao
+  // banco). Agora UMA agregação traz a data do 1º atendimento concluído de
+  // cada cliente. `_min.data` é exatamente o que o findFirst ordenado por
+  // `data asc` retornava (o horaInicio era só desempate e não muda a data),
+  // então a classificação novo/recorrente sai idêntica.
+  const primeiros = await prisma.agendamento.groupBy({
+    by: ['clienteId'],
+    where: { barbeariaId: b, status: 'concluido', clienteId: { in: clienteIds } },
+    _min: { data: true },
+  });
+  const primeiraDataPorCliente = new Map();
+  for (const g of primeiros) primeiraDataPorCliente.set(g.clienteId, g._min.data);
   for (const cid of clienteIds) {
-    const primeiro = await prisma.agendamento.findFirst({
-      where: { barbeariaId: b, clienteId: cid, status: 'concluido' },
-      orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
-    });
+    const primeiraData = primeiraDataPorCliente.get(cid);
     const receita = receitaPorCliente.get(cid) || 0;
-    if (primeiro && primeiro.data >= inicio && primeiro.data < fimExcl) {
+    if (primeiraData && primeiraData >= inicio && primeiraData < fimExcl) {
       clientesNovos++;
       receitaNovos += receita;
     } else {

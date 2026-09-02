@@ -14,6 +14,14 @@ const { uploadsDir, sessionsDir } = require('./config/paths');
 const app = express();
 app.set('trust proxy', 1);
 
+// Versão dos assets. Muda a cada boot — e como todo deploy reinicia o serviço
+// (systemctl restart cortavo), muda a cada deploy. Vai como ?v=... nos links de
+// CSS/JS: com isso o navegador pode cachear esses arquivos "para sempre"
+// (immutable) e ainda assim pegar a versão nova quando a gente publica.
+// É o que faz a troca de tela parar de revalidar ~7 arquivos na rede toda vez.
+const ASSET_V = Date.now().toString(36);
+app.locals.assetV = ASSET_V;
+
 // --- Views: EJS + layouts -------------------------------------------------
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -26,8 +34,28 @@ app.use(express.json());
 app.use(methodOverride('_method')); // permite PUT/DELETE em formulários
 
 // --- Arquivos estáticos ---------------------------------------------------
-app.use(express.static(path.join(__dirname, '..', 'public')));
-app.use('/uploads', express.static(uploadsDir));
+// Cache agressivo, mas seguro:
+//  - fonte (.woff2): nunca muda -> 1 ano immutable.
+//  - CSS/JS pedidos com ?v=... (versionados por deploy): 1 ano immutable; o ?v
+//    muda no próximo deploy e o navegador busca a versão nova.
+//  - o resto (sw.js, manifest, ícones sem ?v): revalida sempre, para não
+//    congelar o service worker nem o manifesto.
+// Antes era sem cache: cada troca de tela revalidava tudo na rede (lentidão).
+const UM_ANO = 31536000;
+app.use(
+  express.static(path.join(__dirname, '..', 'public'), {
+    maxAge: 0,
+    setHeaders(res, filePath) {
+      const temVersao = /[?&]v=/.test(res.req.originalUrl || '');
+      if (/\.woff2?$/.test(filePath) || temVersao) {
+        res.setHeader('Cache-Control', `public, max-age=${UM_ANO}, immutable`);
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      }
+    },
+  })
+);
+app.use('/uploads', express.static(uploadsDir, { maxAge: UM_ANO * 1000 }));
 
 // --- Sessão ---------------------------------------------------------------
 app.use(
