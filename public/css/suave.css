@@ -458,6 +458,15 @@ html:has(> body.pg-sv) {
   animation: svFade 0.2s ease both;
 }
 .pg-sv .sv-folha-fundo[hidden] { display: none; }
+
+/* Enquanto QUALQUER pop-up (folha) está aberto, some com a barra inferior. Ela
+   é position:fixed e tem view-transition-name próprio (sv-barra), o que cria um
+   contexto de empilhamento — por isso o z-index maior da folha nem sempre a
+   cobria, e a barra aparecia por cima/ao lado do pop-up atrapalhando o uso
+   (dono, 2026-09-02). Com um pop-up aberto a barra não serve para nada, então
+   escondê-la é o comportamento certo. Todas as folhas do app usam
+   `.sv-folha-fundo`, então esta regra vale para todas. */
+.pg-sv:has(.sv-folha-fundo:not([hidden])) .sv-nav { display: none; }
 .sv-folha {
   width: 100%;
   /* dvh pelo mesmo motivo do fundo: 88vh media o viewport "grande" e deixava a
