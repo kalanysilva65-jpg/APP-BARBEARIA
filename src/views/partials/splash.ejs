@@ -1,40 +1,98 @@
-<%
-  // Saudação por hora do dia (mesma regra do dashboardController, duplicada
-  // aqui de propósito: é só um ternário de 1 linha e o layout não deveria
-  // depender de uma controller específica pra isso).
-  var horaSplash = new Date().getHours();
-  var saudacaoSplash = horaSplash < 12 ? 'Bom dia' : horaSplash < 18 ? 'Boa tarde' : 'Boa noite';
-  var inicialSplash = usuarioPrimeiroNome ? usuarioPrimeiroNome.trim().charAt(0).toUpperCase() : '';
-%>
-<%/* Tela de carregamento (pedido do dono, 2026-07-21, inspirada numa
-     referência de app): foto do usuário + saudação + nome, só isso — sem
-     ícones/tags extras. Some sozinha depois de um instante e só aparece uma
-     vez por sessão de navegador (sessionStorage), pra não piscar a cada
-     clique de link interno — só no carregamento "de verdade" (aba nova/
-     F5). */%>
-<div class="splash-tela" id="splash-tela">
-  <div class="splash-texto">
-    <div class="splash-saudacao"><%= saudacaoSplash %>,</div>
-    <div class="splash-nome"><%= usuarioPrimeiroNome %></div>
-  </div>
-  <div class="splash-foto">
-    <% if (usuarioFotoUrl) { %>
-      <img src="<%= usuarioFotoUrl %>" alt="<%= usuarioPrimeiroNome %>" />
-    <% } else { %>
-      <div class="splash-foto-inicial"><%= inicialSplash %></div>
-    <% } %>
-  </div>
+<%/* Tela de carregamento do app (redesenho do dono, 2026-09-03): o wordmark
+     CORTAVO sobre fundo escuro, entrando com desfoque + espaçamento de letras
+     se fechando e saindo com leve zoom/blur. Substituiu o splash antigo de
+     saudação+nome.
+
+     Regras:
+      - Aparece só na ABERTURA do app (primeira carga por sessão de webview).
+        Não repete a cada troca de tela — o sessionStorage sobrevive à navegação
+        e só zera quando o app é fechado de verdade (cold launch).
+      - Segura até a página terminar de carregar, com um mínimo de 2,2s, pra
+        nunca revelar tela meia-carregada nem cortar a animação.
+      - Tudo INLINE de propósito: precisa pintar já no primeiro quadro, antes de
+        qualquer CSS/JS do app carregar.
+      - Autossuficiente: não usa nome/foto do usuário, então serve login e
+        painel igual. */%>
+<script>
+  /* Roda ANTES do <div> abaixo existir: se o splash já rolou nesta sessão,
+     marca o <html> e o CSS mantém o splash escondido — assim ele nunca pisca na
+     navegação interna, só na abertura. */
+  (function () {
+    try {
+      if (sessionStorage.getItem('cortavoSplash') === '1') {
+        document.documentElement.setAttribute('data-splash', 'feito');
+      } else {
+        sessionStorage.setItem('cortavoSplash', '1');
+      }
+    } catch (e) {
+      document.documentElement.setAttribute('data-splash', 'feito');
+    }
+  })();
+</script>
+<style>
+  @font-face {
+    font-family: 'Overused Grotesk';
+    src: url('/fonts/OverusedGrotesk-VF.woff2') format('woff2-variations');
+    font-weight: 300 900;
+    font-display: swap;
+  }
+  #cortavo-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: #191919;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  html[data-splash="feito"] #cortavo-splash { display: none; }
+  #cortavo-splash .cs-brilho {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.06), transparent 60%);
+  }
+  #cortavo-splash .cs-marca {
+    position: relative;
+    font-family: 'Overused Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #f4f4f4;
+    animation: cs-entra 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  #cortavo-splash.cs-saindo { animation: cs-sai 0.7s cubic-bezier(0.6, 0, 0.85, 0.3) forwards; }
+  @keyframes cs-entra {
+    0% { opacity: 0; letter-spacing: 8px; filter: blur(6px); }
+    100% { opacity: 1; letter-spacing: 2px; filter: blur(0); }
+  }
+  @keyframes cs-sai {
+    0% { opacity: 1; transform: scale(1); filter: blur(0); }
+    100% { opacity: 0; transform: scale(1.06); filter: blur(10px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #cortavo-splash .cs-marca { animation: none; }
+    #cortavo-splash.cs-saindo { animation: cs-sai 0.25s linear forwards; }
+  }
+</style>
+<div id="cortavo-splash" aria-hidden="true">
+  <div class="cs-brilho"></div>
+  <div class="cs-marca">CORTAVO</div>
 </div>
 <script>
   (function () {
-    var CHAVE = 'cortavoSplashMostrado';
-    var el = document.getElementById('splash-tela');
+    var el = document.getElementById('cortavo-splash');
     if (!el) return;
-    if (sessionStorage.getItem(CHAVE)) { el.remove(); return; }
-    sessionStorage.setItem(CHAVE, '1');
-    setTimeout(function () {
-      el.classList.add('splash-saindo');
-      setTimeout(function () { el.remove(); }, 500);
-    }, 1100);
+    /* Já foi mostrado nesta sessão: só limpa e sai. */
+    if (document.documentElement.getAttribute('data-splash') === 'feito') { el.remove(); return; }
+    var MIN = 2200, inicio = Date.now();
+    function sair() {
+      el.classList.add('cs-saindo');
+      setTimeout(function () { if (el && el.parentNode) el.remove(); }, 720);
+    }
+    /* Segura no mínimo MIN, mas espera a página terminar de carregar antes. */
+    function pronto() { setTimeout(sair, Math.max(0, MIN - (Date.now() - inicio))); }
+    if (document.readyState === 'complete') pronto();
+    else window.addEventListener('load', pronto);
   })();
 </script>

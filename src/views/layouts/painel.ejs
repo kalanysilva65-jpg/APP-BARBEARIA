@@ -91,7 +91,7 @@
        classes .pg-<tela> continuam existindo para o que É específico de
        cada uma (o hero só existe na Home, por exemplo). */%>
   <body class="app-painel <%= ehSuave ? 'pg-sv' : classeTela + ' ' + (classeTela ? 'pg-novo' : '') %>">
-    <% if (!ehSuave) { %><%- include('../partials/splash') %><% } %>
+    <%- include('../partials/splash') %>
     <div class="app-topo-fixo">
       <%- include('../partials/header-painel') %>
     </div>
