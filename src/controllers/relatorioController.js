@@ -371,6 +371,44 @@ async function ver(req, res) {
     recorrentesW: Math.max(16, Math.round((clientesRecorrentes / maxGrupoCliente) * 100)) + '%',
   };
 
+  // --- Ticket por atendimento x por cliente, e clientes únicos x visitas -----
+  // (pedido do dono, 2026-09-03). "Por atendimento" é o ticketMedio de sempre.
+  // "Por cliente" divide o MESMO faturamento pelo nº de clientes DISTINTOS —
+  // fica maior que o por-atendimento quando a mesma pessoa volta no período.
+  // Únicos = clientes distintos (com cadastro); visitas = atendimentos totais.
+  // "Veio 1x x voltou" olha a frequência DENTRO do período.
+  const clientesUnicos = clienteIds.length;
+  const ticketPorCliente = clientesUnicos > 0 ? Math.round(resumo.entrou / clientesUnicos) : 0;
+  const maxTicketTipo = Math.max(1, ticketMedio, ticketPorCliente);
+  const ticketPorTipo = {
+    atendimento: ticketMedio,
+    cliente: ticketPorCliente,
+    atendW: Math.max(18, Math.round((ticketMedio / maxTicketTipo) * 100)) + '%',
+    clienteW: Math.max(18, Math.round((ticketPorCliente / maxTicketTipo) * 100)) + '%',
+  };
+
+  const atendPorClienteMap = new Map();
+  for (const ag of agendamentos) {
+    if (!ag.clienteId) continue;
+    atendPorClienteMap.set(ag.clienteId, (atendPorClienteMap.get(ag.clienteId) || 0) + 1);
+  }
+  let clientesUmaVez = 0;
+  let clientesVoltaram = 0;
+  for (const n of atendPorClienteMap.values()) {
+    if (n >= 2) clientesVoltaram++;
+    else clientesUmaVez++;
+  }
+  const maxFreqGrupo = Math.max(1, clientesUmaVez, clientesVoltaram);
+  clientesData.unicos = clientesUnicos;
+  clientesData.visitas = atendimentos;
+  clientesData.mediaVisitas = clientesUnicos > 0 ? atendimentos / clientesUnicos : 0;
+  clientesData.umaVez = clientesUmaVez;
+  clientesData.voltaram = clientesVoltaram;
+  clientesData.umaVezPct = pctDe(clientesUmaVez, Math.max(1, clientesUnicos));
+  clientesData.voltaramPct = pctDe(clientesVoltaram, Math.max(1, clientesUnicos));
+  clientesData.umaVezW = Math.max(16, Math.round((clientesUmaVez / maxFreqGrupo) * 100)) + '%';
+  clientesData.voltaramW = Math.max(16, Math.round((clientesVoltaram / maxFreqGrupo) * 100)) + '%';
+
   // --- Formas de pagamento ---------------------------------------------------
   const FORMAS = [
     { valor: 'pix', label: 'Pix', naHora: true },
@@ -620,6 +658,8 @@ async function ver(req, res) {
     variacaoFaturamento,
     topServices,
     ticketMedio,
+    ticketPorCliente,
+    ticketPorTipo,
     variacaoTicket,
     ocupacaoPct,
     formasPagamento,
