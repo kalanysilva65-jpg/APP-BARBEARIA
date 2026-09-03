@@ -99,10 +99,16 @@ html:has(> body.pg-sv) {
 .pg-sv * { box-sizing: border-box; }
 .pg-sv a { color: inherit; text-decoration: none; }
 
-.pg-sv .sv-tela,
-.pg-sv .sv-rolagem { scrollbar-width: none; -ms-overflow-style: none; }
-.pg-sv .sv-tela::-webkit-scrollbar,
-.pg-sv .sv-rolagem::-webkit-scrollbar { display: none; width: 0; height: 0; }
+/* Sem barra de rolagem em NENHUM canto do painel (2026-09-03): a barrinha cinza
+   na lateral dava cara de navegador. Antes só o .sv-tela/.sv-rolagem a escondiam;
+   o próprio documento (html/body) e as folhas roláveis ainda a mostravam. Aqui
+   some em tudo — o conteúdo continua rolando, só sem a barra visível. */
+html:has(> body.pg-sv),
+.pg-sv,
+.pg-sv * { scrollbar-width: none; -ms-overflow-style: none; }
+html:has(> body.pg-sv)::-webkit-scrollbar,
+.pg-sv::-webkit-scrollbar,
+.pg-sv *::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
 .pg-sv .conteudo > .alerta {
   position: fixed;
