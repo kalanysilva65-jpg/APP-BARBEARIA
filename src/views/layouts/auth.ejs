@@ -2,7 +2,9 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <%/* Zoom travado (pinça e toque-duplo) pra a tela do app não sair do lugar
+         — igual ao painel. Vale no WKWebView do app; no Safari é ignorado. */%>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= (typeof barbearia !== 'undefined' && barbearia) ? barbearia.nome : 'Cortavo' %></title>
     <%/* Layout próprio do login da EQUIPE (pedido do dono, 2026-07-31). O
          `blank` continua servindo as páginas de conta do cliente, que seguem

@@ -9,7 +9,10 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <%/* maximum-scale=1 + user-scalable=no travam o zoom (pinça e toque-duplo):
+         dentro do app (WKWebView do Capacitor) o zoom desalinhava a tela e a
+         barra fixa. É respeitado no app; no Safari comum é ignorado (ok). */%>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title><%= typeof titulo !== 'undefined' ? titulo + ' · ' : '' %><%= (typeof barbeariaAtual !== 'undefined' && barbeariaAtual) ? barbeariaAtual.nome : 'Painel' %></title>
     <%
       // CSS POR TELA (2026-08-01). Antes o layout carregava os 18 arquivos em
