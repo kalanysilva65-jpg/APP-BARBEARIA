@@ -250,7 +250,16 @@ html:has(> body.pg-sv) {
   padding: 16px;
 }
 .sv-cartao--escuro {
-  background: var(--sv-ink);
+  /* Vidro fosco ESCURO (dono, 2026-09-03: "efeito de vidro nos cards escuros,
+     mantendo o fundo escuro"). Cor escura preservada (rgba do --sv-ink=#191919)
+     mas translúcida + blur: o conteúdo atrás aparece levemente borrado. Alvo é a
+     CLASSE do card escuro (5 cards: próximo atendimento, sua semana, resumos de
+     planos/equipe) — não pega botões/avatares que usam --sv-ink direto.
+     O efeito é sutil quando o card está sobre o fundo chapado; aparece mais
+     onde há conteúdo por trás. */
+  background: rgba(25, 25, 25, 0.72);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
   color: var(--sv-line);
   box-shadow: var(--sv-sombra-alta);
 }
