@@ -152,12 +152,12 @@ html:has(> body.pg-sv) {
   flex-direction: column;
   background: var(--sv-bg);
   overflow-y: auto;
-  animation: svFade 0.28s ease both;
+  animation: svFade 0.36s ease both;
 }
 /* `backwards`, não `both`: com `both` o transform do último quadro CONTINUA
    aplicado depois da animação e anula o `transform:scale()` do :active — todo
    cartão clicável que também entra com .sv-reveal perdia o toque. */
-.sv-reveal { animation: svRevealUp 0.52s cubic-bezier(0.2, 0.9, 0.25, 1.05) backwards; }
+.sv-reveal { animation: svRevealUp 0.62s cubic-bezier(0.2, 0.9, 0.25, 1.05) backwards; }
 
 /* TOQUE VIVO (2026-09-03): a tela de agendamento cede suave no toque porque
    cada clicável tem `transition: transform` na BASE — os :active espalhados
@@ -536,7 +536,7 @@ html:has(> body.pg-sv) {
   border-radius: 28px 28px 0 0;
   box-shadow: var(--sv-sombra-folha);
   padding: 10px 20px calc(24px + env(safe-area-inset-bottom, 0px));
-  animation: svSheetUp 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.05) both;
+  animation: svSheetUp 0.54s cubic-bezier(0.2, 0.9, 0.25, 1.05) both;
 }
 /* Vidro fosco SÓ na folha do menu "Mais" (pedido do dono, 2026-09-03: o mesmo
    efeito da barra). As outras folhas (.sv-folha em caixa/clientes/equipe/
@@ -784,10 +784,10 @@ html:has(> body.pg-sv) {
   from { transform: translateX(100%); }
 }
 ::view-transition-old(sv-conteudo) {
-  animation: sv-vt-sai-esquerda 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: sv-vt-sai-esquerda 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 ::view-transition-new(sv-conteudo) {
-  animation: sv-vt-entra-direita 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: sv-vt-entra-direita 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* A barra some da transição e é desenhada só uma vez, por cima. */
