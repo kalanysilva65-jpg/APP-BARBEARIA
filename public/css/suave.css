@@ -770,24 +770,27 @@ html:has(> body.pg-sv) {
    ========================================================================= */
 @view-transition { navigation: auto; }
 
-/* DESLIZA SÓ O CONTEÚDO (pedido do dono, 2026-09-01: "animação de rolar para o
-   lado"). Antes era um fade vertical da `root`; virou slide da direita.
+/* FADE-UP IGUAL AO AGENDAMENTO (2026-09-03). Antes era um slide horizontal
+   ("rolar pro lado", 2026-09-01), mas o dono achou que não batia com o fluxo
+   público — lá a tela nova SOBE e aparece (svAgFadeUp), não desliza. Trocado
+   pelo mesmo movimento vertical suave: a tela nova entra subindo de baixo e a
+   antiga só some por cima (cruzam, então não há corte seco/flash branco).
+   Sem overshoot: num bloco de tela inteira ele abriria um vão na borda.
    Anima o `.conteudo`, NÃO a `root`: a barra inferior é `position: fixed`, e
-   mover a página inteira fazia o iOS reposicionar a barra fixa (ela aparecia
-   "mais alta ou mais baixa" em algumas telas). Nomeando só o conteúdo, a barra
-   (sv-barra, logo abaixo) fica de fora e parada. */
+   mover a página inteira fazia o iOS reposicionar a barra fixa. Nomeando só o
+   conteúdo, a barra (sv-barra, logo abaixo) fica de fora e parada. */
 .pg-sv .conteudo { view-transition-name: sv-conteudo; }
-@keyframes sv-vt-sai-esquerda {
-  to { transform: translateX(-24%); opacity: 0; }
+@keyframes sv-vt-sai {
+  to { opacity: 0; transform: translateY(-8px); }
 }
-@keyframes sv-vt-entra-direita {
-  from { transform: translateX(100%); }
+@keyframes sv-vt-entra {
+  from { opacity: 0; transform: translateY(16px); }
 }
 ::view-transition-old(sv-conteudo) {
-  animation: sv-vt-sai-esquerda 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: sv-vt-sai 0.26s cubic-bezier(0.4, 0, 1, 1) both;
 }
 ::view-transition-new(sv-conteudo) {
-  animation: sv-vt-entra-direita 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: sv-vt-entra 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* A barra some da transição e é desenhada só uma vez, por cima. */
