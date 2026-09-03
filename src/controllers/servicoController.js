@@ -93,10 +93,36 @@ async function listarProdutos(req, res) {
   res.render('painel/produtos', { titulo: 'Produtos', produtos, categorias, resumoMes });
 }
 
+// Itens de estoque + a receita de consumo atual (mapa estoqueId -> quantidade)
+// para o formulário. A receita vem vazia num serviço novo.
+async function dadosInsumos(barbeariaId, servicoId) {
+  const estoqueItens = await prisma.estoque.findMany({ where: { barbeariaId }, orderBy: { nome: 'asc' } });
+  const insumosMap = {};
+  if (servicoId) {
+    const insumos = await prisma.servicoInsumo.findMany({ where: { servicoId } });
+    for (const i of insumos) insumosMap[i.estoqueId] = i.quantidade;
+  }
+  return { estoqueItens, insumosMap };
+}
+
+// Regrava a receita de consumo do serviço a partir do formulário: cada item de
+// estoque vem como `insumo_<id>` (0/vazio = não consome). Recria do zero.
+async function salvarInsumos(barbeariaId, servicoId, body) {
+  const estoqueItens = await prisma.estoque.findMany({ where: { barbeariaId }, select: { id: true } });
+  await prisma.servicoInsumo.deleteMany({ where: { servicoId } });
+  const linhas = [];
+  for (const e of estoqueItens) {
+    const q = parseInt(body['insumo_' + e.id], 10);
+    if (Number.isFinite(q) && q > 0) linhas.push({ barbeariaId, servicoId, estoqueId: e.id, quantidade: q });
+  }
+  if (linhas.length) await prisma.servicoInsumo.createMany({ data: linhas });
+}
+
 // GET /painel/servicos/novo — formulário de criação
 async function formNovo(req, res) {
   const categorias = await prisma.categoriaServico.findMany({ where: { barbeariaId: req.barbeariaId }, orderBy: { nome: 'asc' } });
-  res.render('painel/servico-form', { titulo: 'Novo serviço', servico: null, categorias });
+  const { estoqueItens, insumosMap } = await dadosInsumos(req.barbeariaId, null);
+  res.render('painel/servico-form', { titulo: 'Novo serviço', servico: null, categorias, estoqueItens, insumosMap });
 }
 
 // POST /painel/servicos — cria um serviço/produto
@@ -118,7 +144,8 @@ async function criar(req, res) {
     return res.redirect(destino(ehProduto));
   }
 
-  await prisma.servico.create({ data: { barbeariaId: req.barbeariaId, nome, descricao, valor, duracaoMin, categoriaId, ehProduto, ehEncaixe, comissaoPercentual, fotoUrl } });
+  const novoServico = await prisma.servico.create({ data: { barbeariaId: req.barbeariaId, nome, descricao, valor, duracaoMin, categoriaId, ehProduto, ehEncaixe, comissaoPercentual, fotoUrl } });
+  await salvarInsumos(req.barbeariaId, novoServico.id, req.body);
   req.session.flash = { tipo: 'sucesso', texto: ehProduto ? 'Produto criado.' : 'Serviço criado.' };
   res.redirect(destino(ehProduto));
 }
@@ -128,7 +155,8 @@ async function formEditar(req, res) {
   const servico = await prisma.servico.findFirst({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } });
   if (!servico) return res.redirect('/painel/servicos');
   const categorias = await prisma.categoriaServico.findMany({ where: { barbeariaId: req.barbeariaId }, orderBy: { nome: 'asc' } });
-  res.render('painel/servico-form', { titulo: 'Editar serviço', servico, categorias });
+  const { estoqueItens, insumosMap } = await dadosInsumos(req.barbeariaId, servico.id);
+  res.render('painel/servico-form', { titulo: 'Editar serviço', servico, categorias, estoqueItens, insumosMap });
 }
 
 // POST /painel/servicos/:id — atualiza um serviço/produto
@@ -162,6 +190,7 @@ async function atualizar(req, res) {
   }
 
   await prisma.servico.update({ where: { id }, data });
+  await salvarInsumos(req.barbeariaId, id, req.body);
   req.session.flash = { tipo: 'sucesso', texto: ehProduto ? 'Produto atualizado.' : 'Serviço atualizado.' };
   res.redirect(destino(ehProduto));
 }

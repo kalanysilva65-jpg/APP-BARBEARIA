@@ -87,6 +87,33 @@
       </span>
     </div>
 
+    <%/* Receita de consumo de estoque (2026-09-03): baixa automática ao concluir
+         o atendimento. Serve tanto pra "produto vendido baixa a si mesmo" quanto
+         pra "serviço gasta insumos". Cada item de estoque tem um campo de
+         quantidade; 0/vazio = não consome. */%>
+    <div class="campo">
+      <label>Consome do estoque</label>
+      <span class="texto-sutil">
+        Baixa sozinho quando o atendimento é concluído — sem trabalho a mais.
+        Produto vendido: 1 do próprio item. Serviço: os insumos que gasta (lâmina, creme…).
+        Deixe 0 no que não consome.
+      </span>
+      <% if (!estoqueItens || !estoqueItens.length) { %>
+        <p class="texto-sutil" style="margin-top:8px;">Nenhum item de estoque cadastrado ainda — cadastre em <strong>Estoque</strong> para usar aqui.</p>
+      <% } else { %>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
+          <% estoqueItens.forEach(function (e) { %>
+            <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <span><%= e.nome %></span>
+              <input type="number" name="insumo_<%= e.id %>" min="0" step="1" inputmode="numeric"
+                     value="<%= insumosMap && insumosMap[e.id] ? insumosMap[e.id] : '' %>" placeholder="0"
+                     style="width:82px;padding:8px 10px;border:1px solid var(--cor-borda,#e0e0e0);border-radius:8px;font:inherit;text-align:center;" />
+            </label>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+
     <button class="btn btn-primario btn-bloco" type="submit">
       <%= servico ? 'Salvar alterações' : 'Criar serviço' %>
     </button>

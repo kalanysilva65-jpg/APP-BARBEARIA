@@ -9,6 +9,7 @@ const { DIAS_SEMANA, INTERVALO_SLOT_MIN } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const caixaServ = require('../services/caixa');
 const planoServ = require('../services/plano');
+const estoqueServ = require('../services/estoque');
 
 // Formas de pagamento oferecidas ao concluir um atendimento. Rótulos CURTOS
 // (design suave, 2026-07-31): viram pílulas dentro do cartão preto do detalhe,
@@ -573,6 +574,15 @@ async function mudarStatus(req, res) {
       // Reabrir (agendado) ou cancelar: remove eventual entrada automática.
       await caixaServ.removerEntradaAgendamento(agendamento.id);
     }
+
+    // Estoque: baixa na 1ª conclusão e devolve ao reabrir/cancelar um concluído.
+    // Mesma lógica de transição do `concluidoEm` (compara o status ANTERIOR com
+    // o novo), pra não baixar duas vezes numa reconclusão nem esquecer de
+    // devolver. Só age se o serviço/produto tiver receita de consumo cadastrada.
+    const eraConcluido = agendamento.status === 'concluido';
+    const ficaConcluido = novo === 'concluido';
+    if (!eraConcluido && ficaConcluido) await estoqueServ.aplicarConsumo(agendamento.id, -1);
+    else if (eraConcluido && !ficaConcluido) await estoqueServ.aplicarConsumo(agendamento.id, +1);
 
     // Ajuste de uso do plano (cancelar devolve 1 uso; reabrir volta a consumir).
     if (agendamento.clientePlanoId) {

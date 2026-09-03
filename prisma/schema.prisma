@@ -52,6 +52,7 @@ model Barbearia {
   cupons             Cupom[]
   resgatesFidelidade FidelidadeResgate[]
   pagamentos         PagamentoAgendamento[]
+  servicoInsumos     ServicoInsumo[]
 
   @@map("barbearias")
 }
@@ -177,8 +178,31 @@ model Servico {
   categoria CategoriaServico? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
   itens     AgendamentoItem[]
   planos    Plano[]
+  insumos   ServicoInsumo[]
 
   @@map("servicos")
+}
+
+/// "Receita" de consumo de estoque de um serviço/produto: ao CONCLUIR um
+/// atendimento, cada item baixa `quantidade` unidades do item de estoque ligado
+/// (multiplicado pela quantidade do item no atendimento). Cobre os dois casos:
+/// produto vendido baixando a si mesmo ("vendeu, baixou") e serviço consumindo
+/// insumos internos ("ficha técnica"). Reabrir/cancelar devolve ao estoque.
+model ServicoInsumo {
+  id          Int @id @default(autoincrement())
+  barbeariaId Int @map("barbearia_id")
+  servicoId   Int @map("servico_id")
+  estoqueId   Int @map("estoque_id")
+  quantidade  Int @default(1) // unidades consumidas por 1 unidade do serviço/produto
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  servico   Servico   @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+  estoque   Estoque   @relation(fields: [estoqueId], references: [id], onDelete: Cascade)
+
+  // Um serviço não repete o mesmo item de estoque (a quantidade já cobre isso).
+  @@unique([servicoId, estoqueId])
+  @@index([estoqueId])
+  @@map("servico_insumos")
 }
 
 /// Agendamentos do cliente, vinculados a um barbeiro específico (obrigatório).
@@ -410,6 +434,7 @@ model Estoque {
 
   barbearia Barbearia         @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   categoria CategoriaEstoque? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  consumos  ServicoInsumo[]
 
   @@map("estoque")
 }
