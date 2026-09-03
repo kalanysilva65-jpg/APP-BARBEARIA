@@ -118,7 +118,7 @@ html:has(> body.pg-sv) {
 }
 
 @keyframes svRevealUp {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes svFade {
@@ -148,12 +148,12 @@ html:has(> body.pg-sv) {
   flex-direction: column;
   background: var(--sv-bg);
   overflow-y: auto;
-  animation: svFade 0.2s ease both;
+  animation: svFade 0.28s ease both;
 }
 /* `backwards`, não `both`: com `both` o transform do último quadro CONTINUA
    aplicado depois da animação e anula o `transform:scale()` do :active — todo
    cartão clicável que também entra com .sv-reveal perdia o toque. */
-.sv-reveal { animation: svRevealUp 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.sv-reveal { animation: svRevealUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
 
 /* Topo padrão: avatar + saudação/nome + ação à direita. */
 /* 34px, era 54px: o dono reclamou de "espaço muito grande em branco" acima do
@@ -457,7 +457,7 @@ html:has(> body.pg-sv) {
 /* "Pop" no ícone da aba ATIVA — cada página é um carregamento novo, então a
    animação toca uma vez ao abrir a tela. */
 .pg-sv .sv-nav-item.ativo .sv-nav-ic {
-  animation: ctPop 0.32s cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+  animation: ctPop 0.44s cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
 }
 @keyframes ctPop {
   0% { transform: scale(0.72); }
@@ -491,7 +491,7 @@ html:has(> body.pg-sv) {
   background: rgba(25, 25, 25, 0.35);
   display: flex;
   align-items: flex-end;
-  animation: svFade 0.2s ease both;
+  animation: svFade 0.28s ease both;
 }
 .pg-sv .sv-folha-fundo[hidden] { display: none; }
 
@@ -518,7 +518,7 @@ html:has(> body.pg-sv) {
   border-radius: 28px 28px 0 0;
   box-shadow: var(--sv-sombra-folha);
   padding: 10px 20px calc(24px + env(safe-area-inset-bottom, 0px));
-  animation: svSheetUp 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: svSheetUp 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 /* Vidro fosco SÓ na folha do menu "Mais" (pedido do dono, 2026-09-03: o mesmo
    efeito da barra). As outras folhas (.sv-folha em caixa/clientes/equipe/
@@ -766,10 +766,10 @@ html:has(> body.pg-sv) {
   from { transform: translateX(100%); }
 }
 ::view-transition-old(sv-conteudo) {
-  animation: sv-vt-sai-esquerda 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: sv-vt-sai-esquerda 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 ::view-transition-new(sv-conteudo) {
-  animation: sv-vt-entra-direita 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: sv-vt-entra-direita 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* A barra some da transição e é desenhada só uma vez, por cima. */
