@@ -111,6 +111,7 @@
         <input class="sv-campo-input sv-cat-arquivo" id="foto-novo" name="foto" type="file" accept="image/*" />
         <span class="sv-cat-ajuda">JPG, PNG ou WEBP, até 4 MB.</span>
       </div>
+      <%- include('_consumo-estoque', { estoqueItens: estoqueItens, mapa: {} }) %>
       <button class="sv-btn sv-cat-btn" type="submit">Adicionar</button>
     </form>
   </div>
@@ -160,6 +161,7 @@
           <input class="sv-campo-input sv-cat-arquivo" id="foto-<%= p.id %>" name="foto" type="file" accept="image/*" />
           <span class="sv-cat-ajuda">JPG, PNG ou WEBP, até 4 MB.<%= p.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %></span>
         </div>
+        <%- include('_consumo-estoque', { estoqueItens: estoqueItens, mapa: (insumosPorServico && insumosPorServico[p.id]) || {} }) %>
         <button class="sv-btn sv-cat-btn" type="submit">Salvar alterações</button>
       </form>
       <%/* Mesma nota da referência, no mesmo lugar: o que o produto girou no

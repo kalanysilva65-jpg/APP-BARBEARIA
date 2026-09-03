@@ -102,6 +102,13 @@
         <input class="sv-campo-input sv-cat-arquivo" id="foto-novo" name="foto" type="file" accept="image/*" />
         <span class="sv-cat-ajuda">JPG, PNG ou WEBP, até 4 MB.</span>
       </div>
+      <div class="sv-campo">
+        <label class="sv-cat-check">
+          <input type="checkbox" name="ehEncaixe" value="on" />
+          <span>É um encaixe <span class="sv-cat-ajuda">— junto de outro serviço não soma tempo; sozinho, conta o próprio</span></span>
+        </label>
+      </div>
+      <%- include('_consumo-estoque', { estoqueItens: estoqueItens, mapa: {} }) %>
       <button class="sv-btn sv-cat-btn" type="submit">Adicionar</button>
     </form>
   </div>
@@ -154,6 +161,13 @@
           <input class="sv-campo-input sv-cat-arquivo" id="foto-<%= s.id %>" name="foto" type="file" accept="image/*" />
           <span class="sv-cat-ajuda">JPG, PNG ou WEBP, até 4 MB.<%= s.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %></span>
         </div>
+        <div class="sv-campo">
+          <label class="sv-cat-check">
+            <input type="checkbox" name="ehEncaixe" value="on" <%= s.ehEncaixe ? 'checked' : '' %> />
+            <span>É um encaixe <span class="sv-cat-ajuda">— junto de outro serviço não soma tempo; sozinho, conta o próprio</span></span>
+          </label>
+        </div>
+        <%- include('_consumo-estoque', { estoqueItens: estoqueItens, mapa: (insumosPorServico && insumosPorServico[s.id]) || {} }) %>
         <button class="sv-btn sv-cat-btn" type="submit">Salvar alterações</button>
       </form>
       <div class="sv-cat-acoes">

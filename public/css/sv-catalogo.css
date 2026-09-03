@@ -573,3 +573,54 @@
   color: var(--sv-muted);
   margin-top: 3px;
 }
+
+/* Encaixe + "Consome do estoque" nos pop-ups de serviço/produto (2026-09-03). */
+.pg-sv .sv-cat-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--sv-ink);
+  line-height: 1.4;
+}
+.pg-sv .sv-cat-check input {
+  margin-top: 1px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--sv-ink);
+}
+.pg-sv .sv-consumo-dica {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--sv-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.pg-sv .sv-consumo-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.pg-sv .sv-consumo-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pg-sv .sv-consumo-nome {
+  font-size: 14px;
+  color: var(--sv-ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pg-sv .sv-consumo-inp {
+  width: 84px;
+  flex-shrink: 0;
+  text-align: center;
+}

@@ -37,7 +37,8 @@ async function listar(req, res) {
     orderBy: { nome: 'asc' },
     include: { _count: { select: { servicos: true } } },
   });
-  res.render('painel/servicos', { titulo: 'Serviços', servicos, categorias });
+  const { estoqueItens, insumosPorServico } = await insumosDaLista(b);
+  res.render('painel/servicos', { titulo: 'Serviços', servicos, categorias, estoqueItens, insumosPorServico });
 }
 
 // GET /painel/produtos — lista só os produtos (ehProduto:true)
@@ -90,7 +91,8 @@ async function listarProdutos(req, res) {
     topQtd: maisVendido ? maisVendido.vendidosMes : 0,
   };
 
-  res.render('painel/produtos', { titulo: 'Produtos', produtos, categorias, resumoMes });
+  const { estoqueItens, insumosPorServico } = await insumosDaLista(b);
+  res.render('painel/produtos', { titulo: 'Produtos', produtos, categorias, resumoMes, estoqueItens, insumosPorServico });
 }
 
 // Itens de estoque + a receita de consumo atual (mapa estoqueId -> quantidade)
@@ -105,9 +107,26 @@ async function dadosInsumos(barbeariaId, servicoId) {
   return { estoqueItens, insumosMap };
 }
 
+// Versão em lote pras telas de lista (Serviços/Produtos): os itens de estoque e
+// a receita de CADA serviço, num mapa servicoId -> { estoqueId: quantidade }.
+async function insumosDaLista(barbeariaId) {
+  const estoqueItens = await prisma.estoque.findMany({ where: { barbeariaId }, orderBy: { nome: 'asc' } });
+  const linhas = await prisma.servicoInsumo.findMany({ where: { barbeariaId } });
+  const insumosPorServico = {};
+  for (const l of linhas) {
+    if (!insumosPorServico[l.servicoId]) insumosPorServico[l.servicoId] = {};
+    insumosPorServico[l.servicoId][l.estoqueId] = l.quantidade;
+  }
+  return { estoqueItens, insumosPorServico };
+}
+
 // Regrava a receita de consumo do serviço a partir do formulário: cada item de
 // estoque vem como `insumo_<id>` (0/vazio = não consome). Recria do zero.
 async function salvarInsumos(barbeariaId, servicoId, body) {
+  // Só rebaixa a receita se o formulário REALMENTE trouxe a seção de estoque
+  // (marcador `insumos_form`). Sem isso, um form sem a seção apagaria a receita
+  // sem querer ao salvar — o padrão seguro é não mexer.
+  if (!body || !body.insumos_form) return;
   const estoqueItens = await prisma.estoque.findMany({ where: { barbeariaId }, select: { id: true } });
   await prisma.servicoInsumo.deleteMany({ where: { servicoId } });
   const linhas = [];
