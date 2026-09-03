@@ -413,7 +413,7 @@ html:has(> body.pg-sv) {
      diferente embaixo. Como cada tela tem um fundo (cinza/branco), não há uma
      cor única para igualar; deixar o frost mais opaco cobre a diferença — e é
      como a barra da App Store é de fato (bem fosca, quase sólida). */
-  background: rgba(250, 250, 250, 0.88);
+  background: rgba(250, 250, 250, 0.8);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   backdrop-filter: blur(30px) saturate(180%);
   border: 1px solid rgba(0, 0, 0, 0.06);
@@ -519,6 +519,16 @@ html:has(> body.pg-sv) {
   box-shadow: var(--sv-sombra-folha);
   padding: 10px 20px calc(24px + env(safe-area-inset-bottom, 0px));
   animation: svSheetUp 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.02) both;
+}
+/* Vidro fosco SÓ na folha do menu "Mais" (pedido do dono, 2026-09-03: o mesmo
+   efeito da barra). As outras folhas (.sv-folha em caixa/clientes/equipe/
+   estoque/planos) seguem brancas sólidas — por isso o alvo é o #id, não a
+   classe. O frost claro sobre o escurecido do fundo deixa o miolo do menu
+   (texto/ícones escuros) legível. */
+#sv-menu-folha {
+  background: rgba(250, 250, 250, 0.8);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
 }
 /* Puxador — a alcinha cinza que indica "arraste pra fechar". */
 .sv-folha-puxador {
