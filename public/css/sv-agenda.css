@@ -620,6 +620,30 @@
 }
 .pg-sv .sv-ag-item-x:active { transform: scale(0.9); }
 
+/* Abas Serviços / Produtos acima do seletor "Adicionar" (pedido do dono,
+   2026-09-03): pílula clara que vira preta na ativa, igual aos filtros da lista. */
+.pg-sv .sv-ag-add-abas {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+}
+.pg-sv .sv-ag-add-abas + .sv-ag-add { margin-top: 8px; }
+.pg-sv .sv-ag-add-aba {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  background: var(--sv-bg);
+  color: var(--sv-ink-2);
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.18s ease;
+}
+.pg-sv .sv-ag-add-aba:active { transform: scale(0.97); }
+.pg-sv .sv-ag-add-aba.ativa { background: var(--sv-ink); color: #fff; }
+
 .pg-sv .sv-ag-add {
   display: flex;
   gap: 8px;

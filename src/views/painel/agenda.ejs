@@ -660,8 +660,53 @@
       desenhar();
     }
 
+    // Abas Serviços / Produtos do seletor "Adicionar": cada aba repovoa o mesmo
+    // <select data-novo-servico> só com o seu tipo, a partir dos dados embutidos
+    // em data-opts-*. O select continua sendo o único [data-novo-servico], então
+    // a ação de adicionar (que lê o primeiro deles) não muda.
+    function montarItemAbas(escopo) {
+      Array.prototype.forEach.call(escopo.querySelectorAll('[data-item-abas]'), function (abas) {
+        if (abas._pronto) return;
+        var bloco = abas.parentNode;
+        var sel = bloco.querySelector('[data-novo-servico]');
+        if (!sel) return;
+        abas._pronto = true;
+        var opts;
+        try {
+          opts = {
+            servico: JSON.parse(sel.getAttribute('data-opts-servico') || '[]'),
+            produto: JSON.parse(sel.getAttribute('data-opts-produto') || '[]'),
+          };
+        } catch (e) { opts = { servico: [], produto: [] }; }
+        var botoes = abas.querySelectorAll('.sv-ag-add-aba');
+        function trocar(aba) {
+          Array.prototype.forEach.call(botoes, function (b) {
+            b.classList.toggle('ativa', b.getAttribute('data-aba') === aba);
+          });
+          var lista = opts[aba] || [];
+          sel.innerHTML = '';
+          var ph = document.createElement('option');
+          ph.value = '';
+          ph.textContent = aba === 'produto' ? 'Produto…' : 'Serviço…';
+          sel.appendChild(ph);
+          lista.forEach(function (o) {
+            var op = document.createElement('option');
+            op.value = o.id;
+            op.textContent = o.label; // textContent evita qualquer problema de escape
+            sel.appendChild(op);
+          });
+          sel.value = '';
+        }
+        Array.prototype.forEach.call(botoes, function (b) {
+          b.addEventListener('click', function () { trocar(b.getAttribute('data-aba')); });
+        });
+        trocar('servico');
+      });
+    }
+
     function montarTudo(escopo) {
       Array.prototype.forEach.call(escopo.querySelectorAll('[data-pagto]'), montarPagto);
+      montarItemAbas(escopo);
     }
 
     // ---- Ações -------------------------------------------------------------

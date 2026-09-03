@@ -153,29 +153,25 @@
     <% } %>
   </ul>
 
+  <%/* Abas Serviços / Produtos (pedido do dono, 2026-09-03): cada aba mostra só
+       o seu tipo. As opções são montadas por JS (montarItemAbas) a partir dos
+       dados abaixo — este fragmento é reinserido via innerHTML e script inline
+       não roda aqui, então a lógica vive na agenda.ejs. O single-quote é
+       escapado (&#39;) pra não quebrar o atributo com nomes tipo "D'Angelo". */%>
+  <% var _svcOpts = servicos.filter(function (s) { return !s.ehProduto; }).map(function (s) { return { id: s.id, label: s.nome + ' — ' + fmtT6(s.valor) }; });
+     var _prodOpts = servicos.filter(function (s) { return s.ehProduto; }).map(function (s) { return { id: s.id, label: s.nome + ' — ' + fmtT6(s.valor) }; }); %>
+  <div class="sv-ag-add-abas" data-item-abas>
+    <button type="button" class="sv-ag-add-aba ativa" data-aba="servico">Serviços</button>
+    <button type="button" class="sv-ag-add-aba" data-aba="produto">Produtos</button>
+  </div>
   <div class="sv-ag-add">
     <div class="sv-ag-campo">
       <div class="sv-ag-campo-rot">Adicionar</div>
-      <%/* Serviços e produtos em grupos separados no seletor (pedido do dono,
-           2026-09-03): antes vinham todos misturados numa lista só. */%>
-      <% var _svcLista = servicos.filter(function (s) { return !s.ehProduto; });
-         var _prodLista = servicos.filter(function (s) { return s.ehProduto; }); %>
-      <select class="sv-ag-inp" data-novo-servico>
-        <option value="">Adicionar…</option>
-        <% if (_svcLista.length) { %>
-          <optgroup label="Serviços">
-            <% _svcLista.forEach(function (s) { %>
-              <option value="<%= s.id %>"><%= s.nome %> — <%= fmtT6(s.valor) %></option>
-            <% }) %>
-          </optgroup>
-        <% } %>
-        <% if (_prodLista.length) { %>
-          <optgroup label="Produtos">
-            <% _prodLista.forEach(function (s) { %>
-              <option value="<%= s.id %>"><%= s.nome %> — <%= fmtT6(s.valor) %></option>
-            <% }) %>
-          </optgroup>
-        <% } %>
+      <select class="sv-ag-inp" data-novo-servico
+              data-opts-servico='<%- JSON.stringify(_svcOpts).replace(/'/g, "&#39;") %>'
+              data-opts-produto='<%- JSON.stringify(_prodOpts).replace(/'/g, "&#39;") %>'>
+        <option value="">Serviço…</option>
+        <% _svcOpts.forEach(function (o) { %><option value="<%= o.id %>"><%= o.label %></option><% }) %>
       </select>
     </div>
     <div class="sv-ag-campo sv-ag-campo--qtd">
