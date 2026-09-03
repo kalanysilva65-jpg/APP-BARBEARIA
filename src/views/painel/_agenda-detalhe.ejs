@@ -156,11 +156,26 @@
   <div class="sv-ag-add">
     <div class="sv-ag-campo">
       <div class="sv-ag-campo-rot">Adicionar</div>
+      <%/* Serviços e produtos em grupos separados no seletor (pedido do dono,
+           2026-09-03): antes vinham todos misturados numa lista só. */%>
+      <% var _svcLista = servicos.filter(function (s) { return !s.ehProduto; });
+         var _prodLista = servicos.filter(function (s) { return s.ehProduto; }); %>
       <select class="sv-ag-inp" data-novo-servico>
-        <option value="">Corte/produto…</option>
-        <% servicos.forEach(function (s) { %>
-          <option value="<%= s.id %>"><%= s.nome %> — <%= fmtT6(s.valor) %></option>
-        <% }) %>
+        <option value="">Adicionar…</option>
+        <% if (_svcLista.length) { %>
+          <optgroup label="Serviços">
+            <% _svcLista.forEach(function (s) { %>
+              <option value="<%= s.id %>"><%= s.nome %> — <%= fmtT6(s.valor) %></option>
+            <% }) %>
+          </optgroup>
+        <% } %>
+        <% if (_prodLista.length) { %>
+          <optgroup label="Produtos">
+            <% _prodLista.forEach(function (s) { %>
+              <option value="<%= s.id %>"><%= s.nome %> — <%= fmtT6(s.valor) %></option>
+            <% }) %>
+          </optgroup>
+        <% } %>
       </select>
     </div>
     <div class="sv-ag-campo sv-ag-campo--qtd">

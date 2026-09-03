@@ -1,3 +1,24 @@
 <% if (typeof flash !== 'undefined' && flash) { %>
-<div class="alerta alerta-<%= flash.tipo %>"><%= flash.texto %></div>
+<div class="alerta alerta-<%= flash.tipo %>" id="flash-alerta"><%= flash.texto %></div>
+<script>
+  /* Some sozinho (pedido do dono, 2026-09-03): antes o aviso "X adicionado"
+     ficava fixo na tela até a pessoa trocar de seção. Agora ele se despede
+     depois de alguns segundos — ou na hora, se tocar nele. Estilo inline pra
+     funcionar igual no design novo e na pilha antiga de CSS. */
+  (function () {
+    var a = document.getElementById('flash-alerta');
+    if (!a) return;
+    var saiu = false;
+    function sair() {
+      if (saiu) return;
+      saiu = true;
+      a.style.transition = 'opacity .35s ease, transform .35s ease';
+      a.style.opacity = '0';
+      a.style.transform = 'translateY(-12px)';
+      setTimeout(function () { if (a && a.parentNode) a.remove(); }, 380);
+    }
+    a.addEventListener('click', sair);
+    setTimeout(sair, 3600);
+  })();
+</script>
 <% } %>
