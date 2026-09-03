@@ -496,8 +496,8 @@ html:has(> body.pg-sv) {
 .pg-sv .sv-folha-fundo[hidden] { display: none; }
 
 /* Enquanto QUALQUER pop-up está aberto, some com a barra inferior. Ela é
-   position:fixed e tem view-transition-name próprio (sv-barra), o que cria um
-   contexto de empilhamento — por isso o z-index maior da folha nem sempre a
+   position:fixed e cria um contexto de empilhamento próprio (blur/backdrop),
+   por isso o z-index maior da folha nem sempre a
    cobria, e a barra aparecia por cima/ao lado do pop-up atrapalhando o uso
    (dono, 2026-09-02). Com um pop-up aberto a barra não serve para nada.
    DOIS mecanismos de pop-up no app:
@@ -736,7 +736,7 @@ html:has(> body.pg-sv) {
    Onde não houver suporte, a navegação acontece como sempre: nada quebra,
    só não há transição. Por isso não há fallback em JS aqui.
 
-   A barra inferior fica FORA da transição (view-transition-name próprio):
+   A barra inferior fica PARADA na transição (o snapshot `root` é congelado):
    ela é a mesma em todas as telas, e deixá-la cruzar junto faria o elemento
    fixo piscar a cada toque — o oposto de app nativo.
    ========================================================================= */
@@ -747,7 +747,7 @@ html:has(> body.pg-sv) {
    Anima o `.conteudo`, NÃO a `root`: a barra inferior é `position: fixed`, e
    mover a página inteira fazia o iOS reposicionar a barra fixa (ela aparecia
    "mais alta ou mais baixa" em algumas telas). Nomeando só o conteúdo, a barra
-   (sv-barra, logo abaixo) fica de fora e parada. */
+   fica no snapshot `root`, que é congelado logo abaixo, e parada. */
 .pg-sv .conteudo { view-transition-name: sv-conteudo; }
 @keyframes sv-vt-sai-esquerda {
   to { transform: translateX(-24%); opacity: 0; }
@@ -762,11 +762,13 @@ html:has(> body.pg-sv) {
   animation: sv-vt-entra-direita 0.26s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-/* A barra some da transição e é desenhada só uma vez, por cima. */
-.sv-nav { view-transition-name: sv-barra; }
-::view-transition-group(sv-barra) { animation: none; }
-::view-transition-old(sv-barra),
-::view-transition-new(sv-barra) { animation: none; mix-blend-mode: normal; }
+/* A barra é position:fixed. Dar a ela um view-transition-name próprio fazia
+   o navegador capturá-la com geometria errada e ela "pulava" (mais alta) em
+   algumas telas. Sem nome, ela fica no snapshot `root`; congelando o `root`
+   (só o conteúdo desliza), a barra não se move nem pisca. */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; }
 
 /* Quem pediu menos movimento navega sem o deslize. */
 @media (prefers-reduced-motion: reduce) {
