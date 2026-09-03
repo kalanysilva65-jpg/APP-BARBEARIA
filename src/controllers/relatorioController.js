@@ -15,7 +15,7 @@
 // (#0E0E0E / #ADADAD / #FAFAFA); agora tudo vem da rampa monocromática do
 // design novo, e as folhas de página inteira viraram folhas inferiores.
 const prisma = require('../config/db');
-const { paraMinutos } = require('../services/disponibilidade');
+const { paraMinutos, duracaoComEncaixe } = require('../services/disponibilidade');
 
 function iso(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -475,7 +475,7 @@ async function ver(req, res) {
     prisma.usuario.findMany({ where: { barbeariaId: b, ativo: true }, select: { id: true, nome: true } }),
     prisma.agendamento.findMany({
       where: { barbeariaId: b, status: { not: 'cancelado' }, data: { gte: inicio, lt: fimExcl } },
-      select: { data: true, horaInicio: true, usuarioId: true, itens: { select: { quantidade: true, servico: { select: { duracaoMin: true } } } } },
+      select: { data: true, horaInicio: true, usuarioId: true, itens: { select: { quantidade: true, servico: { select: { duracaoMin: true, ehEncaixe: true } } } } },
     }),
   ]);
 
@@ -494,7 +494,12 @@ async function ver(req, res) {
     }
   }
   function duracaoDe(ag) {
-    return ag.itens.reduce((s, it) => s + (it.servico.duracaoMin || 0) * it.quantidade, 0);
+    // efetiva:false preserva o comportamento antigo (produto = 0 min aqui); só
+    // acrescenta a regra do encaixe.
+    return duracaoComEncaixe(
+      ag.itens.map((it) => ({ duracaoMin: it.servico.duracaoMin, ehEncaixe: it.servico.ehEncaixe, quantidade: it.quantidade })),
+      { efetiva: false }
+    );
   }
   for (const ag of agsOcupacao) {
     const alvo = minutosPorBarbeiro.get(ag.usuarioId);

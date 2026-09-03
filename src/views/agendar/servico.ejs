@@ -58,7 +58,7 @@
       </div>
       <div class="sv-ag6-lista" id="lista-servicos">
         <% servicos.forEach(function (s, i) { %>
-          <button type="button" class="sv-ag6-servico" data-id="<%= s.id %>" data-valor="<%= s.valor %>" data-min="<%= s.duracaoMin %>" onclick="toggleServico(this)" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
+          <button type="button" class="sv-ag6-servico" data-id="<%= s.id %>" data-valor="<%= s.valor %>" data-min="<%= s.duracaoMin %>" data-encaixe="<%= s.ehEncaixe ? '1' : '' %>" onclick="toggleServico(this)" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
             <span class="sv-ag6-servico-txt">
               <span class="sv-ag6-servico-nome"><%= s.nome %></span>
               <span class="sv-ag6-servico-meta"><%= s.duracaoMin %> min · <%= fmtT6(s.valor) %></span>
@@ -96,10 +96,19 @@
     const selecionados = new Set();
     const precos = {};
     const duracoes = {};
+    const encaixes = {};
     document.querySelectorAll('#lista-servicos .sv-ag6-servico').forEach(function (el) {
       precos[el.dataset.id] = Number(el.dataset.valor);
       duracoes[el.dataset.id] = Number(el.dataset.min);
+      encaixes[el.dataset.id] = el.dataset.encaixe === '1';
     });
+    // Regra do "encaixe": serviço-encaixe não soma tempo quando há outro serviço
+    // normal na seleção; sozinho (ou só encaixes), conta a própria duração.
+    function duracaoSelecao(ids) {
+      var regular = 0, enc = 0;
+      ids.forEach(function (id) { if (encaixes[id]) enc += duracoes[id]; else regular += duracoes[id]; });
+      return regular > 0 ? regular : enc;
+    }
     // "R$40" — sem centavos e sem espaço, porque o total aparece a 22px na
     // barra e ",00" só rouba largura.
     function fmtT6Local(centavos) {
@@ -130,7 +139,7 @@
 
       const ids = Array.from(selecionados);
       const total = ids.reduce(function (s, id) { return s + precos[id]; }, 0);
-      const min = ids.reduce(function (s, id) { return s + duracoes[id]; }, 0);
+      const min = duracaoSelecao(ids);
       document.getElementById('ag6-cta-total').textContent = fmtT6Local(total);
       document.getElementById('ag6-cta-rot').textContent = n ? 'Escolher barbeiro' : 'Escolha um serviço';
       document.getElementById('ag6-cta-sub').textContent = n

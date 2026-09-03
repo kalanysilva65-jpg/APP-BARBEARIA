@@ -6,12 +6,11 @@
 // A lógica de disponibilidade e as regras de criação de agendamento são as
 // mesmas do fluxo público (services/disponibilidade); só a apresentação muda.
 const prisma = require('../config/db');
-const { todosHorarios, horariosDisponiveis, dataLocal } = require('../services/disponibilidade');
+const { todosHorarios, horariosDisponiveis, dataLocal, duracaoComEncaixe } = require('../services/disponibilidade');
 const { DIAS_SEMANA } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const { lerJanelaAgendamento } = require('./horarioController');
 
-const JANELA_DIAS = { semana: 7, duas_semanas: 14, sem_limite: 60 };
 const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 function iso(d) {
@@ -110,7 +109,7 @@ async function agendar(req, res) {
   if (!servicos.length) return res.redirect('/conta/b/' + b.slug);
 
   const servicosStr = servicos.map((s) => s.id).join(',');
-  const duracaoTotal = servicos.reduce((s, x) => s + x.duracaoMin, 0);
+  const duracaoTotal = duracaoComEncaixe(servicos.map((x) => ({ duracaoMin: x.duracaoMin, ehEncaixe: x.ehEncaixe })), { efetiva: false });
   const valorTotal = servicos.reduce((s, x) => s + x.valor, 0);
 
   const barbeiros = await prisma.usuario.findMany({
@@ -127,7 +126,7 @@ async function agendar(req, res) {
   if (barbeiro) {
     const jornadas = await prisma.horarioTrabalho.findMany({ where: { usuarioId: barbeiro.id, trabalha: true } });
     const trabalha = new Set(jornadas.map((j) => j.diaSemana));
-    const janelaDias = JANELA_DIAS[await lerJanelaAgendamento(b.id)] || JANELA_DIAS.sem_limite;
+    const janelaDias = await lerJanelaAgendamento(b.id);
 
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
@@ -197,7 +196,7 @@ async function confirmar(req, res) {
   if (!servicos.length) erros.push('Serviço inválido.');
   if (!barbeiro) erros.push('Selecione um profissional.');
   if (!data || !hora) erros.push('Selecione data e horário.');
-  const duracaoTotal = servicos.reduce((s, x) => s + x.duracaoMin, 0);
+  const duracaoTotal = duracaoComEncaixe(servicos.map((x) => ({ duracaoMin: x.duracaoMin, ehEncaixe: x.ehEncaixe })), { efetiva: false });
   if (servicos.length && barbeiro && data && hora) {
     const livres = await horariosDisponiveis(barbeiroId, data, duracaoTotal);
     if (!livres.includes(hora)) erros.push('Esse horário não está mais disponível. Escolha outro.');

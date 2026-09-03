@@ -6,7 +6,7 @@ const prisma = require('../config/db');
 const fs = require('fs');
 const { caminhoDoUpload } = require('../config/paths');
 const { COMISSAO_PRODUTO_PERCENTUAL } = require('../config/constantes');
-const { paraMinutos } = require('../services/disponibilidade');
+const { paraMinutos, duracaoComEncaixe } = require('../services/disponibilidade');
 
 // Date -> "YYYY-MM-DD"
 function iso(d) {
@@ -73,12 +73,17 @@ async function ver(req, res) {
 
     let servicosSub = 0;
     let produtosSub = 0;
-    let duracaoApt = 0;
     const viaPlano = !!ag.clientePlanoId;
 
-    // Itens (para exibição) e tempo ocupado.
+    // Tempo ocupado do atendimento, já com a regra do encaixe (serviço-encaixe
+    // não soma tempo quando há outro serviço junto).
+    const duracaoApt = duracaoComEncaixe(
+      ag.itens.map((it) => ({ duracaoMin: it.servico.duracaoMin, ehEncaixe: it.servico.ehEncaixe, quantidade: it.quantidade })),
+      { efetiva: false }
+    );
+
+    // Itens (para exibição).
     const itens = ag.itens.map((it) => {
-      duracaoApt += (it.servico.duracaoMin || 0) * it.quantidade;
       return {
         nome: it.servico.nome,
         quantidade: it.quantidade,

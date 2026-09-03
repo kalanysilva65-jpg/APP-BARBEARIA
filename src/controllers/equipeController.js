@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const prisma = require('../config/db');
 const { caminhoDoUpload } = require('../config/paths');
-const { paraMinutos } = require('../services/disponibilidade');
+const { paraMinutos, duracaoComEncaixe } = require('../services/disponibilidade');
 
 function apagarFoto(fotoUrl) {
   const caminho = caminhoDoUpload(fotoUrl);
@@ -41,7 +41,10 @@ async function statsDoMes(barbeariaId, barbeiros) {
     if (!g) continue;
     g.qtd += 1;
     g.faturado += ag.valorTotal;
-    g.ocupadoMin += ag.itens.reduce((s, it) => s + (it.servico.duracaoMin || 0) * it.quantidade, 0);
+    g.ocupadoMin += duracaoComEncaixe(
+      ag.itens.map((it) => ({ duracaoMin: it.servico.duracaoMin, ehEncaixe: it.servico.ehEncaixe, quantidade: it.quantidade })),
+      { efetiva: false }
+    );
     // Cliente distinto pelo telefone normalizado: o mesmo cliente pode voltar
     // várias vezes no mês, e "clientes atendidos" conta pessoas, não visitas.
     // É um Map (e não um Set) porque a contagem por pessoa também alimenta a

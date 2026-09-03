@@ -107,6 +107,8 @@ async function criar(req, res) {
   const duracaoMin = Math.max(0, parseInt(req.body.duracaoMin, 10) || 0);
   const categoriaId = req.body.categoriaId ? Number(req.body.categoriaId) : null;
   const ehProduto = req.body.ehProduto === 'on';
+  // "Encaixe" só faz sentido em serviço (produto não tem tempo de agenda).
+  const ehEncaixe = !ehProduto && req.body.ehEncaixe === 'on';
   const comissaoPercentual = Math.min(100, Math.max(0, parseFloat(req.body.comissaoPercentual) || 10));
   const fotoUrl = req.file ? '/uploads/' + req.file.filename : null;
 
@@ -116,7 +118,7 @@ async function criar(req, res) {
     return res.redirect(destino(ehProduto));
   }
 
-  await prisma.servico.create({ data: { barbeariaId: req.barbeariaId, nome, descricao, valor, duracaoMin, categoriaId, ehProduto, comissaoPercentual, fotoUrl } });
+  await prisma.servico.create({ data: { barbeariaId: req.barbeariaId, nome, descricao, valor, duracaoMin, categoriaId, ehProduto, ehEncaixe, comissaoPercentual, fotoUrl } });
   req.session.flash = { tipo: 'sucesso', texto: ehProduto ? 'Produto criado.' : 'Serviço criado.' };
   res.redirect(destino(ehProduto));
 }
@@ -144,6 +146,7 @@ async function atualizar(req, res) {
   const duracaoMin = Math.max(0, parseInt(req.body.duracaoMin, 10) || 0);
   const categoriaId = req.body.categoriaId ? Number(req.body.categoriaId) : null;
   const ehProduto = req.body.ehProduto === 'on';
+  const ehEncaixe = !ehProduto && req.body.ehEncaixe === 'on';
   const comissaoPercentual = Math.min(100, Math.max(0, parseFloat(req.body.comissaoPercentual) || 10));
 
   if (!nome || valor === null) {
@@ -152,7 +155,7 @@ async function atualizar(req, res) {
     return res.redirect(destino(servico.ehProduto));
   }
 
-  const data = { nome, descricao, valor, duracaoMin, categoriaId, ehProduto, comissaoPercentual };
+  const data = { nome, descricao, valor, duracaoMin, categoriaId, ehProduto, ehEncaixe, comissaoPercentual };
   if (req.file) {
     apagarFoto(servico.fotoUrl); // remove a foto antiga
     data.fotoUrl = '/uploads/' + req.file.filename;

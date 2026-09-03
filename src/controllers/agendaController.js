@@ -4,7 +4,7 @@
 //  - Admin (e o dono operando a barbearia) vê a agenda de todos e altera qualquer um.
 // Tudo é escopado pela barbearia do contexto (req.barbeariaId).
 const prisma = require('../config/db');
-const { dataLocal, paraMinutos, duracaoEfetiva, todosHorarios } = require('../services/disponibilidade');
+const { dataLocal, paraMinutos, duracaoEfetiva, todosHorarios, duracaoComEncaixe } = require('../services/disponibilidade');
 const { DIAS_SEMANA, INTERVALO_SLOT_MIN } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const caixaServ = require('../services/caixa');
@@ -752,9 +752,10 @@ async function criarManual(req, res) {
     });
     const conflita = existentes.some((ag) => {
       const ini = paraMinutos(ag.horaInicio);
-      const dur =
-        ag.itens.reduce((s, it) => s + duracaoEfetiva(it.servico.duracaoMin) * it.quantidade, 0) ||
-        INTERVALO_SLOT_MIN;
+      const dur = duracaoComEncaixe(
+        ag.itens.map((it) => ({ duracaoMin: it.servico.duracaoMin, ehEncaixe: it.servico.ehEncaixe, quantidade: it.quantidade })),
+        { efetiva: true }
+      );
       return iniNovo < ini + dur && ini < fimNovo;
     });
     if (conflita) erros.push('Esse horário conflita com outro atendimento desse barbeiro. Escolha outro.');

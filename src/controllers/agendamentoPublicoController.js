@@ -5,7 +5,7 @@
 // usada) é carregada pelo parâmetro `assinatura` e aplica: os dias da semana
 // configurados no plano (diasSemana), valor R$ 0 e consumo de 1 uso (limitado).
 const prisma = require('../config/db');
-const { horariosDisponiveis, todosHorarios, dataLocal } = require('../services/disponibilidade');
+const { horariosDisponiveis, todosHorarios, dataLocal, duracaoComEncaixe } = require('../services/disponibilidade');
 const { DIAS_SEMANA } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const planoServ = require('../services/plano');
@@ -146,7 +146,7 @@ async function passoBarbeiro(req, res) {
   if (!servicos.length) return res.redirect('/agendar' + (assinatura ? '?assinatura=' + assinatura.id : ''));
 
   const servicoIdsStr = servicos.map((s) => s.id).join(',');
-  const duracaoTotal = servicos.reduce((s, x) => s + x.duracaoMin, 0);
+  const duracaoTotal = duracaoComEncaixe(servicos.map((x) => ({ duracaoMin: x.duracaoMin, ehEncaixe: x.ehEncaixe })), { efetiva: false });
   const valorTotal = servicos.reduce((s, x) => s + x.valor, 0);
 
   const barbeiros = await prisma.usuario.findMany({ where: { barbeariaId: req.barbeariaId, ativo: true }, orderBy: { id: 'asc' } });
@@ -213,10 +213,10 @@ async function horariosJson(req, res) {
   const ids = parseIds(req.query.servicoIds || req.query.servicoId);
   const servicos = await prisma.servico.findMany({
     where: { id: { in: ids }, barbeariaId: req.barbeariaId, ativo: true },
-    select: { duracaoMin: true },
+    select: { duracaoMin: true, ehEncaixe: true },
   });
   if (!servicos.length) return res.status(400).json({ erro: 'servico' });
-  const duracaoTotal = servicos.reduce((s, x) => s + x.duracaoMin, 0);
+  const duracaoTotal = duracaoComEncaixe(servicos.map((x) => ({ duracaoMin: x.duracaoMin, ehEncaixe: x.ehEncaixe })), { efetiva: false });
 
   let todos;
   if (req.query.barbeiroId === 'any') {
@@ -261,7 +261,7 @@ async function passoHorario(req, res) {
   if (!servicos.length || !barbeiro) return res.redirect('/agendar');
 
   const servicoIdsStr = servicos.map((s) => s.id).join(',');
-  const duracaoTotal = servicos.reduce((s, x) => s + x.duracaoMin, 0);
+  const duracaoTotal = duracaoComEncaixe(servicos.map((x) => ({ duracaoMin: x.duracaoMin, ehEncaixe: x.ehEncaixe })), { efetiva: false });
   const valorTotal = servicos.reduce((s, x) => s + x.valor, 0);
   const ilimitado = assinatura && assinatura.plano.tipo === 'ilimitado';
   // Dias em que o plano da assinatura pode ser usado (null = sem restrição de plano).
@@ -408,7 +408,7 @@ async function confirmar(req, res) {
 
   const servicos = await prisma.servico.findMany({ where: { id: { in: servicoIds }, barbeariaId: b, ativo: true } });
   const usaPlano = !!assinatura;
-  const duracaoTotal = servicos.reduce((s, x) => s + x.duracaoMin, 0);
+  const duracaoTotal = duracaoComEncaixe(servicos.map((x) => ({ duracaoMin: x.duracaoMin, ehEncaixe: x.ehEncaixe })), { efetiva: false });
 
   // "Qualquer disponível": resolve agora, na confirmação, quem realmente
   // atende — o primeiro barbeiro (por id) livre nesse horário. Evita reservar

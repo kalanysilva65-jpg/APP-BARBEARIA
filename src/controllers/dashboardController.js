@@ -3,7 +3,7 @@
 // cliente, faturamento do dia + barras da semana, produtividade (ocupação),
 // retenção e novos clientes. Tudo escopado pela barbearia do contexto.
 const prisma = require('../config/db');
-const { paraMinutos } = require('../services/disponibilidade');
+const { paraMinutos, duracaoComEncaixe } = require('../services/disponibilidade');
 
 // Date -> meia-noite local do mesmo dia.
 function inicioDoDia(d) {
@@ -31,7 +31,12 @@ async function calcularOcupacao(barbeariaId, barbeiroIds, inicio, fimExcl) {
     include: { itens: { include: { servico: true } } },
   });
   let ocupado = 0;
-  for (const a of ags) ocupado += a.itens.reduce((s, it) => s + (it.servico.duracaoMin || 0) * it.quantidade, 0);
+  for (const a of ags) {
+    ocupado += duracaoComEncaixe(
+      a.itens.map((it) => ({ duracaoMin: it.servico.duracaoMin, ehEncaixe: it.servico.ehEncaixe, quantidade: it.quantidade })),
+      { efetiva: false }
+    );
+  }
 
   const jornadas = await prisma.horarioTrabalho.findMany({ where: { barbeariaId, usuarioId: { in: barbeiroIds } } });
   const amanha0 = inicioDoDia(new Date());

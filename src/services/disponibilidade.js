@@ -28,6 +28,29 @@ function duracaoEfetiva(duracaoMin) {
   return duracaoMin && duracaoMin > 0 ? duracaoMin : INTERVALO_SLOT_MIN;
 }
 
+// Duração total de uma seleção aplicando a regra do "ENCAIXE" (2026-09-03):
+// um serviço marcado como encaixe NÃO soma tempo quando há pelo menos um
+// serviço NÃO-encaixe na seleção — ele "cabe" dentro do tempo do outro. Se a
+// seleção só tem encaixes (ou um encaixe sozinho), aí eles contam a própria
+// duração. Ex.: Sobrancelha(encaixe,10) + Corte(30) = 30; Sobrancelha sozinha = 10.
+//   itens: [{ duracaoMin, ehEncaixe, quantidade? }]
+//   efetiva=true (padrão): aplica o piso de 1 slot p/ itens de 0 min — usar no
+//     cálculo de agenda/ocupação. efetiva=false: minutos crus — usar em texto.
+function duracaoComEncaixe(itens, opcoes) {
+  const efetiva = !opcoes || opcoes.efetiva !== false;
+  const base = (d) => (efetiva ? duracaoEfetiva(d) : d || 0);
+  let regular = 0;
+  let encaixe = 0;
+  for (const it of itens || []) {
+    const q = it.quantidade || 1;
+    const d = base(it.duracaoMin) * q;
+    if (it.ehEncaixe) encaixe += d;
+    else regular += d;
+  }
+  const total = regular > 0 ? regular : encaixe;
+  return efetiva ? total || INTERVALO_SLOT_MIN : total;
+}
+
 // Intervalos [inicio, fim] (em minutos) já ocupados pelo barbeiro nessa data:
 // agendamentos ativos (soma da duração dos itens) + bloqueios manuais.
 async function intervalosOcupados(barbeiroId, data) {
@@ -39,9 +62,16 @@ async function intervalosOcupados(barbeiroId, data) {
   });
   for (const ag of agendamentos) {
     const ini = paraMinutos(ag.horaInicio);
-    const dur =
-      ag.itens.reduce((s, it) => s + duracaoEfetiva(it.servico.duracaoMin) * it.quantidade, 0) ||
-      INTERVALO_SLOT_MIN;
+    // Aplica a regra do encaixe: um serviço-encaixe agendado junto de outro não
+    // estende o horário ocupado (cabe no tempo do outro).
+    const dur = duracaoComEncaixe(
+      ag.itens.map((it) => ({
+        duracaoMin: it.servico.duracaoMin,
+        ehEncaixe: it.servico.ehEncaixe,
+        quantidade: it.quantidade,
+      })),
+      { efetiva: true }
+    );
     ocupados.push([ini, ini + dur]);
   }
 
@@ -93,4 +123,4 @@ async function todosHorarios(barbeiroId, dataStr, duracaoServico) {
   return slots;
 }
 
-module.exports = { horariosDisponiveis, todosHorarios, dataLocal, paraMinutos, paraHHMM, duracaoEfetiva };
+module.exports = { horariosDisponiveis, todosHorarios, dataLocal, paraMinutos, paraHHMM, duracaoEfetiva, duracaoComEncaixe };

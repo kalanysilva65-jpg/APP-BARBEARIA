@@ -168,6 +168,9 @@ model Servico {
   fotoUrl     String? @map("foto_url") // caminho da imagem em /uploads
   ativo              Boolean @default(true)
   ehProduto          Boolean @default(false) @map("eh_produto") // produto x serviço
+  // "Encaixe": serviço que, agendado JUNTO com outro, não soma tempo (cabe no
+  // tempo do outro). Sozinho, conta a própria duração. Ver duracaoComEncaixe.
+  ehEncaixe          Boolean @default(false) @map("eh_encaixe")
   comissaoPercentual Float   @default(10) @map("comissao_percentual") // % de comissão sobre o produto
 
   barbearia Barbearia         @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
