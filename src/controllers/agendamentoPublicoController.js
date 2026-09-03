@@ -12,9 +12,8 @@ const planoServ = require('../services/plano');
 const notifServ = require('../services/notificacoes');
 const { lerJanelaAgendamento } = require('./horarioController');
 
-// Até quantos dias no futuro o cliente pode marcar, de acordo com a janela
-// configurada pelo admin em Horários ("Janela de agendamento do cliente").
-const JANELA_DIAS = { semana: 7, duas_semanas: 14, sem_limite: 60 };
+// Até quantos dias no futuro o cliente pode marcar vem de `lerJanelaAgendamento`
+// (Horários → "Janela de agendamento do cliente"), já em NÚMERO DE DIAS.
 
 const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
@@ -280,8 +279,7 @@ async function passoHorario(req, res) {
     diasQueTrabalha = new Set(jornadas.map((j) => j.diaSemana));
   }
 
-  const janela = await lerJanelaAgendamento(req.barbeariaId);
-  const janelaDias = JANELA_DIAS[janela] || JANELA_DIAS.sem_limite;
+  const janelaDias = await lerJanelaAgendamento(req.barbeariaId);
 
   const datas = [];
   const hoje = new Date();

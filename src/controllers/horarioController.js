@@ -34,14 +34,29 @@ function resumoJornada(jornada) {
     .join(' · ');
 }
 
-// Janela de agendamento do cliente: até quando ele pode marcar pelo app.
-const JANELA_PADRAO = 'sem_limite';
+// Janela de agendamento do cliente: quantos DIAS à frente ele pode marcar pelo
+// app. Guardada como número de dias (2026-09-03). Antes eram 3 palavras-chave
+// fixas (semana/duas_semanas/sem_limite); o dono quis poder digitar qualquer
+// valor ("só 7 dias", "só 3 dias" etc.). `normalizarJanelaDias` converte tanto
+// os valores antigos por palavra quanto o número novo — nenhuma migração de
+// banco necessária.
+const JANELA_PADRAO_DIAS = 60;
+const JANELA_MAX_DIAS = 365;
 
+function normalizarJanelaDias(valor) {
+  const legado = { semana: 7, duas_semanas: 14, sem_limite: 365 };
+  if (valor && Object.prototype.hasOwnProperty.call(legado, valor)) return legado[valor];
+  const n = parseInt(valor, 10);
+  if (Number.isFinite(n) && n >= 1) return Math.min(JANELA_MAX_DIAS, n);
+  return JANELA_PADRAO_DIAS;
+}
+
+// Retorna a janela em NÚMERO DE DIAS (o público usa direto).
 async function lerJanelaAgendamento(barbeariaId) {
   const cfg = await prisma.configuracao.findUnique({
     where: { barbeariaId_chave: { barbeariaId, chave: 'janelaAgendamento' } },
   }).catch(() => null);
-  return (cfg && cfg.valor) || JANELA_PADRAO;
+  return normalizarJanelaDias(cfg && cfg.valor);
 }
 
 // GET /painel/horarios
@@ -85,15 +100,25 @@ async function ver(req, res) {
   });
 }
 
-// POST /painel/horarios/janela — salva até quando o cliente pode marcar pelo app
+// POST /painel/horarios/janela — salva quantos dias à frente o cliente pode
+// marcar. Aceita tanto os presets (campo `janela`, ex.: 7/14/30/365) quanto o
+// número digitado no campo "Outro" (`janelaDias`); os dois caem em
+// `normalizarJanelaDias`, então qualquer valor vira um número válido (1..365).
 async function salvarJanela(req, res) {
   const b = req.barbeariaId;
-  const valor = ['semana', 'duas_semanas', 'sem_limite'].includes(req.body.janela) ? req.body.janela : JANELA_PADRAO;
+  const bruto = req.body.janelaDias != null && String(req.body.janelaDias).trim() !== ''
+    ? req.body.janelaDias
+    : req.body.janela;
+  const dias = normalizarJanelaDias(bruto);
   await prisma.configuracao.upsert({
     where: { barbeariaId_chave: { barbeariaId: b, chave: 'janelaAgendamento' } },
-    update: { valor },
-    create: { barbeariaId: b, chave: 'janelaAgendamento', valor },
+    update: { valor: String(dias) },
+    create: { barbeariaId: b, chave: 'janelaAgendamento', valor: String(dias) },
   });
+  req.session.flash = {
+    tipo: 'sucesso',
+    texto: dias >= JANELA_MAX_DIAS ? 'Cliente pode agendar sem limite de dias.' : `Cliente pode agendar até ${dias} dias à frente.`,
+  };
   res.redirect('/painel/horarios');
 }
 
