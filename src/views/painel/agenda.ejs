@@ -808,7 +808,9 @@
             return;
           }
         }
-        agir(btn, '/painel/agenda/' + id + '/status', { status: 'concluido', pagamentos: partes });
+        // Recarrega a pagina ao concluir: sem isso, o pop-up atualizava mas o
+        // CARTAO na lista atras continuava "agendado" ate trocar de pagina.
+        agir(btn, '/painel/agenda/' + id + '/status', { status: 'concluido', pagamentos: partes }, function () { window.location.reload(); });
         return;
       }
 
@@ -819,14 +821,14 @@
       }
 
       if ((btn = ev.target.closest('[data-reabrir]'))) {
-        agir(btn, '/painel/agenda/' + id + '/status', { status: 'agendado' });
+        agir(btn, '/painel/agenda/' + id + '/status', { status: 'agendado' }, function () { window.location.reload(); });
         return;
       }
 
       if ((btn = ev.target.closest('[data-cancelar]'))) {
         ev.preventDefault();
         if (!confirm('Cancelar este atendimento?')) return;
-        agir(btn, '/painel/agenda/' + id + '/status', { status: 'cancelado' });
+        agir(btn, '/painel/agenda/' + id + '/status', { status: 'cancelado' }, function () { window.location.reload(); });
         return;
       }
 

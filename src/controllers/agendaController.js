@@ -149,10 +149,8 @@ async function reconciliarPagamentos(agendamentoId) {
         data: { valor: ag.valorTotal },
       });
     }
-    if (await caixaServ.caixaAutomaticoLigado(ag.barbeariaId)) {
-      const atual = await prisma.agendamento.findUnique({ where: { id: agendamentoId } });
-      await caixaServ.registrarEntradaAgendamento(atual);
-    }
+    const atual = await prisma.agendamento.findUnique({ where: { id: agendamentoId } });
+    await caixaServ.registrarEntradaAgendamento(atual);
     return null;
   }
 
@@ -563,13 +561,14 @@ async function mudarStatus(req, res) {
       });
     }
 
-    // Integração com o caixa (toggle "caixa automático"):
+    // Integração com o caixa:
     if (novo === 'concluido') {
-      // Gera a entrada no caixa, se o toggle estiver ligado (usa o total atualizado).
-      if (await caixaServ.caixaAutomaticoLigado(b)) {
-        const atual = await prisma.agendamento.findUnique({ where: { id: agendamento.id } });
-        await caixaServ.registrarEntradaAgendamento(atual);
-      }
+      // Concluir SEMPRE gera a entrada no caixa (com o total atualizado). Antes
+      // dependia do toggle "caixa automático", que nascia DESLIGADO e não tinha
+      // como ligar (o interruptor saiu da tela) — então concluir não virava
+      // faturamento. O toggle foi removido; concluir = entra no caixa, sempre.
+      const atual = await prisma.agendamento.findUnique({ where: { id: agendamento.id } });
+      await caixaServ.registrarEntradaAgendamento(atual);
     } else {
       // Reabrir (agendado) ou cancelar: remove eventual entrada automática.
       await caixaServ.removerEntradaAgendamento(agendamento.id);

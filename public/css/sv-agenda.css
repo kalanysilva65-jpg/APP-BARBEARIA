@@ -385,7 +385,9 @@
   margin-top: 2px;
 }
 /* Título da folha de detalhe + selo de situação na mesma linha. */
-.pg-sv .sv-ag-folha-topo { display: flex; align-items: center; gap: 8px; }
+/* padding-right reserva o canto para o X de fechar (.ag-modal-x, no topo-direito
+   da folha), senão o selo de status ficava embaixo dele — era o "bugado". */
+.pg-sv .sv-ag-folha-topo { display: flex; align-items: center; gap: 8px; padding-right: 30px; }
 .pg-sv .sv-ag-folha-topo .sv-ag-folha-tit { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* --- Campos das folhas: caixa cinza com rótulo miúdo em cima ------------- */

@@ -1,28 +1,8 @@
 // Serviço de caixa: regras reutilizadas pelo controller de caixa e pela agenda.
-// Centraliza o toggle "caixa automático" e a entrada gerada por agendamento concluído.
-// Tudo é escopado por barbearia (multi-tenant).
+// A entrada gerada por agendamento concluído. Tudo escopado por barbearia.
+// (O toggle "caixa automático" foi removido em 2026-09-02: concluir SEMPRE
+// registra no caixa, então não há mais o que ligar/desligar.)
 const prisma = require('../config/db');
-
-// Lê o toggle de entrada automática (configuracoes.caixa_automatico) de uma barbearia.
-async function caixaAutomaticoLigado(barbeariaId) {
-  if (!barbeariaId) return false;
-  const c = await prisma.configuracao.findUnique({
-    where: { barbeariaId_chave: { barbeariaId, chave: 'caixa_automatico' } },
-  });
-  // Sem configuracao gravada, LIGADO: e o comportamento esperado, e o
-  // contrario fazia a barbearia parecer nao faturar nada.
-  return c ? c.valor === 'true' : true;
-}
-
-// Liga/desliga o toggle de uma barbearia.
-async function definirCaixaAutomatico(barbeariaId, ligado) {
-  const valor = ligado ? 'true' : 'false';
-  await prisma.configuracao.upsert({
-    where: { barbeariaId_chave: { barbeariaId, chave: 'caixa_automatico' } },
-    update: { valor },
-    create: { barbeariaId, chave: 'caixa_automatico', valor },
-  });
-}
 
 // Cria a(s) entrada(s) automática(s) de um agendamento concluído.
 //
@@ -88,8 +68,6 @@ async function removerEntradaAgendamento(agendamentoId) {
 }
 
 module.exports = {
-  caixaAutomaticoLigado,
-  definirCaixaAutomatico,
   registrarEntradaAgendamento,
   removerEntradaAgendamento,
 };

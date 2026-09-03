@@ -29,6 +29,13 @@
   var somaItens = ag.itens.reduce(function (s, it) { return s + it.valorUnitario * it.quantidade; }, 0);
   var totalAjustado = !!ag.totalManual;
 %>
+<%/* X de fechar DENTRO do fragmento (não injetado por JS): esta folha se
+     redesenha via innerHTML a cada ação, o que apagava um X injetado — por isso
+     "sumia" o botão. Aqui ele volta em toda renderização. `fecharModal` é
+     global (definida na agenda). */%>
+<button type="button" class="ag-modal-x" aria-label="Fechar" onclick="fecharModal(this.closest('.ag-overlay'))">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+</button>
 <div class="sv-ag-folha-topo">
   <div class="sv-ag-folha-tit"><%= ag.clienteNome %></div>
   <span class="sv-ag-selo"><%= selo %></span>

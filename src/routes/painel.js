@@ -224,7 +224,6 @@ router.post('/estoque/:id', exigeAdmin, estoqueController.atualizar);
 // Específicas (/config, /categorias) antes das paramétricas (/:id).
 router.get('/caixa', exigeAdmin, caixaController.ver);
 router.post('/caixa', exigeAdmin, caixaController.criar);
-router.post('/caixa/config', exigeAdmin, caixaController.alternarAutomatico);
 router.post('/caixa/categorias', exigeAdmin, caixaController.criarCategoria);
 router.post('/caixa/categorias/:id/remover', exigeAdmin, caixaController.removerCategoria);
 router.post('/caixa/categorias/:id', exigeAdmin, caixaController.atualizarCategoria);

@@ -138,8 +138,6 @@ async function ver(req, res) {
     orderBy: [{ tipo: 'asc' }, { nome: 'asc' }],
     include: { _count: { select: { lancamentos: true } } },
   });
-  const autoLigado = await caixaServ.caixaAutomaticoLigado(b);
-
   // Ganhos por semana DENTRO do período selecionado — para o gráfico de barras.
   const barrasPeriodo = [];
   let cursor = new Date(inicio);
@@ -261,7 +259,6 @@ async function ver(req, res) {
     resumoMesAtual,
     incluiHoje,
     categorias,
-    autoLigado,
     barrasPeriodo,
     maxBarraPeriodo,
     nomePeriodoSel,
@@ -342,17 +339,6 @@ async function remover(req, res) {
   res.redirect('/painel/caixa' + (qs.toString() ? '?' + qs.toString() : ''));
 }
 
-// POST /painel/caixa/config — liga/desliga a entrada automática
-async function alternarAutomatico(req, res) {
-  const ligar = req.body.ligado === 'true';
-  await caixaServ.definirCaixaAutomatico(req.barbeariaId, ligar);
-  req.session.flash = {
-    tipo: 'sucesso',
-    texto: ligar ? 'Entrada automática ligada.' : 'Entrada automática desligada.',
-  };
-  res.redirect('/painel/caixa');
-}
-
 // --- Categorias de caixa --------------------------------------------------
 async function criarCategoria(req, res) {
   const nome = (req.body.nome || '').trim();
@@ -384,7 +370,6 @@ module.exports = {
   ver,
   criar,
   remover,
-  alternarAutomatico,
   criarCategoria,
   atualizarCategoria,
   removerCategoria,

@@ -29,10 +29,11 @@ async function lerMarca(barbeariaId) {
   return { logoUrl: mapa['logo_url'] || null, mostrarPoweredBy: mapa['mostrar_powered_by'] !== 'false' };
 }
 
-// Garante as 3 configurações padrão de uma barbearia recém-criada.
+// Garante as configurações padrão de uma barbearia recém-criada.
+// (O 'caixa_automatico' saiu: concluir um atendimento SEMPRE entra no caixa
+// agora — antes ele nascia 'false' e a barbearia parecia não faturar.)
 async function criarConfigsPadrao(barbeariaId) {
   const padroes = [
-    ['caixa_automatico', 'false'],
     ['logo_url', ''],
     ['mostrar_powered_by', 'true'],
   ];
