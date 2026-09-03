@@ -117,9 +117,13 @@ html:has(> body.pg-sv) {
   box-shadow: var(--sv-sombra-alta);
 }
 
+/* Entrada dos blocos: sobe E cresce um tico, com a curva de leve overshoot
+   (0.2,0.9,0.25,1.05) da tela de agendamento — é o "movimento esculpido" que o
+   dono quis trazer do fluxo público pro app (2026-09-03). O `scale(0.98)` é
+   sutil de propósito: cartão grande escalando demais parece elástico barato. */
 @keyframes svRevealUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes svFade {
   from { opacity: 0; }
@@ -153,7 +157,21 @@ html:has(> body.pg-sv) {
 /* `backwards`, não `both`: com `both` o transform do último quadro CONTINUA
    aplicado depois da animação e anula o `transform:scale()` do :active — todo
    cartão clicável que também entra com .sv-reveal perdia o toque. */
-.sv-reveal { animation: svRevealUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+.sv-reveal { animation: svRevealUp 0.52s cubic-bezier(0.2, 0.9, 0.25, 1.05) backwards; }
+
+/* TOQUE VIVO (2026-09-03): a tela de agendamento cede suave no toque porque
+   cada clicável tem `transition: transform` na BASE — os :active espalhados
+   pelos sv-*.css só declaram o scale, e sem transição na base o toque "estala"
+   seco. Esta regra dá a transição de uma vez a todo clicável do app (botões,
+   links, cartões com onclick), então o afundar E o voltar ficam macios, no
+   mesmo tempo (0.18s) do fluxo público. Não conflita com as animações de
+   entrada (essas rodam por `animation`, não por `transition`). */
+.pg-sv a,
+.pg-sv button,
+.pg-sv [role="button"],
+.pg-sv [onclick] {
+  transition: transform 0.18s ease;
+}
 
 /* Topo padrão: avatar + saudação/nome + ação à direita. */
 /* 34px, era 54px: o dono reclamou de "espaço muito grande em branco" acima do
@@ -518,7 +536,7 @@ html:has(> body.pg-sv) {
   border-radius: 28px 28px 0 0;
   box-shadow: var(--sv-sombra-folha);
   padding: 10px 20px calc(24px + env(safe-area-inset-bottom, 0px));
-  animation: svSheetUp 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: svSheetUp 0.42s cubic-bezier(0.2, 0.9, 0.25, 1.05) both;
 }
 /* Vidro fosco SÓ na folha do menu "Mais" (pedido do dono, 2026-09-03: o mesmo
    efeito da barra). As outras folhas (.sv-folha em caixa/clientes/equipe/
@@ -778,8 +796,14 @@ html:has(> body.pg-sv) {
 ::view-transition-old(sv-barra),
 ::view-transition-new(sv-barra) { animation: none; mix-blend-mode: normal; }
 
-/* Quem pediu menos movimento navega sem o deslize. */
+/* Quem pediu menos movimento navega sem o deslize, sem a entrada em cascata e
+   sem o afundar do toque. */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(sv-conteudo),
   ::view-transition-new(sv-conteudo) { animation: none; }
+  .pg-sv .sv-reveal { animation: none; }
+  .pg-sv a,
+  .pg-sv button,
+  .pg-sv [role="button"],
+  .pg-sv [onclick] { transition: none; }
 }
