@@ -155,7 +155,7 @@
   border-radius: 18px;
   padding: 12px 14px;
   cursor: pointer;
-  animation: svRevealUp 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.05) backwards;
+  animation: svRevealUp 0.7s cubic-bezier(0.33, 1, 0.68, 1) backwards;
 }
 .pg-sv .sv-hm-fila-item:nth-child(2) { animation-delay: 0.06s; }
 .pg-sv .sv-hm-fila-item:nth-child(3) { animation-delay: 0.12s; }

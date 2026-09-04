@@ -135,7 +135,7 @@
   cursor: pointer;
   /* `backwards` e não `both`: com `both` o transform do último quadro
      continuaria valendo e engoliria o scale(0.985) do :active. */
-  animation: svRevealUp 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.05) backwards;
+  animation: svRevealUp 0.7s cubic-bezier(0.33, 1, 0.68, 1) backwards;
 }
 .pg-sv .sv-cat-item:active { transform: scale(0.985); }
 /* Cascata só nos primeiros: abaixo da dobra ninguém vê a entrada. */

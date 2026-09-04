@@ -291,7 +291,7 @@
 /* Só as primeiras faixas entram animadas: com 30 linhas subindo juntas o
    extrato inteiro treme. */
 .pg-sv .sv-cx-item:nth-child(-n + 6) {
-  animation: svRevealUp 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.05) backwards;
+  animation: svRevealUp 0.7s cubic-bezier(0.33, 1, 0.68, 1) backwards;
 }
 .pg-sv .sv-cx-item:nth-child(2) { animation-delay: 0.04s; }
 .pg-sv .sv-cx-item:nth-child(3) { animation-delay: 0.08s; }
