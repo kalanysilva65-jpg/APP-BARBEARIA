@@ -114,4 +114,21 @@
     if (document.readyState === 'complete') pronto();
     else window.addEventListener('load', pronto);
   })();
+
+  /* Entrega do splash NATIVO (Capacitor) para o splash HTML.
+     No app iOS/Android o casco carrega cortavo.com.br de fora; enquanto a página
+     remota baixa, é o splash nativo (branco, launchAutoHide:false) que cobre a
+     tela — sem isso ficava o fundo PRETO da webview até o 1º paint (a "tela preta
+     de 2s"). Este script roda quando o nosso splash HTML já foi parseado; após
+     dois quadros ele já pintou (branco idêntico ao nativo), então escondemos o
+     nativo: nativo branco -> splash HTML branco, sem corte nem piscada.
+     No navegador (sem window.Capacitor) e sem o plugin, é no-op silencioso. */
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      try {
+        var C = window.Capacitor;
+        if (C && C.Plugins && C.Plugins.SplashScreen) C.Plugins.SplashScreen.hide();
+      } catch (e) {}
+    });
+  });
 </script>
