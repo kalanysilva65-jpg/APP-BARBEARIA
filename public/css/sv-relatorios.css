@@ -1086,6 +1086,27 @@
    promete um gesto que não existe. */
 .pg-sv .sv-rl-pagina .sv-folha-puxador { display: none; }
 
+/* Conteúdo da folha de detalhe entra em CASCATA (2026-09-04) — o mesmo estilo do
+   resto do app, que faltava aqui dentro. Hero, seções e blocos sobem um a um,
+   DEPOIS que a página assenta (base 0.28s ~= svRlPaginaIn), com a curva
+   assinatura. Dispara ao abrir porque a folha nasce [hidden] (display:none) e a
+   animação só corre quando ela vira visível. */
+.pg-sv .sv-rl-pagina .sv-folha > .sv-rl-hero,
+.pg-sv .sv-rl-pagina .sv-folha > .sv-rl-secao,
+.pg-sv .sv-rl-pagina .sv-folha > .sv-rl-bloco {
+  animation: svRevealUp 0.6s cubic-bezier(0.33, 1, 0.68, 1) 0.28s backwards;
+}
+.pg-sv .sv-rl-pagina .sv-folha > *:nth-child(4) { animation-delay: 0.34s; }
+.pg-sv .sv-rl-pagina .sv-folha > *:nth-child(5) { animation-delay: 0.4s; }
+.pg-sv .sv-rl-pagina .sv-folha > *:nth-child(6) { animation-delay: 0.46s; }
+.pg-sv .sv-rl-pagina .sv-folha > *:nth-child(7) { animation-delay: 0.52s; }
+.pg-sv .sv-rl-pagina .sv-folha > *:nth-child(n + 8) { animation-delay: 0.58s; }
+@media (prefers-reduced-motion: reduce) {
+  .pg-sv .sv-rl-pagina .sv-folha > .sv-rl-hero,
+  .pg-sv .sv-rl-pagina .sv-folha > .sv-rl-secao,
+  .pg-sv .sv-rl-pagina .sv-folha > .sv-rl-bloco { animation: none; }
+}
+
 /* Dentro da PÁGINA de detalhe (que é cinza), os blocos que usavam a cor da
    página como fundo ficavam invisíveis. Na referência eles são brancos com
    sombra — o cinza ali é o fundo, não o bloco.

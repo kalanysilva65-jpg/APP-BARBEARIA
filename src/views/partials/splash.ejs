@@ -82,6 +82,16 @@
     #cortavo-splash .cs-marca span { animation: none; }
     #cortavo-splash.cs-saindo { animation: cs-sai 0.25s linear forwards; }
   }
+  /* Segura as ENTRADAS da primeira tela enquanto o splash cobre (cold launch):
+     sem isso elas tocavam atrás do splash e já estavam prontas quando ele abria
+     (a Home aparecia sem animação). Enquanto o #cortavo-splash existe e ainda
+     NÃO começou a sair, as animações do conteúdo ficam pausadas no 1º quadro;
+     ao começar a saída (.cs-saindo) elas soltam e entram junto com o splash
+     dissolvendo. Só afeta a abertura — nas navegações não há splash no DOM.
+     :has() é iOS 15.4+; sem suporte, degrada pro comportamento anterior. */
+  html:has(#cortavo-splash:not(.cs-saindo)) .pg-sv .conteudo * {
+    animation-play-state: paused !important;
+  }
 </style>
 <div id="cortavo-splash" aria-hidden="true">
   <div class="cs-brilho"></div>
