@@ -929,3 +929,13 @@
   outline: 2px solid #f0b46b;
   outline-offset: 1px;
 }
+
+/* Trocar data/barbeiro na Agenda não deve dar "tranco" (dono, 2026-09-04). Cada
+   controle do topo ganha um view-transition-name próprio: na navegação (que é
+   sempre a MESMA tela, só muda ?data/?barbeiro) eles são capturados à parte e
+   CRUZAM NO LUGAR — sem subir junto com o resto. Assim os ladrilhos e as
+   pílulas que a pessoa tocou ficam parados; só a lista (que segue em
+   sv-conteudo) sobe suave, que é o certo por ser conteúdo novo. */
+.pg-sv .sv-ag-topo { view-transition-name: sv-ag-topo; }
+.pg-sv .sv-ag-dias { view-transition-name: sv-ag-dias; }
+.pg-sv .sv-ag-filtros { view-transition-name: sv-ag-filtros; }
