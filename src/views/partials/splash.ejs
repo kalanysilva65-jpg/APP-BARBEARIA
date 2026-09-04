@@ -40,7 +40,7 @@
     position: fixed;
     inset: 0;
     z-index: 100000;
-    background: #191919;
+    background: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -50,7 +50,8 @@
   #cortavo-splash .cs-brilho {
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.06), transparent 60%);
+    /* Vinheta invertida: leve sombra nas bordas pra dar profundidade no branco. */
+    background: radial-gradient(circle at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.05));
   }
   #cortavo-splash .cs-marca {
     position: relative;
@@ -58,7 +59,7 @@
     font-size: 32px;
     font-weight: 600;
     letter-spacing: 2px;
-    color: #f4f4f4;
+    color: #191919;
     /* `both` (não `forwards`): sem o estado inicial no 1º quadro, o wordmark
        aparecia visível por um frame e só então a animação saltava pra opacity 0
        e fazia o fade-in — era essa a "piscada" ao abrir. */
