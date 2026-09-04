@@ -121,7 +121,7 @@
                 <span class="sv-rl-svc-pct"><%= sv.pct %>%</span>
               </span>
               <span class="sv-rl-svc-trilho">
-                <span class="sv-rl-svc-cheio" style="width:<%= sv.w %>;"></span>
+                <span data-fill class="sv-rl-svc-cheio" style="width:<%= sv.w %>;"></span>
               </span>
             </span>
           <% }) %>
@@ -230,7 +230,7 @@
               <div class="sv-rl-barb-nome"><%= bp.name %></div>
               <div class="sv-rl-barb-num"><%= fmtT6(bp.valor) %></div>
             </div>
-            <div class="sv-rl-barra"><div class="sv-rl-barra-cheia" style="width:<%= bp.pct %>%;"></div></div>
+            <div class="sv-rl-barra"><div data-fill class="sv-rl-barra-cheia" style="width:<%= bp.pct %>%;"></div></div>
             <div class="sv-rl-barb-sub"><%= bp.qtd %> atendimentos · ticket <%= fmtBRL(bp.ticket) %></div>
           </div>
         <% }) %>
@@ -335,13 +335,13 @@
       <div class="sv-rl-secao-tit">Por atendimento x por cliente</div>
       <div class="sv-rl-fills">
         <div>
-          <div class="sv-rl-fill" style="width:<%= ticketPorTipo.atendW %>;background:#393939;">
+          <div data-fill class="sv-rl-fill" style="width:<%= ticketPorTipo.atendW %>;background:#393939;">
             <span class="sv-rl-fill-val" style="color:#E0E0E0;"><%= fmtT6(ticketPorTipo.atendimento) %></span>
           </div>
           <div class="sv-rl-fill-rot">Por atendimento · <%= atendimentos %> atend.</div>
         </div>
         <div>
-          <div class="sv-rl-fill" style="width:<%= ticketPorTipo.clienteW %>;background:#9C9C9C;">
+          <div data-fill class="sv-rl-fill" style="width:<%= ticketPorTipo.clienteW %>;background:#9C9C9C;">
             <span class="sv-rl-fill-val" style="color:#191919;"><%= fmtT6(ticketPorTipo.cliente) %></span>
           </div>
           <div class="sv-rl-fill-rot sv-rl-fill-rot--apoio">Por cliente · <%= clientesData.unicos %> únicos</div>
@@ -353,13 +353,13 @@
       <div class="sv-rl-secao-tit">Com produto x só serviço</div>
       <div class="sv-rl-fills">
         <div>
-          <div class="sv-rl-fill" style="width:<%= ticketData.comW %>;background:#393939;">
+          <div data-fill class="sv-rl-fill" style="width:<%= ticketData.comW %>;background:#393939;">
             <span class="sv-rl-fill-val" style="color:#E0E0E0;"><%= fmtT6(ticketData.com) %></span>
           </div>
           <div class="sv-rl-fill-rot">Com produto · <%= ticketData.comQtd %> atendimentos</div>
         </div>
         <div>
-          <div class="sv-rl-fill" style="width:<%= ticketData.semW %>;background:#9C9C9C;">
+          <div data-fill class="sv-rl-fill" style="width:<%= ticketData.semW %>;background:#9C9C9C;">
             <span class="sv-rl-fill-val" style="color:#191919;"><%= fmtT6(ticketData.sem) %></span>
           </div>
           <div class="sv-rl-fill-rot sv-rl-fill-rot--apoio">Só serviço · <%= ticketData.semQtd %> atendimentos</div>
@@ -426,7 +426,7 @@
           <% ocupSlots.forEach(function (sl) { %>
             <div class="sv-rl-slot">
               <div class="sv-rl-slot-hora" style="color:<%= sl.hourColor %>;"><%= sl.hour %></div>
-              <div class="sv-rl-slot-trilho"><div class="sv-rl-slot-cheio" style="width:<%= sl.w %>;background:<%= sl.bg %>;"></div></div>
+              <div class="sv-rl-slot-trilho"><div data-fill class="sv-rl-slot-cheio" style="width:<%= sl.w %>;background:<%= sl.bg %>;"></div></div>
               <div class="sv-rl-slot-num" style="color:<%= sl.labelColor %>;"><%= sl.label %></div>
             </div>
           <% }) %>
@@ -477,7 +477,7 @@
               <div class="sv-rl-barb-nome"><%= ob.name %></div>
               <div class="sv-rl-barb-num"><%= ob.pct %>%</div>
             </div>
-            <div class="sv-rl-barra"><div class="sv-rl-barra-cheia" style="width:<%= ob.w %>;"></div></div>
+            <div class="sv-rl-barra"><div data-fill class="sv-rl-barra-cheia" style="width:<%= ob.w %>;"></div></div>
             <div class="sv-rl-barb-sub"><%= ob.sub %></div>
           </div>
         <% }) %>
@@ -489,7 +489,7 @@
     </div>
     <div class="sv-rl-colunas sv-rolagem">
       <% ocupWeekBars.forEach(function (wb) { %>
-        <div class="sv-rl-coluna" style="height:<%= wb.h %>px;background:<%= wb.bg %>;">
+        <div data-reveal class="sv-rl-coluna" style="height:<%= wb.h %>px;background:<%= wb.bg %>;">
           <div class="sv-rl-coluna-num" style="color:<%= wb.text %>;"><%= wb.value %></div>
           <div class="sv-rl-coluna-lab" style="color:<%= wb.muted %>;"><%= wb.label %></div>
         </div>
@@ -560,13 +560,13 @@
         <div class="sv-rl-secao-tit">Quando o dinheiro cai</div>
         <div class="sv-rl-fills">
           <div>
-            <div class="sv-rl-fill" style="width:<%= pagData.naHoraW %>;background:#191919;">
+            <div data-fill class="sv-rl-fill" style="width:<%= pagData.naHoraW %>;background:#191919;">
               <span class="sv-rl-fill-val" style="color:#E0E0E0;"><%= fmtT6(pagData.naHoraValor) %></span>
             </div>
             <div class="sv-rl-fill-rot">Na hora · Pix e dinheiro · <%= pagData.naHoraPct %>%</div>
           </div>
           <div>
-            <div class="sv-rl-fill" style="width:<%= pagData.depoisW %>;background:#9C9C9C;">
+            <div data-fill class="sv-rl-fill" style="width:<%= pagData.depoisW %>;background:#9C9C9C;">
               <span class="sv-rl-fill-val" style="color:#191919;"><%= fmtT6(pagData.depoisValor) %></span>
             </div>
             <div class="sv-rl-fill-rot sv-rl-fill-rot--apoio">Depois · cartão, no prazo da maquininha · <%= pagData.depoisPct %>%</div>
@@ -603,13 +603,13 @@
       <div class="sv-rl-secao-tit">Novos x recorrentes</div>
       <div class="sv-rl-fills">
         <div>
-          <div class="sv-rl-fill" style="width:<%= clientesData.novosW %>;background:#191919;">
+          <div data-fill class="sv-rl-fill" style="width:<%= clientesData.novosW %>;background:#191919;">
             <span class="sv-rl-fill-val" style="color:#E0E0E0;"><%= clientesData.novos %></span>
           </div>
           <div class="sv-rl-fill-rot">Novos · <%= clientesData.novosPct %>% · <%= fmtBRL(clientesData.receitaNovos) %></div>
         </div>
         <div>
-          <div class="sv-rl-fill" style="width:<%= clientesData.recorrentesW %>;background:#9C9C9C;">
+          <div data-fill class="sv-rl-fill" style="width:<%= clientesData.recorrentesW %>;background:#9C9C9C;">
             <span class="sv-rl-fill-val" style="color:#191919;"><%= clientesData.recorrentes %></span>
           </div>
           <div class="sv-rl-fill-rot sv-rl-fill-rot--apoio">Recorrentes · <%= clientesData.recorrentesPct %>% · <%= fmtBRL(clientesData.receitaRecorrentes) %></div>
@@ -624,13 +624,13 @@
       <div class="sv-rl-secao-tit">Veio uma vez x voltou</div>
       <div class="sv-rl-fills">
         <div>
-          <div class="sv-rl-fill" style="width:<%= clientesData.voltaramW %>;background:#191919;">
+          <div data-fill class="sv-rl-fill" style="width:<%= clientesData.voltaramW %>;background:#191919;">
             <span class="sv-rl-fill-val" style="color:#E0E0E0;"><%= clientesData.voltaram %></span>
           </div>
           <div class="sv-rl-fill-rot">Voltou (2+) · <%= clientesData.voltaramPct %>%</div>
         </div>
         <div>
-          <div class="sv-rl-fill" style="width:<%= clientesData.umaVezW %>;background:#9C9C9C;">
+          <div data-fill class="sv-rl-fill" style="width:<%= clientesData.umaVezW %>;background:#9C9C9C;">
             <span class="sv-rl-fill-val" style="color:#191919;"><%= clientesData.umaVez %></span>
           </div>
           <div class="sv-rl-fill-rot sv-rl-fill-rot--apoio">Só uma vez · <%= clientesData.umaVezPct %>%</div>
@@ -671,7 +671,7 @@
       <div class="sv-rl-fills">
         <% lucroCascata.forEach(function (cs) { %>
           <div>
-            <div class="sv-rl-fill" style="width:<%= cs.w %>;background:<%= cs.bg %>;">
+            <div data-fill class="sv-rl-fill" style="width:<%= cs.w %>;background:<%= cs.bg %>;">
               <span class="sv-rl-fill-val" style="color:<%= cs.text %>;"><%= fmtT6(cs.rest) %></span>
             </div>
             <div class="sv-rl-fill-linha">
