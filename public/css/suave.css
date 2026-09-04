@@ -163,7 +163,7 @@ html:has(> body.pg-sv)::-webkit-scrollbar,
 /* `backwards`, não `both`: com `both` o transform do último quadro CONTINUA
    aplicado depois da animação e anula o `transform:scale()` do :active — todo
    cartão clicável que também entra com .sv-reveal perdia o toque. */
-.sv-reveal { animation: svRevealUp 0.7s cubic-bezier(0.2, 0.95, 0.3, 1.15) backwards; }
+.sv-reveal { animation: svRevealUp 0.95s cubic-bezier(0.2, 0.95, 0.3, 1.12) backwards; }
 
 /* TOQUE VIVO (2026-09-03): a tela de agendamento cede suave no toque porque
    cada clicável tem `transition: transform` na BASE — os :active espalhados
@@ -787,19 +787,21 @@ html:has(> body.pg-sv)::-webkit-scrollbar,
    conteúdo, a barra (sv-barra, logo abaixo) fica de fora e parada. */
 .pg-sv .conteudo { view-transition-name: sv-conteudo; }
 @keyframes sv-vt-sai {
-  to { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 0; }
 }
 @keyframes sv-vt-entra {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; }
 }
-/* Troca de seção BEM rápida (dono, 2026-09-04): a navegação some quase na
-   hora, e as entradas dos blocos (.sv-reveal, mais lentas) é que dão a vida
-   depois — antes a transição lenta engolia essas entradas. */
+/* Troca de seção = crossfade CURTÍSSIMO (dono, 2026-09-04). Antes era um
+   fade-up de ~0,3s que tirava o "retrato" da tela nova e ENGOLIA o começo das
+   animações dos cards — o dono só via o finalzinho. Agora a troca some quase na
+   hora (sem deslocamento próprio), e são as ENTRADAS DOS CARDS (.sv-reveal,
+   mais lentas) que fazem o movimento, visíveis do início ao fim. */
 ::view-transition-old(sv-conteudo) {
-  animation: sv-vt-sai 0.16s cubic-bezier(0.4, 0, 1, 1) both;
+  animation: sv-vt-sai 0.13s ease both;
 }
 ::view-transition-new(sv-conteudo) {
-  animation: sv-vt-entra 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: sv-vt-entra 0.15s ease both;
 }
 
 /* A barra some da transição e é desenhada só uma vez, por cima. */
