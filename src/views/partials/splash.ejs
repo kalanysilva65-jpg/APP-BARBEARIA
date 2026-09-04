@@ -7,8 +7,9 @@
       - Aparece só na ABERTURA do app (primeira carga por sessão de webview).
         Não repete a cada troca de tela — o sessionStorage sobrevive à navegação
         e só zera quando o app é fechado de verdade (cold launch).
-      - Some assim que a página termina de carregar (window.load), com um piso
-        curto (~0,5s) só pra o wordmark se formar — o mais rápido possível.
+      - As letras entram uma a uma (estilo Netflix) formando CORTAVO, e o splash
+        some quando a página termina de carregar, com um piso pra a sequência
+        completar (~1,2s) mais um respiro.
       - Tudo INLINE de propósito: precisa pintar já no primeiro quadro, antes de
         qualquer CSS/JS do app carregar.
       - Autossuficiente: não usa nome/foto do usuário, então serve login e
@@ -60,28 +61,31 @@
     font-weight: 600;
     letter-spacing: 2px;
     color: #191919;
-    /* `both` (não `forwards`): sem o estado inicial no 1º quadro, o wordmark
-       aparecia visível por um frame e só então a animação saltava pra opacity 0
-       e fazia o fade-in — era essa a "piscada" ao abrir. */
-    animation: cs-entra 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  /* Cada letra entra em SEQUÊNCIA (estilo Netflix): sobe, dá zoom e ganha
+     nitidez, uma após a outra pelos `animation-delay` inline. `both` aplica o
+     estado inicial já no 1º quadro (sem piscar). */
+  #cortavo-splash .cs-marca span {
+    display: inline-block;
+    animation: cs-letra 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.05) both;
   }
   #cortavo-splash.cs-saindo { animation: cs-sai 0.4s cubic-bezier(0.6, 0, 0.85, 0.3) forwards; }
-  @keyframes cs-entra {
-    0% { opacity: 0; letter-spacing: 8px; filter: blur(6px); }
-    100% { opacity: 1; letter-spacing: 2px; filter: blur(0); }
+  @keyframes cs-letra {
+    0% { opacity: 0; transform: translateY(0.28em) scale(0.82); filter: blur(4px); }
+    100% { opacity: 1; transform: none; filter: blur(0); }
   }
   @keyframes cs-sai {
     0% { opacity: 1; transform: scale(1); filter: blur(0); }
     100% { opacity: 0; transform: scale(1.06); filter: blur(10px); }
   }
   @media (prefers-reduced-motion: reduce) {
-    #cortavo-splash .cs-marca { animation: none; }
+    #cortavo-splash .cs-marca span { animation: none; }
     #cortavo-splash.cs-saindo { animation: cs-sai 0.25s linear forwards; }
   }
 </style>
 <div id="cortavo-splash" aria-hidden="true">
   <div class="cs-brilho"></div>
-  <div class="cs-marca">CORTAVO</div>
+  <div class="cs-marca" aria-label="CORTAVO"><% 'CORTAVO'.split('').forEach(function (ch, i) { %><span style="animation-delay:<%= (i * 0.12).toFixed(2) %>s"><%= ch %></span><% }); %></div>
 </div>
 <script>
   (function () {
@@ -89,11 +93,9 @@
     if (!el) return;
     /* Já foi mostrado nesta sessão: só limpa e sai. */
     if (document.documentElement.getAttribute('data-splash') === 'feito') { el.remove(); return; }
-    /* Some assim que a página termina de carregar (window.load). O MIN é só um
-       piso curto (~= duração da entrada) pra o wordmark se formar antes de sair
-       — sem ele, um carregamento instantâneo faria o splash piscar e sumir.
-       Antes era 2,2s fixos; o dono quis o mais rápido possível após carregar. */
-    var MIN = 500, inicio = Date.now();
+    /* Some quando a página termina de carregar (window.load), com um piso que dá
+       tempo da sequência letra-a-letra formar CORTAVO (~1,2s) e um respiro. */
+    var MIN = 1700, inicio = Date.now();
     function sair() {
       el.classList.add('cs-saindo');
       setTimeout(function () { if (el && el.parentNode) el.remove(); }, 420);
