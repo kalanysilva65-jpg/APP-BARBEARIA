@@ -11,9 +11,9 @@
 
 /* Escalonamento da entrada: os blocos do topo sobem em cascata em vez de
    aparecerem todos juntos. Só os primeiros — abaixo da dobra ninguém vê. */
-.pg-sv .sv-hm-p2 { animation-delay: 0.08s; }
-.pg-sv .sv-hm-p3 { animation-delay: 0.16s; }
-.pg-sv .sv-hm-p4 { animation-delay: 0.24s; }
+.pg-sv .sv-hm-p2 { animation-delay: 0.1s; }
+.pg-sv .sv-hm-p3 { animation-delay: 0.2s; }
+.pg-sv .sv-hm-p4 { animation-delay: 0.3s; }
 
 /* .sv-reveal termina em `fill: both`, ou seja, o transform do último quadro
    continua valendo depois da entrada — e engole o `:active` de quem é

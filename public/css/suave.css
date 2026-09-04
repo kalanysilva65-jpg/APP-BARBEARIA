@@ -128,7 +128,7 @@ html:has(> body.pg-sv)::-webkit-scrollbar,
    dono quis trazer do fluxo público pro app (2026-09-03). O `scale(0.98)` é
    sutil de propósito: cartão grande escalando demais parece elástico barato. */
 @keyframes svRevealUp {
-  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  from { opacity: 0; transform: translateY(26px) scale(0.955); }
   to { opacity: 1; transform: none; }
 }
 @keyframes svFade {
@@ -163,7 +163,7 @@ html:has(> body.pg-sv)::-webkit-scrollbar,
 /* `backwards`, não `both`: com `both` o transform do último quadro CONTINUA
    aplicado depois da animação e anula o `transform:scale()` do :active — todo
    cartão clicável que também entra com .sv-reveal perdia o toque. */
-.sv-reveal { animation: svRevealUp 0.62s cubic-bezier(0.2, 0.9, 0.25, 1.05) backwards; }
+.sv-reveal { animation: svRevealUp 0.7s cubic-bezier(0.2, 0.95, 0.3, 1.15) backwards; }
 
 /* TOQUE VIVO (2026-09-03): a tela de agendamento cede suave no toque porque
    cada clicável tem `transition: transform` na BASE — os :active espalhados
@@ -790,13 +790,16 @@ html:has(> body.pg-sv)::-webkit-scrollbar,
   to { opacity: 0; transform: translateY(-8px); }
 }
 @keyframes sv-vt-entra {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(10px); }
 }
+/* Troca de seção BEM rápida (dono, 2026-09-04): a navegação some quase na
+   hora, e as entradas dos blocos (.sv-reveal, mais lentas) é que dão a vida
+   depois — antes a transição lenta engolia essas entradas. */
 ::view-transition-old(sv-conteudo) {
-  animation: sv-vt-sai 0.26s cubic-bezier(0.4, 0, 1, 1) both;
+  animation: sv-vt-sai 0.16s cubic-bezier(0.4, 0, 1, 1) both;
 }
 ::view-transition-new(sv-conteudo) {
-  animation: sv-vt-entra 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: sv-vt-entra 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* A barra some da transição e é desenhada só uma vez, por cima. */
