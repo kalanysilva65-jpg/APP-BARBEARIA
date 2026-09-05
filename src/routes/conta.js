@@ -5,12 +5,13 @@ const router = express.Router();
 const auth = require('../controllers/contaClienteController');
 const app = require('../controllers/appClienteController');
 const { exigeContaCliente } = require('../middlewares/auth');
+const { limiteLogin } = require('../middlewares/rateLimit');
 
 // --- Autenticação (público) ---
 router.get('/entrar', auth.mostrarLogin);
-router.post('/entrar', auth.login);
+router.post('/entrar', limiteLogin, auth.login);
 router.get('/cadastro', auth.mostrarCadastro);
-router.post('/cadastro', auth.cadastrar);
+router.post('/cadastro', limiteLogin, auth.cadastrar);
 router.post('/sair', auth.logout);
 
 // --- App (exige conta logada) ---

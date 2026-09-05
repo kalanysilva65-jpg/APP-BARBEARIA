@@ -30,17 +30,36 @@ echo "Backup salvo em $ARQ"
 # em alguns meses.
 find "$DESTINO_DIR" -name 'cortavo-*.tar.gz' -mtime "+$MANTER_DIAS" -delete
 
-# --- Envio para fora do servidor (recomendado, não obrigatório) -------------
-# Backup que mora no mesmo disco do banco não sobrevive a uma falha de disco.
-# Descomente UMA opção depois de configurar as credenciais:
+# --- Envio para FORA do servidor (importante) -------------------------------
+# Backup que mora no mesmo disco do banco NÃO sobrevive a uma falha de disco.
+# Este passo liga sozinho assim que você definir o destino — sem editar o script:
 #
-# rclone copy "$ARQ" remoto:cortavo-backups/          # rclone (Drive, R2, S3...)
-# scp "$ARQ" usuario@outro-servidor:/backups/          # outro servidor via SSH
+#   1) Instale e configure o rclone uma vez (cria um "remoto"):
+#        rclone config          # ex.: nome "gdrive", "r2" ou "s3"
+#   2) Aponte o destino via variável de ambiente (no crontab, veja abaixo):
+#        RCLONE_REMOTE="gdrive:cortavo-backups"
+#
+# Sem RCLONE_REMOTE o backup ainda roda, mas fica SÓ no disco local (com aviso).
+REMOTO="${RCLONE_REMOTE:-}"
+if [ -n "$REMOTO" ]; then
+  if command -v rclone >/dev/null 2>&1; then
+    rclone copy "$ARQ" "$REMOTO" && echo "Enviado para $REMOTO"
+  else
+    echo "AVISO: RCLONE_REMOTE definido, mas 'rclone' não está instalado — backup ficou SÓ no disco local." >&2
+  fi
+else
+  echo "AVISO: RCLONE_REMOTE não definido — backup ficou SÓ no disco local (não sobrevive a falha de disco)." >&2
+fi
+# -----------------------------------------------------------------------------
+# TESTE DE RESTAURAÇÃO (faça uma vez — backup nunca restaurado não é backup):
+#   mkdir -p /tmp/restore && tar -xzf <um-backup>.tar.gz -C /tmp/restore
+#   sqlite3 /tmp/restore/app.db "SELECT count(*) FROM usuarios;"   # deve responder
 # -----------------------------------------------------------------------------
 
 # --- Instalação do agendamento (rodar uma vez) ------------------------------
 # chmod +x backup.sh
 # crontab -e
-# Adicionar a linha (roda todo dia às 3h da manhã):
-#   0 3 * * * /home/cortavo/app/deploy/backup.sh >> /home/cortavo/backups/backup.log 2>&1
+# Adicionar a linha (roda todo dia às 3h da manhã; com destino externo já embutido):
+#   0 3 * * * RCLONE_REMOTE="gdrive:cortavo-backups" /home/cortavo/app/deploy/backup.sh >> /home/cortavo/backups/backup.log 2>&1
+# (sem o RCLONE_REMOTE ele roda igual, mas o backup fica só no disco local.)
 # -----------------------------------------------------------------------------

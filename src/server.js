@@ -8,11 +8,29 @@ const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const expressLayouts = require('express-ejs-layouts');
 const methodOverride = require('method-override');
+const helmet = require('helmet');
 
 const { uploadsDir, sessionsDir } = require('./config/paths');
 
 const app = express();
 app.set('trust proxy', 1);
+
+// --- Cabeçalhos de segurança (helmet) -------------------------------------
+// Liga o pacote padrão do helmet (HSTS, nosniff, no-referrer, anti-clickjacking
+// etc.) com duas ressalvas próprias deste app:
+//  - CSP DESLIGADA por ora: o app usa <script>/<style> inline em vários lugares
+//    (splash, flash, alternar senha...). A CSP padrão bloquearia tudo e quebraria
+//    a tela. É um item de Tier 1/2 — precisa de uma política sob medida, não do
+//    default. Melhor não ligar meia-boca e dar falsa sensação de segurança.
+//  - CORP em 'cross-origin': os links públicos de agendamento e imagens de
+//    /uploads são compartilhados/pré-visualizados fora do site (WhatsApp etc.);
+//    o padrão 'same-origin' bloquearia essas prévias.
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 // Versão dos assets. Muda a cada boot — e como todo deploy reinicia o serviço
 // (systemctl restart cortavo), muda a cada deploy. Vai como ?v=... nos links de
@@ -145,6 +163,22 @@ app.get('/manifest.webmanifest', (req, res) => {
     theme_color: '#111111',
     icons: icones,
   });
+});
+
+// --- Troca de senha obrigatória -------------------------------------------
+// Contas com senha PROVISÓRIA (padrão de fábrica dono123/admin123, ou criadas
+// pelo admin) precisam definir uma senha própria antes de usar o app. Fecha o
+// buraco das senhas padrão em produção. Vale para painel E mestre — por isso
+// fica aqui no topo, antes de montar as rotas, e não dentro de um router.
+// Só age quando há login E a sessão está marcada como provisória; libera apenas
+// a própria tela de troca e o logout, pra não criar laço de redirecionamento.
+app.use((req, res, next) => {
+  if (req.session.usuario && req.session.trocarSenha) {
+    if (req.path !== '/trocar-senha' && req.path !== '/logout') {
+      return res.redirect('/trocar-senha');
+    }
+  }
+  next();
 });
 
 // --- Rotas ----------------------------------------------------------------

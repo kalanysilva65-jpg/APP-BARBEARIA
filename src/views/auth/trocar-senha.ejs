@@ -1,0 +1,49 @@
+<%/* Troca obrigatória de senha provisória (padrão de fábrica / criada pelo
+     admin). Reaproveita o visual do login (public/css/sv-login.css). Enquanto a
+     senha for provisória, o guard global (server.js) prende o usuário aqui. */%>
+<div class="sv-lg">
+
+  <div class="sv-lg-topo">
+    <h1 class="sv-lg-titulo">Defina sua senha</h1>
+    <p class="sv-lg-sub">
+      <% if (obrigatoria) { %>
+        Por segurança, troque a senha provisória por uma sua antes de continuar.
+      <% } else { %>
+        Escolha uma nova senha para a sua conta.
+      <% } %>
+    </p>
+  </div>
+
+  <form method="POST" action="/trocar-senha" class="sv-lg-form">
+    <div class="sv-lg-campo">
+      <label class="sv-lg-rot" for="senhaAtual">Senha atual</label>
+      <input class="sv-lg-input" type="password" id="senhaAtual" name="senhaAtual" placeholder="••••••••" autocomplete="current-password" required autofocus />
+    </div>
+
+    <div class="sv-lg-campo">
+      <label class="sv-lg-rot" for="novaSenha">Nova senha</label>
+      <div class="sv-lg-senha">
+        <input class="sv-lg-input" type="password" id="novaSenha" name="novaSenha" placeholder="ao menos 8 caracteres" autocomplete="new-password" minlength="8" required />
+        <button type="button" class="sv-lg-mostrar" id="btn-mostrar" onclick="alternarSenha()">Mostrar</button>
+      </div>
+    </div>
+
+    <div class="sv-lg-campo">
+      <label class="sv-lg-rot" for="confirmar">Confirmar nova senha</label>
+      <input class="sv-lg-input" type="password" id="confirmar" name="confirmar" placeholder="repita a nova senha" autocomplete="new-password" minlength="8" required />
+    </div>
+
+    <button class="sv-lg-btn" type="submit">Salvar senha</button>
+  </form>
+
+</div>
+
+<script>
+  function alternarSenha() {
+    var nova = document.getElementById('novaSenha');
+    var btn = document.getElementById('btn-mostrar');
+    var oculta = nova.type === 'password';
+    nova.type = oculta ? 'text' : 'password';
+    btn.textContent = oculta ? 'Ocultar' : 'Mostrar';
+  }
+</script>

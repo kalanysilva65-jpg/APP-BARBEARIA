@@ -69,6 +69,7 @@ model Usuario {
   fotoUrl     String?  @map("foto_url") // foto do barbeiro (em /uploads)
   papel       String // "dono" | "admin" | "funcionario"
   ativo       Boolean  @default(true)
+  senhaProvisoria Boolean @default(false) @map("senha_provisoria") // senha padrão/criada pelo admin: força troca no 1º login
   comissaoPercentual Float @default(50) @map("comissao_percentual") // % de comissão do barbeiro
   criadoEm  DateTime @default(now()) @map("criado_em")
 

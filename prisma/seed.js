@@ -20,6 +20,9 @@ async function garantirDono() {
       email,
       senhaHash: bcrypt.hashSync('dono123', 10),
       papel: 'dono',
+      // Senha de fábrica: o app obriga a trocar no 1º login (fecha o buraco das
+      // senhas padrão em produção).
+      senhaProvisoria: true,
     },
   });
 }
@@ -47,7 +50,9 @@ async function garantirUsuario(barbeariaId, { nome, email, senha, papel }) {
   return prisma.usuario.upsert({
     where: { barbeariaId_email: { barbeariaId, email } },
     update: {},
-    create: { barbeariaId, nome, email, senhaHash: bcrypt.hashSync(senha, 10), papel },
+    // Senha de fábrica: força a troca no 1º login. Não sobrescreve quem já
+    // existe (update vazio), então quem já trocou continua com a sua.
+    create: { barbeariaId, nome, email, senhaHash: bcrypt.hashSync(senha, 10), papel, senhaProvisoria: true },
   });
 }
 
@@ -100,10 +105,10 @@ async function main() {
   console.log('✓ Seed concluído.');
   console.log('');
   console.log('  DONO (painel-mestre):');
-  console.log('   ' + dono.email + ' / dono123');
+  console.log('   ' + dono.email + ' / dono123   (senha provisória — o app pede a troca no 1º login)');
   console.log('');
   console.log(`  Barbearia "${andrade.slug}" (subdomínio ${andrade.slug} / dev: ?b=${andrade.slug}):`);
-  console.log('   ' + EMAIL_BRUNO + ' / admin123  (Admin — Bruno)');
+  console.log('   ' + EMAIL_BRUNO + ' / admin123  (Admin — Bruno; senha provisória — troca no 1º login)');
 }
 
 main()

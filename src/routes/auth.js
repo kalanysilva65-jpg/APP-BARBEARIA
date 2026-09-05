@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const { limiteLogin } = require('../middlewares/rateLimit');
 
 // Raiz: dono -> painel-mestre; equipe logada -> painel; visitante -> depende
 // do contexto (ver abaixo).
@@ -36,7 +37,13 @@ router.get('/privacidade', (req, res) => {
 });
 
 router.get('/login', authController.mostrarLogin);
-router.post('/login', authController.fazerLogin);
+router.post('/login', limiteLogin, authController.fazerLogin);
 router.post('/logout', authController.logout);
+
+// Troca de senha obrigatória (senha provisória / padrão de fábrica). Fica no
+// nível raiz de propósito: serve tanto a equipe (painel) quanto o dono (mestre),
+// que caem em áreas diferentes depois do login.
+router.get('/trocar-senha', authController.mostrarTrocaSenha);
+router.post('/trocar-senha', authController.trocarSenha);
 
 module.exports = router;
