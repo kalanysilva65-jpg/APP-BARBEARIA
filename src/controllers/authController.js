@@ -83,7 +83,12 @@ async function fazerLogin(req, res) {
   // para 30 dias. Sem marcar, segue o padrão curto — é o dono numa máquina
   // possivelmente compartilhada com a equipe, então a escolha é dele, não
   // um padrão que o mantém logado para sempre.
-  if (req.body.manterConectado) {
+  //
+  // EXCEÇÃO — dono do sistema (super-admin do painel-mestre): a sessão dele
+  // NUNCA é estendida, mesmo marcando o checkbox. O /mestre é a área mais
+  // sensível do sistema; uma sessão de 30 dias ali é risco grande demais se o
+  // aparelho for perdido/compartilhado. Fica sempre no padrão curto (8h).
+  if (req.body.manterConectado && usuario.papel !== 'dono') {
     req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 30;
   }
   // Persiste a sessão nova (novo ID + dados) ANTES de redirecionar: com store em
