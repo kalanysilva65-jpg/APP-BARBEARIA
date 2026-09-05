@@ -4,6 +4,18 @@
     <p class="texto-secundario">Subdomínio: <strong><%= barbearia.slug %></strong> · <%= barbearia.ativo ? 'Ativa' : 'Inativa' %></p>
   </div>
   <div class="flex gap-8">
+    <% if (barbearia.ativo) { %>
+      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/ativa" class="inline"
+            onsubmit="return confirm('Suspender a <%= barbearia.nome %>? O login e o agendamento dela ficam bloqueados até reativar.')">
+        <input type="hidden" name="ativa" value="false" />
+        <button class="btn btn-secundario btn-sm" type="submit">Suspender</button>
+      </form>
+    <% } else { %>
+      <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/ativa" class="inline">
+        <input type="hidden" name="ativa" value="true" />
+        <button class="btn btn-secundario btn-sm" type="submit">Reativar</button>
+      </form>
+    <% } %>
     <form method="POST" action="/mestre/entrar/<%= barbearia.id %>" class="inline">
       <button class="btn btn-primario btn-sm" type="submit">Entrar nesta barbearia →</button>
     </form>
@@ -36,12 +48,26 @@
         <% } %>
       </small>
     </div>
-    <label class="flex gap-8" style="align-items:center;margin-top:8px;">
-      <input type="checkbox" name="ativo" <%= barbearia.ativo ? 'checked' : '' %> />
-      <span>Barbearia ativa (desmarcada, o login e o agendamento ficam bloqueados)</span>
-    </label>
+    <p class="texto-sutil" style="margin-top:8px">
+      Status: <strong><%= barbearia.ativo ? 'Ativa' : 'Suspensa' %></strong> — use o botão
+      <%= barbearia.ativo ? '“Suspender”' : '“Reativar”' %> no topo para mudar (fica registrado na auditoria).
+    </p>
     <div class="mt-16">
       <button class="btn btn-primario btn-sm" type="submit">Salvar dados</button>
+    </div>
+  </form>
+</div>
+
+<!-- Notas internas (só o painel-mestre vê) -->
+<div class="card mb-16">
+  <h2>Notas internas</h2>
+  <p class="texto-secundario">Anotações suas sobre esta barbearia (contato, combinados, pendências). A barbearia nunca vê isto.</p>
+  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/notas" class="form mt-16">
+    <div class="campo">
+      <textarea name="notasInternas" rows="4" placeholder="Ex.: dono é o Bruno, prefere contato por WhatsApp; combinou período de teste até dia 20."><%= barbearia.notasInternas || '' %></textarea>
+    </div>
+    <div class="mt-16">
+      <button class="btn btn-primario btn-sm" type="submit">Salvar notas</button>
     </div>
   </form>
 </div>
@@ -118,6 +144,10 @@
               <td class="col-acao">
                 <div class="flex gap-8" style="justify-content:flex-end">
                   <a href="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/editar" class="btn btn-secundario btn-sm">Editar</a>
+                  <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/reset-senha" class="inline"
+                        onsubmit="return confirm('Gerar uma senha provisória para <%= m.nome %>? A senha atual deixa de valer e aparece uma nova para você repassar.')">
+                    <button class="btn btn-secundario btn-sm" type="submit">Resetar senha</button>
+                  </form>
                   <form method="POST" action="/mestre/barbearias/<%= barbearia.id %>/equipe/<%= m.id %>/toggle" class="inline">
                     <button class="btn btn-secundario btn-sm" type="submit"><%= m.ativo ? 'Desativar' : 'Ativar' %></button>
                   </form>

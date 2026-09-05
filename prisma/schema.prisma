@@ -33,6 +33,7 @@ model Barbearia {
   latitude  Float?
   longitude Float?
   capaUrl   String?  @map("capa_url") // foto de capa do hero da Home (em /uploads)
+  notasInternas String? @map("notas_internas") // anotações do dono do SaaS sobre a barbearia (só o painel-mestre vê)
   criadoEm DateTime @default(now()) @map("criado_em")
 
   usuarios           Usuario[]
@@ -78,6 +79,7 @@ model Usuario {
   bloqueios        Bloqueio[]
   agendamentos     Agendamento[]
   dispositivosPush DispositivoPush[]
+  logsAuditoria    LogAuditoria[]
 
   // E-mail único DENTRO de cada barbearia (o mesmo e-mail pode existir em barbearias diferentes).
   @@unique([barbeariaId, email])
@@ -485,4 +487,26 @@ model Configuracao {
   // Cada chave é única DENTRO de cada barbearia.
   @@unique([barbeariaId, chave])
   @@map("configuracoes")
+}
+
+/// Trilha de auditoria do PAINEL-MESTRE (super-admin do SaaS). Registra toda
+/// ação administrativa sensível — criar/excluir barbearia, suspender/reativar,
+/// resetar senha, impersonar. É append-only por natureza (nunca editado/apagado
+/// pelo app). `adminNome` é desnormalizado de propósito: o log tem que sobreviver
+/// à exclusão do usuário que agiu, então não depende da relação para ser lido.
+model LogAuditoria {
+  id        Int      @id @default(autoincrement())
+  adminId   Int?     @map("admin_id") // quem agiu (dono do SaaS); SetNull se a conta for removida
+  adminNome String   @map("admin_nome") // cópia do nome no momento da ação (durável)
+  acao      String // ex.: "barbearia.criar", "usuario.reset_senha", "barbearia.suspender"
+  alvoTipo  String?  @map("alvo_tipo") // ex.: "barbearia", "usuario"
+  alvoId    Int?     @map("alvo_id")
+  detalhe   String? // texto livre: o que mudou, para quem, etc.
+  ip        String? // IP de origem (req.ip, com trust proxy resolve o real atrás do nginx)
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  admin Usuario? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([criadoEm])
+  @@map("logs_auditoria")
 }

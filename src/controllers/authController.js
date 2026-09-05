@@ -60,6 +60,12 @@ async function fazerLogin(req, res) {
     return res.redirect('/login');
   }
 
+  // Renova o ID de sessão no login (anti session-fixation): se alguém plantou
+  // um cookie de sessão conhecido antes do login, ele deixa de valer no instante
+  // em que o usuário se autentica. Só depois da renovação é que gravamos os
+  // dados do usuário na sessão nova.
+  await new Promise((resolve) => req.session.regenerate(() => resolve()));
+
   // Guarda só o essencial na sessão (inclui a barbearia do usuário).
   req.session.usuario = {
     id: usuario.id,
@@ -80,6 +86,9 @@ async function fazerLogin(req, res) {
   if (req.body.manterConectado) {
     req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 30;
   }
+  // Persiste a sessão nova (novo ID + dados) ANTES de redirecionar: com store em
+  // arquivo, sem isso a requisição seguinte poderia chegar antes da gravação.
+  await new Promise((resolve) => req.session.save(() => resolve()));
   res.redirect(destino(usuario));
 }
 

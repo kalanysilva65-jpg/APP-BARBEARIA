@@ -2,10 +2,26 @@
 // Gerencia as barbearias assinantes: criar/editar, equipe (barbeiros + e-mail/senha),
 // marca (logo/powered-by) e a operação (impersonação) de cada uma.
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const fs = require('fs');
 const prisma = require('../config/db');
 const { caminhoDoUpload } = require('../config/paths');
 const { geocodificar } = require('../services/geocodificacao');
+const auditoria = require('../services/auditoria');
+
+// Quantas barbearias por página na lista (paginação server-side).
+const POR_PAGINA = 20;
+
+// Senha provisória forte e legível pra passar por telefone/WhatsApp: sem
+// caracteres ambíguos (0/O, 1/l/I). O barbeiro entra com ela e o app OBRIGA a
+// troca no 1º login (senhaProvisoria = true), então ela nunca fica valendo.
+function gerarSenhaProvisoria() {
+  const alfabeto = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const bytes = crypto.randomBytes(10);
+  let s = '';
+  for (let i = 0; i < 10; i++) s += alfabeto[bytes[i] % alfabeto.length];
+  return s;
+}
 
 // Normaliza um slug de subdomínio: minúsculas, sem acentos, só [a-z0-9-].
 function normalizarSlug(s) {
@@ -46,13 +62,40 @@ async function criarConfigsPadrao(barbeariaId) {
   }
 }
 
-// GET /mestre — lista de barbearias com um resumo.
+// GET /mestre — lista de barbearias com busca, filtro de status e paginação.
 async function painel(req, res) {
+  const q = (req.query.q || '').trim();
+  const status = ['ativa', 'inativa'].includes(req.query.status) ? req.query.status : 'todas';
+  const pagina = Math.max(1, parseInt(req.query.pagina, 10) || 1);
+
+  // Monta o filtro a partir da busca (nome OU slug) e do status. SQLite no
+  // Prisma não tem `mode: insensitive`; o slug já é minúsculo e a busca por
+  // nome casa por substring — suficiente pra uma lista de assinantes.
+  const where = {};
+  if (q) where.OR = [{ nome: { contains: q } }, { slug: { contains: q.toLowerCase() } }];
+  if (status === 'ativa') where.ativo = true;
+  else if (status === 'inativa') where.ativo = false;
+
+  const total = await prisma.barbearia.count({ where });
+  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+
   const barbearias = await prisma.barbearia.findMany({
+    where,
     orderBy: { criadoEm: 'desc' },
     include: { _count: { select: { usuarios: true, clientes: true, agendamentos: true } } },
+    skip: (paginaAtual - 1) * POR_PAGINA,
+    take: POR_PAGINA,
   });
-  res.render('mestre/painel', { layout: 'layouts/mestre', titulo: 'Painel-mestre', barbearias });
+
+  res.render('mestre/painel', {
+    layout: 'layouts/mestre',
+    titulo: 'Painel-mestre',
+    barbearias,
+    total,
+    filtros: { q, status },
+    paginacao: { pagina: paginaAtual, totalPaginas },
+  });
 }
 
 // GET /mestre/nova — formulário de nova barbearia (+ primeiro admin).
@@ -99,6 +142,12 @@ async function criarBarbearia(req, res) {
   });
   await criarConfigsPadrao(barbearia.id);
 
+  await auditoria.registrar(req, {
+    acao: 'barbearia.criar',
+    alvoTipo: 'barbearia',
+    alvoId: barbearia.id,
+    detalhe: `Criou "${nome}" (slug ${slug}) com admin ${adminEmail}.`,
+  });
   req.session.flash = { tipo: 'sucesso', texto: 'Barbearia criada.' };
   res.redirect('/mestre/barbearias/' + barbearia.id);
 }
@@ -141,7 +190,6 @@ async function atualizarBarbearia(req, res) {
 
   const nome = (req.body.nome || '').trim();
   const slug = normalizarSlug(req.body.slug || nome);
-  const ativo = req.body.ativo === 'on';
   const endereco = (req.body.endereco || '').trim() || null;
 
   if (!nome || !slug) {
@@ -154,7 +202,11 @@ async function atualizarBarbearia(req, res) {
     return res.redirect('/mestre/barbearias/' + barbearia.id);
   }
 
-  const dados = { nome, slug, ativo, endereco };
+  // `ativo` NÃO entra aqui de propósito: suspender/reativar tem ação própria
+  // (/ativa) que grava auditoria. Se o status viesse por este form também,
+  // haveria um caminho de suspensão SEM registro — e pior, salvar os dados sem o
+  // checkbox marcado suspenderia a barbearia sem querer.
+  const dados = { nome, slug, endereco };
 
   // Só geocodifica quando o endereço muda (evita bater no Nominatim à toa e
   // preserva as coordenadas se o texto continuou igual). Endereço apagado zera
@@ -189,6 +241,12 @@ async function removerBarbearia(req, res) {
   await prisma.barbearia.delete({ where: { id: barbearia.id } }).catch(() => {});
   // Se estava operando essa barbearia, encerra a impersonação.
   if (req.session.barbeariaAtivaId === barbearia.id) delete req.session.barbeariaAtivaId;
+  await auditoria.registrar(req, {
+    acao: 'barbearia.excluir',
+    alvoTipo: 'barbearia',
+    alvoId: barbearia.id,
+    detalhe: `Excluiu "${barbearia.nome}" (slug ${barbearia.slug}) e todos os dados.`,
+  });
   req.session.flash = { tipo: 'sucesso', texto: 'Barbearia excluída.' };
   res.redirect('/mestre');
 }
@@ -215,8 +273,14 @@ async function criarBarbeiro(req, res) {
     return res.redirect('/mestre/barbearias/' + barbearia.id);
   }
 
-  await prisma.usuario.create({
+  const novo = await prisma.usuario.create({
     data: { barbeariaId: barbearia.id, nome, email, senhaHash: await bcrypt.hash(senha, 10), papel },
+  });
+  await auditoria.registrar(req, {
+    acao: 'usuario.criar',
+    alvoTipo: 'usuario',
+    alvoId: novo.id,
+    detalhe: `Adicionou ${email} (${papel}) à barbearia "${barbearia.nome}".`,
   });
   req.session.flash = { tipo: 'sucesso', texto: `${nome} adicionado à equipe.` };
   res.redirect('/mestre/barbearias/' + barbearia.id);
@@ -263,8 +327,15 @@ async function atualizarBarbeiro(req, res) {
   }
 
   const data = { nome, email, papel };
-  if (senha.length >= 6) data.senhaHash = await bcrypt.hash(senha, 10);
+  const trocouSenha = senha.length >= 6;
+  if (trocouSenha) data.senhaHash = await bcrypt.hash(senha, 10);
   await prisma.usuario.update({ where: { id: uid }, data });
+  await auditoria.registrar(req, {
+    acao: 'usuario.editar',
+    alvoTipo: 'usuario',
+    alvoId: uid,
+    detalhe: `Editou ${email} na "${barbearia.nome}"` + (trocouSenha ? ' (incluindo a senha).' : '.'),
+  });
   req.session.flash = { tipo: 'sucesso', texto: 'Dados do barbeiro atualizados.' };
   res.redirect('/mestre/barbearias/' + barbearia.id);
 }
@@ -276,8 +347,104 @@ async function toggleBarbeiro(req, res) {
   const membro = await prisma.usuario.findFirst({
     where: { id: Number(req.params.uid), barbeariaId: barbearia.id },
   });
-  if (membro) await prisma.usuario.update({ where: { id: membro.id }, data: { ativo: !membro.ativo } });
+  if (membro) {
+    await prisma.usuario.update({ where: { id: membro.id }, data: { ativo: !membro.ativo } });
+    await auditoria.registrar(req, {
+      acao: membro.ativo ? 'usuario.desativar' : 'usuario.ativar',
+      alvoTipo: 'usuario',
+      alvoId: membro.id,
+      detalhe: `${membro.ativo ? 'Desativou' : 'Ativou'} ${membro.email} na "${barbearia.nome}".`,
+    });
+  }
   res.redirect('/mestre/barbearias/' + barbearia.id);
+}
+
+// POST /mestre/barbearias/:id/equipe/:uid/reset-senha — gera uma senha
+// provisória para um membro da equipe. A senha atual NUNCA é exposta (é hash);
+// geramos uma nova aleatória, marcamos como provisória (o app obriga a troca no
+// 1º login) e mostramos UMA vez pro dono repassar. Serve pra "o dono da
+// barbearia esqueceu a senha".
+async function resetarSenha(req, res) {
+  const barbearia = await carregarBarbearia(req, res);
+  if (!barbearia) return;
+  const uid = Number(req.params.uid);
+  const membro = await prisma.usuario.findFirst({ where: { id: uid, barbeariaId: barbearia.id } });
+  if (!membro) {
+    req.session.flash = { tipo: 'erro', texto: 'Usuário não encontrado nesta barbearia.' };
+    return res.redirect('/mestre/barbearias/' + barbearia.id);
+  }
+
+  const provisoria = gerarSenhaProvisoria();
+  await prisma.usuario.update({
+    where: { id: uid },
+    data: { senhaHash: await bcrypt.hash(provisoria, 10), senhaProvisoria: true },
+  });
+  await auditoria.registrar(req, {
+    acao: 'usuario.reset_senha',
+    alvoTipo: 'usuario',
+    alvoId: uid,
+    detalhe: `Gerou senha provisória para ${membro.email} na "${barbearia.nome}".`,
+  });
+
+  // A senha provisória vai no flash uma única vez (não fica salva em lugar
+  // nenhum em texto). O dono copia e repassa; no 1º login o app força a troca.
+  req.session.flash = {
+    tipo: 'sucesso',
+    texto: `Senha provisória de ${membro.nome}: ${provisoria} — copie agora, ela não será mostrada de novo. No 1º login o app pede a troca.`,
+  };
+  res.redirect('/mestre/barbearias/' + barbearia.id);
+}
+
+// POST /mestre/barbearias/:id/ativa — suspende (ativa=false) ou reativa
+// (ativa=true) a barbearia. Desativada, o login e o agendamento ficam bloqueados
+// (o middleware de tenant só resolve barbearia com `ativo:true`).
+async function definirAtiva(req, res) {
+  const barbearia = await carregarBarbearia(req, res);
+  if (!barbearia) return;
+  const ativa = req.body.ativa === 'true';
+  await prisma.barbearia.update({ where: { id: barbearia.id }, data: { ativo: ativa } });
+  // Suspender enquanto opera a barbearia: encerra a impersonação pra não seguir
+  // dentro de uma conta suspensa.
+  if (!ativa && req.session.barbeariaAtivaId === barbearia.id) delete req.session.barbeariaAtivaId;
+  await auditoria.registrar(req, {
+    acao: ativa ? 'barbearia.reativar' : 'barbearia.suspender',
+    alvoTipo: 'barbearia',
+    alvoId: barbearia.id,
+    detalhe: `${ativa ? 'Reativou' : 'Suspendeu'} "${barbearia.nome}".`,
+  });
+  req.session.flash = { tipo: 'sucesso', texto: ativa ? 'Barbearia reativada.' : 'Barbearia suspensa.' };
+  res.redirect('/mestre/barbearias/' + barbearia.id);
+}
+
+// POST /mestre/barbearias/:id/notas — salva as notas internas do dono do SaaS
+// sobre a barbearia (só o painel-mestre vê; a barbearia nunca).
+async function salvarNotas(req, res) {
+  const barbearia = await carregarBarbearia(req, res);
+  if (!barbearia) return;
+  const notas = (req.body.notasInternas || '').trim().slice(0, 5000) || null;
+  await prisma.barbearia.update({ where: { id: barbearia.id }, data: { notasInternas: notas } });
+  req.session.flash = { tipo: 'sucesso', texto: 'Notas salvas.' };
+  res.redirect('/mestre/barbearias/' + barbearia.id);
+}
+
+// GET /mestre/auditoria — trilha de auditoria (ações administrativas), paginada.
+async function auditoriaLista(req, res) {
+  const pagina = Math.max(1, parseInt(req.query.pagina, 10) || 1);
+  const total = await prisma.logAuditoria.count();
+  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const logs = await prisma.logAuditoria.findMany({
+    orderBy: { criadoEm: 'desc' },
+    skip: (paginaAtual - 1) * POR_PAGINA,
+    take: POR_PAGINA,
+  });
+  res.render('mestre/auditoria', {
+    layout: 'layouts/mestre',
+    titulo: 'Auditoria',
+    logs,
+    total,
+    paginacao: { pagina: paginaAtual, totalPaginas },
+  });
 }
 
 // POST /mestre/barbearias/:id/marca — salva logo (upload) + powered-by.
@@ -319,7 +486,8 @@ async function removerLogo(req, res) {
     where: { barbeariaId_chave: { barbeariaId: barbearia.id, chave: 'logo_url' } },
   });
   if (atual && atual.valor) {
-    fs.unlink(path.join(__dirname, '..', '..', atual.valor.replace(/^\//, '')), () => {});
+    const arq = caminhoDoUpload(atual.valor);
+    if (arq) fs.unlink(arq, () => {});
     await prisma.configuracao.update({
       where: { barbeariaId_chave: { barbeariaId: barbearia.id, chave: 'logo_url' } },
       data: { valor: '' },
@@ -365,6 +533,12 @@ async function entrar(req, res) {
     return res.redirect('/mestre');
   }
   req.session.barbeariaAtivaId = barbearia.id;
+  await auditoria.registrar(req, {
+    acao: 'barbearia.impersonar',
+    alvoTipo: 'barbearia',
+    alvoId: barbearia.id,
+    detalhe: `Entrou (operou) a barbearia "${barbearia.nome}".`,
+  });
   res.redirect('/painel');
 }
 
@@ -391,4 +565,8 @@ module.exports = {
   removerCapa,
   entrar,
   sair,
+  resetarSenha,
+  definirAtiva,
+  salvarNotas,
+  auditoriaLista,
 };

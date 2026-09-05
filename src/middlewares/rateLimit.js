@@ -25,4 +25,24 @@ const limiteLogin = rateLimit({
   },
 });
 
-module.exports = { limiteLogin };
+// Freio das rotas do painel-mestre (super-admin do SaaS). É a área mais sensível
+// do sistema, usada por UMA pessoa (o dono) — então o teto pode ser bem mais
+// baixo que o de tráfego público. Aqui o alvo não é força-bruta de login (isso
+// o `limiteLogin` já cobre no /login), e sim conter uma sessão sequestrada que
+// tente disparar muitas ações em rajada. 300 req / 10 min é folgado pra um
+// humano navegando e fecha a porta pra automação.
+const limiteAdmin = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler(req, res) {
+    res.status(429).render('erro', {
+      layout: 'layouts/blank',
+      titulo: 'Muitas requisições',
+      mensagem: 'Você fez muitas ações em pouco tempo. Aguarde um minuto e tente de novo.',
+    });
+  },
+});
+
+module.exports = { limiteLogin, limiteAdmin };

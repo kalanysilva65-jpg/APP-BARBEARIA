@@ -3,13 +3,36 @@
     <h1>Barbearias</h1>
     <p class="texto-secundario">Todas as barbearias assinantes. Clique no nome para gerenciar ou em “Entrar” para operar.</p>
   </div>
-  <a href="/mestre/nova" class="btn btn-primario btn-sm">+ Nova barbearia</a>
+  <div class="flex gap-8">
+    <a href="/mestre/auditoria" class="btn btn-secundario btn-sm">Auditoria</a>
+    <a href="/mestre/nova" class="btn btn-primario btn-sm">+ Nova barbearia</a>
+  </div>
 </div>
 
+<!-- Busca + filtro de status (paginação server-side) -->
 <div class="card">
-  <h2>Assinantes (<%= barbearias.length %>)</h2>
+  <form method="GET" action="/mestre" class="flex gap-8" style="flex-wrap:wrap;align-items:flex-end">
+    <div class="campo" style="flex:1;min-width:200px;margin:0">
+      <label for="q">Buscar</label>
+      <input id="q" name="q" value="<%= filtros.q %>" placeholder="nome ou subdomínio" />
+    </div>
+    <div class="campo" style="margin:0">
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        <option value="todas" <%= filtros.status === 'todas' ? 'selected' : '' %>>Todas</option>
+        <option value="ativa" <%= filtros.status === 'ativa' ? 'selected' : '' %>>Ativas</option>
+        <option value="inativa" <%= filtros.status === 'inativa' ? 'selected' : '' %>>Inativas</option>
+      </select>
+    </div>
+    <button class="btn btn-primario btn-sm" type="submit">Filtrar</button>
+    <% if (filtros.q || filtros.status !== 'todas') { %>
+      <a href="/mestre" class="btn btn-secundario btn-sm">Limpar</a>
+    <% } %>
+  </form>
+
+  <h2 class="mt-16">Assinantes (<%= total %>)</h2>
   <% if (barbearias.length === 0) { %>
-    <p class="texto-secundario mt-16">Nenhuma barbearia cadastrada ainda.</p>
+    <p class="texto-secundario mt-16">Nenhuma barbearia encontrada com esse filtro.</p>
   <% } else { %>
     <div class="tabela-rolagem">
       <table class="tabela mt-16">
@@ -49,5 +72,20 @@
         </tbody>
       </table>
     </div>
+
+    <% if (paginacao.totalPaginas > 1) { %>
+      <%
+        var base = '/mestre?q=' + encodeURIComponent(filtros.q) + '&status=' + filtros.status + '&pagina=';
+      %>
+      <div class="flex gap-8 mt-16" style="align-items:center;justify-content:center">
+        <% if (paginacao.pagina > 1) { %>
+          <a href="<%= base + (paginacao.pagina - 1) %>" class="btn btn-secundario btn-sm">← Anterior</a>
+        <% } %>
+        <span class="texto-sutil">Página <%= paginacao.pagina %> de <%= paginacao.totalPaginas %></span>
+        <% if (paginacao.pagina < paginacao.totalPaginas) { %>
+          <a href="<%= base + (paginacao.pagina + 1) %>" class="btn btn-secundario btn-sm">Próxima →</a>
+        <% } %>
+      </div>
+    <% } %>
   <% } %>
 </div>

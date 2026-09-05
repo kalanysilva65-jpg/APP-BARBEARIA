@@ -2,9 +2,13 @@
 const express = require('express');
 const router = express.Router();
 const { exigeDono } = require('../middlewares/auth');
+const { limiteAdmin } = require('../middlewares/rateLimit');
 const mestreController = require('../controllers/mestreController');
 const upload = require('../middlewares/upload');
 
+// Rate-limit agressivo em TODO o painel-mestre (área mais sensível do sistema),
+// antes mesmo do exigeDono. Depois, exige o papel "dono" em toda rota.
+router.use(limiteAdmin);
 router.use(exigeDono);
 
 // Envolve o upload de imagem (logo ou capa) tratando erros com mensagem amigável.
@@ -20,6 +24,7 @@ function uploadImagem(req, res, next) {
 
 // Lista + criação de barbearias
 router.get('/', mestreController.painel);
+router.get('/auditoria', mestreController.auditoriaLista);
 router.get('/nova', mestreController.formNova);
 router.post('/barbearias', mestreController.criarBarbearia);
 
@@ -30,6 +35,8 @@ router.post('/sair', mestreController.sair);
 // Detalhe / edição de uma barbearia
 router.get('/barbearias/:id', mestreController.detalhe);
 router.post('/barbearias/:id', mestreController.atualizarBarbearia);
+router.post('/barbearias/:id/notas', mestreController.salvarNotas);
+router.post('/barbearias/:id/ativa', mestreController.definirAtiva);
 router.post('/barbearias/:id/remover', mestreController.removerBarbearia);
 
 // Equipe da barbearia (barbeiros + e-mail/senha)
@@ -37,6 +44,7 @@ router.post('/barbearias/:id/equipe', mestreController.criarBarbeiro);
 router.get('/barbearias/:id/equipe/:uid/editar', mestreController.formEditarBarbeiro);
 router.post('/barbearias/:id/equipe/:uid', mestreController.atualizarBarbeiro);
 router.post('/barbearias/:id/equipe/:uid/toggle', mestreController.toggleBarbeiro);
+router.post('/barbearias/:id/equipe/:uid/reset-senha', mestreController.resetarSenha);
 
 // Marca (logo + powered-by) da barbearia
 router.post('/barbearias/:id/marca', uploadImagem, mestreController.salvarMarca);
