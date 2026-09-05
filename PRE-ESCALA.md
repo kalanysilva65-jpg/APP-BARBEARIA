@@ -13,9 +13,10 @@ de escalar de verdade (depois do piloto validar).
 
 Se qualquer um destes falhar durante o piloto, você perde a confiança da parceira.
 
-> **Feito nesta sessão (código, testado localmente — falta deploy no VPS):** troca de
-> senha obrigatória, rate-limit, helmet e o backup off-site pronto pra ligar. Veja o
-> commit e as instruções de deploy abaixo do checklist.
+> **JÁ EM PRODUÇÃO (deploy 2026-09-05, verificado ao vivo):** troca de senha obrigatória,
+> rate-limit e helmet. Backup off-site: código pronto, falta você configurar o destino.
+> O painel-mestre (Onda 1) também subiu: auditoria, busca/paginação, suspender/reativar,
+> notas internas, reset de senha do dono, e o redesign no estilo suave claro do app.
 
 - [x] **Trocar as senhas padrão** `dono123` / `admin123`. → Feito via **troca de senha
       obrigatória no 1º login**: a migration marca todo usuário existente como
