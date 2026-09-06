@@ -72,11 +72,6 @@
       <% }) %>
     </div>
 
-    <div class="sv-ag6-barb-info">
-      <div class="sv-ag6-barb-nome" id="ag6-barb-nome"><%= mostrarQualquer ? 'Qualquer disponível' : barbeiros[0].nome %></div>
-      <div class="sv-ag6-barb-papel" id="ag6-barb-papel"><%= mostrarQualquer ? 'Mais rápido para agendar' : _papel(barbeiros[0]) %></div>
-    </div>
-
     <div class="sv-ag6-secao">
       <div class="sv-ag6-secao-tit">Escolhido</div>
       <div class="sv-ag6-secao-val"><%= servicos.map(function (s) { return s.nome; }).join(' + ') %></div>
@@ -95,22 +90,18 @@
   </div>
 
   <script>
-    // O toque no ladrilho só marca a escolha (nome, cartão e destino da barra
+    // O toque no ladrilho só marca a escolha (destaque + destino da barra
     // preta); quem segue pro horário continua sendo a barra — um só jeito de
     // avançar, igual aos outros passos.
     (function () {
       var trilho = document.getElementById('ag6-trilho');
       if (!trilho) return;
       var tiles = Array.prototype.slice.call(trilho.querySelectorAll('.sv-ag6-barb-tile'));
-      var elNome = document.getElementById('ag6-barb-nome');
-      var elPapel = document.getElementById('ag6-barb-papel');
       var cta = document.getElementById('ag6-barb-cta');
 
       tiles.forEach(function (tile) {
         tile.addEventListener('click', function () {
           tiles.forEach(function (t) { t.classList.toggle('ativo', t === tile); });
-          elNome.textContent = tile.dataset.nome;
-          elPapel.textContent = tile.dataset.papel;
           cta.href = tile.dataset.href;
           // Ladrilho na borda da tira: traz o escolhido inteiro pra vista.
           if (tile.scrollIntoView) tile.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
