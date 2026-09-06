@@ -36,9 +36,9 @@
     <div class="sv-ag6-tela">
       <header class="sv-ag6-topo">
         <div class="sv-ag6-marca-linha">
-          <%/* O acesso da equipe ganha a mesma pílula do "Voltar", do lado
-               oposto: é um atalho de uso raro, não merece barra própria. */%>
-          <a href="/login" class="sv-ag6-pilula sv-ag6-pilula--canto sv-ag6-pilula--esq">Equipe</a>
+          <%/* O acesso da equipe (login) saiu do topo público a pedido do dono
+               (2026-09-06): a página é do cliente, e o atalho da equipe poluía.
+               A equipe entra por cortavo.com.br/login direto. */%>
           <a href="/agendar" class="sv-ag6-marca">
             <% if (typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl) { %>
               <img class="sv-ag6-marca-logo" src="<%= marcaLogoUrl %>" alt="<%= agMarca %>" />
