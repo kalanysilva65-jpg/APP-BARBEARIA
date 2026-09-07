@@ -25,11 +25,14 @@
 // "Barbearia Demonstração" no meio das barbearias de verdade.
 //
 // USO
-//   node deploy/conta-revisor-apple.js              # cria e sorteia a senha
-//   node deploy/conta-revisor-apple.js --senha=XXX  # cria com a senha dada
+//   node deploy/conta-revisor-apple.js              # repõe os dados; MANTÉM a senha atual
+//   node deploy/conta-revisor-apple.js --senha=XXX  # (re)define a senha do revisor
 //   node deploy/conta-revisor-apple.js --remover    # apaga tudo (cascata)
 //
-// É idempotente: rodar de novo repõe os dados sem duplicar a barbearia.
+// É idempotente: rodar de novo repõe os dados sem duplicar a barbearia. Sem
+// --senha, a senha do revisor é PRESERVADA — re-rodar só pra atualizar os dados
+// não muda o login que está no formulário de revisão (trocar quebraria uma
+// revisão em andamento). Popula ~1 mês de atendimentos na barbearia demo.
 require('dotenv').config();
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
@@ -88,8 +91,6 @@ async function remover() {
 }
 
 async function criar() {
-  const senha = senhaArg || sortearSenha();
-
   const barbearia = await prisma.barbearia.upsert({
     where: { slug: SLUG },
     update: { ativo: false },
@@ -110,11 +111,21 @@ async function criar() {
   await prisma.servico.deleteMany({ where: { barbeariaId: bid } });
   await prisma.estoque.deleteMany({ where: { barbeariaId: bid } });
 
-  const senhaHash = bcrypt.hashSync(senha, 10);
+  // Senha: PRESERVA a atual quando o revisor já existe e nenhuma --senha veio.
+  // Re-rodar só pra atualizar os DADOS não pode trocar o login que está no
+  // formulário de revisão — trocaria e quebraria uma revisão em andamento.
+  // (Os deleteMany acima não apagam usuários, então o revisor sobrevive.)
+  const revisorExistente = await prisma.usuario.findUnique({
+    where: { barbeariaId_email: { barbeariaId: bid, email: EMAIL } },
+  });
+  const preservarSenha = !!revisorExistente && !senhaArg;
+  const senha = preservarSenha ? null : senhaArg || sortearSenha();
   const revisor = await prisma.usuario.upsert({
     where: { barbeariaId_email: { barbeariaId: bid, email: EMAIL } },
-    update: { senhaHash, ativo: true, papel: 'admin' },
-    create: { barbeariaId: bid, nome: 'App Review', email: EMAIL, senhaHash, papel: 'admin' },
+    update: preservarSenha
+      ? { ativo: true, papel: 'admin' }
+      : { ativo: true, papel: 'admin', senhaHash: bcrypt.hashSync(senha, 10) },
+    create: { barbeariaId: bid, nome: 'App Review', email: EMAIL, senhaHash: bcrypt.hashSync(senha || sortearSenha(), 10), papel: 'admin' },
   });
 
   // Um segundo barbeiro: sem ele a tela de Equipe fica com uma linha só e a
@@ -187,6 +198,12 @@ async function criar() {
     ['Otávio Bastos', '11987650004'],
     ['Henrique Sales', '11987650005'],
     ['Murilo Antunes', '11987650006'],
+    ['Bruno Farias', '11987650007'],
+    ['Diego Lemos', '11987650008'],
+    ['Felipe Ramos', '11987650009'],
+    ['Gustavo Pinto', '11987650010'],
+    ['Leandro Cruz', '11987650011'],
+    ['Marcelo Vidal', '11987650012'],
   ];
   const clientes = [];
   for (const [nome, telefone] of nomesClientes) {
@@ -210,97 +227,113 @@ async function criar() {
     ],
   });
 
-  // [dias atrás, hora, índice do cliente, itens, forma de pagamento]
-  const historico = [
-    [13, '09:00', 0, ['Corte social'], 'pix'],
-    [12, '10:30', 1, ['Corte + barba'], 'credito'],
-    [11, '14:00', 2, ['Corte social', 'Pomada modeladora'], 'dinheiro'],
-    [9, '11:00', 3, ['Barba completa'], 'debito'],
-    [8, '16:00', 4, ['Corte + barba', 'Shampoo anticaspa'], 'credito'],
-    [6, '09:30', 5, ['Pezinho'], 'dinheiro'],
-    [5, '15:00', 0, ['Corte social'], 'pix'],
-    [3, '10:00', 2, ['Corte + barba'], 'pix'],
-    [2, '17:30', 1, ['Barba completa', 'Pomada modeladora'], 'credito'],
-    [1, '13:00', 3, ['Corte social'], 'debito'],
-    // HOJE. A Home abre com "Faturamento hoje" como número principal — sem
-    // atendimento concluído no próprio dia ela mostra R$ 0,00 em destaque, e a
-    // primeira tela que o revisor vê é a de uma barbearia parada.
-    [0, '09:00', 5, ['Corte social'], 'pix'],
-    [0, '10:30', 0, ['Corte + barba', 'Pomada modeladora'], 'credito'],
-    [0, '12:00', 4, ['Pezinho'], 'dinheiro'],
+  // ~1 MÊS de atendimentos, GERADO (pedido do dono, 2026-09-07): antes eram ~13
+  // dias listados à mão; agora cobre 30 dias pra a demo parecer uma barbearia
+  // em uso de verdade. Espalha entre os DOIS barbeiros, várias formas de
+  // pagamento e serviços/combos — assim relatórios, comissões e "por forma"
+  // saem cheios e coerentes.
+  const barbeiros = [revisor, carlos];
+  const horasDia = ['09:00', '09:30', '10:30', '11:00', '11:30', '14:00', '15:00', '16:00', '17:00', '18:00'];
+  const combos = [
+    ['Corte social'],
+    ['Corte + barba'],
+    ['Barba completa'],
+    ['Pezinho'],
+    ['Corte social', 'Pomada modeladora'],
+    ['Corte + barba', 'Shampoo anticaspa'],
+    ['Barba completa', 'Pomada modeladora'],
+    ['Corte social'],
+    ['Corte + barba'],
   ];
+  const formas = ['pix', 'credito', 'dinheiro', 'debito', 'pix', 'credito'];
+
+  // Pseudo-aleatório DETERMINÍSTICO: a mesma demo sai igual toda vez (sem
+  // depender de Math.random), então re-rodar não muda o "jeito" da barbearia.
+  let _seed = 20260907;
+  const rnd = (n) => {
+    _seed = (_seed * 9301 + 49297) % 233280;
+    return Math.floor((_seed / 233280) * n);
+  };
+
+  const historico = [];
+  for (let atras = 30; atras >= 1; atras--) {
+    const d = dia(-atras);
+    if (d.getDay() === 0) continue; // domingo é folga na jornada padrão
+    const qtd = 2 + rnd(4); // 2 a 5 atendimentos por dia
+    const horasUsadas = new Set();
+    for (let k = 0; k < qtd; k++) {
+      let hora;
+      let tent = 0;
+      do {
+        hora = horasDia[rnd(horasDia.length)];
+        tent++;
+      } while (horasUsadas.has(hora) && tent < 12);
+      horasUsadas.add(hora);
+      historico.push({ atras, hora, iBarb: rnd(barbeiros.length), iCliente: rnd(clientes.length), itens: combos[rnd(combos.length)], forma: formas[rnd(formas.length)] });
+    }
+  }
+  // HOJE (só manhã, pra não cair no futuro): a Home abre com "Faturamento hoje"
+  // em destaque — sem atendimento concluído hoje ela mostraria R$ 0,00.
+  historico.push({ atras: 0, hora: '09:00', iBarb: 0, iCliente: rnd(clientes.length), itens: ['Corte social'], forma: 'pix' });
+  historico.push({ atras: 0, hora: '10:30', iBarb: 1, iCliente: rnd(clientes.length), itens: ['Corte + barba', 'Pomada modeladora'], forma: 'credito' });
+  historico.push({ atras: 0, hora: '12:00', iBarb: 0, iCliente: rnd(clientes.length), itens: ['Pezinho'], forma: 'dinheiro' });
 
   let faturado = 0;
-  for (const [atras, hora, iCliente, nomesItens, forma] of historico) {
-    const data = dia(-atras);
-    const cliente = clientes[iCliente];
-    const itens = nomesItens.map((n) => servicos[n]);
+  for (const e of historico) {
+    const data = dia(-e.atras);
+    const cliente = clientes[e.iCliente];
+    const barbeiro = barbeiros[e.iBarb];
+    const itens = e.itens.map((n) => servicos[n]);
     const total = itens.reduce((s, it) => s + it.valor, 0);
     faturado += total;
 
     const ag = await prisma.agendamento.create({
       data: {
         barbeariaId: bid,
-        usuarioId: carlos.id,
+        usuarioId: barbeiro.id,
         clienteId: cliente.id,
         clienteNome: cliente.nome,
         clienteTelefone: cliente.telefone,
         data,
-        horaInicio: hora,
+        horaInicio: e.hora,
         status: 'concluido',
-        concluidoEm: instante(data, hora),
+        concluidoEm: instante(data, e.hora),
         valorTotal: total,
-        formaPagamento: forma,
+        formaPagamento: e.forma,
         itens: { create: itens.map((it) => ({ servicoId: it.id, valorUnitario: it.valor, quantidade: 1 })) },
       },
     });
 
     await prisma.pagamentoAgendamento.create({
-      data: {
-        barbeariaId: bid,
-        agendamentoId: ag.id,
-        valor: total,
-        formaPagamento: forma,
-        parcelas: forma === 'credito' ? 2 : 1,
-      },
+      data: { barbeariaId: bid, agendamentoId: ag.id, valor: total, formaPagamento: e.forma, parcelas: e.forma === 'credito' ? 2 : 1 },
     });
 
-    // Passa pelo serviço de verdade em vez de um INSERT à mão: assim o caixa
-    // da demo nasce exatamente como o de uma barbearia real (uma linha por
-    // forma de pagamento), e o relatório "por forma" sai coerente.
+    // Passa pelo serviço de verdade (uma linha de caixa por forma), depois
+    // corrige a DATA do caixa pro dia/hora do atendimento — senão o serviço
+    // carimba "agora" e o mês inteiro cairia no dia em que o script rodou.
     await registrarEntradaAgendamento(ag);
-
-    // ...mas o serviço carimba `data: new Date()`, que é o certo em produção
-    // (o dinheiro entra quando o atendimento é concluído, agora) e errado aqui:
-    // os 10 atendimentos são retroativos, e todos caíam no dia da EXECUÇÃO do
-    // script. A Home abria com "Faturamento hoje R$ 615,00" — o histórico
-    // inteiro empilhado num dia só.
-    //
-    // Pior que feio, era incoerente: os relatórios contam por `concluidoEm` e
-    // mostrariam o valor espalhado por 14 dias, enquanto o caixa mostraria tudo
-    // hoje. Duas telas do mesmo app discordando é exatamente o tipo de coisa
-    // que um revisor abre e reprova.
-    await prisma.caixa.updateMany({
-      where: { agendamentoId: ag.id },
-      data: { data: instante(data, hora) },
-    });
+    await prisma.caixa.updateMany({ where: { agendamentoId: ag.id }, data: { data: instante(data, e.hora) } });
   }
 
   // Agenda à frente: sem isso o revisor abre o app num dia vazio.
+  // [dias à frente, hora, índice do cliente, itens, índice do barbeiro]
   const futuros = [
-    [0, '15:00', 4, ['Corte social']],
-    [0, '16:30', 5, ['Corte + barba']],
-    [1, '09:00', 0, ['Barba completa']],
-    [1, '11:30', 2, ['Corte social']],
-    [2, '14:00', 3, ['Corte + barba']],
+    [0, '15:00', 4, ['Corte social'], 0],
+    [0, '16:30', 5, ['Corte + barba'], 1],
+    [1, '09:00', 0, ['Barba completa'], 0],
+    [1, '11:30', 2, ['Corte social'], 1],
+    [1, '15:30', 6, ['Corte + barba'], 0],
+    [2, '10:00', 7, ['Corte social'], 1],
+    [2, '14:00', 3, ['Corte + barba'], 0],
+    [3, '16:00', 8, ['Barba completa'], 1],
   ];
-  for (const [frente, hora, iCliente, nomesItens] of futuros) {
-    const cliente = clientes[iCliente];
+  for (const [frente, hora, iCliente, nomesItens, iBarb] of futuros) {
+    const cliente = clientes[iCliente % clientes.length];
     const itens = nomesItens.map((n) => servicos[n]);
     await prisma.agendamento.create({
       data: {
         barbeariaId: bid,
-        usuarioId: carlos.id,
+        usuarioId: barbeiros[iBarb].id,
         clienteId: cliente.id,
         clienteNome: cliente.nome,
         clienteTelefone: cliente.telefone,
@@ -317,19 +350,24 @@ async function criar() {
   console.log('');
   console.log('  Barbearia .. ' + barbearia.nome + '  (slug "' + SLUG + '", oculta do app do cliente)');
   console.log(
-    '  Conteúdo ... ' + historico.length + ' atendimentos concluídos (' + real(faturado) + '), ' +
+    '  Conteúdo ... ' + historico.length + ' atendimentos concluídos em ~30 dias (' + real(faturado) + '), ' +
       futuros.length + ' agendados, ' + clientes.length + ' clientes, ' +
       Object.keys(servicos).length + ' itens no catálogo'
   );
   console.log('');
-  console.log('  ---- copie isto para o campo "Sign-In Information" ----');
-  console.log('  E-mail .. ' + EMAIL);
-  console.log('  Senha ... ' + senha);
-  console.log('  -------------------------------------------------------');
-  console.log('');
-  if (!senhaArg) {
-    console.log('  A senha foi sorteada agora e NÃO fica gravada em lugar nenhum. Anote antes de fechar.');
+  if (preservarSenha) {
+    console.log('  Login do revisor: ' + EMAIL + '  (senha MANTIDA — a mesma que já estava)');
     console.log('');
+  } else {
+    console.log('  ---- copie isto para o campo "Sign-In Information" ----');
+    console.log('  E-mail .. ' + EMAIL);
+    console.log('  Senha ... ' + senha);
+    console.log('  -------------------------------------------------------');
+    console.log('');
+    if (!senhaArg) {
+      console.log('  A senha foi sorteada agora e NÃO fica gravada em lugar nenhum. Anote antes de fechar.');
+      console.log('');
+    }
   }
 }
 
