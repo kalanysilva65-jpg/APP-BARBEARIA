@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Backup em PDF · Cortavo</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex;
+      flex-direction: column;
+      background: #f2f2f2;
+      color: #191919;
+      font-family: 'Overused Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px;
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .bar-tit { font-size: 15px; font-weight: 700; }
+    .fechar {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #191919;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .fechar svg { width: 15px; height: 15px; }
+    .visor { flex: 1; position: relative; min-height: 0; }
+    .visor iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
+    .rodape {
+      flex-shrink: 0;
+      text-align: center;
+      font-size: 12.5px;
+      color: #6b6b6b;
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+      background: #fff;
+      border-top: 1px solid #e0e0e0;
+    }
+    .rodape a { color: #191919; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <span class="bar-tit">Backup em PDF</span>
+    <button type="button" class="fechar" onclick="fecharBackup()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      Fechar
+    </button>
+  </header>
+
+  <div class="visor">
+    <iframe src="/painel/exportar/relatorio.pdf?inline=1" title="Backup em PDF"></iframe>
+  </div>
+
+  <div class="rodape">
+    Não abriu? <a href="/painel/exportar/relatorio.pdf?inline=1" target="_blank" rel="noopener">Abrir o PDF</a>
+  </div>
+
+  <script>
+    function fecharBackup() {
+      // Volta pra onde estava (Mais); se não houver histórico, vai direto.
+      if (document.referrer && history.length > 1) history.back();
+      else window.location.href = '/painel/mais';
+    }
+  </script>
+</body>
+</html>

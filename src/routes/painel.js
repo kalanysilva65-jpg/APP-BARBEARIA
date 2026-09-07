@@ -117,6 +117,7 @@ router.get('/mais', perfilController.ver);
 // JSON = cópia fiel para restaurar; PDF = documento legível para arquivo.
 router.get('/exportar/dados.json', exigeAdmin, exportacaoController.json);
 router.get('/exportar/relatorio.pdf', exigeAdmin, exportacaoController.pdf);
+router.get('/exportar/relatorio', exigeAdmin, exportacaoController.visualizar);
 
 // --- Avisos no aparelho ----------------------------------------------------
 // Agem sempre sobre o usuário logado (nunca sobre um id vindo do corpo), senão

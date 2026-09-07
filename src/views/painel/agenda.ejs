@@ -839,18 +839,22 @@
         var partes = raiz && raiz._coletar ? raiz._coletar() : [];
         var pendentes = raiz && raiz._pendentes ? raiz._pendentes() : [];
 
-        // Linha dividida sem forma escolhida é o engano mais comum aqui.
-        // Reclamar da SOMA nesse caso esconderia a causa: a parte existe, só
-        // não tem como ser registrada.
-        if (partes.length && pendentes.length) {
+        // Forma de pagamento é OBRIGATÓRIA pra concluir (pedido da barbearia):
+        // qualquer linha com valor e sem forma segura o "Concluir", mantém o
+        // pop-up aberto e cobra a seleção — antes, sem nenhuma forma escolhida
+        // ele concluía direto (parecia que "só fechava"). Atendimento sem valor
+        // (plano/incluso, total R$0) não gera pendência, então segue concluindo.
+        if (pendentes.length) {
           if (raiz._marcarPendentes) raiz._marcarPendentes();
-          erro(
-            box,
-            pendentes.length === 1
+          var msgPend;
+          if (!partes.length) {
+            msgPend = 'Escolha a forma de pagamento para concluir o atendimento.';
+          } else {
+            msgPend = pendentes.length === 1
               ? 'Escolha a forma de pagamento da outra parte (ou remova-a no ×).'
-              : 'Escolha a forma de pagamento das outras ' + pendentes.length + ' partes (ou remova-as no ×).',
-            btn
-          );
+              : 'Escolha a forma de pagamento das outras ' + pendentes.length + ' partes (ou remova-as no ×).';
+          }
+          erro(box, msgPend, btn);
           return;
         }
 

@@ -84,7 +84,8 @@
   <% if (ag.status !== 'concluido') { %>
     <%/* A divisão do pagamento é montada por script (linhas entram e saem), e
          o "Concluir" manda tudo junto — é no fim do atendimento que se sabe
-         como o cliente pagou. Continua valendo concluir sem informar nada. */%>
+         como o cliente pagou. A forma de pagamento é obrigatória pra concluir
+         (só atendimento de valor R$0/plano conclui sem forma). */%>
     <div class="sv-ag-pagto"
          data-pagto
          data-ag="<%= ag.id %>"

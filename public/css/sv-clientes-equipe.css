@@ -750,7 +750,7 @@
 
 /* Prévia do card do agendamento público + ajuste de enquadramento por arraste.
    Mostra ao admin exatamente como a foto recorta no card do cliente. */
-.pg-sv .sv-eq-prev-card { padding: 18px 20px; }
+.pg-sv .sv-eq-prev-card { margin: 10px 20px 0; padding: 18px; }
 .pg-sv .sv-eq-prev-tit { font-size: 12.5px; font-weight: 600; color: var(--sv-muted); margin-bottom: 12px; }
 .pg-sv .sv-eq-prev {
   position: relative;

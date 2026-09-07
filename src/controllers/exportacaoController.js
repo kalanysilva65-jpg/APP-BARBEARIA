@@ -59,8 +59,12 @@ async function pdf(req, res) {
   const dados = await coletarDados(req.barbeariaId);
   const nome = `cortavo-backup-${slugArquivo(dados.barbearia && dados.barbearia.nome)}-${dataCurta(new Date()).replace(/\//g, '-')}.pdf`;
 
+  // ?inline=1 → exibe no visualizador (iframe) em vez de forçar download. É o
+  // que a tela "Backup em PDF" usa, pra o cliente ver o PDF com um botão Fechar
+  // dentro do app (na WKWebView o attachment abria o PDF ocupando tudo, sem volta).
+  const inline = req.query.inline === '1';
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="${nome}"`);
+  res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename="${nome}"`);
 
   const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
   doc.pipe(res);
@@ -304,4 +308,12 @@ async function pdf(req, res) {
   doc.end();
 }
 
-module.exports = { json, pdf };
+// GET /painel/exportar/relatorio — tela que mostra o PDF do backup DENTRO do app,
+// com um botão Fechar. Sem ela, tocar no PDF navegava a WKWebView pro arquivo e o
+// cliente ficava preso (sem voltar). Aqui o PDF vai num iframe (?inline=1) e o
+// Fechar sempre traz de volta.
+function visualizar(req, res) {
+  res.render('painel/exportar-pdf', { layout: false, titulo: 'Backup em PDF' });
+}
+
+module.exports = { json, pdf, visualizar };
