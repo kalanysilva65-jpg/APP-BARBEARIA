@@ -1,0 +1,91 @@
+<%/* Aba Metas (design suave). Métrica e escopo configuráveis; progresso do mês.
+     Estilos em public/css/sv-metas.css. */%>
+<div class="sv-tela">
+
+  <div class="sv-mt-topo sv-reveal">
+    <div>
+      <div class="sv-titulo">Metas</div>
+      <div class="sv-mt-mes"><%= mesLabel %></div>
+    </div>
+    <a href="/painel" class="sv-mt-fechar" title="Início" aria-label="Voltar ao início">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </a>
+  </div>
+
+  <% if (itens.length === 0) { %>
+    <div class="sv-cartao sv-mt-vazio sv-reveal">Nenhuma meta ainda. Crie a primeira abaixo.</div>
+  <% } else { %>
+    <% itens.forEach(function (it, i) { %>
+      <div class="sv-cartao sv-mt-card sv-reveal" style="animation-delay:<%= (i * 0.05).toFixed(2) %>s">
+        <div class="sv-mt-card-topo">
+          <div class="sv-mt-card-id">
+            <div class="sv-mt-card-tit"><%= it.label %></div>
+            <div class="sv-mt-card-escopo"><%= it.escopo %></div>
+          </div>
+          <form method="POST" action="/painel/metas/<%= it.id %>/remover" class="inline" onsubmit="return confirm('Remover esta meta?')">
+            <button type="submit" class="sv-mt-x" aria-label="Remover meta">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+          </form>
+        </div>
+        <div class="sv-mt-barra"><div class="sv-mt-fill <%= it.batida ? 'sv-mt-fill--ok' : '' %>" style="width:<%= it.pct %>%"></div></div>
+        <div class="sv-mt-nums">
+          <span class="sv-mt-atual"><%= it.dinheiro ? fmtBRL(it.atual) : it.atual %></span>
+          <span class="sv-mt-alvo">de <%= it.dinheiro ? fmtBRL(it.alvo) : it.alvo %> · <%= it.pct %>%<%= it.batida ? ' · batida ✓' : '' %></span>
+        </div>
+      </div>
+    <% }) %>
+  <% } %>
+
+  <form method="POST" action="/painel/metas" class="sv-cartao sv-mt-nova sv-reveal">
+    <div class="sv-mt-nova-tit">Nova meta</div>
+
+    <label class="sv-mt-campo">
+      <span>Métrica</span>
+      <select name="metrica" id="mt-metrica">
+        <% Object.keys(metricas).forEach(function (k) { %>
+          <option value="<%= k %>" data-dinheiro="<%= metricas[k].dinheiro ? 1 : 0 %>" data-porbarbeiro="<%= metricas[k].porBarbeiro ? 1 : 0 %>"><%= metricas[k].label %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label class="sv-mt-campo">
+      <span>Quem</span>
+      <select name="usuarioId" id="mt-escopo">
+        <option value="">Barbearia toda</option>
+        <% barbeiros.forEach(function (b) { %>
+          <option value="<%= b.id %>"><%= b.nome %></option>
+        <% }) %>
+      </select>
+    </label>
+
+    <label class="sv-mt-campo">
+      <span>Alvo <span id="mt-alvo-hint" class="sv-mt-hint">(R$)</span></span>
+      <input name="alvo" id="mt-alvo" inputmode="decimal" placeholder="0" autocomplete="off" required />
+    </label>
+
+    <button type="submit" class="sv-mt-add">Criar meta</button>
+  </form>
+
+</div>
+
+<script>
+  // "Novos clientes" é só da barbearia (cliente novo não é de um barbeiro), e o
+  // rótulo do alvo alterna entre R$ e quantidade conforme a métrica.
+  (function () {
+    var met = document.getElementById('mt-metrica');
+    var esc = document.getElementById('mt-escopo');
+    var hint = document.getElementById('mt-alvo-hint');
+    if (!met) return;
+    function sync() {
+      var opt = met.options[met.selectedIndex];
+      var dinheiro = opt.getAttribute('data-dinheiro') === '1';
+      var porBarb = opt.getAttribute('data-porbarbeiro') === '1';
+      hint.textContent = dinheiro ? '(R$)' : '(quantidade)';
+      esc.disabled = !porBarb;
+      if (!porBarb) esc.value = '';
+    }
+    met.addEventListener('change', sync);
+    sync();
+  })();
+</script>

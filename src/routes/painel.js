@@ -19,6 +19,7 @@ const relatorioController = require('../controllers/relatorioController');
 const fidelidadeController = require('../controllers/fidelidadeController');
 const notificacaoController = require('../controllers/notificacaoController');
 const exportacaoController = require('../controllers/exportacaoController');
+const metaController = require('../controllers/metaController');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -118,6 +119,11 @@ router.get('/mais', perfilController.ver);
 router.get('/exportar/dados.json', exigeAdmin, exportacaoController.json);
 router.get('/exportar/relatorio.pdf', exigeAdmin, exportacaoController.pdf);
 router.get('/exportar/relatorio', exigeAdmin, exportacaoController.visualizar);
+
+// Metas (admin): metas configuráveis por métrica e escopo, progresso do mês.
+router.get('/metas', exigeAdmin, metaController.listar);
+router.post('/metas', exigeAdmin, metaController.criar);
+router.post('/metas/:id/remover', exigeAdmin, metaController.remover);
 
 // --- Avisos no aparelho ----------------------------------------------------
 // Agem sempre sobre o usuário logado (nunca sobre um id vindo do corpo), senão

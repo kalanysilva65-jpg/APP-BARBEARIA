@@ -54,6 +54,7 @@ model Barbearia {
   resgatesFidelidade FidelidadeResgate[]
   pagamentos         PagamentoAgendamento[]
   servicoInsumos     ServicoInsumo[]
+  metas              Meta[]
 
   @@map("barbearias")
 }
@@ -81,6 +82,7 @@ model Usuario {
   agendamentos     Agendamento[]
   dispositivosPush DispositivoPush[]
   logsAuditoria    LogAuditoria[]
+  metas            Meta[]
 
   // E-mail único DENTRO de cada barbearia (o mesmo e-mail pode existir em barbearias diferentes).
   @@unique([barbeariaId, email])
@@ -510,4 +512,21 @@ model LogAuditoria {
 
   @@index([criadoEm])
   @@map("logs_auditoria")
+}
+
+/// Meta configurável (aba Metas, pedido do dono 2026-09-07). O admin escolhe a
+/// MÉTRICA e o alvo, e o escopo: a barbearia toda (usuarioId nulo) ou um barbeiro.
+/// O progresso é sempre do MÊS corrente (calculado na hora, não guardado).
+model Meta {
+  id          Int      @id @default(autoincrement())
+  barbeariaId Int      @map("barbearia_id")
+  usuarioId   Int?     @map("usuario_id") // nulo = barbearia toda; senão, meta do barbeiro
+  metrica     String // "faturamento" | "atendimentos" | "novos_clientes" | "ticket_medio"
+  alvo        Int // centavos (faturamento/ticket_medio) ou quantidade (atendimentos/novos_clientes)
+  criadoEm    DateTime @default(now()) @map("criado_em")
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  usuario   Usuario?  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("metas")
 }
