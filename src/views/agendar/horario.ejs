@@ -90,13 +90,28 @@
 </div>
 
 <script>
-  // Traz o dia selecionado pra vista: com janela de 14/60 dias a tira fica
-  // longa e o dia atual pode nascer fora da tela depois de trocar de data.
+  // Traz o dia selecionado pra vista, CENTRALIZADO: com janela de 14/60 dias a
+  // tira fica longa e o dia selecionado pode nascer fora da tela.
+  //
+  // Usa getBoundingClientRect em vez de offsetLeft: a tira é position:static, e
+  // offsetLeft mede em relação ao offsetParent (um ancestral posicionado), não à
+  // tira — era isso que rolava pro dia errado (o cliente tinha que voltar pra
+  // esquerda). Roda no parse, num rAF e no load, porque o layout da tira pode
+  // não estar pronto ainda (fontes, transição de tela).
   (function () {
     var tira = document.getElementById('ag6-dias');
     if (!tira) return;
-    var sel = tira.querySelector('.sv-ag6-dia.sel');
-    if (sel) tira.scrollLeft = Math.max(0, sel.offsetLeft - tira.clientWidth / 2 + sel.offsetWidth / 2);
+    function centrar() {
+      var sel = tira.querySelector('.sv-ag6-dia.sel');
+      if (!sel) return;
+      var rTira = tira.getBoundingClientRect();
+      var rSel = sel.getBoundingClientRect();
+      var delta = (rSel.left - rTira.left) - (tira.clientWidth - sel.offsetWidth) / 2;
+      tira.scrollLeft = Math.max(0, tira.scrollLeft + delta);
+    }
+    centrar();
+    requestAnimationFrame(centrar);
+    window.addEventListener('load', centrar);
   })();
 
   // Troca de dia sem recarregar a tela.
