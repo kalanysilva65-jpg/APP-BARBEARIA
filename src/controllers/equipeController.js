@@ -13,6 +13,16 @@ function apagarFoto(fotoUrl) {
   if (caminho) fs.unlink(caminho, () => {});
 }
 
+// Normaliza o enquadramento vindo do formulário ("50% 30%") para um
+// object-position seguro. Qualquer coisa fora do formato vira null (centraliza).
+function normalizarFotoPos(v) {
+  const m = /^(\d{1,3})%\s+(\d{1,3})%$/.exec(String(v || '').trim());
+  if (!m) return null;
+  const x = Math.min(100, Math.max(0, parseInt(m[1], 10)));
+  const y = Math.min(100, Math.max(0, parseInt(m[2], 10)));
+  return x + '% ' + y + '%';
+}
+
 // Ocupação/ticket médio do mês atual — versão enxuta do que já existe em
 // comissaoController (aqui é só um resumo "de relance" no card, o relatório
 // financeiro completo continua em Comissões).
@@ -237,6 +247,9 @@ async function atualizar(req, res) {
     apagarFoto(membro.fotoUrl);
     data.fotoUrl = '/uploads/' + req.file.filename;
   }
+  // Enquadramento da foto no card público (object-position). Só toca no campo
+  // quando o formulário o envia; valor inválido vira null (centralizado).
+  if (req.body.fotoPos !== undefined) data.fotoPos = normalizarFotoPos(req.body.fotoPos);
 
   await prisma.usuario.update({ where: { id }, data });
   req.session.flash = { tipo: 'sucesso', texto: 'Membro atualizado.' };

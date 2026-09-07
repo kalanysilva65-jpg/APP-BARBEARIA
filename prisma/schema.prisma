@@ -68,6 +68,7 @@ model Usuario {
   email       String
   senhaHash   String   @map("senha_hash")
   fotoUrl     String?  @map("foto_url") // foto do barbeiro (em /uploads)
+  fotoPos     String?  @map("foto_pos") // enquadramento da foto no card público (object-position, ex.: "50% 30%")
   papel       String // "dono" | "admin" | "funcionario"
   ativo       Boolean  @default(true)
   senhaProvisoria Boolean @default(false) @map("senha_provisoria") // senha padrão/criada pelo admin: força troca no 1º login

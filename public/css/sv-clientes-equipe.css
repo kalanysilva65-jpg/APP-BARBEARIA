@@ -748,6 +748,31 @@
   white-space: nowrap;
 }
 
+/* Prévia do card do agendamento público + ajuste de enquadramento por arraste.
+   Mostra ao admin exatamente como a foto recorta no card do cliente. */
+.pg-sv .sv-eq-prev-card { padding: 18px 20px; }
+.pg-sv .sv-eq-prev-tit { font-size: 12.5px; font-weight: 600; color: var(--sv-muted); margin-bottom: 12px; }
+.pg-sv .sv-eq-prev {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.6 / 1;
+  border-radius: 22px;
+  overflow: hidden;
+  background: var(--sv-line-2);
+  cursor: grab;
+  touch-action: none; /* o arraste enquadra a foto, não rola a tela */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pg-sv .sv-eq-prev.arrastando { cursor: grabbing; }
+.pg-sv .sv-eq-prev img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.pg-sv .sv-eq-prev-vazia { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--sv-muted); }
+.pg-sv .sv-eq-prev-scrim { position: absolute; left: 0; right: 0; top: 0; height: 84px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0)); pointer-events: none; }
+.pg-sv .sv-eq-prev-topo { position: absolute; left: 0; right: 0; top: 14px; text-align: center; padding: 0 16px; pointer-events: none; }
+.pg-sv .sv-eq-prev-topo .n { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--sv-ink); }
+.pg-sv .sv-eq-prev-topo .r { font-size: 11.5px; font-weight: 600; color: var(--sv-ink-2); margin-top: 2px; }
+.pg-sv .sv-eq-prev-dica { font-size: 11px; font-weight: 500; color: var(--sv-muted-2); margin-top: 10px; text-align: center; }
+
 /* Par de números claros + bloco escuro logo abaixo. */
 .pg-sv .sv-eq-par { display: flex; gap: 10px; padding: 12px 20px 0; }
 .pg-sv .sv-eq-par-cel { flex: 1; min-width: 0; padding: 16px; }

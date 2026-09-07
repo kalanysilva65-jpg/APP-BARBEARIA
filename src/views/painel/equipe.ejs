@@ -133,6 +133,28 @@
           </div>
         </div>
 
+        <%/* Prévia de como a foto aparece no card do agendamento público, com
+             ajuste de enquadramento por ARRASTE (object-position). O que o admin
+             arrasta aqui é o que o cliente vê lá. */%>
+        <div class="sv-cartao sv-eq-prev-card">
+          <div class="sv-eq-prev-tit">Como aparece no agendamento</div>
+          <div class="sv-eq-prev" id="eq-prev-<%= m.id %>" data-pos="<%= m.fotoPos || '50% 50%' %>">
+            <% if (m.fotoUrl) { %>
+              <img id="eq-prev-img-<%= m.id %>" src="<%= m.fotoUrl %>" alt="" style="object-position: <%= m.fotoPos || '50% 50%' %>" />
+            <% } else { %>
+              <img id="eq-prev-img-<%= m.id %>" alt="" hidden />
+              <span class="sv-eq-prev-vazia">Escolha uma foto acima</span>
+            <% } %>
+            <div class="sv-eq-prev-scrim" aria-hidden="true"></div>
+            <div class="sv-eq-prev-topo" aria-hidden="true">
+              <div class="n"><%= m.nome %></div>
+              <div class="r"><%= m.papel === 'funcionario' ? 'Barbeiro' : 'Barbeiro-chefe' %></div>
+            </div>
+          </div>
+          <div class="sv-eq-prev-dica" id="eq-prev-dica-<%= m.id %>"<% if (!m.fotoUrl) { %> hidden<% } %>>Arraste a foto para enquadrar</div>
+          <input type="hidden" name="fotoPos" id="eq-fotopos-<%= m.id %>" value="<%= m.fotoPos || '50% 50%' %>" />
+        </div>
+
         <div class="sv-eq-par">
           <div class="sv-cartao sv-eq-par-cel">
             <div class="sv-eq-num"><%= fmtT6(m.stats.faturado) %></div>
@@ -238,8 +260,60 @@
   // foi escolhida antes de salvar.
   function eqFotoEscolhida(input, id) {
     var dica = document.getElementById('eq-foto-dica-' + id);
-    if (dica && input.files && input.files[0]) dica.textContent = 'Nova foto: ' + input.files[0].name;
+    var arq = input.files && input.files[0];
+    if (dica && arq) dica.textContent = 'Nova foto: ' + arq.name;
+    if (!arq) return;
+    // Atualiza a prévia do agendamento com a foto recém-escolhida e zera o
+    // enquadramento (centralizado), pra o admin ajustar arrastando.
+    var leitor = new FileReader();
+    leitor.onload = function (ev) {
+      var img = document.getElementById('eq-prev-img-' + id);
+      var box = document.getElementById('eq-prev-' + id);
+      var hidden = document.getElementById('eq-fotopos-' + id);
+      var prevDica = document.getElementById('eq-prev-dica-' + id);
+      if (img) { img.src = ev.target.result; img.hidden = false; img.style.objectPosition = '50% 50%'; }
+      if (box) { box.setAttribute('data-pos', '50% 50%'); var vazia = box.querySelector('.sv-eq-prev-vazia'); if (vazia) vazia.remove(); }
+      if (hidden) hidden.value = '50% 50%';
+      if (prevDica) prevDica.hidden = false;
+    };
+    leitor.readAsDataURL(arq);
   }
+
+  // Ajuste de enquadramento por ARRASTE em cada prévia (grab-and-move da foto).
+  // Escreve object-position no hidden input `fotoPos`, que o backend salva e o
+  // card do agendamento público aplica.
+  (function () {
+    function limita(v) { return Math.max(0, Math.min(100, v)); }
+    Array.prototype.forEach.call(document.querySelectorAll('.sv-eq-prev'), function (box) {
+      var id = box.id.replace('eq-prev-', '');
+      var img = document.getElementById('eq-prev-img-' + id);
+      var hidden = document.getElementById('eq-fotopos-' + id);
+      var m = /(\d+)%\s+(\d+)%/.exec(box.getAttribute('data-pos') || '');
+      var px = m ? +m[1] : 50, py = m ? +m[2] : 50;
+      function aplica() {
+        var val = Math.round(px) + '% ' + Math.round(py) + '%';
+        if (img) img.style.objectPosition = val;
+        if (hidden) hidden.value = val;
+      }
+      var arrastando = false, sx = 0, sy = 0, spx = 0, spy = 0;
+      box.addEventListener('pointerdown', function (e) {
+        if (!img || !img.getAttribute('src')) return; // sem foto, nada a enquadrar
+        arrastando = true; sx = e.clientX; sy = e.clientY; spx = px; spy = py;
+        box.classList.add('arrastando');
+        try { box.setPointerCapture(e.pointerId); } catch (_) {}
+      });
+      box.addEventListener('pointermove', function (e) {
+        if (!arrastando) return;
+        var r = box.getBoundingClientRect();
+        px = limita(spx - (e.clientX - sx) / r.width * 100);
+        py = limita(spy - (e.clientY - sy) / r.height * 100);
+        aplica();
+      });
+      function fim() { arrastando = false; box.classList.remove('arrastando'); }
+      box.addEventListener('pointerup', fim);
+      box.addEventListener('pointercancel', fim);
+    });
+  })();
 
   // Troca de aba sem recarregar: as duas listas já vêm renderizadas. O
   // ?aba=historico do servidor só decide qual nasce visível.
