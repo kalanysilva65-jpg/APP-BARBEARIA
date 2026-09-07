@@ -529,7 +529,68 @@
 .sv-ag6-servico.sel .sv-ag6-servico-foto { background: rgba(224, 224, 224, 0.16); }
 
 /* -------------------------------------------------------------------------
-   PASSO 2 — Barbeiro (tira de ladrilhos + cartão do escolhido)
+   PASSO 2 — Barbeiro
+   Card no estilo da referência (pedido do dono, 2026-09-06): cartão branco com
+   moldura fina, foto grande arredondada, NOME sobre a foto (com degradê branco
+   no topo para legibilidade em qualquer foto) e rodapé branco com status +
+   pílula de ação. Um card por linha. Substitui a antiga tira de ladrilhos
+   (.sv-ag6-barb-*, mantida abaixo mas sem uso).
+   ------------------------------------------------------------------------- */
+.sv-ag6-bc-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 20px 4px;
+}
+.sv-ag6-bc {
+  display: block;
+  width: 100%;
+  border: none;
+  text-align: left;
+  background: var(--sv-card);
+  border-radius: 30px;
+  padding: 7px;
+  cursor: pointer;
+  box-shadow: var(--sv-sombra);
+  outline: 0 solid var(--sv-ink);
+  outline-offset: 2px;
+  transition: outline-width 0.15s ease, transform 0.18s ease, box-shadow 0.25s ease;
+  animation: svAgChipIn 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.05) both;
+  font-family: inherit;
+}
+.sv-ag6-bc:active { transform: scale(0.985); }
+.sv-ag6-bc.ativo { outline-width: 3px; box-shadow: var(--sv-sombra-escura); }
+.sv-ag6-bc-foto {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  height: 210px;
+  background: linear-gradient(150deg, #dcd7d2, #c8c2bb 55%, #b7b1a9);
+}
+.sv-ag6-bc--any .sv-ag6-bc-foto { background: var(--sv-bg); }
+.sv-ag6-bc-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.sv-ag6-bc-silhueta { position: absolute; left: 50%; bottom: -8%; transform: translateX(-50%); width: 72%; height: 82%; color: rgba(25, 25, 25, 0.24); }
+.sv-ag6-bc-silhueta svg { width: 100%; height: 100%; }
+.sv-ag6-bc-icone { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--sv-muted-2); }
+.sv-ag6-bc-icone svg { width: 52px; height: 52px; }
+.sv-ag6-bc-scrim { position: absolute; left: 0; right: 0; top: 0; height: 100px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0)); }
+.sv-ag6-bc-topo { position: absolute; left: 0; right: 0; top: 16px; text-align: center; padding: 0 16px; }
+.sv-ag6-bc-nome { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; color: var(--sv-ink); }
+.sv-ag6-bc-papel { display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; font-size: 12.5px; font-weight: 600; color: var(--sv-ink-2); }
+.sv-ag6-bc-tesoura { width: 14px; height: 14px; }
+.sv-ag6-bc-rodape { display: flex; align-items: center; justify-content: space-between; padding: 12px 10px 8px; }
+.sv-ag6-bc-status { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--sv-muted); }
+.sv-ag6-bc-dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; }
+.sv-ag6-bc-acao { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 10px 16px; font-size: 13px; font-weight: 600; background: var(--sv-card); color: var(--sv-ink); border: 1px solid var(--sv-line); }
+.sv-ag6-bc.ativo .sv-ag6-bc-acao { background: var(--sv-ink); color: #fff; border-color: var(--sv-ink); }
+.sv-ag6-bc-acao-e { display: inline-flex; }
+.sv-ag6-bc-acao-s { display: none; align-items: center; gap: 6px; }
+.sv-ag6-bc.ativo .sv-ag6-bc-acao-e { display: none; }
+.sv-ag6-bc.ativo .sv-ag6-bc-acao-s { display: inline-flex; }
+.sv-ag6-bc-acao-s svg { width: 14px; height: 14px; }
+
+/* -------------------------------------------------------------------------
+   PASSO 2 — Barbeiro (tira de ladrilhos ANTIGA — sem uso, mantida por ora)
    ------------------------------------------------------------------------- */
 .sv-ag6-barb-trilho {
   display: flex;

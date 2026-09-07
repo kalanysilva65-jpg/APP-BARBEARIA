@@ -43,31 +43,60 @@
       <div class="sv-ag6-secao-tit">Escolha o barbeiro</div>
     </div>
 
-    <div class="sv-ag6-barb-trilho sv-ag6-sem-sb" id="ag6-trilho">
+    <%
+      // Pílula de ação do rodapé do card: "Escolher" quando não marcado,
+      // "Selecionado" (com check) quando marcado. Os dois estados vão no HTML;
+      // o CSS mostra o certo conforme a classe .ativo.
+    %>
+    <div class="sv-ag6-bc-lista" id="ag6-trilho">
       <% var _d = 0; %>
       <% if (mostrarQualquer) { %>
-        <button type="button" class="sv-ag6-barb-tile ativo" data-nome="Qualquer disponível" data-papel="Mais rápido para agendar" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=any" style="animation-delay:0.06s">
-          <span class="sv-ag6-barb-avatar">
-            <span class="sv-ag6-barb-iniciais" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 20a7 7 0 0 1 14 0" /><circle cx="12" cy="8" r="4" /></svg>
+        <button type="button" class="sv-ag6-bc sv-ag6-bc--any ativo" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=any" style="animation-delay:0.06s">
+          <div class="sv-ag6-bc-foto">
+            <span class="sv-ag6-bc-icone" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 20a7 7 0 0 1 14 0" /><circle cx="12" cy="8" r="4" /></svg>
             </span>
-          </span>
-          <span class="sv-ag6-barb-tile-nome">Qualquer</span>
-          <span class="sv-ag6-barb-tile-meta">mais rápido</span>
+            <div class="sv-ag6-bc-topo">
+              <div class="sv-ag6-bc-nome">Qualquer disponível</div>
+              <div class="sv-ag6-bc-papel">Mais rápido para agendar</div>
+            </div>
+          </div>
+          <div class="sv-ag6-bc-rodape">
+            <span class="sv-ag6-bc-status"><span class="sv-ag6-bc-dot"></span> Vários barbeiros</span>
+            <span class="sv-ag6-bc-acao">
+              <span class="sv-ag6-bc-acao-e">Escolher</span>
+              <span class="sv-ag6-bc-acao-s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Selecionado</span>
+            </span>
+          </div>
         </button>
         <% _d = 1; %>
       <% } %>
       <% barbeiros.forEach(function (b, i) { %>
-        <button type="button" class="sv-ag6-barb-tile <%= (!mostrarQualquer && i === 0) ? 'ativo' : '' %>" data-nome="<%= b.nome %>" data-papel="<%= _papel(b) %>" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= b.id %>" style="animation-delay:<%= (0.06 + (i + _d) * 0.06).toFixed(2) %>s">
-          <span class="sv-ag6-barb-avatar">
+        <button type="button" class="sv-ag6-bc <%= (!mostrarQualquer && i === 0) ? 'ativo' : '' %>" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= b.id %>" style="animation-delay:<%= (0.06 + (i + _d) * 0.06).toFixed(2) %>s">
+          <div class="sv-ag6-bc-foto">
             <% if (b.fotoUrl) { %>
               <img src="<%= b.fotoUrl %>" alt="<%= b.nome %>" />
             <% } else { %>
-              <span class="sv-ag6-barb-iniciais"><%= _iniciais(b.nome) %></span>
+              <span class="sv-ag6-bc-silhueta" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M4 21a8 8 0 0 1 16 0" /><circle cx="12" cy="8" r="4.2" /></svg>
+              </span>
             <% } %>
-          </span>
-          <span class="sv-ag6-barb-tile-nome"><%= _primeiroNome(b.nome) %></span>
-          <span class="sv-ag6-barb-tile-meta"><%= _papelCurto(b) %></span>
+            <div class="sv-ag6-bc-scrim"></div>
+            <div class="sv-ag6-bc-topo">
+              <div class="sv-ag6-bc-nome"><%= b.nome %></div>
+              <div class="sv-ag6-bc-papel">
+                <svg class="sv-ag6-bc-tesoura" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12" /></svg>
+                <%= _papel(b) %>
+              </div>
+            </div>
+          </div>
+          <div class="sv-ag6-bc-rodape">
+            <span class="sv-ag6-bc-status"><span class="sv-ag6-bc-dot"></span> Disponível</span>
+            <span class="sv-ag6-bc-acao">
+              <span class="sv-ag6-bc-acao-e">Escolher</span>
+              <span class="sv-ag6-bc-acao-s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Selecionado</span>
+            </span>
+          </div>
         </button>
       <% }) %>
     </div>
@@ -96,14 +125,14 @@
     (function () {
       var trilho = document.getElementById('ag6-trilho');
       if (!trilho) return;
-      var tiles = Array.prototype.slice.call(trilho.querySelectorAll('.sv-ag6-barb-tile'));
+      var tiles = Array.prototype.slice.call(trilho.querySelectorAll('.sv-ag6-bc'));
       var cta = document.getElementById('ag6-barb-cta');
 
       tiles.forEach(function (tile) {
         tile.addEventListener('click', function () {
           tiles.forEach(function (t) { t.classList.toggle('ativo', t === tile); });
           cta.href = tile.dataset.href;
-          // Ladrilho na borda da tira: traz o escolhido inteiro pra vista.
+          // Traz o card escolhido inteiro pra vista.
           if (tile.scrollIntoView) tile.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
         });
       });
