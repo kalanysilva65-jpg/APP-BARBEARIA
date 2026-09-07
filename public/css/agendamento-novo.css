@@ -396,9 +396,21 @@
 }
 .sv-ag6-acao:active { transform: scale(0.985); }
 .sv-ag6-acao > span { min-width: 0; }
+/* Layout novo (2026-09-07): preço/resumo como INFO à esquerda; o "Continuar"
+   com seta vira o chip de ação à direita — antes o botão se nomeava pelo próximo
+   passo ("Escolher barbeiro") com o preço do lado e parecia painel, não botão. */
+.sv-ag6-acao-info { display: flex; flex-direction: column; min-width: 0; }
 .sv-ag6-acao-rot { display: block; font-size: 14px; font-weight: 600; color: var(--sv-line); }
-.sv-ag6-acao-sub { display: block; font-size: 11.5px; font-weight: 500; color: var(--sv-muted-2); margin-top: 4px; }
-.sv-ag6-acao-total { display: block; font-size: 22px; font-weight: 600; color: var(--sv-line); letter-spacing: -0.8px; flex-shrink: 0; }
+.sv-ag6-acao-total { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.6px; }
+.sv-ag6-acao-sub { font-size: 11.5px; font-weight: 500; color: var(--sv-muted-2); margin-top: 3px; }
+.sv-ag6-acao-cta { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; font-size: 15px; font-weight: 700; color: #fff; background: rgba(255, 255, 255, 0.16); border-radius: 999px; padding: 10px 16px; }
+.sv-ag6-acao-cta svg { width: 18px; height: 18px; }
+.sv-ag6-acao-vazio { display: block; width: 100%; text-align: center; font-size: 14px; font-weight: 600; color: var(--sv-muted-2); }
+/* `display:flex/inline-flex` acima venceria o [hidden] do navegador — este guarda
+   garante que esconder de fato esconde (senão vazio + info + cta apareciam juntos). */
+.sv-ag6-acao-vazio[hidden],
+.sv-ag6-acao-info[hidden],
+.sv-ag6-acao-cta[hidden] { display: none !important; }
 
 /* Ação simples: pílula com o rótulo centralizado. */
 .sv-ag6-acao--simples {
@@ -419,6 +431,7 @@
   box-shadow: none;
   cursor: default;
   pointer-events: none;
+  justify-content: center; /* sem escolha só resta a frase — centraliza */
 }
 .sv-ag6-acao:disabled .sv-ag6-acao-rot,
 .sv-ag6-acao:disabled .sv-ag6-acao-sub,

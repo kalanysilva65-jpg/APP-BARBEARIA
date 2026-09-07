@@ -81,11 +81,15 @@
        ela usa o par de cores inerte fio/apoio claro. */%>
   <div class="sv-ag6-barra">
     <button class="sv-ag6-acao sv-ag6-inerte" type="submit" form="form-servicos" id="btn-continuar" disabled>
-      <span>
-        <span class="sv-ag6-acao-rot" id="ag6-cta-rot">Escolha um serviço</span>
-        <span class="sv-ag6-acao-sub" id="ag6-cta-sub">para seguir pro barbeiro</span>
+      <span class="sv-ag6-acao-vazio" id="ag6-cta-vazio">Escolha um serviço para continuar</span>
+      <span class="sv-ag6-acao-info" id="ag6-cta-info" hidden>
+        <span class="sv-ag6-acao-total" id="ag6-cta-total">R$0</span>
+        <span class="sv-ag6-acao-sub" id="ag6-cta-sub"></span>
       </span>
-      <span class="sv-ag6-acao-total" id="ag6-cta-total">R$0</span>
+      <span class="sv-ag6-acao-cta" id="ag6-cta-cta" hidden>
+        Continuar
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+      </span>
     </button>
   </div>
 
@@ -141,10 +145,12 @@
       const total = ids.reduce(function (s, id) { return s + precos[id]; }, 0);
       const min = duracaoSelecao(ids);
       document.getElementById('ag6-cta-total').textContent = fmtT6Local(total);
-      document.getElementById('ag6-cta-rot').textContent = n ? 'Escolher barbeiro' : 'Escolha um serviço';
-      document.getElementById('ag6-cta-sub').textContent = n
-        ? n + ' serviço' + (n > 1 ? 's' : '') + ' · ' + fmtDuracaoLocal(min)
-        : 'para seguir pro barbeiro';
+      document.getElementById('ag6-cta-sub').textContent =
+        n + ' serviço' + (n > 1 ? 's' : '') + ' · ' + fmtDuracaoLocal(min);
+      // Vazio (nada escolhido) x info + "Continuar" (com escolha).
+      document.getElementById('ag6-cta-vazio').hidden = n > 0;
+      document.getElementById('ag6-cta-info').hidden = n === 0;
+      document.getElementById('ag6-cta-cta').hidden = n === 0;
     }
     function validarSelecao() {
       return selecionados.size > 0;

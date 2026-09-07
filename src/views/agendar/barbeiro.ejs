@@ -110,11 +110,14 @@
 
   <div class="sv-ag6-barra">
     <a class="sv-ag6-acao" id="ag6-barb-cta" href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= barbeiros[0].id %>">
-      <span>
-        <span class="sv-ag6-acao-rot">Escolher horário</span>
+      <span class="sv-ag6-acao-info">
+        <span class="sv-ag6-acao-total"><%= assinatura ? 'Incluso' : fmtT6(valorTotal) %></span>
         <span class="sv-ag6-acao-sub"><%= resumoServicos %></span>
       </span>
-      <span class="sv-ag6-acao-total"><%= assinatura ? 'Incluso' : fmtT6(valorTotal) %></span>
+      <span class="sv-ag6-acao-cta">
+        Continuar
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+      </span>
     </a>
   </div>
 
