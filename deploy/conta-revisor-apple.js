@@ -84,8 +84,13 @@ async function remover() {
     console.log('Nada a remover: não existe barbearia com slug "' + SLUG + '".');
     return;
   }
-  // onDelete: Cascade nas relações de Barbearia leva junto usuários,
-  // agendamentos, caixa, clientes e estoque.
+  // Apaga os agendamentos ANTES: a relação Agendamento->Usuario é Restrict de
+  // propósito (não perder histórico se um barbeiro sai), então o cascade da
+  // barbearia falharia ao remover os usuários enquanto agendamentos os
+  // referenciam. Removidos os agendamentos (com itens/pagamentos em cascata),
+  // o resto (usuários, caixa, clientes, serviços, estoque, metas) sai pelo
+  // cascade da barbearia.
+  await prisma.agendamento.deleteMany({ where: { barbeariaId: b.id } });
   await prisma.barbearia.delete({ where: { id: b.id } });
   console.log('Removida a barbearia "' + b.nome + '" (id ' + b.id + ') e tudo que dependia dela.');
 }
