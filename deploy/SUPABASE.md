@@ -1,174 +1,128 @@
-# Migração SQLite → Postgres (Supabase)
+# Virada SQLite → Postgres (Supabase) — checklist de execução
 
-Runbook da **Fase 1** do roadmap de escala. Objetivo: sair do SQLite (um escritor
-por vez) para um Postgres gerenciado, que aguenta escrita concorrente — pré-requisito
-para a IA no app e, principalmente, para a IA no WhatsApp criar agendamentos sozinha.
+Runbook da **Fase 1**. Objetivo: sair do SQLite (um escritor por vez) para o
+Postgres do Supabase, que aguenta escrita concorrente — pré-requisito para a IA no
+WhatsApp criar agendamentos sozinha.
 
-O schema do Cortavo é **quase 100% compatível** com Postgres: sem enums, sem tipos
-exóticos, sem query crua. A virada é pequena e **reversível** — mantemos o `.db` do
-SQLite e um export em JSON como rede de segurança.
+**O trabalho de código já está PRONTO** na branch `infra/supabase`:
+- `schema.prisma` → provider `postgresql` + `directUrl`.
+- Migration inicial de Postgres já gerada (`prisma/migrations/20260908000000_init_postgres`).
+  As migrations antigas de SQLite foram para `prisma/migrations_sqlite_backup/`.
+- Os 2 `contains` da busca com `mode: 'insensitive'` (senão viram case-sensitive).
 
----
-
-## Antes de começar — o que decidir
-
-- **Plano.** O *free tier* do Supabase **pausa o banco após ~1 semana** de baixa
-  atividade. Para uma barbearia de verdade isso é inaceitável (o app cairia). Para
-  produção, use o plano **Pro (~US$25/mês)**. Dá para começar no free só para testar
-  a migração.
-- **Região.** Escolha **South America (São Paulo)** — menor latência para o VPS e
-  dados no Brasil (bom para LGPD).
-- **Uploads e sessões continuam no disco do VPS.** Só o banco vai para o Supabase.
-  `APP_DATA_DIR` segue obrigatório (fotos, sessões).
+Este documento é só a **sequência de execução da virada**. Ela é **reversível**: só
+LEMOS o SQLite (nunca apagamos), então dá para voltar.
 
 ---
 
-## Passo 0 — Criar o projeto no Supabase
+## Projeto Supabase (já criado)
 
-1. Criar projeto, região **São Paulo**, definir uma senha forte do banco (guardar
-   no gerenciador de senhas — ela entra na connection string).
-2. Em **Project Settings → Database → Connection string**, copiar as DUAS:
-   - **Transaction pooler** (porta **6543**) → vira `DATABASE_URL` (o app usa esta).
-   - **Direct connection** (porta **5432**) → vira `DIRECT_URL` (as migrations usam esta).
-
-Formato (exemplo):
+- Projeto `cortavo`, região **South America (São Paulo)**, Data API desligada.
+- `.env` de produção precisa destas duas linhas (troque `SENHA` pela real):
 
 ```
-DATABASE_URL="postgresql://postgres.xxxx:SENHA@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
-DIRECT_URL="postgresql://postgres.xxxx:SENHA@aws-0-sa-east-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL="postgresql://postgres.cpxxfkadmgcyhsolyebb:SENHA@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.cpxxfkadmgcyhsolyebb:SENHA@aws-0-sa-east-1.pooler.supabase.com:5432/postgres"
 ```
 
-> O `pgbouncer=true` é obrigatório na URL pooled — sem ele o Prisma tenta usar
-> prepared statements que o pgBouncer (modo transaction) não suporta.
+> As duas passam pelo **pooler** (IPv4). `pgbouncer=true` é obrigatório na primeira.
 
 ---
 
-## Passo 1 — Exportar os dados atuais (AINDA no SQLite)
+## A ORDEM IMPORTA
 
-No estado atual do repositório (schema `provider = "sqlite"`), com a `DATABASE_URL`
-apontando para o `app.db` de produção:
+O `--exportar` lê o SQLite e **tem que rodar ANTES** do `git pull` que troca o schema
+para Postgres — depois do pull, o Prisma Client vira Postgres e não lê mais o `.db`.
+Faça na janela com a **barbearia fechada** (sem agendamentos entrando no meio).
+
+---
+
+## Passo 1 — Exportar os dados de produção (VPS, ainda SQLite)
 
 ```bash
-node deploy/migrar-supabase.js --exportar
+cd /home/cortavo/app
+sudo -u cortavo node deploy/migrar-supabase.js --exportar
 ```
 
-Gera `deploy/_migracao-dados.json`. **Anote as contagens** que ele imprime — vamos
-conferir depois. Guarde esse arquivo e uma cópia do `app.db`.
-
----
-
-## Passo 2 — Trocar o código para Postgres
-
-Três edições. Faça todas juntas (elas quebram o SQLite, então é um corte único).
-
-### 2a. `prisma/schema.prisma` — datasource
-
-```prisma
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-}
-```
-
-### 2b. Busca case-insensitive (2 lugares)
-
-No Postgres, `contains` é **case-sensitive** por padrão — a busca pararia de achar
-"João" ao digitar "joão". Adicione `mode: 'insensitive'`:
-
-- `src/controllers/appClienteController.js` (~linha 41):
-  ```js
-  ...(termo ? { nome: { contains: termo, mode: 'insensitive' } } : {}),
-  ```
-- `src/controllers/mestreController.js` (~linha 75):
-  ```js
-  where.OR = [
-    { nome: { contains: q, mode: 'insensitive' } },
-    { slug: { contains: q.toLowerCase(), mode: 'insensitive' } },
-  ];
-  ```
-
-### 2c. Novas migrations para Postgres
-
-As migrations em `prisma/migrations/` são SQL de SQLite e **não** aplicam no
-Postgres. Gere um baseline novo:
+Gera `deploy/_migracao-dados.json` no VPS. **Anote as contagens** que ele imprime.
+Faça também uma cópia de segurança do banco atual:
 
 ```bash
-# aponte o ambiente local para o Supabase (DATABASE_URL/DIRECT_URL no .env)
-mv prisma/migrations prisma/migrations_sqlite_backup
-npx prisma migrate dev --name init_postgres
+sudo -u cortavo cp /home/cortavo/cortavo-data/app.db /home/cortavo/cortavo-data/app.db.pre-supabase
 ```
 
-Isso cria as tabelas no Supabase e grava a migration nova (commitar depois).
-Regenere o client: `npx prisma generate`.
+## Passo 2 — Subir o código da virada
 
----
-
-## Passo 3 — Importar os dados
-
-Com as tabelas já criadas (Passo 2c) e `DATABASE_URL` no Supabase:
+Da sua máquina, juntar a branch e publicar:
 
 ```bash
-node deploy/migrar-supabase.js --importar
+git checkout design/suave && git merge infra/supabase
+git push origin design/suave && git push hostinger design/suave:main
 ```
 
-Ele insere tudo preservando os IDs e **reajusta as sequences** (senão o próximo
-insert do app colidiria com um ID já usado). Confira que as contagens batem com as
-do Passo 1.
-
----
-
-## Passo 4 — Verificar ANTES de virar produção
-
-Rode o app local apontado para o Supabase e teste:
-
-- [ ] Login do dono e de um barbeiro.
-- [ ] Agenda do dia carrega; concluir um atendimento grava no caixa.
-- [ ] **Criar um agendamento novo** (testa a sequence de ID — o ponto mais
-      provável de falha se o Passo 3 não reajustou as sequences).
-- [ ] Busca de cliente/barbearia achando com maiúscula/minúscula/acento (testa o 2b).
-- [ ] Relatórios/faturamento com números iguais aos de antes.
-
-Só depois de tudo verde, seguir para o deploy.
-
----
-
-## Passo 5 — Deploy no VPS
+No VPS:
 
 ```bash
 cd /home/cortavo/app
 sudo -u cortavo git pull
 sudo -u cortavo npm install
-# .env do VPS: definir DATABASE_URL e DIRECT_URL do Supabase, REMOVER a antiga file:
-sudo -u cortavo npx prisma migrate deploy
-sudo -u cortavo npx prisma generate
+```
+
+## Passo 3 — Apontar o `.env` para o Supabase
+
+Editar `/home/cortavo/app/.env`: **comentar/remover** a `DATABASE_URL="file:..."`
+antiga e colocar as duas linhas do Supabase (seção acima, com a senha real).
+**Manter** `APP_DATA_DIR` e `APP_DOMAIN` — uploads e sessões seguem no disco.
+
+## Passo 4 — Criar as tabelas e importar os dados (no Supabase)
+
+```bash
+cd /home/cortavo/app
+sudo -u cortavo npx prisma migrate deploy   # cria o schema no Supabase
+sudo -u cortavo npx prisma generate         # client Postgres
+sudo -u cortavo node deploy/migrar-supabase.js --importar   # popula (IDs + sequences)
+```
+
+Confira que as contagens do `--importar` batem com as do Passo 1.
+
+## Passo 5 — Reiniciar e verificar
+
+```bash
 sudo systemctl restart cortavo
 ```
 
-O import (Passo 3) pode ser feito a partir da sua máquina apontando para o Supabase
-(o banco é o mesmo, na nuvem) — não precisa reimportar no VPS.
+Testar no app real:
+- [ ] Login do dono e de um barbeiro.
+- [ ] Agenda do dia carrega; **concluir** um atendimento grava no caixa.
+- [ ] **Criar um agendamento novo** — testa a sequence de ID (o ponto mais provável
+      de falha se as sequences não subiram no import).
+- [ ] Busca de cliente/barbearia com maiúscula/minúscula/acento.
+- [ ] Faturamento/relatórios com números iguais aos de antes.
 
 ---
 
 ## Rollback (se algo der errado)
 
-A virada é reversível enquanto você mantém:
+O SQLite ficou intacto (só foi lido) e você tem o `.db.pre-supabase`. Para voltar:
 
-1. O `app.db` do SQLite intacto (não apagar por semanas).
-2. O `deploy/_migracao-dados.json`.
+```bash
+cd /home/cortavo/app
+# 1) .env: voltar DATABASE_URL="file:/home/cortavo/cortavo-data/app.db", remover DIRECT_URL
+sudo -u cortavo git checkout design/suave   # (antes do merge, ou git revert do merge)
+sudo -u cortavo npm install && sudo -u cortavo npx prisma generate
+sudo systemctl restart cortavo
+```
 
-Para voltar: `git revert` das edições do Passo 2, restaurar `prisma/migrations`,
-voltar `DATABASE_URL` para o `file:...app.db` no `.env`, `npx prisma generate`,
-restart. O SQLite volta exatamente como estava.
+O app volta ao SQLite exatamente como estava. Guarde o `app.db.pre-supabase` e o
+`_migracao-dados.json` por algumas semanas antes de descartar.
 
 ---
 
-## Depois da migração — ganhos e próximos cuidados
+## Depois da virada
 
-- **Backups:** o Supabase Pro faz backup diário automático. Ainda assim, mantenha um
-  `pg_dump` periódico próprio (adapte o `deploy/backup.sh`).
-- **Conexões:** a URL pooled com `connection_limit=1` por processo é o recomendado
-  para apps serverless/single-process; se o app escalar para vários workers, revisar.
+- **Backups:** o Supabase Pro faz backup diário. Ainda assim, um `pg_dump` periódico
+  próprio é saudável (adaptar `deploy/backup.sh`).
 - **Segredos:** `DATABASE_URL`/`DIRECT_URL` só no `.env` do VPS, nunca no git. A
-  `service_role` key do Supabase **não é usada** (o app fala Postgres direto via
-  Prisma) — não colocá-la no servidor reduz superfície de ataque.
+  `service_role` key do Supabase **não é usada** (Prisma fala Postgres direto).
+- **Custo:** o free tier pausa após ~1 semana de baixa atividade — para produção,
+  **plano Pro (~US$25/mês)**.

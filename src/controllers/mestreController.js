@@ -68,11 +68,11 @@ async function painel(req, res) {
   const status = ['ativa', 'inativa'].includes(req.query.status) ? req.query.status : 'todas';
   const pagina = Math.max(1, parseInt(req.query.pagina, 10) || 1);
 
-  // Monta o filtro a partir da busca (nome OU slug) e do status. SQLite no
-  // Prisma não tem `mode: insensitive`; o slug já é minúsculo e a busca por
-  // nome casa por substring — suficiente pra uma lista de assinantes.
+  // Monta o filtro a partir da busca (nome OU slug) e do status. No Postgres o
+  // `contains` é case-sensitive por padrão, então usamos mode: 'insensitive'
+  // para a busca por nome achar independentemente de maiúsculas/minúsculas.
   const where = {};
-  if (q) where.OR = [{ nome: { contains: q } }, { slug: { contains: q.toLowerCase() } }];
+  if (q) where.OR = [{ nome: { contains: q, mode: 'insensitive' } }, { slug: { contains: q.toLowerCase() } }];
   if (status === 'ativa') where.ativo = true;
   else if (status === 'inativa') where.ativo = false;
 

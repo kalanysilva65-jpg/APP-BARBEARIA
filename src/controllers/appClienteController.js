@@ -38,7 +38,7 @@ async function home(req, res) {
   const barbearias = await prisma.barbearia.findMany({
     where: {
       ativo: true,
-      ...(termo ? { nome: { contains: termo } } : {}),
+      ...(termo ? { nome: { contains: termo, mode: 'insensitive' } } : {}),
     },
     orderBy: { nome: 'asc' },
   });
