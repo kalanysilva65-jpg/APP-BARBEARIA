@@ -19,6 +19,8 @@
 
   <% if (!iaAtiva) { %>
     <div class="sv-cv-avisoia sv-reveal">Respostas automáticas <strong>desligadas</strong> (falta a chave da IA). Você ainda pode responder manualmente.</div>
+  <% } else if (tetoAtingido) { %>
+    <div class="sv-cv-avisoteto sv-reveal">⚠️ <strong>Teto de IA do mês atingido</strong> — respostas automáticas pausadas para conter custo. Vocês podem responder na mão; reinicia no próximo mês.</div>
   <% } %>
 
   <% if (conversas.length === 0) { %>
@@ -74,7 +76,10 @@
   </div>
 
   <div class="sv-cv-status <%= aberta.conversa.iaAtiva ? 'ia' : 'humano' %>">
-    <% if (aberta.conversa.iaAtiva) { %>🤖 IA respondendo automaticamente<% } else { %>✋ Você assumiu — IA pausada nesta conversa<% } %>
+    <span><% if (aberta.conversa.iaAtiva) { %>🤖 IA respondendo automaticamente<% } else { %>✋ Você assumiu — IA pausada nesta conversa<% } %></span>
+    <form method="POST" action="/painel/conversas/<%= aberta.conversa.id %>/excluir" class="sv-cv-excluir" onsubmit="return confirm('Excluir esta conversa e todas as mensagens? Isso apaga os dados do cliente e não dá para desfazer.')">
+      <button type="submit">Excluir</button>
+    </form>
   </div>
 
   <div class="sv-cv-thread" id="cv-thread">

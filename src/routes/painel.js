@@ -146,6 +146,7 @@ router.get('/conversas', conversasController.ver);
 router.post('/conversas/simular', exigeAdmin, limiteIA, conversasController.simular);
 router.post('/conversas/:id/responder', conversasController.responder);
 router.post('/conversas/:id/ia', conversasController.definirIA);
+router.post('/conversas/:id/excluir', conversasController.excluir);
 
 // Metas (admin): metas configuráveis por métrica e escopo, progresso do mês.
 router.get('/metas', exigeAdmin, metaController.listar);

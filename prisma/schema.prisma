@@ -56,6 +56,7 @@ model Barbearia {
   servicoInsumos     ServicoInsumo[]
   metas              Meta[]
   conversas          Conversa[]
+  usoIA              UsoIA[]
 
   @@map("barbearias")
 }
@@ -571,4 +572,24 @@ model Mensagem {
 
   @@index([conversaId, criadoEm])
   @@map("mensagens")
+}
+
+/// Consumo mensal da secretária de IA por barbearia (Fase 3.5) — base do TETO de
+/// custo. Uma linha por barbearia por mês (`competencia` = "AAAA-MM"). Ao bater o
+/// teto, a IA pausa as respostas automáticas no mês e `avisadoTeto` evita repetir
+/// o aviso ao dono. Reinicia sozinho no mês seguinte (nova competência).
+model UsoIA {
+  id            Int      @id @default(autoincrement())
+  barbeariaId   Int      @map("barbearia_id")
+  competencia   String // "AAAA-MM"
+  respostas     Int      @default(0)
+  tokensEntrada Int      @default(0) @map("tokens_entrada")
+  tokensSaida   Int      @default(0) @map("tokens_saida")
+  avisadoTeto   Boolean  @default(false) @map("avisado_teto")
+  atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em")
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+
+  @@unique([barbeariaId, competencia])
+  @@map("uso_ia")
 }

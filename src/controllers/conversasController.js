@@ -19,9 +19,11 @@ async function ver(req, res) {
   if (req.query.id) {
     aberta = await atendimento.abrirConversa(req.barbeariaId, req.query.id);
   }
+  const teto = await atendimento.estadoTeto(req.barbeariaId);
   res.render('painel/conversas', {
     titulo: 'Conversas',
     iaAtiva: secretaria.habilitada(),
+    tetoAtingido: teto.atingido,
     conversas: conversas.map((c) => ({
       id: c.id,
       nome: c.clienteNome || formatarTelefone(c.clienteTelefone),
@@ -73,4 +75,11 @@ async function simular(req, res) {
   res.redirect('/painel/conversas');
 }
 
-module.exports = { ver, responder, definirIA, simular };
+// POST /painel/conversas/:id/excluir — LGPD: apaga a conversa e suas mensagens.
+async function excluir(req, res) {
+  await atendimento.excluirConversa(req.barbeariaId, req.params.id);
+  req.session.flash = { tipo: 'sucesso', texto: 'Conversa excluída.' };
+  res.redirect('/painel/conversas');
+}
+
+module.exports = { ver, responder, definirIA, simular, excluir };
