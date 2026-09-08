@@ -45,3 +45,6 @@ ios/App/App.xcworkspace/xcuserdata/
 
 # macOS
 .DS_Store
+
+# Export da migração para Supabase (contém dados/hashes — nunca versionar)
+deploy/_migracao-dados.json
