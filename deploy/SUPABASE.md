@@ -37,6 +37,21 @@ Faça na janela com a **barbearia fechada** (sem agendamentos entrando no meio).
 
 ---
 
+## Passo 0 — Levar as ferramentas ao VPS (seguro, ainda SQLite)
+
+O script de export vive no commit de ferramentas (branch `design/suave`), que **não**
+troca o schema. Publicar e puxar só ele primeiro deixa o VPS pronto para exportar
+sem virar nada ainda:
+
+```bash
+# na sua máquina (as ferramentas já estão em design/suave)
+git push origin design/suave && git push hostinger design/suave:main
+```
+```bash
+# no VPS
+cd /home/cortavo/app && sudo -u cortavo git pull
+```
+
 ## Passo 1 — Exportar os dados de produção (VPS, ainda SQLite)
 
 ```bash
