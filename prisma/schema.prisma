@@ -55,6 +55,7 @@ model Barbearia {
   pagamentos         PagamentoAgendamento[]
   servicoInsumos     ServicoInsumo[]
   metas              Meta[]
+  conversas          Conversa[]
 
   @@map("barbearias")
 }
@@ -529,4 +530,45 @@ model Meta {
   usuario   Usuario?  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@map("metas")
+}
+
+/// Conversa de WhatsApp com um cliente — a "caixa de entrada" da secretária de
+/// IA (Fase 3.2). Uma thread por cliente (telefone) em cada barbearia. Quando um
+/// humano assume (`iaAtiva=false`), a IA para de responder ESTA conversa até
+/// devolverem o controle. `naoLidas` conta mensagens do cliente ainda não vistas
+/// pela equipe; `ultimaPrevia`/`ultimaMensagemEm` alimentam a lista de conversas.
+model Conversa {
+  id               Int      @id @default(autoincrement())
+  barbeariaId      Int      @map("barbearia_id")
+  clienteTelefone  String   @map("cliente_telefone") // normalizado (só dígitos)
+  clienteNome      String?  @map("cliente_nome")
+  clienteId        Int?     @map("cliente_id") // vínculo opcional ao CRM local
+  iaAtiva          Boolean  @default(true) @map("ia_ativa")
+  status           String   @default("aberta") // aberta | arquivada
+  naoLidas         Int      @default(0) @map("nao_lidas")
+  ultimaPrevia     String?  @map("ultima_previa")
+  ultimaMensagemEm DateTime @default(now()) @map("ultima_mensagem_em")
+  criadoEm         DateTime @default(now()) @map("criado_em")
+
+  barbearia Barbearia  @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  mensagens Mensagem[]
+
+  @@unique([barbeariaId, clienteTelefone])
+  @@index([barbeariaId, ultimaMensagemEm])
+  @@map("conversas")
+}
+
+/// Uma mensagem de uma Conversa. `autor`: "cliente" (recebida), "ia" (resposta
+/// automática) ou "humano" (a equipe respondeu pela caixa de entrada).
+model Mensagem {
+  id         Int      @id @default(autoincrement())
+  conversaId Int      @map("conversa_id")
+  autor      String // cliente | ia | humano
+  texto      String
+  criadoEm   DateTime @default(now()) @map("criado_em")
+
+  conversa Conversa @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+
+  @@index([conversaId, criadoEm])
+  @@map("mensagens")
 }

@@ -1,0 +1,95 @@
+/* Caixa de entrada da secretária (Fase 3.2, design suave). Lista de conversas +
+   thread de uma conversa aberta. Usa os tokens do suave. */
+
+.pg-sv .sv-cv-topo,
+.pg-sv .sv-cv-thtopo { display: flex; align-items: center; gap: 12px; padding: 16px 20px 6px; }
+.pg-sv .sv-cv-topo { align-items: flex-start; justify-content: space-between; }
+.pg-sv .sv-cv-sub { font-size: 13px; color: var(--sv-muted); margin-top: 3px; }
+.pg-sv .sv-cv-fechar {
+  flex-shrink: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  background: var(--sv-card); color: var(--sv-ink); border-radius: 50%; box-shadow: var(--sv-sombra);
+}
+
+.pg-sv .sv-cv-avisoia { margin: 6px 16px; font-size: 12.5px; color: var(--sv-muted); background: var(--sv-bg); border-radius: 12px; padding: 10px 12px; }
+.pg-sv .sv-cv-avisoia strong { color: var(--sv-ink); }
+.pg-sv .sv-cv-vazio { margin: 12px 16px; padding: 22px; text-align: center; color: var(--sv-muted); font-size: 14px; }
+
+/* Lista de conversas */
+.pg-sv .sv-cv-lista { display: flex; flex-direction: column; padding: 4px 12px 100px; }
+.pg-sv .sv-cv-item {
+  display: flex; align-items: center; gap: 12px; padding: 12px 10px;
+  border-bottom: 1px solid var(--sv-line); color: var(--sv-ink);
+}
+.pg-sv .sv-cv-item:active { background: var(--sv-bg); }
+.pg-sv .sv-cv-av,
+.pg-sv .sv-cv-thav {
+  flex-shrink: 0; width: 46px; height: 46px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--sv-ink); color: #fff; font-weight: 700; font-size: 15px;
+}
+.pg-sv .sv-cv-corpo { flex: 1; min-width: 0; }
+.pg-sv .sv-cv-l1 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.pg-sv .sv-cv-nome { font-weight: 700; font-size: 15px; color: var(--sv-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-sv .sv-cv-hora { flex-shrink: 0; font-size: 11.5px; color: var(--sv-muted); }
+.pg-sv .sv-cv-l2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+.pg-sv .sv-cv-previa { font-size: 13.5px; color: var(--sv-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-sv .sv-cv-badge {
+  flex-shrink: 0; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+  background: #16a34a; color: #fff; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.pg-sv .sv-cv-taghum { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 600; color: #b45309; }
+
+/* Simular (teste, admin) */
+.pg-sv .sv-cv-simular { margin: 8px 16px 100px; background: var(--sv-card); border: 1px solid var(--sv-line); border-radius: 14px; padding: 12px 14px; box-shadow: var(--sv-sombra); }
+.pg-sv .sv-cv-simular summary { font-size: 13.5px; font-weight: 600; color: var(--sv-ink); cursor: pointer; }
+.pg-sv .sv-cv-simular form { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.pg-sv .sv-cv-simular input {
+  font: inherit; font-size: 14px; color: var(--sv-ink); background: var(--sv-bg);
+  border: 1px solid var(--sv-line); border-radius: 10px; padding: 10px;
+}
+.pg-sv .sv-cv-simular button {
+  border: none; background: var(--sv-ink); color: #fff; border-radius: 12px; padding: 11px; font: inherit; font-weight: 700; cursor: pointer;
+}
+.pg-sv .sv-cv-simular-hint { font-size: 11.5px; color: var(--sv-muted); margin-top: 8px; }
+
+/* Cabeçalho da conversa aberta */
+.pg-sv .sv-cv-voltar { flex-shrink: 0; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--sv-ink); }
+.pg-sv .sv-cv-thav { width: 40px; height: 40px; font-size: 14px; }
+.pg-sv .sv-cv-thid { flex: 1; min-width: 0; }
+.pg-sv .sv-cv-thnome { font-weight: 700; font-size: 16px; color: var(--sv-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-sv .sv-cv-thtel { font-size: 12px; color: var(--sv-muted); }
+.pg-sv .sv-cv-assumir button {
+  flex-shrink: 0; border: 1px solid var(--sv-line); background: var(--sv-card); color: var(--sv-ink);
+  border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.pg-sv .sv-cv-assumir button.devolver { background: var(--sv-ink); color: #fff; border-color: var(--sv-ink); }
+
+.pg-sv .sv-cv-status { margin: 4px 16px 0; font-size: 12px; font-weight: 500; color: var(--sv-muted); padding: 6px 0; }
+.pg-sv .sv-cv-status.humano { color: #b45309; }
+
+/* Thread (mensagens) */
+.pg-sv .sv-cv-thread { display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 168px; }
+.pg-sv .cv-msg {
+  max-width: 84%; padding: 9px 13px; border-radius: 16px; font-size: 14.5px; line-height: 1.45;
+  white-space: pre-wrap; word-wrap: break-word; position: relative;
+}
+.pg-sv .cv-msg--in { align-self: flex-start; background: var(--sv-card); color: var(--sv-ink); border: 1px solid var(--sv-line); border-bottom-left-radius: 5px; box-shadow: var(--sv-sombra); }
+.pg-sv .cv-msg--out { align-self: flex-end; background: var(--sv-ink); color: #fff; border-bottom-right-radius: 5px; }
+.pg-sv .cv-msg-tag { display: block; font-size: 10.5px; font-weight: 700; opacity: 0.65; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+.pg-sv .cv-msg-hora { display: block; text-align: right; font-size: 10px; opacity: 0.55; margin-top: 3px; }
+
+/* Composer (responder) — flutuante, alinhado à barra de navegação */
+.pg-sv .sv-cv-composer {
+  position: fixed; left: 14px; right: 14px; bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  max-width: 358px; margin: 0 auto; z-index: 39;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--sv-card); border: 1px solid var(--sv-line); border-radius: 20px;
+  padding: 6px 6px 6px 8px; box-shadow: 0 8px 30px rgba(14, 14, 14, 0.14);
+}
+.pg-sv .sv-cv-input { flex: 1; min-width: 0; font: inherit; font-size: 15px; color: var(--sv-ink); background: transparent; border: none; outline: none; padding: 8px 4px 8px 6px; }
+.pg-sv .sv-cv-enviar {
+  flex-shrink: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  border: none; background: var(--sv-ink); color: #fff; border-radius: 50%; cursor: pointer;
+}
+.pg-sv .sv-cv-enviar:active { transform: scale(0.92); }

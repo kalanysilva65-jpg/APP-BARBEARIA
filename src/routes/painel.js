@@ -22,6 +22,7 @@ const exportacaoController = require('../controllers/exportacaoController');
 const metaController = require('../controllers/metaController');
 const iaController = require('../controllers/iaController');
 const secretariaController = require('../controllers/secretariaController');
+const conversasController = require('../controllers/conversasController');
 const { limiteIA } = require('../middlewares/rateLimit');
 const ia = require('../services/ia');
 const upload = require('../middlewares/upload');
@@ -137,6 +138,14 @@ router.post('/ia/mensagem', limiteIA, iaController.mensagem);
 // para calibrar as respostas antes de ligar o WhatsApp. Nada é gravado aqui.
 router.get('/secretaria/teste', exigeAdmin, secretariaController.verTeste);
 router.post('/secretaria/teste/mensagem', exigeAdmin, limiteIA, secretariaController.mensagemTeste);
+
+// Caixa de entrada (Fase 3.2): conversas de WhatsApp da barbearia. Admin E
+// barbeiro (é o balcão compartilhado). `/simular` injeta uma mensagem de cliente
+// para testar sem o WhatsApp (só admin) — específica ANTES da paramétrica.
+router.get('/conversas', conversasController.ver);
+router.post('/conversas/simular', exigeAdmin, limiteIA, conversasController.simular);
+router.post('/conversas/:id/responder', conversasController.responder);
+router.post('/conversas/:id/ia', conversasController.definirIA);
 
 // Metas (admin): metas configuráveis por métrica e escopo, progresso do mês.
 router.get('/metas', exigeAdmin, metaController.listar);
