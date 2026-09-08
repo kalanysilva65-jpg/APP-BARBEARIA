@@ -15,12 +15,18 @@ function previa(texto) {
   return (texto || '').replace(/\s+/g, ' ').trim().slice(0, 80);
 }
 
+// Lê uma configuração da barbearia (chave/valor) com fallback.
+async function lerConfig(barbeariaId, chave, padrao) {
+  const c = await prisma.configuracao
+    .findUnique({ where: { barbeariaId_chave: { barbeariaId, chave } } })
+    .catch(() => null);
+  return c ? c.valor : padrao;
+}
+
 // Modo da secretária por barbearia (config 'secretaria_modo'; padrão 'cortavo').
 async function modoDaBarbearia(barbeariaId) {
-  const c = await prisma.configuracao.findUnique({
-    where: { barbeariaId_chave: { barbeariaId, chave: 'secretaria_modo' } },
-  }).catch(() => null);
-  return c && c.valor === 'terceiros' ? 'terceiros' : 'cortavo';
+  const v = await lerConfig(barbeariaId, 'secretaria_modo', 'cortavo');
+  return v === 'terceiros' ? 'terceiros' : 'cortavo';
 }
 
 // Converte o histórico salvo no formato da API, unindo mensagens seguidas do
@@ -83,7 +89,13 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
     barbeariaId,
     modo: await modoDaBarbearia(barbeariaId),
     nomeBarbearia: b ? b.nome : 'a barbearia',
-    config: { linkAgendamento: b && b.slug ? `https://agenda.exemplo.com/${b.slug}` : null },
+    // Conversa REAL: a secretária pode marcar de verdade. O telefone é o do
+    // canal (nunca da IA); o nome, o que já conhecemos do cliente.
+    permitirAgendar: true,
+    clienteTelefone: conversa.clienteTelefone,
+    clienteNome: conversa.clienteNome || null,
+    regrasExtras: await lerConfig(barbeariaId, 'secretaria_regras', null),
+    config: { linkAgendamento: (await lerConfig(barbeariaId, 'secretaria_link', null)) || (b && b.slug ? `https://agenda.exemplo.com/${b.slug}` : null) },
   };
 
   let respostaIA = null;

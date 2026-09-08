@@ -18,8 +18,11 @@ function contextoDe(req, res, modo) {
     barbeariaId: req.barbeariaId,
     modo,
     nomeBarbearia: b ? b.nome : 'a barbearia',
+    // CHAT DE TESTE: nunca grava de verdade (criar_agendamento só simula), para
+    // não sujar a agenda real da barbearia.
+    permitirAgendar: false,
     // No modo terceiros, o link de agendamento do outro app viria da config da
-    // barbearia (a persistir na 3.2). Aqui, no teste, um link de exemplo.
+    // barbearia. Aqui, no teste, um link de exemplo.
     config: { linkAgendamento: b && b.slug ? `https://agenda.exemplo.com/${b.slug}` : null },
   };
 }
