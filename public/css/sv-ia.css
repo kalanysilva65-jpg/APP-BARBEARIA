@@ -23,6 +23,37 @@
   box-shadow: var(--sv-sombra);
 }
 
+/* Secretária (teste): seletor de modo + aviso */
+.pg-sv .sv-sec-modo {
+  display: flex;
+  gap: 6px;
+  margin: 4px 16px 0;
+  background: var(--sv-bg);
+  border: 1px solid var(--sv-line);
+  border-radius: 14px;
+  padding: 4px;
+}
+.pg-sv .sv-sec-modo-btn {
+  flex: 1;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--sv-muted);
+  padding: 9px 8px;
+  border-radius: 10px;
+}
+.pg-sv .sv-sec-modo-btn.ativo { background: var(--sv-card); color: var(--sv-ink); box-shadow: var(--sv-sombra); }
+.pg-sv .sv-sec-aviso {
+  margin: 10px 16px 2px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--sv-muted);
+  background: var(--sv-bg);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.pg-sv .sv-sec-aviso strong { color: var(--sv-ink); font-weight: 700; }
+
 /* Estado "não configurado" */
 .pg-sv .sv-ia-config { margin: 14px 16px; padding: 26px 22px; text-align: center; }
 .pg-sv .sv-ia-config-ic {

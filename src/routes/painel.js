@@ -21,6 +21,7 @@ const notificacaoController = require('../controllers/notificacaoController');
 const exportacaoController = require('../controllers/exportacaoController');
 const metaController = require('../controllers/metaController');
 const iaController = require('../controllers/iaController');
+const secretariaController = require('../controllers/secretariaController');
 const { limiteIA } = require('../middlewares/rateLimit');
 const ia = require('../services/ia');
 const upload = require('../middlewares/upload');
@@ -131,6 +132,11 @@ router.get('/exportar/relatorio', exigeAdmin, exportacaoController.visualizar);
 // partir da sessão. Read-only. A rota de mensagem tem freio de uso próprio.
 router.get('/ia', iaController.ver);
 router.post('/ia/mensagem', limiteIA, iaController.mensagem);
+
+// Secretária (IA que atende o cliente) — CHAT DE TESTE da etapa 3.1. Só admin,
+// para calibrar as respostas antes de ligar o WhatsApp. Nada é gravado aqui.
+router.get('/secretaria/teste', exigeAdmin, secretariaController.verTeste);
+router.post('/secretaria/teste/mensagem', exigeAdmin, limiteIA, secretariaController.mensagemTeste);
 
 // Metas (admin): metas configuráveis por métrica e escopo, progresso do mês.
 router.get('/metas', exigeAdmin, metaController.listar);
