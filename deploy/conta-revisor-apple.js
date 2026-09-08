@@ -108,13 +108,21 @@ async function criar() {
   });
   const bid = barbearia.id;
 
-  // Zera o conteúdo antes de repovoar: rodar duas vezes não pode empilhar
-  // agendamento em cima de agendamento.
+  // Zera o conteúdo antes de repovoar: rodar duas vezes não pode empilhar dados.
+  // Ordem importa por causa das FKs (ex.: ClientePlano->Plano é Restrict; caixa
+  // referencia agendamento/categoria). NÃO apaga usuários (o revisor sobrevive).
   await prisma.caixa.deleteMany({ where: { barbeariaId: bid } });
+  await prisma.clientePlano.deleteMany({ where: { barbeariaId: bid } });
+  await prisma.fidelidadeResgate.deleteMany({ where: { barbeariaId: bid } });
+  await prisma.plano.deleteMany({ where: { barbeariaId: bid } });
+  await prisma.cupom.deleteMany({ where: { barbeariaId: bid } });
+  await prisma.meta.deleteMany({ where: { barbeariaId: bid } });
+  await prisma.servicoInsumo.deleteMany({ where: { barbeariaId: bid } });
   await prisma.agendamento.deleteMany({ where: { barbeariaId: bid } });
   await prisma.cliente.deleteMany({ where: { barbeariaId: bid } });
   await prisma.servico.deleteMany({ where: { barbeariaId: bid } });
   await prisma.estoque.deleteMany({ where: { barbeariaId: bid } });
+  await prisma.categoriaCaixa.deleteMany({ where: { barbeariaId: bid } });
 
   // Senha: PRESERVA a atual quando o revisor já existe e nenhuma --senha veio.
   // Re-rodar só pra atualizar os DADOS não pode trocar o login que está no
@@ -177,8 +185,13 @@ async function criar() {
     ['Barba completa', 3500, 30, false, 'Toalha quente, navalha e hidratação.'],
     ['Corte + barba', 7000, 60, false, 'O combo, com desconto.'],
     ['Pezinho', 2000, 15, false, 'Acabamento rápido entre um corte e outro.'],
+    ['Sobrancelha', 1500, 10, false, 'Design e limpeza na navalha.'],
+    ['Hidratação capilar', 3000, 20, false, 'Máscara e hidratação profunda.'],
     ['Pomada modeladora', 4000, 0, true, null],
     ['Shampoo anticaspa', 5500, 0, true, null],
+    ['Óleo para barba', 3800, 0, true, null],
+    ['Cera modeladora', 4200, 0, true, null],
+    ['Minoxidil 5%', 8900, 0, true, null],
   ];
   const servicos = {};
   for (const [nome, valor, duracaoMin, ehProduto, descricao] of catalogo) {
@@ -351,13 +364,132 @@ async function criar() {
     });
   }
 
+  // ---- Planos (assinaturas que a barbearia vende) ----
+  const planosDefs = [
+    // [nome, tipo, usos, validadeDias, valor(centavos), serviço coberto | null]
+    ['Clube do Corte', 'limitado', 4, 30, 12000, 'Corte social'],
+    ['Barba Ilimitada', 'ilimitado', null, 30, 9000, 'Barba completa'],
+    ['VIP Corte + Barba', 'limitado', 4, 30, 20000, null],
+  ];
+  const planos = [];
+  for (const [nome, tipo, usos, validadeDias, valor, svcNome] of planosDefs) {
+    planos.push(
+      await prisma.plano.create({
+        data: { barbeariaId: bid, nome, tipo, usos, validadeDias, valor, servicoId: svcNome ? servicos[svcNome].id : null },
+      })
+    );
+  }
+
+  // ---- Assinantes (clientes com plano ativo) + entrada de caixa da venda ----
+  const catPlanos = await prisma.categoriaCaixa.create({ data: { barbeariaId: bid, nome: 'Planos', tipo: 'entrada' } });
+  const assinaturas = [
+    [0, 0, -10],
+    [1, 1, -6],
+    [2, 0, -3],
+    [3, 2, -1],
+  ];
+  for (const [iCli, iPlano, iniAtras] of assinaturas) {
+    const cli = clientes[iCli];
+    const plano = planos[iPlano];
+    const dataInicio = dia(iniAtras);
+    const dataFim = new Date(dataInicio);
+    dataFim.setDate(dataFim.getDate() + plano.validadeDias);
+    await prisma.clientePlano.create({
+      data: {
+        barbeariaId: bid,
+        clienteId: cli.id,
+        planoId: plano.id,
+        dataInicio,
+        dataFim,
+        usosRestantes: plano.tipo === 'limitado' ? plano.usos : null,
+      },
+    });
+    if (plano.valor > 0) {
+      await prisma.caixa.create({
+        data: {
+          barbeariaId: bid,
+          categoriaId: catPlanos.id,
+          descricao: 'Plano ' + plano.nome + ' — ' + cli.nome,
+          valor: plano.valor,
+          tipo: 'entrada',
+          formaPagamento: 'pix',
+          data: instante(dataInicio, '10:00'),
+        },
+      });
+    }
+  }
+
+  // ---- Saídas de caixa (despesas do mês) ----
+  const catAluguel = await prisma.categoriaCaixa.create({ data: { barbeariaId: bid, nome: 'Aluguel', tipo: 'saida' } });
+  const catInsumos = await prisma.categoriaCaixa.create({ data: { barbeariaId: bid, nome: 'Insumos e produtos', tipo: 'saida' } });
+  const catContas = await prisma.categoriaCaixa.create({ data: { barbeariaId: bid, nome: 'Contas', tipo: 'saida' } });
+  const saidas = [
+    [28, catAluguel.id, 'Aluguel do ponto', 250000, '09:00'],
+    [25, catInsumos.id, 'Compra de lâminas e toalhas', 42000, '11:00'],
+    [20, catContas.id, 'Energia elétrica', 31000, '14:00'],
+    [15, catInsumos.id, 'Reposição de pomadas', 28000, '16:00'],
+    [10, catContas.id, 'Internet', 12000, '10:00'],
+    [4, catInsumos.id, 'Compra de shampoos e óleos', 33000, '15:00'],
+  ];
+  for (const [atras, categoriaId, descricao, valor, hora] of saidas) {
+    await prisma.caixa.create({
+      data: { barbeariaId: bid, categoriaId, descricao, valor, tipo: 'saida', data: instante(dia(-atras), hora) },
+    });
+  }
+
+  // ---- Fidelidade: cupons + resgates ----
+  const em30 = new Date();
+  em30.setDate(em30.getDate() + 30);
+  const em60 = new Date();
+  em60.setDate(em60.getDate() + 60);
+  await prisma.cupom.createMany({
+    data: [
+      { barbeariaId: bid, nome: 'Aniversário', descricao: 'Desconto no mês do aniversário.', desconto: '20%', validade: em60 },
+      { barbeariaId: bid, nome: 'Indique um amigo', descricao: 'Para quem trouxe um amigo novo.', desconto: 'R$15', validade: em30 },
+      { barbeariaId: bid, nome: 'Combo do mês', descricao: 'Corte + barba com preço especial.', desconto: 'R$10', validade: em30 },
+    ],
+  });
+  await prisma.fidelidadeResgate.createMany({
+    data: [
+      { barbeariaId: bid, clienteId: clientes[0].id, selosUsados: 10, data: dia(-18) },
+      { barbeariaId: bid, clienteId: clientes[2].id, selosUsados: 10, data: dia(-9) },
+      { barbeariaId: bid, clienteId: clientes[4].id, selosUsados: 10, data: dia(-2) },
+    ],
+  });
+
+  // ---- Consumo de estoque (ficha técnica: serviço/produto baixa insumo) ----
+  const estoqueRows = await prisma.estoque.findMany({ where: { barbeariaId: bid } });
+  const estMap = Object.fromEntries(estoqueRows.map((e) => [e.nome, e]));
+  async function ligaInsumo(svcNome, estNome, qtd) {
+    const s = servicos[svcNome];
+    const e = estMap[estNome];
+    if (s && e) await prisma.servicoInsumo.create({ data: { barbeariaId: bid, servicoId: s.id, estoqueId: e.id, quantidade: qtd } });
+  }
+  await ligaInsumo('Barba completa', 'Lâmina de barbear (cx. 100)', 1);
+  await ligaInsumo('Corte + barba', 'Lâmina de barbear (cx. 100)', 1);
+  await ligaInsumo('Corte social', 'Toalha descartável', 1);
+
+  // ---- Metas do mês (mostra a aba nova populada) ----
+  await prisma.meta.createMany({
+    data: [
+      { barbeariaId: bid, usuarioId: null, metrica: 'faturamento', alvo: 800000 },
+      { barbeariaId: bid, usuarioId: null, metrica: 'atendimentos', alvo: 120 },
+      { barbeariaId: bid, usuarioId: null, metrica: 'novos_clientes', alvo: 15 },
+      { barbeariaId: bid, usuarioId: carlos.id, metrica: 'faturamento', alvo: 400000 },
+    ],
+  });
+
   const real = (c) => 'R$ ' + (c / 100).toFixed(2).replace('.', ',');
   console.log('');
   console.log('  Barbearia .. ' + barbearia.nome + '  (slug "' + SLUG + '", oculta do app do cliente)');
+  const nProdutos = Object.values(servicos).filter((s) => s.ehProduto).length;
   console.log(
     '  Conteúdo ... ' + historico.length + ' atendimentos concluídos em ~30 dias (' + real(faturado) + '), ' +
-      futuros.length + ' agendados, ' + clientes.length + ' clientes, ' +
-      Object.keys(servicos).length + ' itens no catálogo'
+      futuros.length + ' agendados, ' + clientes.length + ' clientes'
+  );
+  console.log(
+    '  Catálogo ... ' + (Object.keys(servicos).length - nProdutos) + ' serviços, ' + nProdutos + ' produtos, ' +
+      planos.length + ' planos (' + assinaturas.length + ' assinantes), 3 cupons, ' + saidas.length + ' saídas no caixa, 4 metas'
   );
   console.log('');
   if (preservarSenha) {
