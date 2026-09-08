@@ -2,7 +2,7 @@
   // Precisa vir ANTES do <head>: é daqui que sai quais CSS a página carrega.
   // Telas já no design SUAVE — as demais (fidelidade, comissões, horários e os
   // formulários órfãos) seguem na pilha de CSS antiga.
-  var TELAS_SUAVE = ['/painel', '/painel/agenda', '/painel/caixa', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/relatorios', '/painel/metas'];
+  var TELAS_SUAVE = ['/painel', '/painel/agenda', '/painel/caixa', '/painel/clientes', '/painel/equipe', '/painel/servicos', '/painel/produtos', '/painel/estoque', '/painel/planos', '/painel/mais', '/painel/relatorios', '/painel/metas', '/painel/ia'];
   var ehSuave = TELAS_SUAVE.indexOf(currentPath) !== -1;
 %>
 <!DOCTYPE html>
@@ -34,6 +34,7 @@
         '/painel/planos': 'sv-planos-perfil',
         '/painel/mais': 'sv-planos-perfil',
         '/painel/metas': 'sv-metas',
+        '/painel/ia': 'sv-ia',
       };
       var cssDaTela = CSS_POR_TELA[currentPath];
     %>

@@ -45,4 +45,18 @@ const limiteAdmin = rateLimit({
   },
 });
 
-module.exports = { limiteLogin, limiteAdmin };
+// Freio do assistente de IA (/painel/ia/mensagem). Cada mensagem pode disparar
+// várias chamadas ao modelo (que custam dinheiro), então o teto protege tanto
+// contra abuso quanto contra a conta da API estourar. 30 perguntas / 10 min é
+// bastante para um uso humano normal. É endpoint JSON — responde 429 em JSON.
+const limiteIA = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler(req, res) {
+    res.status(429).json({ erro: 'Você fez muitas perguntas seguidas. Aguarde um minuto e tente de novo.' });
+  },
+});
+
+module.exports = { limiteLogin, limiteAdmin, limiteIA };

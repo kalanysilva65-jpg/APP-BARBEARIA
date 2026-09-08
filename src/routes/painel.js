@@ -20,6 +20,9 @@ const fidelidadeController = require('../controllers/fidelidadeController');
 const notificacaoController = require('../controllers/notificacaoController');
 const exportacaoController = require('../controllers/exportacaoController');
 const metaController = require('../controllers/metaController');
+const iaController = require('../controllers/iaController');
+const { limiteIA } = require('../middlewares/rateLimit');
+const ia = require('../services/ia');
 const upload = require('../middlewares/upload');
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
@@ -90,6 +93,9 @@ router.use(async (req, res, next) => {
   res.locals.usuarioFotoUrl = usuarioDb ? usuarioDb.fotoUrl : null;
   res.locals.usuarioPrimeiroNome = (u.nome || '').split(' ')[0];
   res.locals.hojeFormatado = formatarDataCabecalho(new Date());
+  // O item "Assistente" no menu só aparece quando a IA está configurada (chave
+  // da API presente no servidor).
+  res.locals.iaAtiva = ia.iaHabilitada();
 
   // Alerta de estoque baixo (admin) — mostrado no subtítulo do cabeçalho em todas as telas.
   res.locals.estoqueBaixoCount = 0;
@@ -119,6 +125,12 @@ router.get('/mais', perfilController.ver);
 router.get('/exportar/dados.json', exigeAdmin, exportacaoController.json);
 router.get('/exportar/relatorio.pdf', exigeAdmin, exportacaoController.pdf);
 router.get('/exportar/relatorio', exigeAdmin, exportacaoController.visualizar);
+
+// Assistente Cortavo (IA de consulta). Disponível para admin E barbeiro — o
+// escopo (barbearia toda ou só o próprio barbeiro) é resolvido no controller a
+// partir da sessão. Read-only. A rota de mensagem tem freio de uso próprio.
+router.get('/ia', iaController.ver);
+router.post('/ia/mensagem', limiteIA, iaController.mensagem);
 
 // Metas (admin): metas configuráveis por métrica e escopo, progresso do mês.
 router.get('/metas', exigeAdmin, metaController.listar);
