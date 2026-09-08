@@ -30,8 +30,9 @@
     // fill=currentColor (sem stroke) — ver .sv-grade-caixa svg no CSS.
     // (Os arquivos vinham com nome trocado; mapeados pelo <title>/desenho.)
     var svMenu = [
-      { href: '/painel/ia', nome: 'Assistente', ia: true, icone: '<path d="M13 2.4l1.95 5.15L20.1 9.5l-5.15 1.95L13 16.6l-1.95-5.15L5.9 9.5l5.15-1.95z"/><path d="M18.4 13.8l.95 2.55 2.55.95-2.55.95-.95 2.55-.95-2.55-2.55-.95 2.55-.95z"/>' },
-      { href: '/painel/conversas', nome: 'Conversas', ia: true, icone: '<path fill-rule="evenodd" d="M4 3.4h16A2.6 2.6 0 0 1 22.6 6v8.5a2.6 2.6 0 0 1-2.6 2.6H9.9l-4.5 3.6a1 1 0 0 1-1.6-.8V17H4A2.6 2.6 0 0 1 1.4 14.5V6A2.6 2.6 0 0 1 4 3.4zm3 5.2a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6zm5 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6zm5 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6z"/>' },
+      { href: '/painel/ia', nome: 'Assistente', icone: '<path d="M13 2.4l1.95 5.15L20.1 9.5l-5.15 1.95L13 16.6l-1.95-5.15L5.9 9.5l5.15-1.95z"/><path d="M18.4 13.8l.95 2.55 2.55.95-2.55.95-.95 2.55-.95-2.55-2.55-.95 2.55-.95z"/>' },
+      { href: '/painel/conversas', nome: 'Conversas', icone: '<path fill-rule="evenodd" d="M4 3.4h16A2.6 2.6 0 0 1 22.6 6v8.5a2.6 2.6 0 0 1-2.6 2.6H9.9l-4.5 3.6a1 1 0 0 1-1.6-.8V17H4A2.6 2.6 0 0 1 1.4 14.5V6A2.6 2.6 0 0 1 4 3.4zm3 5.2a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6zm5 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6zm5 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6z"/>' },
+      { href: '/painel/secretaria/teste', nome: 'Secretária', admin: true, icone: '<path fill-rule="evenodd" d="M12 2.2a5 5 0 0 0-5 5v1.2a5 5 0 1 0 10 0V7.2a5 5 0 0 0-5-5zM4.2 20.2c.5-3.6 3.7-5.7 7.8-5.7s7.3 2.1 7.8 5.7c.1 1-.6 1.6-1.5 1.6H5.7c-.9 0-1.6-.6-1.5-1.6z"/>' },
       { href: '/painel/servicos', nome: 'Serviços', icone: '<path d="M19.06 3.44a1.2 1.2 0 0 1 1.7 1.7L8.9 17a1.2 1.2 0 0 1-1.7-1.7z"/><path d="M13.2 13.1 20.76 20.66a1.2 1.2 0 0 1-1.7 1.7L11.5 14.8z"/><path fill-rule="evenodd" d="M6.2 2.4a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6zm0 2.2a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2z"/><path fill-rule="evenodd" d="M6.2 14a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6zm0 2.2a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2z"/>' },
       { href: '/painel/produtos', nome: 'Produtos', icone: '<path d="M9.8 2.2h4.4v3.1H9.8z"/><path fill-rule="evenodd" d="M9.2 6.6h5.6l1.7 3.6v10a1.6 1.6 0 0 1-1.6 1.6H9.1a1.6 1.6 0 0 1-1.6-1.6v-10zm-.1 6.4v2.9h5.8V13z"/>' },
       { href: '/painel/estoque', nome: 'Estoque', icone: '<path d="M12 2.4 21 6.5 12 10.6 3 6.5z"/><path d="M2.6 8.5 11 12.2v9.4l-8.4-3.8z"/><path d="M21.4 8.5 13 12.2v9.4l8.4-3.8z"/>' },
@@ -85,7 +86,7 @@
 
       <div class="sv-grade">
         <% svMenu.forEach(function (item) { %>
-          <% if ((!item.admin || ehAdmin) && (!item.ia || iaAtiva)) { %>
+          <% if (!item.admin || ehAdmin) { %>
             <a href="<%= item.href %>" class="sv-grade-item">
               <span class="sv-grade-caixa">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><%- item.icone %></svg>
