@@ -90,16 +90,20 @@
 .pg-sv .sv-cv-excluir button { border: none; background: transparent; color: #b91c1c; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 6px; }
 .pg-sv .sv-cv-excluir button:active { opacity: 0.6; }
 
-/* Thread (mensagens) */
-.pg-sv .sv-cv-thread { display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 168px; }
+/* Thread (mensagens) — enxuto, estilo WhatsApp: pouco padding, cantos justos,
+   e uma mini-linha só com rótulo + hora ("IA · 14:21"). */
+.pg-sv .sv-cv-thread { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px 168px; }
 .pg-sv .cv-msg {
-  max-width: 84%; padding: 9px 13px; border-radius: 16px; font-size: 14.5px; line-height: 1.45;
-  white-space: pre-wrap; word-wrap: break-word; position: relative;
+  max-width: 78%; padding: 6px 9px 5px; border-radius: 12px; font-size: 15px; line-height: 1.34;
+  word-wrap: break-word; overflow-wrap: anywhere;
 }
-.pg-sv .cv-msg--in { align-self: flex-start; background: var(--sv-card); color: var(--sv-ink); border: 1px solid var(--sv-line); border-bottom-left-radius: 5px; box-shadow: var(--sv-sombra); }
-.pg-sv .cv-msg--out { align-self: flex-end; background: var(--sv-ink); color: #fff; border-bottom-right-radius: 5px; }
-.pg-sv .cv-msg-tag { display: block; font-size: 10.5px; font-weight: 700; opacity: 0.65; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
-.pg-sv .cv-msg-hora { display: block; text-align: right; font-size: 10px; opacity: 0.55; margin-top: 3px; }
+.pg-sv .cv-msg--in { align-self: flex-start; background: var(--sv-card); color: var(--sv-ink); border: 1px solid var(--sv-line); border-bottom-left-radius: 4px; }
+.pg-sv .cv-msg--out { align-self: flex-end; background: var(--sv-ink); color: #fff; border-bottom-right-radius: 4px; }
+/* pre-wrap SÓ no texto (preserva quebras da MENSAGEM). No balão inteiro, o
+   pre-wrap fazia a indentação do template EJS virar linhas em branco -> balão gordo. */
+.pg-sv .cv-msg-txt { white-space: pre-wrap; }
+/* Mini-rodapé do balão: rótulo (IA/Você) + hora numa linha pequena. */
+.pg-sv .cv-msg-meta { display: block; text-align: right; font-size: 10.5px; opacity: 0.6; margin-top: 1px; line-height: 1; }
 
 /* Composer (responder) — flutuante, alinhado à barra de navegação */
 .pg-sv .sv-cv-composer {

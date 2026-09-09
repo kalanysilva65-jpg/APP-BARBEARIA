@@ -115,9 +115,8 @@
     <% aberta.mensagens.forEach(function (m) { %>
       <% if (m.sep) { %><div class="cv-sep"><span><%= m.sep %></span></div><% } %>
       <div class="cv-msg cv-msg--<%= m.autor === 'cliente' ? 'in' : 'out' %>" data-id="<%= m.id %>" data-dia="<%= m.dia %>">
-        <% if (m.autor !== 'cliente') { %><span class="cv-msg-tag"><%= m.autor === 'ia' ? 'IA' : 'Você' %></span><% } %>
         <span class="cv-msg-txt"><%= m.texto %></span>
-        <span class="cv-msg-hora"><%= m.hora %></span>
+        <span class="cv-msg-meta"><% if (m.autor === 'ia') { %>IA · <% } else if (m.autor === 'humano') { %>Você · <% } %><%= m.hora %></span>
       </div>
     <% }) %>
   </div>
@@ -158,20 +157,14 @@
         el.className = 'cv-msg cv-msg--' + (m.autor === 'cliente' ? 'in' : 'out');
         el.setAttribute('data-id', m.id);
         el.setAttribute('data-dia', m.dia);
-        if (m.autor !== 'cliente') {
-          var tag = document.createElement('span');
-          tag.className = 'cv-msg-tag';
-          tag.textContent = m.autor === 'ia' ? 'IA' : 'Você';
-          el.appendChild(tag);
-        }
         var txt = document.createElement('span');
         txt.className = 'cv-msg-txt';
         txt.textContent = m.texto;
         el.appendChild(txt);
-        var hora = document.createElement('span');
-        hora.className = 'cv-msg-hora';
-        hora.textContent = m.hora;
-        el.appendChild(hora);
+        var meta = document.createElement('span');
+        meta.className = 'cv-msg-meta';
+        meta.textContent = (m.autor === 'ia' ? 'IA · ' : (m.autor === 'humano' ? 'Você · ' : '')) + m.hora;
+        el.appendChild(meta);
         thread.appendChild(el);
       }
       async function atualizar() {
