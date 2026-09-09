@@ -136,6 +136,8 @@ router.post('/ia/mensagem', limiteIA, iaController.mensagem);
 
 // Secretária (IA que atende o cliente) — CHAT DE TESTE da etapa 3.1. Só admin,
 // para calibrar as respostas antes de ligar o WhatsApp. Nada é gravado aqui.
+router.get('/secretaria', exigeAdmin, secretariaController.verConfig);
+router.post('/secretaria', exigeAdmin, secretariaController.salvarConfig);
 router.get('/secretaria/teste', exigeAdmin, secretariaController.verTeste);
 router.post('/secretaria/teste/mensagem', exigeAdmin, limiteIA, secretariaController.mensagemTeste);
 

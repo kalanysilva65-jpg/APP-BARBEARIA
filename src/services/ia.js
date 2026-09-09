@@ -238,17 +238,20 @@ function systemPrompt(ctx) {
 async function responder(ctx, mensagens) {
   const client = getCliente();
   const msgs = mensagens.slice(); // não mutar o array do chamador
+  // PROMPT CACHING: cacheia o prefixo fixo (ferramentas + system), estável na
+  // conversa. Nas chamadas seguintes essa parte custa ~10%. Ver secretaria.js.
+  const system = [{ type: 'text', text: systemPrompt(ctx), cache_control: { type: 'ephemeral' } }];
   let usoTotal = { input: 0, output: 0 };
 
   for (let i = 0; i < MAX_ITERACOES; i++) {
     const resp = await client.messages.create({
       model: MODELO,
       max_tokens: MAX_TOKENS,
-      system: systemPrompt(ctx),
+      system,
       tools: FERRAMENTAS,
       messages: msgs,
     });
-    usoTotal.input += resp.usage?.input_tokens || 0;
+    usoTotal.input += (resp.usage?.input_tokens || 0) + (resp.usage?.cache_read_input_tokens || 0) + (resp.usage?.cache_creation_input_tokens || 0);
     usoTotal.output += resp.usage?.output_tokens || 0;
 
     if (resp.stop_reason === 'tool_use') {

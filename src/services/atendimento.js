@@ -15,6 +15,7 @@ const { normalizarTelefone } = require('../utils/telefone');
 
 const HIST_MAX = 30; // mensagens recentes enviadas à IA como contexto
 const TETO_PADRAO = 1500; // respostas de IA por mês por barbearia (config: secretaria_teto_mes)
+const TETO_COPILOTO_PADRAO = 200; // consultas do copiloto/mês por barbearia (config: copiloto_teto_mes)
 const ABUSO_MAX_HORA = 20; // msgs do MESMO cliente numa 1h antes de a IA recuar
 const RETENCAO_MESES = 12; // conversas mais antigas que isso são apagadas (LGPD)
 const PALAVRAS_OPTOUT = ['SAIR', 'PARAR', 'STOP', 'CANCELAR'];
@@ -78,6 +79,15 @@ async function estadoTeto(barbeariaId) {
   const respostas = uso ? uso.respostas : 0;
   return { competencia, teto, respostas, atingido: respostas >= teto, avisado: uso ? uso.avisadoTeto : false };
 }
+// Teto mensal do COPILOTO (Assistente do painel), à parte do WhatsApp.
+async function estadoTetoCopiloto(barbeariaId) {
+  const competencia = competenciaAtual();
+  const teto = parseInt(await lerConfig(barbeariaId, 'copiloto_teto_mes', ''), 10) || TETO_COPILOTO_PADRAO;
+  const uso = await prisma.usoIA.findUnique({ where: { barbeariaId_competencia: { barbeariaId, competencia } } });
+  const consultas = uso ? uso.copilotoConsultas : 0;
+  return { competencia, teto, consultas, atingido: consultas >= teto };
+}
+
 async function registrarUso(barbeariaId, competencia, usage) {
   await prisma.usoIA.upsert({
     where: { barbeariaId_competencia: { barbeariaId, competencia } },
@@ -273,5 +283,6 @@ module.exports = {
   excluirConversa,
   expirarConversasAntigas,
   estadoTeto,
+  estadoTetoCopiloto,
   registrarUsoCopiloto,
 };

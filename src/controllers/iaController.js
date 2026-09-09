@@ -35,6 +35,12 @@ async function mensagem(req, res) {
   const texto = String(req.body.mensagem || '').trim().slice(0, MAX_MSG);
   if (!texto) return res.status(400).json({ erro: 'Escreva uma pergunta.' });
 
+  // Teto mensal do copiloto — ao estourar, para de responder no mês (protege custo).
+  const teto = await atendimento.estadoTetoCopiloto(req.barbeariaId);
+  if (teto.atingido) {
+    return res.json({ resposta: `Você atingiu o limite de ${teto.teto} consultas do Assistente neste mês. Ele volta no próximo mês. 🙂` });
+  }
+
   // Histórico vem do cliente (stateless): validamos o formato, limitamos a
   // quantidade e o tamanho. Só 'user'/'assistant' entram.
   const histBruto = Array.isArray(req.body.historico) ? req.body.historico : [];

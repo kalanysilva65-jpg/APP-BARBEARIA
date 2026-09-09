@@ -317,17 +317,24 @@ async function responder(ctx, mensagens) {
   const client = getCliente();
   const msgs = mensagens.slice();
   const tools = ferramentasDoModo(ctx.modo);
+  // PROMPT CACHING: o prefixo fixo (ferramentas + system) é IGUAL em toda chamada
+  // desta conversa. Marcando o system com cache_control, a Anthropic guarda esse
+  // prefixo (ferramentas vêm antes, então entram no cache) e nas próximas chamadas
+  // essa parte custa ~10%. Calculado UMA vez pra o prefixo ficar byte-a-byte estável.
+  const system = [{ type: 'text', text: systemPrompt(ctx), cache_control: { type: 'ephemeral' } }];
   let uso = { input: 0, output: 0 };
 
   for (let i = 0; i < MAX_ITERACOES; i++) {
     const resp = await client.messages.create({
       model: MODELO,
       max_tokens: MAX_TOKENS,
-      system: systemPrompt(ctx),
+      system,
       tools,
       messages: msgs,
     });
-    uso.input += resp.usage?.input_tokens || 0;
+    // Soma TODO o input processado (inclui os tokens lidos/criados no cache), pra
+    // o custo estimado não subestimar. A economia real do cache aparece na fatura.
+    uso.input += (resp.usage?.input_tokens || 0) + (resp.usage?.cache_read_input_tokens || 0) + (resp.usage?.cache_creation_input_tokens || 0);
     uso.output += resp.usage?.output_tokens || 0;
 
     if (resp.stop_reason === 'tool_use') {

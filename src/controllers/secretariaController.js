@@ -1,7 +1,11 @@
-// Secretária Cortavo — CHAT DE TESTE (etapa 3.1). Deixa o dono conversar com a
-// secretária pelo navegador, como se fosse o cliente no WhatsApp, para calibrar
-// as respostas nos dois modos ANTES de ligar o WhatsApp de verdade. Só admin.
+// Secretária Cortavo — CONFIGURAÇÃO (o dono ajusta modo, link, regras e tetos) e
+// o CHAT DE TESTE (etapa 3.1, calibrar as respostas antes de ligar o WhatsApp).
+// Tudo só admin.
 const secretaria = require('../services/secretaria');
+const prisma = require('../config/db');
+
+// Chaves de configuração da secretária (na tabela Configuracao, por barbearia).
+const CHAVES = ['secretaria_modo', 'secretaria_link', 'secretaria_regras', 'secretaria_teto_mes', 'copiloto_teto_mes', 'secretaria_privacidade_link'];
 
 const MAX_MSG = 1000;
 const MAX_HIST = 12;
@@ -62,4 +66,44 @@ async function mensagemTeste(req, res) {
   }
 }
 
-module.exports = { verTeste, mensagemTeste };
+// GET /painel/secretaria — tela de configuração da secretária.
+async function verConfig(req, res) {
+  const regs = await prisma.configuracao.findMany({ where: { barbeariaId: req.barbeariaId, chave: { in: CHAVES } } });
+  const cfg = Object.fromEntries(regs.map((r) => [r.chave, r.valor]));
+  res.render('painel/secretaria-config', {
+    titulo: 'Secretária',
+    cfg: {
+      modo: cfg.secretaria_modo === 'terceiros' ? 'terceiros' : 'cortavo',
+      link: cfg.secretaria_link || '',
+      regras: cfg.secretaria_regras || '',
+      tetoMes: cfg.secretaria_teto_mes || '',
+      copilotoTetoMes: cfg.copiloto_teto_mes || '',
+      privacidadeLink: cfg.secretaria_privacidade_link || '',
+    },
+  });
+}
+
+// POST /painel/secretaria — salva a configuração.
+async function salvarConfig(req, res) {
+  const b = req.barbeariaId;
+  const soDigitos = (v) => String(v || '').replace(/\D/g, '');
+  const valores = {
+    secretaria_modo: modoValido(req.body.modo),
+    secretaria_link: String(req.body.link || '').trim().slice(0, 500),
+    secretaria_regras: String(req.body.regras || '').trim().slice(0, 1500),
+    secretaria_teto_mes: soDigitos(req.body.tetoMes),
+    copiloto_teto_mes: soDigitos(req.body.copilotoTetoMes),
+    secretaria_privacidade_link: String(req.body.privacidadeLink || '').trim().slice(0, 500),
+  };
+  for (const [chave, valor] of Object.entries(valores)) {
+    await prisma.configuracao.upsert({
+      where: { barbeariaId_chave: { barbeariaId: b, chave } },
+      update: { valor },
+      create: { barbeariaId: b, chave, valor },
+    });
+  }
+  req.session.flash = { tipo: 'sucesso', texto: 'Configuração da secretária salva.' };
+  res.redirect('/painel/secretaria');
+}
+
+module.exports = { verConfig, salvarConfig, verTeste, mensagemTeste };
