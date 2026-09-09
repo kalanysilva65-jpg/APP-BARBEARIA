@@ -103,5 +103,33 @@
       <%- include('../partials/flash') %> <%- body %>
     </main>
     <%- include('../partials/nav-inferior') %>
+    <script>
+      /* Acerta a barra inferior (position:fixed) que, em alguns WebViews do iOS,
+         abre "alta" porque o viewport dinâmico (dvh/safe-area) chega defasado e só
+         se acerta no 1º scroll. Aqui automatizamos esse acerto: um micro-scroll no
+         que rola (documento e/ou .sv-tela), logo após a tela montar — e de novo
+         depois que o splash de abertura sai (~1,9s). Imperceptível (vai e volta na
+         mesma posição). Só nas telas do design suave. */
+      (function () {
+        if (!document.body.classList.contains('pg-sv')) return;
+        function nudge(el) {
+          if (el && el.scrollHeight > el.clientHeight) {
+            var y = el.scrollTop; el.scrollTop = y + 1; el.scrollTop = y;
+          }
+        }
+        function acertar() {
+          nudge(document.scrollingElement || document.documentElement);
+          nudge(document.querySelector('.sv-tela'));
+          var nav = document.querySelector('.sv-nav');
+          if (nav) { nav.style.transform = 'translateZ(0)'; void nav.offsetHeight; nav.style.transform = ''; }
+        }
+        function agendar() {
+          requestAnimationFrame(function () { requestAnimationFrame(acertar); });
+          setTimeout(acertar, 1900); // após o splash de abertura sair
+        }
+        window.addEventListener('pageshow', agendar);
+        if (document.readyState === 'complete') agendar(); else window.addEventListener('load', agendar);
+      })();
+    </script>
   </body>
 </html>
