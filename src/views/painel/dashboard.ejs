@@ -32,6 +32,23 @@
     { href: '/painel/produtos', rot: 'Produtos', icone: '<path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5z"/><path d="M4 8.5 12 13l8-4.5M12 13v7"/>' },
   ];
 %>
+<script>
+  /* A Home só faz o show de animações na PRIMEIRA visita por sessão (pedido do
+     dono, 2026-09-09): ao VOLTAR pra ela (ex.: Caixa -> Início) a enxurrada de
+     animações (contadores, gráfico, cartões, barras) + a transição de página
+     travavam no WebView. Se já mostramos nesta sessão, marca o <html> e o
+     sv-home.css + o motor de animação entregam tudo PRONTO, instantâneo.
+     Roda ANTES da .sv-tela abaixo, então a marca já está posta no 1º quadro. */
+  (function () {
+    try {
+      if (sessionStorage.getItem('cortavoHomeVisto') === '1') {
+        document.documentElement.setAttribute('data-home-visto', '1');
+      } else {
+        sessionStorage.setItem('cortavoHomeVisto', '1');
+      }
+    } catch (e) {}
+  })();
+</script>
 <div class="sv-tela">
 
   <div class="sv-topo sv-reveal">

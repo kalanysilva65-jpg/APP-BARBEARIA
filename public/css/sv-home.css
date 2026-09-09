@@ -9,6 +9,16 @@
    Tudo prefixado com `.pg-sv` porque styles.css / painel-app.css /
    painel-novo.css continuam carregados e disputam os mesmos elementos. */
 
+/* RETORNO à Home na mesma sessão (data-home-visto, posto pela dashboard.ejs):
+   nada re-anima — tudo entra PRONTO. Evita o tranco de Caixa->Início no WebView.
+   Só o conteúdo é afetado; a barra inferior (fora do .conteudo) não. A 1ª visita
+   da sessão (sem o atributo) continua com o show completo. */
+html[data-home-visto] .conteudo,
+html[data-home-visto] .conteudo * {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+}
+
 /* Escalonamento da entrada: os blocos do topo sobem em cascata em vez de
    aparecerem todos juntos. Só os primeiros — abaixo da dobra ninguém vê. */
 .pg-sv .sv-hm-p2 { animation-delay: 0.1s; }

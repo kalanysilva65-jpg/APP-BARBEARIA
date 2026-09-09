@@ -25,7 +25,14 @@
 (function () {
   'use strict';
 
-  var reduzido = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // "reduzido" = entregar tudo no valor final, SEM animar. Cobre dois casos:
+  // (a) quem pediu menos movimento no sistema; (b) a Home já vista nesta sessão
+  // (data-home-visto no <html>, posto pela dashboard.ejs) — ao VOLTAR pra Home
+  // não re-animamos, o que evitava o tranco no WebView. Em outras telas o atributo
+  // não existe, então elas animam normal.
+  var reduzido =
+    (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ||
+    document.documentElement.hasAttribute('data-home-visto');
 
   // Viewport do ANCESTRAL que rola, não o da janela: as telas rolam dentro de
   // `.sv-tela`/`.sv-rolagem`, então usar innerHeight erraria o momento.
