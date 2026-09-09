@@ -212,6 +212,21 @@ async function definirIA(barbeariaId, conversaId, ativa) {
   return prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: !!ativa } });
 }
 
+// Mensagens de uma conversa com id MAIOR que `aposId` (para o polling do chat).
+// Zera as não-lidas se chegou algo novo (a equipe está com a conversa aberta).
+async function mensagensApos(barbeariaId, conversaId, aposId) {
+  const conversa = await prisma.conversa.findFirst({ where: { id: Number(conversaId), barbeariaId } });
+  if (!conversa) return null;
+  const msgs = await prisma.mensagem.findMany({
+    where: { conversaId: conversa.id, id: { gt: Number(aposId) || 0 } },
+    orderBy: { criadoEm: 'asc' },
+  });
+  if (msgs.length && conversa.naoLidas > 0) {
+    await prisma.conversa.update({ where: { id: conversa.id }, data: { naoLidas: 0 } });
+  }
+  return { conversa, msgs };
+}
+
 // LGPD: exclui uma conversa e todas as suas mensagens (direito de exclusão).
 // Escopado por barbearia — nunca apaga de outro tenant.
 async function excluirConversa(barbeariaId, conversaId) {
@@ -232,6 +247,7 @@ module.exports = {
   receberMensagemCliente,
   listarConversas,
   abrirConversa,
+  mensagensApos,
   responderComoHumano,
   definirIA,
   excluirConversa,

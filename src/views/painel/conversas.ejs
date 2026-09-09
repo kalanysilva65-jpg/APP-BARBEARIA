@@ -1,7 +1,7 @@
-<%/* Caixa de entrada (Fase 3.2). Lista de conversas OU uma conversa aberta (?id).
-     Estilos em public/css/sv-conversas.css. */%>
+<%/* Caixa de entrada. Lista (com busca + auto-atualização) OU conversa aberta
+     (com separadores de data + auto-atualização). Estilos em sv-conversas.css. */%>
 <%
-  function inic(nome) { var p = (nome || '?').trim().split(/\s+/); return ((p[0]||'?')[0] + (p[1] ? p[1][0] : '')).toUpperCase(); }
+  function inic(nome) { var p = (nome || '?').trim().split(/\s+/); return ((p[0] || '?')[0] + (p[1] ? p[1][0] : '')).toUpperCase(); }
 %>
 <div class="sv-tela sv-cv">
 
@@ -23,25 +23,15 @@
     <div class="sv-cv-avisoteto sv-reveal">⚠️ <strong>Teto de IA do mês atingido</strong> — respostas automáticas pausadas para conter custo. Vocês podem responder na mão; reinicia no próximo mês.</div>
   <% } %>
 
-  <% if (conversas.length === 0) { %>
-    <div class="sv-cartao sv-cv-vazio sv-reveal">Nenhuma conversa ainda. Quando o WhatsApp estiver ligado, as mensagens dos clientes aparecem aqui.</div>
-  <% } else { %>
-    <div class="sv-cv-lista sv-reveal">
-      <% conversas.forEach(function (c) { %>
-        <a href="/painel/conversas?id=<%= c.id %>" class="sv-cv-item">
-          <span class="sv-cv-av"><%= inic(c.nome) %></span>
-          <span class="sv-cv-corpo">
-            <span class="sv-cv-l1"><span class="sv-cv-nome"><%= c.nome %></span><span class="sv-cv-hora"><%= c.hora %></span></span>
-            <span class="sv-cv-l2">
-              <span class="sv-cv-previa"><%= c.previa %></span>
-              <% if (c.naoLidas > 0) { %><span class="sv-cv-badge"><%= c.naoLidas %></span><% } %>
-            </span>
-            <% if (!c.iaAtiva) { %><span class="sv-cv-taghum">você assumiu</span><% } %>
-          </span>
-        </a>
-      <% }) %>
+  <% if (conversas.length > 0) { %>
+    <div class="sv-cv-busca sv-reveal">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <input id="cv-busca" type="search" placeholder="Buscar conversa…" aria-label="Buscar conversa" autocomplete="off" />
     </div>
   <% } %>
+
+  <div id="cv-lista"><%- include('_conversas-lista', { conversas: conversas }) %></div>
+  <div class="sv-cv-vazio-busca" id="cv-vazio-busca" hidden>Nenhuma conversa encontrada.</div>
 
   <% if (ehAdmin) { %>
     <details class="sv-cv-simular sv-reveal">
@@ -55,6 +45,45 @@
       <div class="sv-cv-simular-hint">Só para testar a caixa de entrada antes de ligar o WhatsApp. A IA responde se estiver configurada.</div>
     </details>
   <% } %>
+
+  <script>
+    (function () {
+      // BUSCA (no cliente): filtra os itens pelo nome.
+      var busca = document.getElementById('cv-busca');
+      var vazioBusca = document.getElementById('cv-vazio-busca');
+      function filtrar() {
+        if (!busca) return;
+        var q = busca.value.trim().toLowerCase();
+        var itens = document.querySelectorAll('#cv-lista .sv-cv-item');
+        var visiveis = 0;
+        itens.forEach(function (it) {
+          var ok = !q || (it.getAttribute('data-nome') || '').indexOf(q) !== -1;
+          it.hidden = !ok;
+          if (ok) visiveis++;
+        });
+        if (vazioBusca) vazioBusca.hidden = !(q && visiveis === 0);
+      }
+      if (busca) busca.addEventListener('input', filtrar);
+
+      // AUTO-ATUALIZAÇÃO da lista: troca só o miolo quando muda, e re-aplica a busca.
+      var lista = document.getElementById('cv-lista');
+      var ultimoHtml = lista ? lista.innerHTML : '';
+      async function atualizarLista() {
+        if (!lista || document.hidden) return;
+        try {
+          var r = await fetch('/painel/conversas/fragmento', { headers: { 'X-Requested-With': 'fetch' } });
+          if (!r.ok || r.redirected) return; // sessão expirou -> não injeta o /login na lista
+          var html = await r.text();
+          if (html.trim() && html !== ultimoHtml) {
+            lista.innerHTML = html;
+            ultimoHtml = html;
+            filtrar();
+          }
+        } catch (e) {}
+      }
+      setInterval(atualizarLista, 8000);
+    })();
+  </script>
 
 <% } else { %>
   <%/* ---------------- CONVERSA ABERTA ---------------- */%>
@@ -82,9 +111,10 @@
     </form>
   </div>
 
-  <div class="sv-cv-thread" id="cv-thread">
+  <div class="sv-cv-thread" id="cv-thread" data-id="<%= aberta.conversa.id %>">
     <% aberta.mensagens.forEach(function (m) { %>
-      <div class="cv-msg cv-msg--<%= m.autor === 'cliente' ? 'in' : 'out' %>">
+      <% if (m.sep) { %><div class="cv-sep"><span><%= m.sep %></span></div><% } %>
+      <div class="cv-msg cv-msg--<%= m.autor === 'cliente' ? 'in' : 'out' %>" data-id="<%= m.id %>" data-dia="<%= m.dia %>">
         <% if (m.autor !== 'cliente') { %><span class="cv-msg-tag"><%= m.autor === 'ia' ? 'IA' : 'Você' %></span><% } %>
         <span class="cv-msg-txt"><%= m.texto %></span>
         <span class="cv-msg-hora"><%= m.hora %></span>
@@ -100,7 +130,68 @@
   </form>
 
   <script>
-    (function () { var t = document.getElementById('cv-thread'); if (t) window.scrollTo(0, document.body.scrollHeight); })();
+    (function () {
+      var thread = document.getElementById('cv-thread');
+      if (!thread) return;
+      var convId = thread.getAttribute('data-id');
+      function irAoFim() { window.scrollTo(0, document.body.scrollHeight); }
+      irAoFim();
+
+      function ultimoId() {
+        var msgs = thread.querySelectorAll('.cv-msg');
+        return msgs.length ? Number(msgs[msgs.length - 1].getAttribute('data-id')) : 0;
+      }
+      function ultimoDia() {
+        var msgs = thread.querySelectorAll('.cv-msg');
+        return msgs.length ? msgs[msgs.length - 1].getAttribute('data-dia') : '';
+      }
+      function addSep(label) {
+        var s = document.createElement('div');
+        s.className = 'cv-sep';
+        var span = document.createElement('span');
+        span.textContent = label;
+        s.appendChild(span);
+        thread.appendChild(s);
+      }
+      function addMsg(m) {
+        var el = document.createElement('div');
+        el.className = 'cv-msg cv-msg--' + (m.autor === 'cliente' ? 'in' : 'out');
+        el.setAttribute('data-id', m.id);
+        el.setAttribute('data-dia', m.dia);
+        if (m.autor !== 'cliente') {
+          var tag = document.createElement('span');
+          tag.className = 'cv-msg-tag';
+          tag.textContent = m.autor === 'ia' ? 'IA' : 'Você';
+          el.appendChild(tag);
+        }
+        var txt = document.createElement('span');
+        txt.className = 'cv-msg-txt';
+        txt.textContent = m.texto;
+        el.appendChild(txt);
+        var hora = document.createElement('span');
+        hora.className = 'cv-msg-hora';
+        hora.textContent = m.hora;
+        el.appendChild(hora);
+        thread.appendChild(el);
+      }
+      async function atualizar() {
+        if (document.hidden) return;
+        try {
+          var r = await fetch('/painel/conversas/' + convId + '/novas?apos=' + ultimoId(), { headers: { 'X-Requested-With': 'fetch' } });
+          if (!r.ok || r.redirected) return;
+          var d = await r.json();
+          if (!d.mensagens || !d.mensagens.length) return;
+          var perto = (window.innerHeight + window.scrollY) >= document.body.scrollHeight - 160;
+          var dia = ultimoDia();
+          d.mensagens.forEach(function (m) {
+            if (m.dia !== dia) { addSep(m.diaLabel); dia = m.dia; }
+            addMsg(m);
+          });
+          if (perto) irAoFim();
+        } catch (e) {}
+      }
+      setInterval(atualizar, 4000);
+    })();
   </script>
 <% } %>
 

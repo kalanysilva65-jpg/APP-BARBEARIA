@@ -143,7 +143,9 @@ router.post('/secretaria/teste/mensagem', exigeAdmin, limiteIA, secretariaContro
 // barbeiro (é o balcão compartilhado). `/simular` injeta uma mensagem de cliente
 // para testar sem o WhatsApp (só admin) — específica ANTES da paramétrica.
 router.get('/conversas', conversasController.ver);
+router.get('/conversas/fragmento', conversasController.fragmento); // auto-atualização da lista
 router.post('/conversas/simular', exigeAdmin, limiteIA, conversasController.simular);
+router.get('/conversas/:id/novas', conversasController.novas); // auto-atualização do chat
 router.post('/conversas/:id/responder', conversasController.responder);
 router.post('/conversas/:id/ia', conversasController.definirIA);
 router.post('/conversas/:id/excluir', conversasController.excluir);
