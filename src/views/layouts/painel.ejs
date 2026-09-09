@@ -113,22 +113,37 @@
       (function () {
         if (!document.body.classList.contains('pg-sv')) return;
         function nudge(el) {
-          if (el && el.scrollHeight > el.clientHeight) {
+          if (el && el.scrollHeight - el.clientHeight > 2) {
             var y = el.scrollTop; el.scrollTop = y + 1; el.scrollTop = y;
           }
         }
         function acertar() {
+          // O container que ROLA varia por tela: Home usa .sv-tela; Agenda e as
+          // telas do "Mais" têm raiz height:100dvh e rolam num corpo interno
+          // (.sv-cl-corpo, .sv-eq-painel, etc.). Então cutucamos o documento E
+          // todo elemento que de fato rola — assim pega qualquer tela.
           nudge(document.scrollingElement || document.documentElement);
-          nudge(document.querySelector('.sv-tela'));
+          var els = document.querySelectorAll('div, main, section, ul');
+          for (var i = 0; i < els.length; i++) {
+            var el = els[i];
+            if (el.scrollHeight - el.clientHeight > 2) {
+              var oy = getComputedStyle(el).overflowY;
+              if (oy === 'auto' || oy === 'scroll') nudge(el);
+            }
+          }
           var nav = document.querySelector('.sv-nav');
           if (nav) { nav.style.transform = 'translateZ(0)'; void nav.offsetHeight; nav.style.transform = ''; }
         }
         function agendar() {
           requestAnimationFrame(function () { requestAnimationFrame(acertar); });
+          setTimeout(acertar, 700);
           setTimeout(acertar, 1900); // após o splash de abertura sair
         }
         window.addEventListener('pageshow', agendar);
         if (document.readyState === 'complete') agendar(); else window.addEventListener('load', agendar);
+        // Plano B: quando o viewport dinâmico do iOS finalmente se acerta, ele
+        // dispara um resize no visualViewport — reposicionamos a barra nesse momento.
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', acertar, { passive: true });
       })();
     </script>
   </body>
