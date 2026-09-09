@@ -1,0 +1,95 @@
+<%/* Uso & custos de IA por barbearia (painel-mestre). Tabela + atualização em
+     tempo real (polling em /mestre/uso.json). Estilos no sv-mestre.css. */%>
+<div class="cabecalho-pagina agenda-cabecalho">
+  <div>
+    <h1>Uso &amp; custos</h1>
+    <p class="texto-secundario">Consumo de IA por barbearia — <strong id="uso-mes"><%= competencia %></strong>. Atualiza sozinho. <span class="texto-secundario">(estimativa; a fatura oficial fica na Anthropic/Meta)</span></p>
+  </div>
+  <div class="flex gap-8">
+    <form method="GET" action="/mestre/uso" class="flex gap-8" style="align-items:flex-end;margin:0">
+      <div class="campo" style="margin:0">
+        <label for="competencia">Mês</label>
+        <input id="competencia" type="month" name="competencia" value="<%= competencia %>" />
+      </div>
+      <button class="btn btn-secundario btn-sm" type="submit">Ver</button>
+    </form>
+    <a href="/mestre" class="btn btn-secundario btn-sm">Voltar</a>
+  </div>
+</div>
+
+<div class="card">
+  <p class="texto-secundario" style="margin-top:0">
+    Modelos: WhatsApp <strong><%= modelos.whatsapp %></strong> · Copiloto <strong><%= modelos.copiloto %></strong>.
+    O custo do WhatsApp aqui é só a parte da <strong>IA</strong> — a cobrança por conversa da Meta é à parte.
+  </p>
+
+  <div class="tabela-rolagem">
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th>Barbearia</th>
+          <th style="text-align:right">Conversas (WhatsApp)</th>
+          <th style="text-align:right">Respostas IA</th>
+          <th style="text-align:right">Copiloto (consultas)</th>
+          <th style="text-align:right">Custo IA (est.)</th>
+        </tr>
+      </thead>
+      <tbody id="uso-corpo">
+        <% linhas.forEach(function (l) { %>
+          <tr>
+            <td><%= l.nome %></td>
+            <td style="text-align:right"><%= l.conversas.toLocaleString('pt-BR') %></td>
+            <td style="text-align:right"><%= l.respostas.toLocaleString('pt-BR') %></td>
+            <td style="text-align:right"><%= l.copilotoConsultas.toLocaleString('pt-BR') %></td>
+            <td style="text-align:right">US$ <%= l.custoUSD.toFixed(2) %></td>
+          </tr>
+        <% }) %>
+        <% if (linhas.length === 0) { %>
+          <tr><td colspan="5" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>
+        <% } %>
+      </tbody>
+      <tfoot>
+        <tr style="font-weight:700">
+          <td>Total</td>
+          <td style="text-align:right" id="uso-tot-conversas"><%= totais.conversas.toLocaleString('pt-BR') %></td>
+          <td style="text-align:right" id="uso-tot-respostas"><%= totais.respostas.toLocaleString('pt-BR') %></td>
+          <td style="text-align:right" id="uso-tot-copiloto"><%= totais.copiloto.toLocaleString('pt-BR') %></td>
+          <td style="text-align:right" id="uso-tot-custo">US$ <%= totais.custoUSD.toFixed(2) %></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var comp = <%- JSON.stringify(competencia) %>;
+    var corpo = document.getElementById('uso-corpo');
+    if (!corpo) return;
+    function n(v) { return (v || 0).toLocaleString('pt-BR'); }
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+    async function atualizar() {
+      if (document.hidden) return;
+      try {
+        var r = await fetch('/mestre/uso.json?competencia=' + encodeURIComponent(comp), { headers: { 'X-Requested-With': 'fetch' } });
+        if (!r.ok || r.redirected) return;
+        var d = await r.json();
+        if (!d || !d.linhas) return;
+        corpo.innerHTML = d.linhas.length
+          ? d.linhas.map(function (l) {
+              return '<tr><td>' + esc(l.nome) + '</td>' +
+                '<td style="text-align:right">' + n(l.conversas) + '</td>' +
+                '<td style="text-align:right">' + n(l.respostas) + '</td>' +
+                '<td style="text-align:right">' + n(l.copilotoConsultas) + '</td>' +
+                '<td style="text-align:right">US$ ' + (l.custoUSD || 0).toFixed(2) + '</td></tr>';
+            }).join('')
+          : '<tr><td colspan="5" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>';
+        document.getElementById('uso-tot-conversas').textContent = n(d.totais.conversas);
+        document.getElementById('uso-tot-respostas').textContent = n(d.totais.respostas);
+        document.getElementById('uso-tot-copiloto').textContent = n(d.totais.copiloto);
+        document.getElementById('uso-tot-custo').textContent = 'US$ ' + (d.totais.custoUSD || 0).toFixed(2);
+      } catch (e) {}
+    }
+    setInterval(atualizar, 7000);
+  })();
+</script>

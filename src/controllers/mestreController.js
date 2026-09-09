@@ -8,6 +8,7 @@ const prisma = require('../config/db');
 const { caminhoDoUpload } = require('../config/paths');
 const { geocodificar } = require('../services/geocodificacao');
 const auditoria = require('../services/auditoria');
+const custosIA = require('../services/custosIA');
 
 // Quantas barbearias por página na lista (paginação server-side).
 const POR_PAGINA = 20;
@@ -548,8 +549,21 @@ async function sair(req, res) {
   res.redirect('/mestre');
 }
 
+// GET /mestre/uso — uso & custos de IA por barbearia (mês). ?competencia=AAAA-MM.
+async function usoCustos(req, res) {
+  const dados = await custosIA.resumo(req.query.competencia);
+  res.render('mestre/uso', { layout: 'layouts/mestre', titulo: 'Uso & custos', ...dados });
+}
+
+// GET /mestre/uso.json — mesmos dados em JSON, para a atualização em tempo real.
+async function usoCustosJson(req, res) {
+  res.json(await custosIA.resumo(req.query.competencia));
+}
+
 module.exports = {
   painel,
+  usoCustos,
+  usoCustosJson,
   formNova,
   criarBarbearia,
   detalhe,

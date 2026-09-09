@@ -2,6 +2,7 @@
 // laço da IA. O escopo (barbearia e, se barbeiro, o próprio usuário) sai SEMPRE
 // da sessão — nunca do corpo da requisição.
 const ia = require('../services/ia');
+const atendimento = require('../services/atendimento');
 
 const MAX_MSG = 1000; // tamanho máx. da pergunta do usuário
 const MAX_HIST = 10; // últimas N mensagens do histórico que reenviamos
@@ -44,7 +45,10 @@ async function mensagem(req, res) {
   mensagens.push({ role: 'user', content: texto });
 
   try {
-    const { texto: resposta } = await ia.responder(contextoDe(req), mensagens);
+    const { texto: resposta, usage } = await ia.responder(contextoDe(req), mensagens);
+    // Registra o uso do copiloto (contado à parte do WhatsApp) — não deixa
+    // uma falha de contagem quebrar a resposta ao usuário.
+    atendimento.registrarUsoCopiloto(req.barbeariaId, usage).catch((e) => console.error('[copiloto] uso:', e.message));
     res.json({ resposta });
   } catch (e) {
     console.error('[ia] falha ao responder:', e.message);

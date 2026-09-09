@@ -25,6 +25,9 @@ function uploadImagem(req, res, next) {
 // Lista + criação de barbearias
 router.get('/', mestreController.painel);
 router.get('/auditoria', mestreController.auditoriaLista);
+// Uso & custos de IA por barbearia (tempo real via /uso.json)
+router.get('/uso', mestreController.usoCustos);
+router.get('/uso.json', mestreController.usoCustosJson);
 router.get('/nova', mestreController.formNova);
 router.post('/barbearias', mestreController.criarBarbearia);
 

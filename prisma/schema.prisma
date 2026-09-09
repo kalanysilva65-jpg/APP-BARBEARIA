@@ -582,10 +582,15 @@ model UsoIA {
   id            Int      @id @default(autoincrement())
   barbeariaId   Int      @map("barbearia_id")
   competencia   String // "AAAA-MM"
+  // WhatsApp (secretária) — `respostas`/tokens são o que o TETO da 3.5 já usa.
   respostas     Int      @default(0)
   tokensEntrada Int      @default(0) @map("tokens_entrada")
   tokensSaida   Int      @default(0) @map("tokens_saida")
   avisadoTeto   Boolean  @default(false) @map("avisado_teto")
+  // Copiloto (Assistente do painel) — contado à parte (modelo/preço diferentes).
+  copilotoConsultas     Int @default(0) @map("copiloto_consultas")
+  copilotoTokensEntrada Int @default(0) @map("copiloto_tokens_entrada")
+  copilotoTokensSaida   Int @default(0) @map("copiloto_tokens_saida")
   atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em")
 
   barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)

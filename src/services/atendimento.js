@@ -85,6 +85,26 @@ async function registrarUso(barbeariaId, competencia, usage) {
     update: { respostas: { increment: 1 }, tokensEntrada: { increment: usage?.input || 0 }, tokensSaida: { increment: usage?.output || 0 } },
   });
 }
+// Uso do COPILOTO (Assistente do painel) — contado à parte do WhatsApp.
+async function registrarUsoCopiloto(barbeariaId, usage) {
+  const competencia = competenciaAtual();
+  await prisma.usoIA.upsert({
+    where: { barbeariaId_competencia: { barbeariaId, competencia } },
+    create: {
+      barbeariaId,
+      competencia,
+      copilotoConsultas: 1,
+      copilotoTokensEntrada: usage?.input || 0,
+      copilotoTokensSaida: usage?.output || 0,
+    },
+    update: {
+      copilotoConsultas: { increment: 1 },
+      copilotoTokensEntrada: { increment: usage?.input || 0 },
+      copilotoTokensSaida: { increment: usage?.output || 0 },
+    },
+  });
+}
+
 async function marcarAvisadoTeto(barbeariaId, competencia) {
   await prisma.usoIA.upsert({
     where: { barbeariaId_competencia: { barbeariaId, competencia } },
@@ -253,4 +273,5 @@ module.exports = {
   excluirConversa,
   expirarConversasAntigas,
   estadoTeto,
+  registrarUsoCopiloto,
 };

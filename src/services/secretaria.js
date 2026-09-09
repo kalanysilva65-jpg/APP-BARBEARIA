@@ -16,7 +16,8 @@ const { DIAS_SEMANA } = require('../config/constantes');
 const Anthropic = require('@anthropic-ai/sdk');
 const AnthropicCtor = Anthropic.default || Anthropic;
 
-const MODELO = process.env.IA_MODELO || 'claude-haiku-4-5-20251001';
+// Modelo do WhatsApp (alto volume) — Haiku por padrão (barato). Configurável.
+const MODELO = process.env.IA_MODELO_WHATSAPP || process.env.IA_MODELO || 'claude-haiku-4-5';
 const MAX_ITERACOES = 6;
 const MAX_TOKENS = 1024;
 
