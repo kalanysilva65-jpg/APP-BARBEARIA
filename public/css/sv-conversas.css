@@ -2,7 +2,7 @@
    thread de uma conversa aberta. Usa os tokens do suave. */
 
 .pg-sv .sv-cv-topo,
-.pg-sv .sv-cv-thtopo { display: flex; align-items: center; gap: 12px; padding: 16px 20px 6px; }
+.pg-sv .sv-cv-thtopo { display: flex; align-items: center; gap: 12px; padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 6px; }
 .pg-sv .sv-cv-topo { align-items: flex-start; justify-content: space-between; }
 .pg-sv .sv-cv-sub { font-size: 13px; color: var(--sv-muted); margin-top: 3px; }
 .pg-sv .sv-cv-fechar {

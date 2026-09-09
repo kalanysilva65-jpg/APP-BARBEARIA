@@ -6,7 +6,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 18px 20px 6px;
+  /* Soma o notch do iPhone (safe-area) — senão o título entra na câmera. */
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 20px 6px;
 }
 .pg-sv .sv-mt-mes { font-size: 13px; color: var(--sv-muted); margin-top: 3px; text-transform: capitalize; }
 .pg-sv .sv-mt-fechar {
