@@ -11,6 +11,7 @@
 // Tudo escopado por barbeariaId (multi-tenant).
 const prisma = require('../config/db');
 const secretaria = require('./secretaria');
+const faq = require('./faq');
 const { normalizarTelefone } = require('../utils/telefone');
 
 const HIST_MAX = 30; // mensagens recentes enviadas à IA como contexto
@@ -174,6 +175,14 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   // (3) Freio anti-abuso.
   if ((await floodNaConversa(conversa.id)) > ABUSO_MAX_HORA) {
     return { conversaId: conversa.id, respostaIA: null, freado: true };
+  }
+
+  // (3.5) CACHE DE FAQ: pergunta estática (endereço, horário, preços) responde
+  // direto dos dados — SEM IA (custo zero), e vale mesmo se o teto da IA estourou.
+  const respostaFaq = await faq.tentarResponder(barbeariaId, texto);
+  if (respostaFaq) {
+    await emitir(conversa, 'ia', respostaFaq);
+    return { conversaId: conversa.id, respostaIA: respostaFaq, faqHit: true };
   }
 
   // (4) Teto mensal por barbearia.
