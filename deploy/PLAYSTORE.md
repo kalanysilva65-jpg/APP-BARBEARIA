@@ -16,9 +16,13 @@ inscritos por 14 dias seguidos**. Só depois o Google libera o botão de produç
 
 - Contas de **organização/empresa** (com documento de empresa) são **isentas** dessa
   regra — se você tiver CNPJ e quiser, registrar como empresa pula essa etapa.
-- Como pessoa física: **junte ~12 pessoas desde já** (amigos, familiares, a equipe
-  das barbearias parceiras). Elas entram por um link de teste e só precisam instalar
-  e manter instalado. Isso adiciona ~2 semanas ao caminho até produção.
+- Como pessoa física: **junte 12 pessoas desde já** (amigos, familiares, a equipe
+  das barbearias parceiras). Elas entram por um link de teste, instalam **e usam de
+  verdade** — desde 2026 o Google checa se os testadores **realmente abriram/usaram**
+  o app, não basta instalar e deixar parado. Escolha gente que vai abrir algumas vezes.
+  Isso adiciona ~2 semanas ao caminho até produção.
+  > O número é **12** (o Google baixou de 20 → 12 em dez/2024; se vir "20" em algum
+  > lugar, é tela/guia desatualizado).
 
 Planeje: **conta → build → teste interno → teste fechado (14 dias) → produção.**
 
