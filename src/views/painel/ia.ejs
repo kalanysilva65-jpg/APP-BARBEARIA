@@ -37,6 +37,11 @@
 
     <form class="sv-ia-composer" id="ia-form" autocomplete="off">
       <input id="ia-input" class="sv-ia-input" type="text" name="mensagem" placeholder="Pergunte alguma coisa…" maxlength="1000" aria-label="Sua pergunta" />
+      <%/* Microfone (voz→texto no aparelho, sem custo). Nasce escondido; o JS só
+           mostra se o navegador tiver a Web Speech API. */%>
+      <button type="button" class="sv-ia-mic" id="ia-mic" aria-label="Falar" hidden>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+      </button>
       <button type="submit" class="sv-ia-enviar" id="ia-enviar" aria-label="Enviar">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
       </button>
@@ -131,6 +136,35 @@
     document.querySelectorAll('.sv-ia-sug').forEach(function (b) {
       b.addEventListener('click', function () { enviarPergunta(b.getAttribute('data-q')); });
     });
+
+    // --- Busca por voz (Web Speech API — transcrição no aparelho, sem custo) ---
+    // Some o botão em quem não suporta (ex.: WKWebView do iOS). No app iOS, voz
+    // confiável virá do plugin nativo junto do próximo rebuild.
+    var mic = document.getElementById('ia-mic');
+    var Recog = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (mic && Recog) {
+      mic.hidden = false;
+      var rec = null;
+      var ouvindo = false;
+      function pararEscuta() { ouvindo = false; mic.classList.remove('gravando'); }
+      mic.addEventListener('click', function () {
+        if (ouvindo) { try { rec && rec.stop(); } catch (e) {} return; }
+        rec = new Recog();
+        rec.lang = 'pt-BR';
+        rec.interimResults = true;
+        rec.continuous = false;
+        var base = input.value ? input.value + ' ' : '';
+        rec.onstart = function () { ouvindo = true; mic.classList.add('gravando'); input.focus(); };
+        rec.onerror = pararEscuta;
+        rec.onend = pararEscuta;
+        rec.onresult = function (ev) {
+          var txt = '';
+          for (var i = 0; i < ev.results.length; i++) txt += ev.results[i][0].transcript;
+          input.value = base + txt; // enche o campo; o usuário revisa e envia
+        };
+        try { rec.start(); } catch (e) { pararEscuta(); }
+      });
+    }
   })();
 </script>
 <% } %>
