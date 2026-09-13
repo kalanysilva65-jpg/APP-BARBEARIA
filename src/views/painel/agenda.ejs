@@ -380,7 +380,7 @@
 <script>
   // Autocomplete de cliente do pop-up "Novo agendamento".
   (function () {
-    var clientes = <%- JSON.stringify(clientes) %>;
+    var clientes = <%- jsonSeguro(clientes) %>;
     var inputNome = document.getElementById('cliente_nome-novo');
     var inputTel = document.getElementById('cliente_telefone-novo');
     var box = document.getElementById('sugestoes-cliente-novo');
@@ -519,7 +519,7 @@
   // Tudo é por delegação no document: o miolo é substituído a cada ação, então
   // listener preso no elemento morreria na primeira troca.
   (function () {
-    var BARBEIRO = <%- JSON.stringify(String(barbeiroSelecionado || '')) %>;
+    var BARBEIRO = <%- jsonSeguro(String(barbeiroSelecionado || '')) %>;
 
     function caixa(el) { return el.closest('.ag-modal-box'); }
     function centavosParaTexto(c) { return (c / 100).toFixed(2).replace('.', ','); }

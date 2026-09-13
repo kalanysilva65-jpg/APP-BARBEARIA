@@ -124,6 +124,25 @@ app.use((req, res, next) => {
   // Formata telefone normalizado -> "(51) 99999-9999"
   res.locals.fmtTelefone = require('./utils/telefone').formatarTelefone;
 
+  // Serializa um objeto para embutir dentro de <script> COM SEGURANÇA. Um
+  // JSON.stringify cru não escapa "</script>": um dado controlado pelo usuário
+  // (ex.: nome de cliente vindo do agendamento PÚBLICO) contendo "</script>..."
+  // fecharia a tag e rodaria script na origem do painel (XSS armazenado). Aqui
+  // os caracteres perigosos viram escapes \uXXXX — o JSON continua idêntico ao
+  // ser lido pelo JS, mas não há como quebrar a tag. Também escapa U+2028/2029,
+  // que são quebras de linha válidas em JS e estouram o parser.
+  // Serializa um objeto para embutir dentro de <script> COM SEGURANCA. Um
+  // JSON.stringify cru nao escapa "</script>": um dado do usuario (ex.: nome
+  // vindo do agendamento PUBLICO) com "</script>..." fecharia a tag e rodaria
+  // script na origem do painel (XSS armazenado). Aqui os caracteres perigosos
+  // viram escapes unicode; o JSON continua identico ao ser lido pelo JS, mas
+  // nao da pra quebrar a tag. U+2028/U+2029 entram tambem: sao quebras de
+  // linha validas em JS que estouram o parser dentro do <script>.
+  res.locals.jsonSeguro = (obj) => {
+    const perigosos = new RegExp('[<>&\\u2028\\u2029]', 'g');
+    return JSON.stringify(obj).replace(perigosos, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+  };
+
   // Logo/marca da barbearia do contexto: a do usuário logado (painel) ou a do
   // subdomínio (público). Sem contexto, usa os padrões.
   const ctxId = barbeariaIdAtual(req) || (req.barbearia && req.barbearia.id) || null;

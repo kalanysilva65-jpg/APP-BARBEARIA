@@ -59,4 +59,24 @@ const limiteIA = rateLimit({
   },
 });
 
-module.exports = { limiteLogin, limiteAdmin, limiteIA };
+// Freio da CONFIRMAÇÃO de agendamento público (POST /agendar/confirmar). É uma
+// rota SEM login: sem freio, um script pode criar milhares de clientes e
+// agendamentos falsos por barbearia — lixo no banco e pressão de escrita (o
+// recurso mais escasso no SQLite). 15 confirmações / 10 min é folgado para um
+// cliente de verdade (que marca um horário, não vinte) e fecha a porta pra
+// automação. É form (POST) — volta pro fluxo com aviso amigável, sem 429 cru.
+const limiteAgendar = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler(req, res) {
+    req.session.flash = {
+      tipo: 'erro',
+      texto: 'Muitas tentativas de agendamento em pouco tempo. Aguarde alguns minutos e tente de novo.',
+    };
+    res.redirect(req.get('Referer') || '/agendar');
+  },
+});
+
+module.exports = { limiteLogin, limiteAdmin, limiteIA, limiteAgendar };

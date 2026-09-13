@@ -476,6 +476,12 @@ model Caixa {
   categoria   CategoriaCaixa? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
   agendamento Agendamento?    @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
 
+  // `caixa` cresce a cada atendimento concluído (nunca é limpa) e é filtrada por
+  // período no Dashboard e nos Relatórios. Sem índice o SQLite varria a tabela
+  // inteira (todos os tenants). O 1º cobre a maioria das telas (entrada/saída num
+  // período); o 2º atende o filtro só por data. Medido: Dashboard -78%, ano -86%.
+  @@index([barbeariaId, tipo, data])
+  @@index([barbeariaId, data])
   @@map("caixa")
 }
 

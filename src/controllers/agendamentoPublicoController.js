@@ -5,7 +5,7 @@
 // usada) é carregada pelo parâmetro `assinatura` e aplica: os dias da semana
 // configurados no plano (diasSemana), valor R$ 0 e consumo de 1 uso (limitado).
 const prisma = require('../config/db');
-const { horariosDisponiveis, todosHorarios, dataLocal, duracaoComEncaixe } = require('../services/disponibilidade');
+const { horariosDisponiveis, todosHorarios, dataLocal, duracaoComEncaixe, paraMinutos } = require('../services/disponibilidade');
 const { DIAS_SEMANA } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const planoServ = require('../services/plano');
@@ -466,49 +466,98 @@ async function confirmar(req, res) {
     return res.redirect('/agendar/dados?' + qs.toString());
   }
 
-  // Cliente: do plano (se houver) ou cria/reaproveita pelo telefone
-  let clienteId = null;
-  if (assinatura) {
-    clienteId = assinatura.clienteId;
-  } else {
-    const telNorm = normalizarTelefone(telefone);
-    if (telNorm) {
-      let cliente = await prisma.cliente.findUnique({
-        where: { barbeariaId_telefone: { barbeariaId: b, telefone: telNorm } },
+  // Cria o agendamento DENTRO de uma transação que re-checa o conflito no
+  // último instante. A validação de disponibilidade acima roda ANTES da
+  // gravação; sem a re-checagem transacional, dois clientes confirmando o mesmo
+  // horário ao mesmo tempo passam os dois e marcam em cima um do outro (corrida
+  // TOCTOU). É a mesma proteção que a secretária de IA já usa (agendamentoSeguro).
+  const durEfetiva = duracaoComEncaixe(
+    servicos.map((x) => ({ duracaoMin: x.duracaoMin, ehEncaixe: x.ehEncaixe })),
+    { efetiva: true }
+  );
+  const dataObjFinal = dataLocal(data);
+  const iniNovo = paraMinutos(hora);
+  const fimNovo = iniNovo + durEfetiva;
+
+  let agendamento;
+  try {
+    agendamento = await prisma.$transaction(async (tx) => {
+      const existentes = await tx.agendamento.findMany({
+        where: { barbeariaId: b, usuarioId: barbeiro.id, data: dataObjFinal, status: { not: 'cancelado' } },
+        include: { itens: { include: { servico: true } } },
       });
-      if (!cliente) {
-        cliente = await prisma.cliente.create({
-          data: { barbeariaId: b, nome, telefone: telNorm, dataNascimento: parseNascimento(nascimentoStr) },
-        });
+      const conflita = existentes.some((ag) => {
+        const ini = paraMinutos(ag.horaInicio);
+        const dur = duracaoComEncaixe(
+          ag.itens.map((it) => ({ duracaoMin: it.servico.duracaoMin, ehEncaixe: it.servico.ehEncaixe, quantidade: it.quantidade })),
+          { efetiva: true }
+        );
+        return iniNovo < ini + dur && ini < fimNovo;
+      });
+      if (conflita) {
+        const e = new Error('CONFLITO');
+        e.conflito = true;
+        throw e;
       }
-      clienteId = cliente.id;
+
+      // Cliente: do plano (se houver) ou cria/reaproveita pelo telefone
+      let clienteId = null;
+      if (assinatura) {
+        clienteId = assinatura.clienteId;
+      } else {
+        const telNorm = normalizarTelefone(telefone);
+        if (telNorm) {
+          let cliente = await tx.cliente.findUnique({
+            where: { barbeariaId_telefone: { barbeariaId: b, telefone: telNorm } },
+          });
+          if (!cliente) {
+            cliente = await tx.cliente.create({
+              data: { barbeariaId: b, nome, telefone: telNorm, dataNascimento: parseNascimento(nascimentoStr) },
+            });
+          }
+          clienteId = cliente.id;
+        }
+      }
+
+      return tx.agendamento.create({
+        data: {
+          barbeariaId: b,
+          usuarioId: barbeiro.id,
+          clienteId,
+          clientePlanoId: usaPlano ? assinatura.id : null,
+          clienteNome: nome,
+          clienteEmail: null,
+          clienteTelefone: telefone,
+          data: dataObjFinal,
+          horaInicio: hora,
+          status: 'agendado',
+          valorTotal,
+          itens: {
+            create: servicos.map((s) => ({
+              servicoId: s.id,
+              valorUnitario: usaPlano ? 0 : s.valor,
+              quantidade: 1,
+            })),
+          },
+        },
+      });
+    });
+  } catch (e) {
+    if (e.conflito) {
+      req.session.flash = { tipo: 'erro', texto: 'Esse horário acabou de ser ocupado. Escolha outro, por favor.' };
+      const qs = new URLSearchParams({
+        servicoIds: servicoIds.join(','),
+        barbeiroId: ehQualquer ? 'any' : (req.body.barbeiroId || ''),
+        data: data || '',
+      });
+      if (assinatura) qs.set('assinatura', assinatura.id);
+      return res.redirect('/agendar/horario?' + qs.toString());
     }
+    throw e;
   }
 
-  const agendamento = await prisma.agendamento.create({
-    data: {
-      barbeariaId: b,
-      usuarioId: barbeiro.id,
-      clienteId,
-      clientePlanoId: usaPlano ? assinatura.id : null,
-      clienteNome: nome,
-      clienteEmail: null,
-      clienteTelefone: telefone,
-      data: dataLocal(data),
-      horaInicio: hora,
-      status: 'agendado',
-      valorTotal,
-      itens: {
-        create: servicos.map((s) => ({
-          servicoId: s.id,
-          valorUnitario: usaPlano ? 0 : s.valor,
-          quantidade: 1,
-        })),
-      },
-    },
-  });
-
-  // Consome 1 uso do plano (limitado; ilimitado não desconta).
+  // Consome 1 uso do plano (limitado; ilimitado não desconta). Fora da transação
+  // de propósito: não faz parte da corrida pelo horário.
   if (usaPlano) await planoServ.ajustarUso(assinatura.id, -1);
 
   // Avisa o barbeiro no aparelho dele. Sem `await`: o cliente não pode esperar

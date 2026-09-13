@@ -68,7 +68,10 @@
             <span class="fid-rank-nome"><%= fc.name %></span>
             <span class="fid-rank-selos"><%= fc.loyalty %> selo<%= fc.loyalty === 1 ? '' : 's' %> acumulado<%= fc.loyalty === 1 ? '' : 's' %></span>
           </span>
-          <form method="POST" action="/painel/fidelidade/clientes/<%= fc.id %>/resgatar" class="inline" onsubmit="return confirm('Resgatar ' + <%- JSON.stringify(fc.loyalty) %> + ' selo(s) de ' + <%- JSON.stringify(fc.name) %> + '?')">
+          <%/* O texto do confirm vem de um data-attribute escapado pelo <%= %>
+               (HTML-safe): montar a mensagem inline com JSON.stringify quebrava
+               com nome que tem aspas/apóstrofo e abria brecha de injeção. */%>
+          <form method="POST" action="/painel/fidelidade/clientes/<%= fc.id %>/resgatar" class="inline" data-confirmar="Resgatar <%= fc.loyalty %> selo(s) de <%= fc.name %>?" onsubmit="return confirm(this.dataset.confirmar)">
             <button type="submit" class="fid-rank-resgatar">Resgatar</button>
           </form>
           <form method="POST" action="/painel/fidelidade/clientes/<%= fc.id %>/selo" class="inline">

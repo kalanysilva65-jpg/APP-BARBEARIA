@@ -7,6 +7,8 @@ node_modules/
 # Banco de dados SQLite (gerado por migrations/seed)
 prisma/dev.db
 prisma/dev.db-journal
+prisma/dev.db-wal
+prisma/dev.db-shm
 
 # Uploads de imagens (mantém a pasta, ignora o conteúdo)
 uploads/*
@@ -21,6 +23,9 @@ data/*.db
 data/*.sqlite
 data/*.db-journal
 data/*.sqlite-journal
+# Arquivos do modo WAL do SQLite (sidecar, nunca versionar)
+data/*.db-wal
+data/*.db-shm
 # Sessoes gravadas em arquivo (session-file-store)
 data/sessions/
 !data/.gitkeep
