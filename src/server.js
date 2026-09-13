@@ -76,6 +76,17 @@ app.use(
 app.use('/uploads', express.static(uploadsDir, { maxAge: UM_ANO * 1000 }));
 
 // --- Sessão ---------------------------------------------------------------
+// O SESSION_SECRET assina os cookies de sessão. Se faltar em produção, o
+// fallback abaixo seria um segredo PÚBLICO (está no código) — qualquer um
+// poderia forjar uma sessão e se passar por outro usuário. Por isso, em
+// produção, um segredo ausente ou igual ao placeholder ABORTA o boot: é melhor
+// o serviço não subir (erro visível no log) do que subir inseguro em silêncio.
+// Em dev o fallback continua valendo, para não atrapalhar o localhost.
+const EH_PRODUCAO_SRV = process.env.NODE_ENV === 'production' || !!process.env.APP_DOMAIN;
+if (EH_PRODUCAO_SRV && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'troque-este-segredo')) {
+  console.log('[SEGURANÇA] SESSION_SECRET ausente ou no valor padrão em produção. Defina um valor forte e único (32+ caracteres aleatórios) no .env do VPS e reinicie. Abortando o boot.');
+  process.exit(1);
+}
 app.use(
   session({
     store: new FileStore({

@@ -57,7 +57,7 @@ async function cadastrar(req, res) {
   }
 
   const conta = await prisma.contaCliente.create({
-    data: { nome, email, senhaHash: bcrypt.hashSync(senha, 10), telefone },
+    data: { nome, email, senhaHash: await bcrypt.hash(senha, 10), telefone },
   });
   req.session.contaCliente = sessao(conta);
   res.redirect('/conta');
@@ -70,7 +70,7 @@ async function login(req, res) {
 
   const conta = await prisma.contaCliente.findUnique({ where: { email } });
   // Mensagem genérica de propósito (não revela se o e-mail existe).
-  const invalido = !conta || !conta.ativo || !bcrypt.compareSync(senha, conta.senhaHash);
+  const invalido = !conta || !conta.ativo || !(await bcrypt.compare(senha, conta.senhaHash));
   if (invalido) {
     req.session.flash = { tipo: 'erro', texto: 'E-mail ou senha inválidos.' };
     return res.redirect('/conta/entrar');

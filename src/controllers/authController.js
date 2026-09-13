@@ -54,7 +54,11 @@ async function fazerLogin(req, res) {
   const usuario = await localizarUsuario(email, req);
 
   // Mensagem genérica de propósito (não revela se o e-mail existe).
-  const invalido = !usuario || !usuario.ativo || !bcrypt.compareSync(senha, usuario.senhaHash);
+  // bcrypt.compare (assíncrono) em vez do ...Sync: o cálculo do bcrypt é caro
+  // (~dezenas de ms) e a versão síncrona TRAVA o event-loop — numa rajada de
+  // logins, todos os outros requests esperam. O await só roda se houver usuário
+  // (o || curto-circuita antes), mantendo a mensagem de erro genérica.
+  const invalido = !usuario || !usuario.ativo || !(await bcrypt.compare(senha, usuario.senhaHash));
   if (invalido) {
     req.session.flash = { tipo: 'erro', texto: 'E-mail ou senha inválidos.' };
     return res.redirect('/login');
@@ -130,14 +134,14 @@ async function trocarSenha(req, res) {
   const usuario = await prisma.usuario.findUnique({ where: { id: req.session.usuario.id } });
   if (!usuario) return req.session.destroy(() => res.redirect('/login'));
 
-  if (!bcrypt.compareSync(atual, usuario.senhaHash)) return erro('Senha atual incorreta.');
+  if (!(await bcrypt.compare(atual, usuario.senhaHash))) return erro('Senha atual incorreta.');
   if (nova.length < 8) return erro('A nova senha precisa ter ao menos 8 caracteres.');
   if (nova !== conf) return erro('A confirmação não bate com a nova senha.');
-  if (bcrypt.compareSync(nova, usuario.senhaHash)) return erro('A nova senha precisa ser diferente da atual.');
+  if (await bcrypt.compare(nova, usuario.senhaHash)) return erro('A nova senha precisa ser diferente da atual.');
 
   await prisma.usuario.update({
     where: { id: usuario.id },
-    data: { senhaHash: bcrypt.hashSync(nova, 10), senhaProvisoria: false },
+    data: { senhaHash: await bcrypt.hash(nova, 10), senhaProvisoria: false },
   });
   req.session.trocarSenha = false;
   req.session.flash = { tipo: 'sucesso', texto: 'Senha atualizada com sucesso.' };
