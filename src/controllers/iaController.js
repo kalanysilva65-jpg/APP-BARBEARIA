@@ -23,6 +23,10 @@ function ver(req, res) {
     titulo: 'Assistente',
     iaAtiva: ia.iaHabilitada(),
     primeiroNome: (req.session.usuario.nome || '').split(' ')[0],
+    // Chave para guardar a conversa no aparelho (localStorage), separada por
+    // barbearia + usuário — assim, num aparelho compartilhado, cada pessoa vê
+    // só o próprio histórico e uma barbearia não vê o de outra.
+    conversaKey: 'ia-conv-' + req.barbeariaId + '-' + req.session.usuario.id,
   });
 }
 

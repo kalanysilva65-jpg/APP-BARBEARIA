@@ -23,6 +23,17 @@
   border-radius: 50%;
   box-shadow: var(--sv-sombra);
 }
+/* Ações do topo (limpar + fechar) lado a lado. */
+.pg-sv .sv-ia-acoes {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Enquanto o campo do Assistente está em foco, some com a barra de navegação
+   fixa (senão o teclado do app a joga pra dentro da tela). Só nesta tela — a
+   folha sv-ia.css só carrega no Assistente e no teste da secretária. */
+.pg-sv .sv-nav.sv-nav--oculta { display: none !important; }
 
 /* Secretária (teste): seletor de modo + aviso */
 .pg-sv .sv-sec-modo {
