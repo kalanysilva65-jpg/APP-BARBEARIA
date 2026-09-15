@@ -7,7 +7,7 @@
 //   - exige que o horário esteja REALMENTE livre (barra passado / fora do expediente);
 //   - o barbeariaId e o telefone do cliente vêm do CHAMADOR (servidor), nunca da IA.
 const prisma = require('../config/db');
-const { dataLocal, paraMinutos, duracaoComEncaixe, horariosDisponiveis } = require('./disponibilidade');
+const { dataLocal, paraMinutos, duracaoComEncaixe, horariosDisponiveis, todosHorarios } = require('./disponibilidade');
 const { normalizarTelefone } = require('../utils/telefone');
 
 // Há sobreposição com algum atendimento ativo do barbeiro nessa data?
@@ -104,4 +104,78 @@ async function criarAgendamento(barbeariaId, dados) {
   }
 }
 
-module.exports = { criarAgendamento };
+// Duração efetiva (em min) de um agendamento a partir dos itens já carregados.
+function duracaoDoAgendamento(ag) {
+  return duracaoComEncaixe(
+    ag.itens.map((it) => ({ duracaoMin: it.servico.duracaoMin, ehEncaixe: it.servico.ehEncaixe, quantidade: it.quantidade })),
+    { efetiva: true }
+  );
+}
+
+// REAGENDA um atendimento para outra data/hora. Mesmas garantias do criar:
+//  - barbeariaId vem do CHAMADOR (servidor), nunca da IA;
+//  - `usuarioIdRestrito` (barbeiro não-admin) obriga que o agendamento seja DELE;
+//  - re-checa conflito DENTRO de uma transação, EXCLUINDO o próprio agendamento;
+//  - barra passado e horário fora do expediente.
+async function reagendarAgendamento(barbeariaId, dados) {
+  const { agendamentoId, novaData, novaHora, usuarioIdRestrito } = dados || {};
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(novaData || '')) || !/^\d{2}:\d{2}$/.test(String(novaHora || ''))) {
+    return { erro: 'entrada', mensagem: 'Data ou horário em formato inválido.' };
+  }
+  const where = { id: Number(agendamentoId), barbeariaId };
+  if (usuarioIdRestrito) where.usuarioId = usuarioIdRestrito;
+  const ag = await prisma.agendamento.findFirst({ where, include: { itens: { include: { servico: true } } } });
+  if (!ag) return { erro: 'nao_encontrado', mensagem: 'Agendamento não encontrado (ou não é seu).' };
+  if (ag.status === 'cancelado') return { erro: 'cancelado', mensagem: 'Esse agendamento está cancelado.' };
+  if (ag.status === 'concluido') return { erro: 'concluido', mensagem: 'Esse atendimento já foi concluído.' };
+
+  const dur = duracaoDoAgendamento(ag);
+  const grade = await todosHorarios(ag.usuarioId, novaData, dur);
+  const slot = grade.find((s) => s.hora === novaHora);
+  if (!slot) return { erro: 'fora', mensagem: 'Esse horário está fora do expediente do barbeiro nesse dia.' };
+
+  const dataDate = dataLocal(novaData);
+  const iniNovo = paraMinutos(novaHora);
+  const fimNovo = iniNovo + dur;
+  const agora = new Date();
+  if (dataDate.toDateString() === agora.toDateString() && iniNovo <= agora.getHours() * 60 + agora.getMinutes()) {
+    return { erro: 'passado', mensagem: 'Esse horário já passou. Escolha um mais tarde.' };
+  }
+
+  try {
+    const atualizado = await prisma.$transaction(async (tx) => {
+      const existentes = await tx.agendamento.findMany({
+        where: { barbeariaId, usuarioId: ag.usuarioId, data: dataDate, status: { not: 'cancelado' }, id: { not: ag.id } },
+        include: { itens: { include: { servico: true } } },
+      });
+      const conflita = existentes.some((o) => {
+        const ini = paraMinutos(o.horaInicio);
+        const d = duracaoDoAgendamento(o);
+        return iniNovo < ini + d && ini < fimNovo;
+      });
+      if (conflita) { const e = new Error('CONFLITO'); e.conflito = true; throw e; }
+      return tx.agendamento.update({ where: { id: ag.id }, data: { data: dataDate, horaInicio: novaHora } });
+    });
+    return { ok: true, agendamentoId: atualizado.id, data: novaData, hora: novaHora, clienteNome: ag.clienteNome };
+  } catch (e) {
+    if (e.conflito) return { erro: 'conflito', mensagem: 'Esse horário já está ocupado. Ofereça outro.' };
+    console.error('[agendamentoSeguro.reagendar] falha:', e.message);
+    return { erro: 'falha', mensagem: 'Não consegui reagendar agora.' };
+  }
+}
+
+// CANCELA um atendimento (status -> cancelado). Mesmo escopo de tenant/papel.
+// Não apaga nada (mantém histórico); concluído não pode ser cancelado por aqui.
+async function cancelarAgendamento(barbeariaId, dados) {
+  const { agendamentoId, usuarioIdRestrito } = dados || {};
+  const where = { id: Number(agendamentoId), barbeariaId };
+  if (usuarioIdRestrito) where.usuarioId = usuarioIdRestrito;
+  const ag = await prisma.agendamento.findFirst({ where });
+  if (!ag) return { erro: 'nao_encontrado', mensagem: 'Agendamento não encontrado (ou não é seu).' };
+  if (ag.status === 'cancelado') return { ok: true, jaCancelado: true, clienteNome: ag.clienteNome };
+  if (ag.status === 'concluido') return { erro: 'concluido', mensagem: 'Esse atendimento já foi concluído; não dá pra cancelar por aqui.' };
+  await prisma.agendamento.update({ where: { id: ag.id }, data: { status: 'cancelado' } });
+  return { ok: true, agendamentoId: ag.id, clienteNome: ag.clienteNome };
+}
+
+module.exports = { criarAgendamento, reagendarAgendamento, cancelarAgendamento };

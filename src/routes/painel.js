@@ -133,6 +133,7 @@ router.get('/exportar/relatorio', exigeAdmin, exportacaoController.visualizar);
 // partir da sessão. Read-only. A rota de mensagem tem freio de uso próprio.
 router.get('/ia', iaController.ver);
 router.post('/ia/mensagem', limiteIA, iaController.mensagem);
+router.post('/ia/acao', limiteIA, iaController.acao); // executa a ação após o usuário confirmar
 
 // Secretária (IA que atende o cliente) — CHAT DE TESTE da etapa 3.1. Só admin,
 // para calibrar as respostas antes de ligar o WhatsApp. Nada é gravado aqui.

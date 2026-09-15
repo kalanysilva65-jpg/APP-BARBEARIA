@@ -139,6 +139,36 @@
 }
 .pg-sv .sv-ia-erro { color: #b91c1c; }
 
+/* Card de confirmação de uma ação proposta pela IA (agendar/reagendar/cancelar). */
+.pg-sv .sv-ia-prop {
+  align-self: flex-start;
+  max-width: 92%;
+  background: var(--sv-card);
+  border: 1px solid var(--sv-line);
+  border-left: 3px solid var(--sv-ink);
+  border-radius: 16px;
+  border-bottom-left-radius: 5px;
+  padding: 13px 15px;
+  box-shadow: var(--sv-sombra);
+  animation: sv-ia-surge 0.22s cubic-bezier(0.2, 0.9, 0.25, 1.02) both;
+}
+.pg-sv .sv-ia-prop-txt { font-size: 14.5px; line-height: 1.5; color: var(--sv-ink); }
+.pg-sv .sv-ia-prop-acoes { display: flex; gap: 8px; margin-top: 12px; }
+.pg-sv .sv-ia-prop-acoes button {
+  flex: 1;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 11px;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+.pg-sv .sv-ia-prop-acoes button:active { transform: scale(0.97); }
+.pg-sv .sv-ia-prop-acoes button:disabled { opacity: 0.55; cursor: default; }
+.pg-sv .sv-ia-prop-cancelar { background: var(--sv-bg); color: var(--sv-ink); border: 1px solid var(--sv-line); }
+.pg-sv .sv-ia-prop-ok { background: var(--sv-ink); color: #fff; border: 1px solid var(--sv-ink); }
+
 /* "digitando…" (três pontinhos) */
 .pg-sv .sv-ia-digitando { display: inline-flex; gap: 4px; align-items: center; }
 .pg-sv .sv-ia-digitando span {

@@ -95,6 +95,71 @@
       return el;
     }
 
+    // Card de CONFIRMAÇÃO de uma ação proposta pela IA (agendar/reagendar/
+    // cancelar). Nada foi gravado ainda: só ao tocar "Confirmar" é que chama
+    // /painel/ia/acao (que re-valida tudo no servidor). textContent (nunca
+    // innerHTML) — o resumo pode conter nome de cliente.
+    function cartaoProposta(prop) {
+      var card = document.createElement('div');
+      card.className = 'sv-ia-prop';
+      var txt = document.createElement('div');
+      txt.className = 'sv-ia-prop-txt';
+      txt.textContent = prop.resumo || 'Confirmar esta ação?';
+      var acoes = document.createElement('div');
+      acoes.className = 'sv-ia-prop-acoes';
+      var bCancel = document.createElement('button');
+      bCancel.type = 'button';
+      bCancel.className = 'sv-ia-prop-cancelar';
+      bCancel.textContent = 'Cancelar';
+      var bOk = document.createElement('button');
+      bOk.type = 'button';
+      bOk.className = 'sv-ia-prop-ok';
+      bOk.textContent = 'Confirmar';
+      acoes.appendChild(bCancel);
+      acoes.appendChild(bOk);
+      card.appendChild(txt);
+      card.appendChild(acoes);
+      chat.appendChild(card);
+      rolar();
+
+      bCancel.addEventListener('click', function () {
+        card.remove();
+        var n = bolha('assistant', 'Ok, não fiz nada. 👍');
+        historico.push({ papel: 'assistant', texto: 'Ok, não fiz nada.' });
+        salvar();
+        rolar();
+      });
+
+      bOk.addEventListener('click', async function () {
+        bOk.disabled = true;
+        bCancel.disabled = true;
+        bOk.textContent = 'Confirmando…';
+        try {
+          var r = await fetch('/painel/ia/acao', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tipo: prop.tipo, dados: prop.dados }),
+          });
+          var d = await r.json().catch(function () { return {}; });
+          card.remove();
+          if (r.ok && d.ok) {
+            bolha('assistant', d.mensagem || '✅ Feito.');
+            historico.push({ papel: 'assistant', texto: d.mensagem || 'Feito.' });
+          } else {
+            var m = bolha('assistant', d.erro || 'Não consegui concluir a ação.');
+            m.classList.add('sv-ia-erro');
+          }
+          salvar();
+          rolar();
+        } catch (e) {
+          card.remove();
+          var m2 = bolha('assistant', 'Falha de conexão ao confirmar. Tente de novo.');
+          m2.classList.add('sv-ia-erro');
+          rolar();
+        }
+      });
+    }
+
     function digitando() {
       var el = document.createElement('div');
       el.className = 'sv-ia-msg sv-ia-msg--assistant sv-ia-digitando';
@@ -127,9 +192,12 @@
         });
         var dados = await r.json().catch(function () { return {}; });
         pts.remove();
-        if (r.ok && dados.resposta) {
-          bolha('assistant', dados.resposta);
-          historico.push({ papel: 'assistant', texto: dados.resposta });
+        if (r.ok && (dados.resposta || dados.proposta)) {
+          if (dados.resposta) {
+            bolha('assistant', dados.resposta);
+            historico.push({ papel: 'assistant', texto: dados.resposta });
+          }
+          if (dados.proposta) cartaoProposta(dados.proposta); // ação aguardando confirmação
           salvar(); // persiste a conversa a cada resposta concluída
         } else {
           var msg = bolha('assistant', dados.erro || 'Não consegui responder agora.');

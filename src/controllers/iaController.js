@@ -3,6 +3,13 @@
 // da sessão — nunca do corpo da requisição.
 const ia = require('../services/ia');
 const atendimento = require('../services/atendimento');
+const agseg = require('../services/agendamentoSeguro');
+
+// "AAAA-MM-DD" -> "DD/MM/AAAA" para as mensagens de confirmação.
+function brData(iso) {
+  const p = String(iso || '').split('-');
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
+}
 
 const MAX_MSG = 1000; // tamanho máx. da pergunta do usuário
 const MAX_HIST = 10; // últimas N mensagens do histórico que reenviamos
@@ -55,15 +62,65 @@ async function mensagem(req, res) {
   mensagens.push({ role: 'user', content: texto });
 
   try {
-    const { texto: resposta, usage } = await ia.responder(contextoDe(req), mensagens);
+    const { texto: resposta, usage, proposta } = await ia.responder(contextoDe(req), mensagens);
     // Registra o uso do copiloto (contado à parte do WhatsApp) — não deixa
     // uma falha de contagem quebrar a resposta ao usuário.
     atendimento.registrarUsoCopiloto(req.barbeariaId, usage).catch((e) => console.error('[copiloto] uso:', e.message));
-    res.json({ resposta });
+    // `proposta` (quando existe) é uma ação aguardando confirmação do usuário —
+    // NADA foi gravado ainda; a execução só acontece em POST /painel/ia/acao.
+    res.json({ resposta, proposta: proposta || null });
   } catch (e) {
     console.error('[ia] falha ao responder:', e.message);
     res.status(500).json({ erro: 'Não consegui responder agora. Tente de novo em instantes.' });
   }
 }
 
-module.exports = { ver, mensagem };
+// POST /painel/ia/mensagem/acao — executa uma ação (agendar/reagendar/cancelar)
+// APÓS o usuário confirmar na tela. Re-valida tudo no servidor: barbeariaId sai
+// da sessão; funcionário (não-admin) fica preso aos PRÓPRIOS atendimentos; e a
+// criação/reagendamento re-checa conflito de forma atômica (agendamentoSeguro).
+// A proposta que o cliente reenvia é só conveniência — quem manda é este código.
+async function acao(req, res) {
+  if (!ia.iaHabilitada()) return res.status(503).json({ erro: 'O assistente não está configurado.' });
+  const tipo = String(req.body.tipo || '');
+  const dados = req.body.dados || {};
+  const b = req.barbeariaId;
+  // Não-admin (funcionário) só age nos próprios atendimentos.
+  const usuarioIdRestrito = req.ehAdmin ? null : req.session.usuario.id;
+
+  try {
+    if (tipo === 'agendar') {
+      // Funcionário sempre agenda para SI; admin usa o barbeiro proposto.
+      const barbeiroId = usuarioIdRestrito || Number(dados.barbeiroId);
+      const r = await agseg.criarAgendamento(b, {
+        usuarioId: barbeiroId,
+        servicoIds: dados.servicoIds,
+        data: dados.data,
+        hora: dados.hora,
+        clienteNome: dados.clienteNome,
+        clienteTelefone: dados.clienteTelefone,
+      });
+      if (r.ok) return res.json({ ok: true, mensagem: `✅ Agendado: ${r.servicos.join(' + ')} com ${r.barbeiro} em ${brData(r.data)} às ${r.hora}.` });
+      return res.status(400).json({ erro: r.mensagem || 'Não consegui agendar.' });
+    }
+    if (tipo === 'reagendar') {
+      const r = await agseg.reagendarAgendamento(b, { agendamentoId: dados.agendamentoId, novaData: dados.novaData, novaHora: dados.novaHora, usuarioIdRestrito });
+      if (r.ok) return res.json({ ok: true, mensagem: `✅ Reagendado para ${brData(r.data)} às ${r.hora}.` });
+      return res.status(400).json({ erro: r.mensagem || 'Não consegui reagendar.' });
+    }
+    if (tipo === 'cancelar') {
+      const r = await agseg.cancelarAgendamento(b, { agendamentoId: dados.agendamentoId, usuarioIdRestrito });
+      if (r.ok) {
+        const nome = r.clienteNome ? r.clienteNome.split(' ')[0] : 'cliente';
+        return res.json({ ok: true, mensagem: r.jaCancelado ? 'Esse agendamento já estava cancelado.' : `✅ Agendamento de ${nome} cancelado.` });
+      }
+      return res.status(400).json({ erro: r.mensagem || 'Não consegui cancelar.' });
+    }
+    return res.status(400).json({ erro: 'Ação desconhecida.' });
+  } catch (e) {
+    console.error('[ia] acao falhou:', e.message);
+    res.status(500).json({ erro: 'Não consegui concluir a ação agora.' });
+  }
+}
+
+module.exports = { ver, mensagem, acao };
