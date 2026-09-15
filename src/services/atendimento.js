@@ -12,6 +12,7 @@
 const prisma = require('../config/db');
 const secretaria = require('./secretaria');
 const faq = require('./faq');
+const whatsapp = require('./whatsapp');
 const { normalizarTelefone } = require('../utils/telefone');
 
 const HIST_MAX = 30; // mensagens recentes enviadas à IA como contexto
@@ -60,9 +61,11 @@ function historicoParaIA(mensagens) {
   return arr;
 }
 
-// STUB da 3.3: aqui sairá a chamada real para a WhatsApp Cloud API.
+// Envio real pela WhatsApp Cloud API (Fase 3.3). Usa as credenciais da barbearia
+// da conversa e manda para o telefone do cliente. Erros são engolidos lá dentro
+// (logados) — a mensagem já ficou gravada na conversa de qualquer jeito.
 async function enviarWhatsApp(conversa, texto) {
-  return true;
+  return whatsapp.enviarTexto(conversa.barbeariaId, conversa.clienteTelefone, texto);
 }
 
 // Grava uma mensagem de saída (IA ou sistema), atualiza a prévia e envia.

@@ -48,8 +48,16 @@ app.set('layout', 'layouts/painel'); // layout padrão (painel interno)
 
 // --- Parsers e utilidades -------------------------------------------------
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+// `verify` guarda o corpo CRU (req.rawBody) — o webhook do WhatsApp precisa dele
+// para conferir a assinatura X-Hub-Signature-256 (HMAC calcula sobre os bytes
+// originais, não sobre o JSON já parseado).
+app.use(express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
 app.use(methodOverride('_method')); // permite PUT/DELETE em formulários
+
+// --- Webhooks externos (públicos) -----------------------------------------
+// Montado ANTES da sessão/tenant: a Meta chama de fora, sem cookie, e não deve
+// criar arquivo de sessão nem passar pela resolução de barbearia por subdomínio.
+app.use('/webhooks', require('./routes/webhooks'));
 
 // --- Arquivos estáticos ---------------------------------------------------
 // Cache agressivo, mas seguro:
