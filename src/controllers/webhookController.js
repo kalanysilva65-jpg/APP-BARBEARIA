@@ -63,6 +63,13 @@ async function receber(req, res) {
             .receberMensagemCliente(barbeariaId, { telefone: msg.from, nome: nomeContato, texto: msg.text.body })
             .catch((e) => console.error('[webhook] processar mensagem:', e.message));
         }
+        // Status de entrega (sent/delivered/read/failed). Logamos só as FALHAS,
+        // que trazem o motivo (ex.: número inválido, fora da janela de 24h).
+        for (const st of value.statuses || []) {
+          if (st.status === 'failed') {
+            console.log('[webhook] entrega FALHOU para', st.recipient_id, '-', JSON.stringify(st.errors || []));
+          }
+        }
       }
     }
   } catch (e) {
