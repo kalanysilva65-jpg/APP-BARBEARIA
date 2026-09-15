@@ -225,6 +225,16 @@
           if (nav) nav.classList.remove('sv-nav--oculta');
         }, 300);
       });
+
+      // Rolar a conversa FECHA o teclado (e a barra volta pro rodapé, sem vão).
+      // Usa `touchmove` (gesto real do dedo) em vez de `scroll` — assim NÃO
+      // dispara no scroll programático do `rolar()` depois de enviar. Ignora o
+      // arrasto feito DENTRO do próprio campo (seleção de texto).
+      document.addEventListener('touchmove', function (e) {
+        if (document.activeElement !== input) return;
+        if (composer && composer.contains(e.target)) return;
+        input.blur();
+      }, { passive: true });
     }
 
     // --- Busca por voz (Web Speech API — transcrição no aparelho, sem custo) ---
