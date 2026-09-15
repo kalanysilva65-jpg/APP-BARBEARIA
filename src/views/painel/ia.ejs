@@ -184,20 +184,42 @@
       });
     }
 
-    // --- Esconde a barra de navegação enquanto o campo está em foco ---------
-    // No app (WKWebView), ao abrir o teclado a barra fixa do rodapé "sobe" pra
-    // dentro da tela e atrapalha. Some com ela ao focar o campo e volta ao sair.
-    // O debounce no blur evita piscar quando o envio devolve o foco ao campo.
-    // A `.sv-nav` é incluída DEPOIS deste script no layout, então buscamos ela
+    // --- Campo acompanha o teclado + esconde a nav enquanto digita ----------
+    // No app (WKWebView) o teclado NÃO empurra o layout: sem isto, o campo fica
+    // parado no meio da tela. Com a VisualViewport API medimos a altura do
+    // teclado e subimos o campo pra colar no topo dele (comportamento tipo
+    // ChatGPT). E somem com a barra fixa do rodapé enquanto o campo está em foco
+    // (senão o teclado a joga pra dentro da tela). No desktop a viewport não
+    // encolhe, então o translateY fica zerado e nada muda ali.
+    // A `.sv-nav` é incluída DEPOIS deste script no layout, por isso é buscada
     // dentro do handler (no momento do evento), quando já existe no DOM.
+    var composer = document.getElementById('ia-form');
+    var vv = window.visualViewport;
+    function ajustarComposer() {
+      if (!composer || !vv) return;
+      var teclado = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      if (teclado > 80) { // teclado aberto (limiar ignora barrinhas pequenas)
+        var base = parseFloat(getComputedStyle(composer).bottom) || 0;
+        var subir = (teclado + 8) - base; // 8px de folga acima do teclado
+        composer.style.transform = 'translateY(' + (subir > 0 ? -subir : 0) + 'px)';
+      } else {
+        composer.style.transform = '';
+      }
+    }
+    if (vv) {
+      vv.addEventListener('resize', ajustarComposer);
+      vv.addEventListener('scroll', ajustarComposer);
+    }
     if (input) {
       var tBlur;
       input.addEventListener('focus', function () {
         clearTimeout(tBlur);
         var nav = document.querySelector('.sv-nav');
         if (nav) nav.classList.add('sv-nav--oculta');
+        setTimeout(ajustarComposer, 60); // reforça caso o resize demore
       });
       input.addEventListener('blur', function () {
+        if (composer) composer.style.transform = ''; // volta pro lugar de origem
         tBlur = setTimeout(function () {
           var nav = document.querySelector('.sv-nav');
           if (nav) nav.classList.remove('sv-nav--oculta');

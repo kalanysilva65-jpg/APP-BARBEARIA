@@ -169,6 +169,11 @@
   border-radius: 20px;
   padding: 6px 6px 6px 8px;
   box-shadow: 0 8px 30px rgba(14, 14, 14, 0.14);
+  /* Anima a subida do campo até o topo do teclado (o JS aplica o translateY). */
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-sv .sv-ia-composer { transition: none; }
 }
 .pg-sv .sv-ia-input {
   flex: 1;
