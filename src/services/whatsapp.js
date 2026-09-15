@@ -8,6 +8,20 @@ const prisma = require('../config/db');
 
 const API_VERSION = process.env.WHATSAPP_API_VERSION || 'v21.0';
 
+// Normaliza o número para ENVIO na Cloud API.
+// Brasil: o WhatsApp costuma entregar o `from` de celular SEM o 9º dígito
+// (formato antigo: 55 + DDD + 8 dígitos = 12). Ao responder, a Meta espera o
+// formato com o 9 (55 + DDD + 9 + 8 dígitos = 13) — senão dá erro #131030
+// ("número não está na lista de permissão") em teste e falha de entrega em prod.
+// Regra: se começar com 55 e tiver 12 dígitos, insere o 9 depois do DDD.
+function numeroParaEnvio(valor) {
+  let d = String(valor || '').replace(/\D/g, '');
+  if (d.startsWith('55') && d.length === 12) {
+    d = '55' + d.slice(2, 4) + '9' + d.slice(4);
+  }
+  return d;
+}
+
 // Credenciais de uma barbearia (ou nulos se ainda não configurou).
 async function credenciais(barbeariaId) {
   const cfgs = await prisma.configuracao.findMany({
@@ -41,7 +55,7 @@ async function enviarTexto(barbeariaId, para, texto) {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messaging_product: 'whatsapp',
-        to: String(para).replace(/\D/g, ''),
+        to: numeroParaEnvio(para),
         type: 'text',
         text: { body: String(texto).slice(0, 4096), preview_url: false },
       }),
