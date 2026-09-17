@@ -31,7 +31,18 @@ router.get('/privacidade', (req, res) => {
   res.render('legal/privacidade', {
     layout: 'layouts/blank',
     titulo: 'Política de Privacidade',
-    atualizadoEm: '13 de agosto de 2026',
+    atualizadoEm: '17 de setembro de 2026',
+    emailContato: process.env.EMAIL_CONTATO || 'kalanysilva65@gmail.com',
+  });
+});
+
+// Termos de Serviço — pública e SEM login (mesma razão da privacidade: as lojas
+// e o App Review da Meta pedem uma URL aberta).
+router.get('/termos', (req, res) => {
+  res.render('legal/termos', {
+    layout: 'layouts/blank',
+    titulo: 'Termos de Serviço',
+    atualizadoEm: '17 de setembro de 2026',
     emailContato: process.env.EMAIL_CONTATO || 'kalanysilva65@gmail.com',
   });
 });

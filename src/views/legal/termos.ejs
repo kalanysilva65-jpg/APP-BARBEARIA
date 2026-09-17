@@ -1,0 +1,83 @@
+<%/* Termos de Serviço.
+
+     Público e sem login: exigido no App Review da Meta (WhatsApp) e nas lojas.
+     Descreve o que o Cortavo REALMENTE é e faz hoje. É um rascunho técnico
+     honesto, NÃO um parecer jurídico — convém revisão de advogado antes de
+     usar pra valer. */%>
+<div class="sv-legal">
+  <h1 class="sv-legal-tit">Termos de Serviço</h1>
+  <p class="sv-legal-data">Última atualização: <%= atualizadoEm %></p>
+
+  <p>
+    O <strong>Cortavo</strong> é um sistema de gestão e agendamento para barbearias.
+    Estes termos explicam as regras de uso do serviço. Ao criar uma conta ou usar o
+    Cortavo, você concorda com o que está aqui.
+  </p>
+
+  <h2>1. O que o Cortavo oferece</h2>
+  <p>
+    Uma plataforma para a barbearia gerenciar agenda, clientes, serviços, caixa e
+    comissões, além de um atendimento opcional por WhatsApp com assistente de IA.
+    O Cortavo fornece o software e a infraestrutura; a operação do dia a dia (preços,
+    horários, atendimento) é da barbearia.
+  </p>
+
+  <h2>2. Contas e responsabilidade</h2>
+  <ul>
+    <li>A barbearia é responsável por manter os dados de acesso seguros e por tudo que acontece na sua conta.</li>
+    <li>A barbearia é responsável pelos dados dos próprios clientes e por usá-los conforme a lei (LGPD). O Cortavo trata esses dados apenas para operar o serviço.</li>
+    <li>Cada barbearia enxerga somente os próprios dados.</li>
+  </ul>
+
+  <h2>3. Uso aceitável</h2>
+  <p>Você concorda em não usar o Cortavo para:</p>
+  <ul>
+    <li>enviar spam, mensagens não solicitadas ou conteúdo ilegal;</li>
+    <li>violar as regras do WhatsApp/Meta ou de qualquer outro serviço integrado;</li>
+    <li>tentar burlar limites, invadir ou sobrecarregar o sistema.</li>
+  </ul>
+
+  <h2>4. Atendimento por WhatsApp e IA</h2>
+  <p>
+    Quando a barbearia ativa o atendimento por WhatsApp, a conexão usa a
+    <strong>API oficial da Meta (WhatsApp Business Platform)</strong> e o número
+    continua pertencendo à barbearia. A assistente de IA responde em nome da
+    barbearia, dentro das regras que ela define. O tratamento das mensagens está
+    descrito na <a href="/privacidade">Política de Privacidade</a>.
+  </p>
+
+  <h2>5. Pagamentos</h2>
+  <p>
+    Os pagamentos dos serviços (corte, barba etc.) acontecem <strong>presencialmente
+    na barbearia</strong>. O Cortavo registra apenas a forma escolhida (ex.: "Pix",
+    "Crédito"), nunca números de cartão. A assinatura do próprio Cortavo, quando
+    houver, é combinada à parte com o fornecedor.
+  </p>
+
+  <h2>6. Disponibilidade</h2>
+  <p>
+    Fazemos o possível para manter o serviço no ar, mas ele é fornecido "como está",
+    sem garantia de funcionamento ininterrupto. Podemos fazer manutenções e melhorias
+    que causem indisponibilidade breve.
+  </p>
+
+  <h2>7. Encerramento</h2>
+  <p>
+    A barbearia pode encerrar a conta quando quiser. Podemos suspender contas que
+    violem estes termos ou as regras dos serviços integrados. Encerrada a conta, os
+    dados podem ser apagados a pedido.
+  </p>
+
+  <h2>8. Alterações</h2>
+  <p>
+    Estes termos podem ser atualizados conforme o serviço evolui. Mudanças relevantes
+    serão comunicadas, e o uso continuado significa concordância com a versão nova.
+  </p>
+
+  <h2>Contato</h2>
+  <p>
+    Dúvidas sobre estes termos:
+    <a href="mailto:<%= emailContato %>"><%= emailContato %></a>
+  </p>
+  <p class="sv-legal-data"><a href="/privacidade">Política de Privacidade</a></p>
+</div>
