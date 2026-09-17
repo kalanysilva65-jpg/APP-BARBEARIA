@@ -23,8 +23,17 @@ const ABUSO_MAX_HORA = 20; // msgs do MESMO cliente numa 1h antes de a IA recuar
 const RETENCAO_MESES = 12; // conversas mais antigas que isso são apagadas (LGPD)
 const PALAVRAS_OPTOUT = ['SAIR', 'PARAR', 'STOP', 'CANCELAR'];
 
+// Remove "metades soltas" de emoji (surrogates sem par). Elas surgem quando um
+// texto com emoji é cortado no meio (ex.: slice de 80 na prévia) e QUEBRAM a
+// serialização do Prisma/SQLite -> "unexpected end of hex escape". Tira o high
+// surrogate sem o low seguinte, e o low sem o high anterior.
+function semSurrogatesSoltos(s) {
+  return String(s == null ? '' : s)
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '')
+    .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
+}
 function previa(texto) {
-  return (texto || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  return semSurrogatesSoltos((texto || '').replace(/\s+/g, ' ').trim().slice(0, 80));
 }
 function competenciaAtual() {
   const d = new Date();
@@ -82,9 +91,10 @@ async function enviarWhatsApp(conversa, texto) {
 
 // Grava uma mensagem de saída (IA ou sistema), atualiza a prévia e envia.
 async function emitir(conversa, autor, texto) {
-  await prisma.mensagem.create({ data: { conversaId: conversa.id, autor, texto } });
-  await prisma.conversa.update({ where: { id: conversa.id }, data: { ultimaPrevia: previa(texto), ultimaMensagemEm: new Date() } });
-  await enviarWhatsApp(conversa, texto);
+  const limpo = semSurrogatesSoltos(texto);
+  await prisma.mensagem.create({ data: { conversaId: conversa.id, autor, texto: limpo } });
+  await prisma.conversa.update({ where: { id: conversa.id }, data: { ultimaPrevia: previa(limpo), ultimaMensagemEm: new Date() } });
+  await enviarWhatsApp(conversa, limpo);
 }
 
 // --- Teto de custo (uso mensal de IA por barbearia) ---
@@ -149,6 +159,9 @@ async function floodNaConversa(conversaId) {
 async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   const tel = normalizarTelefone(telefone) || String(telefone || '').trim();
   if (!tel || !texto) return { erro: 'Dados insuficientes.' };
+  // Blinda contra emoji cortado/malformado vindo do cliente (mesmo motivo da
+  // previa): evita quebrar o Prisma ao gravar/atualizar a conversa.
+  texto = semSurrogatesSoltos(texto);
 
   // Cria/atualiza a conversa e grava a mensagem do cliente.
   let conversa = await prisma.conversa.findUnique({
