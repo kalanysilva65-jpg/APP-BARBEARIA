@@ -29,7 +29,7 @@ router.get('/', (req, res) => {
 // precisa conseguir abri-la sem conta.
 router.get('/privacidade', (req, res) => {
   res.render('legal/privacidade', {
-    layout: 'layouts/blank',
+    layout: 'layouts/legal',
     titulo: 'Política de Privacidade',
     atualizadoEm: '17 de setembro de 2026',
     emailContato: process.env.EMAIL_CONTATO || 'kalanysilva65@gmail.com',
@@ -40,7 +40,7 @@ router.get('/privacidade', (req, res) => {
 // e o App Review da Meta pedem uma URL aberta).
 router.get('/termos', (req, res) => {
   res.render('legal/termos', {
-    layout: 'layouts/blank',
+    layout: 'layouts/legal',
     titulo: 'Termos de Serviço',
     atualizadoEm: '17 de setembro de 2026',
     emailContato: process.env.EMAIL_CONTATO || 'kalanysilva65@gmail.com',
