@@ -20,6 +20,7 @@ const HIST_MAX = 30; // mensagens recentes enviadas à IA como contexto
 const TETO_PADRAO = 1500; // respostas de IA por mês por barbearia (config: secretaria_teto_mes)
 const TETO_COPILOTO_PADRAO = 200; // consultas do copiloto/mês por barbearia (config: copiloto_teto_mes)
 const ABUSO_MAX_HORA = 20; // msgs do MESMO cliente numa 1h antes de a IA recuar
+const REPETICOES_MAX = 3; // mesma mensagem repetida N vezes seguidas -> passa pra humano (IA travou)
 const RETENCAO_MESES = 12; // conversas mais antigas que isso são apagadas (LGPD)
 const PALAVRAS_OPTOUT = ['SAIR', 'PARAR', 'STOP', 'CANCELAR'];
 
@@ -55,6 +56,26 @@ function pedeHumano(texto) {
   const querFalar = /(falar|conversar|atendimento|atender|passar|transferir|me passa|quero|queria|preciso|tem |chama|chamar)/.test(t);
   const alvoHumano = /(atendente|humano|uma pessoa|com alguem|responsavel|gerente|com o dono|ser humano|pessoa de verdade|nao (e|eh) (robo|bot|ia))/.test(t);
   return querFalar && alvoHumano;
+}
+
+// "Assinatura" de uma mensagem para comparar repetição (ignora acento, caixa,
+// pontuação e espaços). "Quero agendar!" e "quero agendar" viram a mesma coisa.
+function assinaturaMsg(texto) {
+  return (texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+// Quantas das ÚLTIMAS mensagens do cliente (incluindo a atual) são praticamente
+// iguais, em sequência. Se o cliente repete o mesmo pedido, a IA não resolveu.
+function repeticoesSeguidas(msgs) {
+  const doCliente = msgs.filter((m) => m.autor === 'cliente');
+  if (!doCliente.length) return 0;
+  const alvo = assinaturaMsg(doCliente[doCliente.length - 1].texto);
+  if (!alvo) return 0;
+  let n = 0;
+  for (let i = doCliente.length - 1; i >= 0; i--) {
+    if (assinaturaMsg(doCliente[i].texto) === alvo) n++;
+    else break;
+  }
+  return n;
 }
 
 async function lerConfig(barbeariaId, chave, padrao) {
@@ -215,9 +236,14 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
     await emitir(conversa, 'ia', aviso);
   }
 
-  // (3) Freio anti-abuso.
+  // (3) Freio anti-abuso: muitas mensagens do mesmo cliente em 1h. Em vez de ficar
+  // muda (deixa o cliente no vácuo e a conversa no limbo), passa pra um humano e
+  // para de gastar IA nesta conversa. iaAtiva=false evita re-notificar a cada msg.
   if ((await floodNaConversa(conversa.id)) > ABUSO_MAX_HORA) {
-    return { conversaId: conversa.id, respostaIA: null, freado: true };
+    await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
+    await emitir(conversa, 'ia', 'Vou pedir pra alguém da equipe continuar seu atendimento por aqui, tá? 🙂');
+    await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
+    return { conversaId: conversa.id, freado: true };
   }
 
   // (3.5) CACHE DE FAQ: pergunta estática (endereço, horário, preços) responde
@@ -237,6 +263,18 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
 
   // Monta contexto e responde.
   const msgs = await prisma.mensagem.findMany({ where: { conversaId: conversa.id }, orderBy: { criadoEm: 'asc' }, take: HIST_MAX });
+
+  // (4.5) SALVA-VIDAS ANTI-LOOP: se o cliente mandou praticamente a MESMA mensagem
+  // várias vezes seguidas, a IA não está resolvendo. Em vez de repetir a mesma
+  // resposta (frustra o cliente e queima tokens), passa pra um humano AGORA e para
+  // de responder sozinha nesta conversa. Roda ANTES da chamada de IA (não gasta).
+  if (repeticoesSeguidas(msgs) >= REPETICOES_MAX) {
+    await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
+    await emitir(conversa, 'ia', 'Deixa eu chamar alguém da equipe pra te ajudar melhor com isso 🙂 Já já uma pessoa te responde por aqui.');
+    await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
+    return { conversaId: conversa.id, loopDetectado: true };
+  }
+
   const b = await prisma.barbearia.findUnique({ where: { id: barbeariaId } });
   const ctx = {
     barbeariaId,
