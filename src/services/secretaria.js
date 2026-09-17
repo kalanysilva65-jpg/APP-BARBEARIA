@@ -12,8 +12,21 @@ const prisma = require('../config/db');
 const notificacoes = require('./notificacoes');
 const { horariosDisponiveis, duracaoComEncaixe, dataLocal } = require('./disponibilidade');
 const agendamentoSeguro = require('./agendamentoSeguro');
+const plano = require('./plano');
 const { normalizarTelefone, variantesTelefone } = require('../utils/telefone');
 const { DIAS_SEMANA } = require('../config/constantes');
+
+// "AAAA-MM-DD" a partir dos componentes LOCAIS (evita virar o dia por fuso).
+function ymdLocal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+// Dias em que o plano pode ser usado, por extenso. "0,1,2,3,4,5,6" = todos.
+function diasDoPlano(diasSemana) {
+  const todos = '0,1,2,3,4,5,6';
+  const s = String(diasSemana || todos).trim();
+  if (!s || s === todos) return 'todos os dias';
+  return s.split(',').map((n) => DIAS_SEMANA[Number(n)]).filter(Boolean).join(', ');
+}
 
 const Anthropic = require('@anthropic-ai/sdk');
 const AnthropicCtor = Anthropic.default || Anthropic;
@@ -159,6 +172,29 @@ async function toolCadastrarCliente(ctx, args) {
     data: { barbeariaId: ctx.barbeariaId, nome, telefone: telNorm, dataNascimento: nascimento },
   });
   return { ok: true, cadastrado: true, cliente: { nome: criado.nome, tem_data_nascimento: !!nascimento } };
+}
+
+// Planos ATIVOS (vigentes) DESTE cliente: usos restantes, validade, dias
+// permitidos e serviço coberto — conforme as regras configuradas do plano.
+// "Vigente" = ativo + dentro da validade + (se limitado) com usos > 0.
+async function toolMeusPlanos(ctx) {
+  const telNorm = telefoneDoCliente(ctx);
+  if (!telNorm) return { planos_ativos: [] };
+  const cliente = await prisma.cliente.findFirst({
+    where: { barbeariaId: ctx.barbeariaId, telefone: { in: variantesTelefone(telNorm) } },
+    include: { planos: { include: { plano: { include: { servico: true } } }, orderBy: { dataFim: 'desc' } } },
+  });
+  if (!cliente) return { planos_ativos: [] };
+  const vigentes = cliente.planos.filter((a) => plano.vigente(a));
+  return {
+    planos_ativos: vigentes.map((a) => ({
+      plano: a.plano.nome,
+      usos_restantes: a.usosRestantes === null ? 'ilimitado' : a.usosRestantes,
+      valido_ate: ymdLocal(new Date(a.dataFim)),
+      cobre: a.plano.servico ? a.plano.servico.nome : 'qualquer serviço',
+      dias_permitidos: diasDoPlano(a.plano.diasSemana),
+    })),
+  };
 }
 
 // ---------- ferramentas do modo CORTAVO ----------
@@ -337,6 +373,7 @@ function ferramentasDoModo(modo) {
     { name: 'listar_planos', description: 'Lista os planos/mensalidades ATIVOS da barbearia (nome, preço, o que cobre). Use sempre que o cliente perguntar sobre plano, mensalidade, pacote ou assinatura.', input_schema: { type: 'object', properties: {} } },
     { name: 'encaminhar_humano', description: 'Pausa o atendimento automático e chama um atendente humano. Use quando o cliente pedir para falar com uma pessoa/atendente/humano, quando quiser CONTRATAR um plano (o pagamento é presencial), ou quando você não conseguir resolver o pedido.', input_schema: { type: 'object', properties: {} } },
     { name: 'buscar_cliente', description: 'Verifica se quem está falando já tem cadastro nesta barbearia (pelo número do WhatsApp). Use no começo do atendimento, antes de pedir dados ou agendar. Se já for cadastrado, chame a pessoa pelo nome e NÃO peça os dados de novo.', input_schema: { type: 'object', properties: {} } },
+    { name: 'meus_planos', description: 'Planos/assinaturas ATIVOS do cliente (usos restantes, até quando vale, quais dias pode usar e qual serviço cobre). Use quando o cliente já for cadastrado (logo após buscar_cliente), quando ele perguntar sobre o plano/usos dele, e ao agendar (pra avisar se dá pra usar o plano). Se voltar vazio, ele não tem plano ativo.', input_schema: { type: 'object', properties: {} } },
     {
       name: 'cadastrar_cliente',
       description: 'Cadastra o cliente (ou usa o que já existe — nunca duplica). O telefone é sempre o do WhatsApp; você só coleta nome e, se possível, a data de nascimento. Use quando buscar_cliente disser que não é cadastrado.',
@@ -454,6 +491,8 @@ async function execFerramenta(nome, args, ctx) {
       return toolEncaminharHumano(ctx);
     case 'buscar_cliente':
       return toolBuscarCliente(ctx);
+    case 'meus_planos':
+      return toolMeusPlanos(ctx);
     case 'cadastrar_cliente':
       return toolCadastrarCliente(ctx, args);
     case 'listar_barbeiros':
@@ -491,6 +530,7 @@ function systemPrompt(ctx) {
     '- Preços, serviços, horário de funcionamento e disponibilidade vêm SEMPRE das ferramentas. Nunca invente nada disso.',
     '- Seja proativa para agendar: descubra o serviço, o dia/horário e o nome do cliente.',
     '- CADASTRO DO CLIENTE: logo no começo (e sempre antes de agendar), chame `buscar_cliente`. Se JÁ for cadastrado, cumprimente pelo nome e NÃO peça os dados de novo. Se NÃO for, peça o nome e a data de nascimento (o telefone é o do próprio WhatsApp — você já tem, não precisa perguntar; se quiser, só confirme) e chame `cadastrar_cliente`. Nunca cadastre a mesma pessoa duas vezes.',
+    '- PLANOS DO CLIENTE: quando o cliente for cadastrado, chame `meus_planos`. Se ele tiver plano ATIVO, avise-o de forma natural sobre a situação conforme as REGRAS do plano: quantos usos restam (ou que é ilimitado), até quando vale, em quais dias pode usar e qual serviço cobre. Ao agendar, se o serviço escolhido for coberto por um plano ativo, lembre que dá pra usar o plano e quantos usos sobrarão; se o dia escolhido NÃO estiver nos dias permitidos do plano, avise. Nunca invente usos/validade — use só o que `meus_planos` retornar.',
     '- PLANOS/MENSALIDADES: se o cliente perguntar sobre plano, mensalidade, pacote ou assinatura, use `listar_planos` e PASSE os planos ativos a ele (nome, preço, o que cobre). Só diga que não há planos se a ferramenta voltar vazia — nunca "vou ver com a equipe" quando há planos cadastrados. Se o cliente quiser CONTRATAR/fazer um plano, confirme qual é e chame `encaminhar_humano` para a equipe finalizar (o pagamento é presencial) — nunca diga que ativou o plano sozinha.',
     '- FALAR COM HUMANO: só chame `encaminhar_humano` quando o cliente pedir CLARAMENTE para falar com uma pessoa/atendente, ou quando você realmente não conseguir resolver. Chame no MÁXIMO UMA vez e avise em uma frase curta que já chamou a equipe.',
     '- NÃO FIQUE PRESA NO "JÁ CHAMEI A EQUIPE": se o cliente CONTINUAR te mandando mensagens (ex.: pedindo para agendar), é porque o atendimento está com VOCÊ agora — pare de repetir que a equipe está vindo e VOLTE A AJUDAR normalmente, usando as ferramentas (ver horários, agendar, etc.). NUNCA diga "a equipe está te atendendo agora", nem finja ser um atendente da equipe: quem atende aqui é você, o atendimento virtual. Só encaminhe de novo se, na ÚLTIMA mensagem, o cliente pedir de novo explicitamente uma pessoa.',
