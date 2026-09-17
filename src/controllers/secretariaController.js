@@ -2,6 +2,7 @@
 // o CHAT DE TESTE (etapa 3.1, calibrar as respostas antes de ligar o WhatsApp).
 // Tudo só admin.
 const secretaria = require('../services/secretaria');
+const onboard = require('../services/whatsappOnboard');
 const prisma = require('../config/db');
 
 // Chaves de configuração da secretária (na tabela Configuracao, por barbearia).
@@ -70,6 +71,7 @@ async function mensagemTeste(req, res) {
 async function verConfig(req, res) {
   const regs = await prisma.configuracao.findMany({ where: { barbeariaId: req.barbeariaId, chave: { in: CHAVES } } });
   const cfg = Object.fromEntries(regs.map((r) => [r.chave, r.valor]));
+  const whatsapp = await onboard.statusConexao(req.barbeariaId);
   res.render('painel/secretaria-config', {
     titulo: 'Secretária',
     cfg: {
@@ -80,7 +82,37 @@ async function verConfig(req, res) {
       copilotoTetoMes: cfg.copiloto_teto_mes || '',
       privacidadeLink: cfg.secretaria_privacidade_link || '',
     },
+    whatsapp,
+    es: {
+      disponivel: onboard.configurado(),
+      appId: process.env.META_APP_ID || '',
+      configId: process.env.WHATSAPP_ES_CONFIG_ID || '',
+      apiVersion: process.env.WHATSAPP_API_VERSION || 'v21.0',
+    },
   });
+}
+
+// POST /painel/secretaria/whatsapp/conectar — recebe o resultado do Embedded
+// Signup (code + waba_id + phone_number_id vindos do popup) e liga o número.
+async function conectarWhatsApp(req, res) {
+  const code = req.body && req.body.code;
+  const phoneNumberId = req.body && req.body.phoneNumberId;
+  const wabaId = req.body && req.body.wabaId;
+  if (!code) return res.status(400).json({ erro: 'Faltou o código de autorização do popup.' });
+  try {
+    const r = await onboard.conectar(req.barbeariaId, { code, phoneNumberId, wabaId });
+    res.json({ ok: true, numero: r.numero });
+  } catch (e) {
+    console.error('[wa-onboard] conectar falhou:', e.message);
+    res.status(500).json({ erro: 'Não consegui conectar o WhatsApp: ' + e.message });
+  }
+}
+
+// POST /painel/secretaria/whatsapp/desconectar — remove as credenciais.
+async function desconectarWhatsApp(req, res) {
+  await onboard.desconectar(req.barbeariaId);
+  req.session.flash = { tipo: 'sucesso', texto: 'WhatsApp desconectado desta barbearia.' };
+  res.redirect('/painel/secretaria');
 }
 
 // POST /painel/secretaria — salva a configuração.
@@ -106,4 +138,4 @@ async function salvarConfig(req, res) {
   res.redirect('/painel/secretaria');
 }
 
-module.exports = { verConfig, salvarConfig, verTeste, mensagemTeste };
+module.exports = { verConfig, salvarConfig, verTeste, mensagemTeste, conectarWhatsApp, desconectarWhatsApp };

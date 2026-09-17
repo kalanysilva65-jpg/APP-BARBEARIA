@@ -151,3 +151,56 @@ O token do Passo 3 expira em 24h. Para um token que não expira:
 - Cada mensagem é ligada à barbearia certa pelo **phone_number_id** (multi-tenant).
 - As proteções da secretária continuam valendo: opt-out "SAIR", teto mensal por
   barbearia, freio anti-flood, FAQ sem custo, e o aviso de privacidade (LGPD).
+
+---
+
+# Coexistência (Embedded Signup) — o barbeiro conecta o número dele sozinho
+
+Este é o fluxo de **produção/escala**: cada barbearia clica em **"Conectar WhatsApp"**
+na tela **Secretária** do painel, faz login com o Facebook num **popup da Meta**, e
+o **número que ela já usa** fica ligado à IA — **sem perder o app do WhatsApp Business**
+(coexistência). O código já está pronto (`src/services/whatsappOnboard.js` +
+`/painel/secretaria/whatsapp/conectar`); falta só configurar o lado da Meta **uma vez**.
+
+## Como funciona (resumo)
+1. O popup devolve um `code` + o `waba_id` + o `phone_number_id`.
+2. O servidor troca o `code` por um **token de acesso aos ativos do cliente** (usa o
+   App Secret — nunca vai pro navegador).
+3. Inscreve o nosso app na **WABA** do cliente (o `subscribed_apps`, automático).
+4. Registra o número (best-effort) e **grava `whatsapp_phone_number_id` + `whatsapp_token`**
+   na `Configuracao` daquela barbearia. Pronto: a secretária já atende naquele número.
+
+## Passo A — Facebook Login for Business (no app da Meta)
+1. **developers.facebook.com** → seu app **Cortavo** → **Adicionar produto** →
+   **Login do Facebook para empresas** → configurar.
+2. Em **Configurações** do Login, adicione o **URI de redirecionamento OAuth válido**:
+   `https://cortavo.com.br/painel/secretaria` (e o domínio `cortavo.com.br` em
+   "Domínios do app", na tela Básico).
+
+## Passo B — Criar a configuração de Embedded Signup (pega o config_id)
+1. Ainda no app → **WhatsApp** → **Embedded Signup** (ou "Configurações" do Login for
+   Business → "Configurações" → criar uma **configuração**).
+2. Crie uma configuração para o caso **"Onboard WhatsApp Business app users"**
+   (COEXISTÊNCIA) — é o que mantém o app do barbeiro.
+3. Copie o **ID da configuração** (`config_id`).
+
+## Passo C — Variáveis no `.env` do VPS
+```
+META_APP_ID=983478401432377          # (o "ID do Aplicativo", é público)
+WHATSAPP_ES_CONFIG_ID=xxxxxxxxxxxxx  # o config_id do Passo B
+# META_APP_SECRET e WHATSAPP_API_VERSION você já tem dos passos anteriores.
+```
+Reinicie: `sudo systemctl restart cortavo`. Aí o botão **"Conectar WhatsApp"** aparece
+na tela **Secretária** (só admin).
+
+## Passo D — App Review (para atender barbearias de verdade)
+Enquanto o app está em **Desenvolvimento**, só contas com papel no app (admin/testador)
+conseguem conectar. Para **qualquer** barbearia se conectar sozinha, o app precisa de
+**Acesso Avançado** às permissões **whatsapp_business_messaging** e
+**whatsapp_business_management** (via **App Review**) e ser **publicado**. Isso é a
+etapa final de escala — dá pra testar o fluxo inteiro antes disso com a sua própria conta.
+
+## Pré-requisitos do NÚMERO do barbeiro (coexistência)
+- WhatsApp **Business app** atualizado (v2.24.17+).
+- O número precisa ter alguns dias de uso; o barbeiro confirma um código no app dele
+  durante o popup. Depois, app do barbeiro **e** IA convivem no mesmo número.

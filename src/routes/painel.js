@@ -141,6 +141,9 @@ router.get('/secretaria', exigeAdmin, secretariaController.verConfig);
 router.post('/secretaria', exigeAdmin, secretariaController.salvarConfig);
 router.get('/secretaria/teste', exigeAdmin, secretariaController.verTeste);
 router.post('/secretaria/teste/mensagem', exigeAdmin, limiteIA, secretariaController.mensagemTeste);
+// Conectar o WhatsApp da barbearia por Embedded Signup (coexistência) — só admin.
+router.post('/secretaria/whatsapp/conectar', exigeAdmin, secretariaController.conectarWhatsApp);
+router.post('/secretaria/whatsapp/desconectar', exigeAdmin, secretariaController.desconectarWhatsApp);
 
 // Caixa de entrada (Fase 3.2): conversas de WhatsApp da barbearia. Admin E
 // barbeiro (é o balcão compartilhado). `/simular` injeta uma mensagem de cliente
