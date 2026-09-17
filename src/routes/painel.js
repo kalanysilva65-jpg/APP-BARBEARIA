@@ -144,6 +144,8 @@ router.post('/secretaria/teste/mensagem', exigeAdmin, limiteIA, secretariaContro
 // Conectar o WhatsApp da barbearia por Embedded Signup (coexistência) — só admin.
 router.post('/secretaria/whatsapp/conectar', exigeAdmin, secretariaController.conectarWhatsApp);
 router.post('/secretaria/whatsapp/desconectar', exigeAdmin, secretariaController.desconectarWhatsApp);
+// Pausar/reativar a IA por barbearia (mantém o número conectado).
+router.post('/secretaria/ia/pausar', exigeAdmin, secretariaController.pausarIA);
 
 // Caixa de entrada (Fase 3.2): conversas de WhatsApp da barbearia. Admin E
 // barbeiro (é o balcão compartilhado). `/simular` injeta uma mensagem de cliente

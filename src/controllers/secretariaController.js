@@ -6,7 +6,7 @@ const onboard = require('../services/whatsappOnboard');
 const prisma = require('../config/db');
 
 // Chaves de configuração da secretária (na tabela Configuracao, por barbearia).
-const CHAVES = ['secretaria_modo', 'secretaria_link', 'secretaria_regras', 'secretaria_teto_mes', 'copiloto_teto_mes', 'secretaria_privacidade_link'];
+const CHAVES = ['secretaria_modo', 'secretaria_link', 'secretaria_regras', 'secretaria_teto_mes', 'copiloto_teto_mes', 'secretaria_privacidade_link', 'secretaria_pausada'];
 
 const MAX_MSG = 1000;
 const MAX_HIST = 12;
@@ -83,6 +83,7 @@ async function verConfig(req, res) {
       privacidadeLink: cfg.secretaria_privacidade_link || '',
     },
     whatsapp,
+    iaPausada: cfg.secretaria_pausada === '1',
     es: {
       disponivel: onboard.configurado(),
       appId: process.env.META_APP_ID || '',
@@ -90,6 +91,27 @@ async function verConfig(req, res) {
       apiVersion: process.env.WHATSAPP_API_VERSION || 'v21.0',
     },
   });
+}
+
+// POST /painel/secretaria/ia/pausar — alterna o liga/desliga da IA por barbearia.
+// Pausada: as mensagens continuam chegando na Caixa de entrada, mas a IA não
+// responde sozinha (o dono atende na mão). Não desconecta o WhatsApp.
+async function pausarIA(req, res) {
+  const b = req.barbeariaId;
+  const atual = await prisma.configuracao.findUnique({
+    where: { barbeariaId_chave: { barbeariaId: b, chave: 'secretaria_pausada' } },
+  });
+  const novo = atual && atual.valor === '1' ? '0' : '1';
+  await prisma.configuracao.upsert({
+    where: { barbeariaId_chave: { barbeariaId: b, chave: 'secretaria_pausada' } },
+    update: { valor: novo },
+    create: { barbeariaId: b, chave: 'secretaria_pausada', valor: novo },
+  });
+  req.session.flash = {
+    tipo: 'sucesso',
+    texto: novo === '1' ? 'IA pausada — ela não responde sozinha até você reativar.' : 'IA reativada — voltou a responder automaticamente.',
+  };
+  res.redirect('/painel/secretaria');
 }
 
 // POST /painel/secretaria/whatsapp/conectar — recebe o resultado do Embedded
@@ -138,4 +160,4 @@ async function salvarConfig(req, res) {
   res.redirect('/painel/secretaria');
 }
 
-module.exports = { verConfig, salvarConfig, verTeste, mensagemTeste, conectarWhatsApp, desconectarWhatsApp };
+module.exports = { verConfig, salvarConfig, verTeste, mensagemTeste, conectarWhatsApp, desconectarWhatsApp, pausarIA };

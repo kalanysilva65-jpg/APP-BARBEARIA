@@ -161,8 +161,12 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
     return { conversaId: conversa.id, optOut: true };
   }
 
-  // Portões que impedem a IA de responder automaticamente.
-  const ligada = secretaria.habilitada() && process.env.SECRETARIA_DESLIGADA !== '1';
+  // Portões que impedem a IA de responder automaticamente. `secretaria_pausada`
+  // é o liga/desliga por barbearia (botão "Pausar IA" no painel): a mensagem do
+  // cliente continua sendo gravada e aparece na Caixa de entrada, mas a IA não
+  // responde sozinha até o dono reativar.
+  const pausada = (await lerConfig(barbeariaId, 'secretaria_pausada', null)) === '1';
+  const ligada = secretaria.habilitada() && process.env.SECRETARIA_DESLIGADA !== '1' && !pausada;
   if (!conversa.iaAtiva || !ligada) return { conversaId: conversa.id, respostaIA: null };
 
   // Aviso de privacidade (LGPD) — só na PRIMEIRA mensagem da conversa.
