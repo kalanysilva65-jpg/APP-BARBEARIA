@@ -554,6 +554,11 @@ model Conversa {
   clienteNome      String?  @map("cliente_nome")
   clienteId        Int?     @map("cliente_id") // vínculo opcional ao CRM local
   iaAtiva          Boolean  @default(true) @map("ia_ativa")
+  // Marco de "recomeço" do contexto da IA. Ao devolver o atendimento à IA
+  // (Devolver à IA), gravamos agora() aqui e a IA passa a considerar SÓ as
+  // mensagens a partir deste instante — assim ela não fica presa no histórico
+  // antigo de handoff ("já chamei a equipe") e retoma o atendimento de verdade.
+  iaContextoDesde  DateTime? @map("ia_contexto_desde")
   status           String   @default("aberta") // aberta | arquivada
   naoLidas         Int      @default(0) @map("nao_lidas")
   ultimaPrevia     String?  @map("ultima_previa")

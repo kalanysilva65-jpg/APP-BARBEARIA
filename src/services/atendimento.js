@@ -59,6 +59,17 @@ function pedeHumano(texto) {
   return querFalar && alvoHumano;
 }
 
+// A resposta da IA ANUNCIA que vai passar/chamar a equipe? Usado para FORÇAR o
+// handoff de verdade (pausar a IA + notificar) quando o modelo diz que vai chamar
+// a equipe mas não invoca a ferramenta — sem isso ela fica repetindo "já chamei a
+// equipe" e nunca passa de fato.
+function anunciaHandoff(texto) {
+  const t = (texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return /(cham(ei|ando|ar|o)|acion(ei|ar|ando)|passar|passei|transferir|encaminh).{0,30}(equipe|atendente|humano|pessoa)/.test(t)
+    || /(um|a) atendente.{0,20}(vai|vem|ja)/.test(t)
+    || /aguard[ae].{0,20}(equipe|atendente)/.test(t);
+}
+
 // "Assinatura" de uma mensagem para comparar repetição (ignora acento, caixa,
 // pontuação e espaços). "Quero agendar!" e "quero agendar" viram a mesma coisa.
 function assinaturaMsg(texto) {
@@ -262,8 +273,12 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
     return { conversaId: conversa.id, respostaIA: null, tetoAtingido: true };
   }
 
-  // Monta contexto e responde.
-  const msgs = await prisma.mensagem.findMany({ where: { conversaId: conversa.id }, orderBy: { criadoEm: 'asc' }, take: HIST_MAX });
+  // Monta contexto e responde. A partir do "recomeço" (iaContextoDesde), a IA só
+  // vê mensagens novas — assim, ao ser devolvida, não fica presa no histórico de
+  // handoff antigo.
+  const filtroMsgs = { conversaId: conversa.id };
+  if (conversa.iaContextoDesde) filtroMsgs.criadoEm = { gte: conversa.iaContextoDesde };
+  const msgs = await prisma.mensagem.findMany({ where: filtroMsgs, orderBy: { criadoEm: 'asc' }, take: HIST_MAX });
 
   // (4.5) ANTI-LOOP em 2 níveis. Quando o cliente repete praticamente a MESMA
   // mensagem, a IA está presa no próprio padrão (o histórico "envenenado" faz ela
@@ -309,6 +324,17 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
     respostaIA = resp;
     await emitir(conversa, 'ia', resp);
     await registrarUso(barbeariaId, teto.competencia, usage);
+    // HANDOFF DETERMINÍSTICO: se a IA ANUNCIOU que vai chamar a equipe mas a IA
+    // ainda está ativa (a ferramenta encaminhar_humano não foi de fato chamada),
+    // o código executa o handoff: pausa a IA e notifica a equipe. Assim o "já
+    // chamei a equipe" nunca é só da boca pra fora — e para o loop de repetição.
+    if (anunciaHandoff(resp)) {
+      const atual = await prisma.conversa.findUnique({ where: { id: conversa.id } });
+      if (atual && atual.iaAtiva) {
+        await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
+        await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
+      }
+    }
   } catch (e) {
     // Log detalhado: e.message às vezes vem vazio (ex.: erro da API Anthropic traz
     // o detalhe em .status/.error). Sem isso não dá pra saber por que a IA caiu.
@@ -355,7 +381,11 @@ async function responderComoHumano(barbeariaId, conversaId, texto) {
 async function definirIA(barbeariaId, conversaId, ativa) {
   const conversa = await prisma.conversa.findFirst({ where: { id: Number(conversaId), barbeariaId } });
   if (!conversa) return null;
-  return prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: !!ativa } });
+  // Ao DEVOLVER à IA, marca o recomeço do contexto: daqui pra frente ela ignora o
+  // histórico antigo (evita repetir o handoff). Ao ASSUMIR (humano), não mexe.
+  const data = { iaAtiva: !!ativa };
+  if (ativa) data.iaContextoDesde = new Date();
+  return prisma.conversa.update({ where: { id: conversa.id }, data });
 }
 
 // Mensagens de uma conversa com id MAIOR que `aposId` (para o polling do chat).
