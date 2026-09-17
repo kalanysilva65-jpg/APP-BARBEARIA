@@ -20,7 +20,8 @@ const HIST_MAX = 30; // mensagens recentes enviadas à IA como contexto
 const TETO_PADRAO = 1500; // respostas de IA por mês por barbearia (config: secretaria_teto_mes)
 const TETO_COPILOTO_PADRAO = 200; // consultas do copiloto/mês por barbearia (config: copiloto_teto_mes)
 const ABUSO_MAX_HORA = 20; // msgs do MESMO cliente numa 1h antes de a IA recuar
-const REPETICOES_MAX = 3; // mesma mensagem repetida N vezes seguidas -> passa pra humano (IA travou)
+const REPETICOES_RESET = 2; // 2ª repetição -> auto-recuperação (responde sem o histórico enviesado)
+const REPETICOES_MAX = 3; // 3ª repetição -> passa pra humano (IA travou de vez)
 const RETENCAO_MESES = 12; // conversas mais antigas que isso são apagadas (LGPD)
 const PALAVRAS_OPTOUT = ['SAIR', 'PARAR', 'STOP', 'CANCELAR'];
 
@@ -264,16 +265,20 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   // Monta contexto e responde.
   const msgs = await prisma.mensagem.findMany({ where: { conversaId: conversa.id }, orderBy: { criadoEm: 'asc' }, take: HIST_MAX });
 
-  // (4.5) SALVA-VIDAS ANTI-LOOP: se o cliente mandou praticamente a MESMA mensagem
-  // várias vezes seguidas, a IA não está resolvendo. Em vez de repetir a mesma
-  // resposta (frustra o cliente e queima tokens), passa pra um humano AGORA e para
-  // de responder sozinha nesta conversa. Roda ANTES da chamada de IA (não gasta).
-  if (repeticoesSeguidas(msgs) >= REPETICOES_MAX) {
+  // (4.5) ANTI-LOOP em 2 níveis. Quando o cliente repete praticamente a MESMA
+  // mensagem, a IA está presa no próprio padrão (o histórico "envenenado" faz ela
+  // imitar as respostas anteriores). Em vez de exigir apagar a conversa na mão:
+  //   - 3ª repetição -> SALVA-VIDAS: passa pra humano e para de gastar IA.
+  //   - 2ª repetição -> AUTO-RECUPERAÇÃO: responde IGNORANDO o histórico velho (só
+  //     a última mensagem), o mesmo efeito de "recomeçar", sem apagar nada.
+  const repeticoes = repeticoesSeguidas(msgs);
+  if (repeticoes >= REPETICOES_MAX) {
     await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
     await emitir(conversa, 'ia', 'Deixa eu chamar alguém da equipe pra te ajudar melhor com isso 🙂 Já já uma pessoa te responde por aqui.');
     await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
     return { conversaId: conversa.id, loopDetectado: true };
   }
+  const contextoLimpo = repeticoes >= REPETICOES_RESET;
 
   const b = await prisma.barbearia.findUnique({ where: { id: barbeariaId } });
   const ctx = {
@@ -292,9 +297,15 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
     config: { linkAgendamento: (await lerConfig(barbeariaId, 'secretaria_link', null)) || (b && b.slug ? `https://agenda.exemplo.com/${b.slug}` : null) },
   };
 
+  // Auto-recuperação: na 2ª repetição, manda só a última mensagem do cliente (sem
+  // o histórico que estava enviesando o modelo). Recomeço limpo, sem apagar nada.
+  const historico = contextoLimpo
+    ? historicoParaIA(msgs.filter((m) => m.autor === 'cliente').slice(-1))
+    : historicoParaIA(msgs);
+
   let respostaIA = null;
   try {
-    const { texto: resp, usage } = await secretaria.responder(ctx, historicoParaIA(msgs));
+    const { texto: resp, usage } = await secretaria.responder(ctx, historico);
     respostaIA = resp;
     await emitir(conversa, 'ia', resp);
     await registrarUso(barbeariaId, teto.competencia, usage);
