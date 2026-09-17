@@ -15,9 +15,10 @@ const AnthropicCtor = Anthropic.default || Anthropic;
 
 // Modelo econômico por padrão (bom p/ perguntas sobre dados; barato). Trocável por
 // env sem mexer no código.
-// Modelo do copiloto (baixo volume, análise pro dono) — Sonnet por padrão (mais
-// esperto; custo irrisório no volume dele). Configurável por env.
-const MODELO = process.env.IA_MODELO_COPILOTO || process.env.IA_MODELO || 'claude-sonnet-5';
+// Modelo do copiloto (assistente do painel, uso interno do barbeiro) — Haiku por
+// padrão (bem mais barato; dá conta das consultas do painel). Para respostas mais
+// "espertas", troque para Sonnet via env IA_MODELO_COPILOTO=claude-sonnet-5.
+const MODELO = process.env.IA_MODELO_COPILOTO || process.env.IA_MODELO || 'claude-haiku-4-5';
 const MAX_ITERACOES = 5; // teto de idas-e-vindas de ferramenta por pergunta
 const MAX_TOKENS = 1024;
 

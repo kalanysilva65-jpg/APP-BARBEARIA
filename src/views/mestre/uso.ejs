@@ -22,6 +22,7 @@
     Modelos: WhatsApp <strong><%= modelos.whatsapp %></strong> · Copiloto <strong><%= modelos.copiloto %></strong>.
     Custo <strong>real</strong> da IA (cache já contado a 10%), convertido a <strong>R$ <%= cotacao.toFixed(2) %></strong>/US$.
     É só a parte da <strong>IA</strong> — a conversa do WhatsApp (Meta) é grátis quando o cliente inicia.
+    <br>Margem estimada assumindo plano de <strong>R$ <%= precoPlanoRef.toFixed(2) %></strong>/mês por barbearia ativa (ajuste em <code>PLANO_PRECO_REF</code>).
   </p>
 
   <div class="tabela-rolagem">
@@ -34,6 +35,7 @@
           <th style="text-align:right">Copiloto</th>
           <th style="text-align:right">Custo IA (R$)</th>
           <th style="text-align:right">R$/conversa</th>
+          <th style="text-align:right">Margem (R$)</th>
         </tr>
       </thead>
       <tbody id="uso-corpo">
@@ -46,20 +48,22 @@
             <td style="text-align:right"><%= l.copilotoConsultas.toLocaleString('pt-BR') %></td>
             <td style="text-align:right"><%= brl(l.custoBRL) %></td>
             <td style="text-align:right"><%= brl(l.custoPorConversaBRL) %></td>
+            <td style="text-align:right"><%= l.ativa ? brl(l.margemBRL) + (l.margemPct != null ? ' (' + l.margemPct + '%)' : '') : '—' %></td>
           </tr>
         <% }) %>
         <% if (linhas.length === 0) { %>
-          <tr><td colspan="6" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>
+          <tr><td colspan="7" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>
         <% } %>
       </tbody>
       <tfoot>
         <tr style="font-weight:700">
-          <td>Total</td>
+          <td>Total<%= totais.ativas ? ' (' + totais.ativas + ' ativas)' : '' %></td>
           <td style="text-align:right" id="uso-tot-conversas"><%= totais.conversas.toLocaleString('pt-BR') %></td>
           <td style="text-align:right" id="uso-tot-respostas"><%= totais.respostas.toLocaleString('pt-BR') %></td>
           <td style="text-align:right" id="uso-tot-copiloto"><%= totais.copiloto.toLocaleString('pt-BR') %></td>
           <td style="text-align:right" id="uso-tot-custo"><%= brl(totais.custoBRL) %></td>
           <td style="text-align:right" id="uso-tot-porconversa"><%= brl(totais.custoPorConversaBRL) %></td>
+          <td style="text-align:right" id="uso-tot-margem"><%= brl(totais.margemBRL) %></td>
         </tr>
       </tfoot>
     </table>
@@ -88,14 +92,16 @@
                 '<td style="text-align:right">' + n(l.respostas) + '</td>' +
                 '<td style="text-align:right">' + n(l.copilotoConsultas) + '</td>' +
                 '<td style="text-align:right">' + brl(l.custoBRL) + '</td>' +
-                '<td style="text-align:right">' + brl(l.custoPorConversaBRL) + '</td></tr>';
+                '<td style="text-align:right">' + brl(l.custoPorConversaBRL) + '</td>' +
+                '<td style="text-align:right">' + (l.ativa ? brl(l.margemBRL) + (l.margemPct != null ? ' (' + l.margemPct + '%)' : '') : '—') + '</td></tr>';
             }).join('')
-          : '<tr><td colspan="6" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>';
+          : '<tr><td colspan="7" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>';
         document.getElementById('uso-tot-conversas').textContent = n(d.totais.conversas);
         document.getElementById('uso-tot-respostas').textContent = n(d.totais.respostas);
         document.getElementById('uso-tot-copiloto').textContent = n(d.totais.copiloto);
         document.getElementById('uso-tot-custo').textContent = brl(d.totais.custoBRL);
         document.getElementById('uso-tot-porconversa').textContent = brl(d.totais.custoPorConversaBRL);
+        var m = document.getElementById('uso-tot-margem'); if (m) m.textContent = brl(d.totais.margemBRL);
       } catch (e) {}
     }
     setInterval(atualizar, 7000);

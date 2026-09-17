@@ -21,7 +21,7 @@ function modeloWhatsapp() {
   return process.env.IA_MODELO_WHATSAPP || process.env.IA_MODELO || 'claude-haiku-4-5';
 }
 function modeloCopiloto() {
-  return process.env.IA_MODELO_COPILOTO || process.env.IA_MODELO || 'claude-sonnet-5';
+  return process.env.IA_MODELO_COPILOTO || process.env.IA_MODELO || 'claude-haiku-4-5';
 }
 function custoUSD(tokensEntrada, tokensSaida, modelo) {
   const p = precoDe(modelo);
@@ -32,6 +32,9 @@ function custoUSD(tokensEntrada, tokensSaida, modelo) {
 }
 // Câmbio p/ exibir em R$. Configurável (COTACAO_DOLAR); padrão conservador.
 const COTACAO_BRL = Number(process.env.COTACAO_DOLAR) || 5.5;
+// Preço de referência do plano (por barbearia/mês) p/ estimar a MARGEM no painel.
+// Configurável (PLANO_PRECO_REF); é só um parâmetro de exibição, não cobra nada.
+const PLANO_PRECO_REF = Number(process.env.PLANO_PRECO_REF) || 199;
 function competenciaAtual() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
@@ -54,7 +57,7 @@ async function resumo(competencia) {
   const usoPor = new Map(usos.map((u) => [u.barbeariaId, u]));
 
   const linhas = [];
-  const totais = { custoUSD: 0, custoBRL: 0, conversas: 0, respostas: 0, copiloto: 0 };
+  const totais = { custoUSD: 0, custoBRL: 0, margemBRL: 0, conversas: 0, respostas: 0, copiloto: 0, ativas: 0 };
   for (const b of barbearias) {
     const u = usoPor.get(b.id) || {};
     const conversas = await prisma.conversa.count({
@@ -64,6 +67,9 @@ async function resumo(competencia) {
     const custoCop = custoUSD(u.copilotoTokensEntrada || 0, u.copilotoTokensSaida || 0, mc);
     const custo = custoWpp + custoCop;
     const custoBRL = custo * COTACAO_BRL;
+    // "Ativa" = teve algum uso no mês. Só essas contam na margem/receita estimada.
+    const ativa = conversas > 0 || (u.respostas || 0) > 0 || (u.copilotoConsultas || 0) > 0;
+    const margemBRL = ativa ? PLANO_PRECO_REF - custoBRL : 0;
     linhas.push({
       id: b.id,
       nome: b.nome,
@@ -76,16 +82,20 @@ async function resumo(competencia) {
       custoBRL,
       // Custo médio por CONVERSA de WhatsApp no mês (só a parte da secretária).
       custoPorConversaBRL: conversas > 0 ? (custoWpp * COTACAO_BRL) / conversas : 0,
+      ativa,
+      margemBRL,
+      margemPct: ativa && PLANO_PRECO_REF > 0 ? Math.round((margemBRL / PLANO_PRECO_REF) * 100) : null,
     });
     totais.custoUSD += custo;
     totais.custoBRL += custoBRL;
     totais.conversas += conversas;
     totais.respostas += u.respostas || 0;
     totais.copiloto += u.copilotoConsultas || 0;
+    if (ativa) { totais.ativas += 1; totais.margemBRL += margemBRL; }
   }
   totais.custoPorConversaBRL = totais.conversas > 0 ? (totais.custoBRL / totais.conversas) : 0;
   linhas.sort((a, b) => b.custoUSD - a.custoUSD);
-  return { competencia, cotacao: COTACAO_BRL, modelos: { whatsapp: mw, copiloto: mc }, linhas, totais };
+  return { competencia, cotacao: COTACAO_BRL, precoPlanoRef: PLANO_PRECO_REF, modelos: { whatsapp: mw, copiloto: mc }, linhas, totais };
 }
 
 module.exports = { resumo, competenciaAtual };
