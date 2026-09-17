@@ -627,6 +627,13 @@ async function responder(ctx, mensagens) {
         } catch (e) {
           out = { erro: 'Falha ao consultar os dados.' };
         }
+        // Log de diagnóstico: qual ferramenta a IA chamou (e sinal do resultado).
+        try {
+          const sinal = u.name === 'meus_planos' ? ` -> ${(out.planos_ativos || []).length} plano(s) ativo(s)`
+            : u.name === 'buscar_cliente' ? ` -> ${out.cadastrado ? 'cadastrado' : 'nao cadastrado'}`
+            : out && out.erro ? ` -> erro: ${out.erro}` : '';
+          console.log('[secretaria] ferramenta:', u.name, sinal);
+        } catch (_) { /* log nunca derruba o fluxo */ }
         resultados.push({ type: 'tool_result', tool_use_id: u.id, content: JSON.stringify(out) });
       }
       msgs.push({ role: 'user', content: resultados });

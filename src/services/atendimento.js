@@ -224,6 +224,7 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   // equipe (push no app e fora dele) e responde curto. Só quando a IA ainda está
   // ativa na conversa (evita re-notificar depois de já ter passado pra humano).
   if (conversa.iaAtiva && pedeHumano(texto)) {
+    console.log('[atendimento] handoff DETERMINISTICO (pedeHumano) por:', JSON.stringify(texto.slice(0, 60)));
     await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
     await emitir(conversa, 'ia', 'Claro! 🙂 Já estou chamando a equipe pra continuar seu atendimento por aqui. Um instante, por favor.');
     await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
@@ -252,6 +253,7 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   // muda (deixa o cliente no vácuo e a conversa no limbo), passa pra um humano e
   // para de gastar IA nesta conversa. iaAtiva=false evita re-notificar a cada msg.
   if ((await floodNaConversa(conversa.id)) > ABUSO_MAX_HORA) {
+    console.log('[atendimento] handoff por FLOOD (anti-abuso) conversa', conversa.id);
     await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
     await emitir(conversa, 'ia', 'Vou pedir pra alguém da equipe continuar seu atendimento por aqui, tá? 🙂');
     await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
@@ -288,6 +290,7 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   //     a última mensagem), o mesmo efeito de "recomeçar", sem apagar nada.
   const repeticoes = repeticoesSeguidas(msgs);
   if (repeticoes >= REPETICOES_MAX) {
+    console.log('[atendimento] handoff por LOOP (', repeticoes, 'repeticoes) conversa', conversa.id);
     await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
     await emitir(conversa, 'ia', 'Deixa eu chamar alguém da equipe pra te ajudar melhor com isso 🙂 Já já uma pessoa te responde por aqui.');
     await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
@@ -331,8 +334,11 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
     if (anunciaHandoff(resp)) {
       const atual = await prisma.conversa.findUnique({ where: { id: conversa.id } });
       if (atual && atual.iaAtiva) {
+        console.log('[atendimento] handoff FORCADO (a IA anunciou na resposta) conversa', conversa.id, '| resp:', JSON.stringify(resp.slice(0, 80)));
         await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
         await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
+      } else {
+        console.log('[atendimento] IA chamou encaminhar_humano (ferramenta) conversa', conversa.id);
       }
     }
   } catch (e) {
