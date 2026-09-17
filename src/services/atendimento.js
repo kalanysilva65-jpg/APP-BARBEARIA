@@ -246,6 +246,10 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
     permitirAgendar: true,
     clienteTelefone: conversa.clienteTelefone,
     clienteNome: conversa.clienteNome || null,
+    // Se um HUMANO já respondeu nesta conversa e mesmo assim a IA está rodando
+    // agora, é porque a equipe DEVOLVEU o atendimento à IA. Sinaliza pra ela não
+    // ficar repetindo o "vou chamar a equipe" com base no histórico antigo.
+    retomadoDeHumano: msgs.some((m) => m.autor === 'humano'),
     regrasExtras: await lerConfig(barbeariaId, 'secretaria_regras', null),
     config: { linkAgendamento: (await lerConfig(barbeariaId, 'secretaria_link', null)) || (b && b.slug ? `https://agenda.exemplo.com/${b.slug}` : null) },
   };

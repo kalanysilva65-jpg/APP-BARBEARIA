@@ -509,6 +509,14 @@ function systemPrompt(ctx) {
     base.push('');
     base.push('AGENDAR: esta barbearia agenda em OUTRO aplicativo. Você NÃO marca direto: responda tudo (preços, dúvidas) e, para agendar, use `enviar_link_agendamento` para mandar o link; se não houver link ou o cliente preferir, use `anotar_pedido` para o barbeiro confirmar depois.');
   }
+  // Controle devolvido pela equipe: a IA voltou a atender depois de um humano.
+  // Sem isso, ao ler o histórico (onde ela já dissera "vou chamar a equipe") o
+  // modelo repete o encaminhamento e "não assume" de volta.
+  if (ctx.retomadoDeHumano) {
+    base.push('');
+    base.push('IMPORTANTE — ATENDIMENTO RETOMADO: um atendente humano já falou nesta conversa e a equipe DEVOLVEU o atendimento para você agora. Você está no comando de novo. Retome normalmente e responda à ÚLTIMA mensagem do cliente. NÃO chame `encaminhar_humano` nem diga que vai chamar a equipe por causa do que aconteceu antes — só encaminhe de novo se, NESTA última mensagem, o cliente pedir EXPLICITAMENTE para falar com uma pessoa.');
+  }
+
   // Regras extras definidas pelo dono da barbearia (limites de negócio próprios).
   if (ctx.regrasExtras) {
     base.push('');
