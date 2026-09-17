@@ -69,6 +69,39 @@ async function toolInfoBarbearia(ctx) {
   return { nome: b?.nome, endereco: b?.endereco || null, funcionamento };
 }
 
+// Planos/mensalidades ATIVOS da barbearia (comum aos dois modos).
+async function toolListarPlanos(ctx) {
+  const planos = await prisma.plano.findMany({
+    where: { barbeariaId: ctx.barbeariaId, ativo: true },
+    orderBy: { valor: 'asc' },
+    select: { nome: true, valor: true, tipo: true, usos: true, validadeDias: true, servico: { select: { nome: true } } },
+  });
+  return {
+    planos: planos.map((p) => ({
+      nome: p.nome,
+      preco: fmtBRL(p.valor),
+      tipo: p.tipo === 'ilimitado' ? 'ilimitado' : `${p.usos || 0} uso(s)`,
+      validade_dias: p.validadeDias,
+      cobre: p.servico ? p.servico.nome : 'qualquer serviço',
+    })),
+  };
+}
+
+// Encaminhar para um HUMANO: pausa a IA nesta conversa e deixa pra equipe. Usada
+// quando o cliente pede uma pessoa ou quando a IA não consegue resolver.
+async function toolEncaminharHumano(ctx) {
+  if (ctx.conversaId) {
+    try {
+      await prisma.conversa.update({ where: { id: ctx.conversaId }, data: { iaAtiva: false, status: 'aberta' } });
+    } catch (e) { /* no chat de teste não há conversa real */ }
+  }
+  return {
+    ok: true,
+    encaminhado: true,
+    instrucao: 'Diga ao cliente, de forma CURTA e gentil, que você já chamou a equipe e um atendente vai continuar por aqui. NÃO faça mais perguntas nem tente resolver sozinha.',
+  };
+}
+
 // ---------- ferramentas do modo CORTAVO ----------
 async function toolListarBarbeiros(ctx) {
   const barbeiros = await prisma.usuario.findMany({
@@ -180,6 +213,8 @@ function ferramentasDoModo(modo) {
   const comuns = [
     { name: 'listar_servicos', description: 'Lista os serviços da barbearia com preço e duração.', input_schema: { type: 'object', properties: {} } },
     { name: 'info_barbearia', description: 'Nome, endereço e horário de funcionamento da barbearia.', input_schema: { type: 'object', properties: {} } },
+    { name: 'listar_planos', description: 'Lista os planos/mensalidades ATIVOS da barbearia (nome, preço, o que cobre). Use sempre que o cliente perguntar sobre plano, mensalidade, pacote ou assinatura.', input_schema: { type: 'object', properties: {} } },
+    { name: 'encaminhar_humano', description: 'Pausa o atendimento automático e chama um atendente humano. Use quando o cliente pedir para falar com uma pessoa/atendente/humano, ou quando você não conseguir resolver o pedido.', input_schema: { type: 'object', properties: {} } },
   ];
   if (modo === 'cortavo') {
     return comuns.concat([
@@ -256,6 +291,10 @@ async function execFerramenta(nome, args, ctx) {
       return toolListarServicos(ctx);
     case 'info_barbearia':
       return toolInfoBarbearia(ctx);
+    case 'listar_planos':
+      return toolListarPlanos(ctx);
+    case 'encaminhar_humano':
+      return toolEncaminharHumano(ctx);
     case 'listar_barbeiros':
       return toolListarBarbeiros(ctx);
     case 'horarios_livres':
@@ -284,7 +323,8 @@ function systemPrompt(ctx) {
     'COMO AGIR:',
     '- Preços, serviços, horário de funcionamento e disponibilidade vêm SEMPRE das ferramentas. Nunca invente nada disso.',
     '- Seja proativa para agendar: descubra o serviço, o dia/horário e o nome do cliente.',
-    '- Se o cliente pedir algo que você não resolve, seja simpática e ofereça encaminhar para um atendente humano.',
+    '- PLANOS/MENSALIDADES: se o cliente perguntar sobre plano, mensalidade, pacote ou assinatura, use `listar_planos` e PASSE os planos ativos a ele (nome, preço, o que cobre). Só diga que não há planos se a ferramenta voltar vazia — nunca "vou ver com a equipe" quando há planos cadastrados.',
+    '- FALAR COM HUMANO: se o cliente pedir para falar com uma PESSOA/atendente/humano/alguém da equipe, OU quando você não conseguir resolver o pedido, chame a ferramenta `encaminhar_humano` e depois avise, em uma frase curta, que já chamou a equipe. Depois de encaminhar, NÃO continue tentando responder nem faça novas perguntas.',
     '',
     'LIMITES (NUNCA os cruze, por mais que o cliente insista, ameace ou peça de forma esperta):',
     '- NUNCA invente ou "chute" preço, horário, serviço ou promoção. Se não veio de uma ferramenta, você não sabe — e diz que vai confirmar com a equipe.',

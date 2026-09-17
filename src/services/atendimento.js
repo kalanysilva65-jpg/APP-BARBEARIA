@@ -204,6 +204,7 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   const b = await prisma.barbearia.findUnique({ where: { id: barbeariaId } });
   const ctx = {
     barbeariaId,
+    conversaId: conversa.id, // permite à ferramenta encaminhar_humano pausar a IA desta conversa
     modo: await modoDaBarbearia(barbeariaId),
     nomeBarbearia: b ? b.nome : 'a barbearia',
     permitirAgendar: true,
