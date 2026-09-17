@@ -15,4 +15,31 @@ function formatarTelefone(valor) {
   return valor || '';
 }
 
-module.exports = { normalizarTelefone, formatarTelefone };
+// Variantes plausíveis do MESMO número, para casar telefones salvos em formatos
+// diferentes (o WhatsApp manda com "55" e às vezes SEM o 9 do celular; o cadastro
+// manual costuma ser "(51) 99999-9999" -> sem "55"). Sem isso, comparar string
+// exata falha e a IA "não acha" o agendamento do cliente. Gera: com/sem código do
+// país e com/sem o 9º dígito do celular.
+function variantesTelefone(valor) {
+  const d = normalizarTelefone(valor);
+  if (!d) return [];
+  const set = new Set([d]);
+  // Forma sem o código do país (55), quando presente.
+  let semPais = d;
+  if (d.startsWith('55') && d.length >= 12) semPais = d.slice(2);
+  set.add(semPais);
+  set.add('55' + semPais);
+  // Alterna o 9 do celular sobre a forma DDD + número.
+  if (semPais.length === 11 && semPais[2] === '9') {
+    const sem9 = semPais.slice(0, 2) + semPais.slice(3); // remove o 9
+    set.add(sem9);
+    set.add('55' + sem9);
+  } else if (semPais.length === 10) {
+    const com9 = semPais.slice(0, 2) + '9' + semPais.slice(2); // adiciona o 9
+    set.add(com9);
+    set.add('55' + com9);
+  }
+  return Array.from(set).filter(Boolean);
+}
+
+module.exports = { normalizarTelefone, formatarTelefone, variantesTelefone };

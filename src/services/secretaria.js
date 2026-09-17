@@ -12,7 +12,7 @@ const prisma = require('../config/db');
 const notificacoes = require('./notificacoes');
 const { horariosDisponiveis, duracaoComEncaixe, dataLocal } = require('./disponibilidade');
 const agendamentoSeguro = require('./agendamentoSeguro');
-const { normalizarTelefone } = require('../utils/telefone');
+const { normalizarTelefone, variantesTelefone } = require('../utils/telefone');
 const { DIAS_SEMANA } = require('../config/constantes');
 
 const Anthropic = require('@anthropic-ai/sdk');
@@ -254,7 +254,8 @@ async function toolMeusAgendamentos(ctx) {
   const agora = new Date();
   const hoje0 = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
   const ags = await prisma.agendamento.findMany({
-    where: { barbeariaId: ctx.barbeariaId, clienteTelefone: telNorm, status: 'agendado', data: { gte: hoje0 } },
+    // Casa o telefone em qualquer formato (com/sem 55, com/sem o 9 do celular).
+    where: { barbeariaId: ctx.barbeariaId, clienteTelefone: { in: variantesTelefone(telNorm) }, status: 'agendado', data: { gte: hoje0 } },
     orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
     take: 10,
     include: { usuario: { select: { nome: true } }, itens: { include: { servico: { select: { nome: true } } } } },
@@ -278,7 +279,10 @@ async function agendamentoDoCliente(ctx, id) {
   if (!telNorm) return { erro: 'Sem telefone do cliente no contexto.' };
   const ag = await prisma.agendamento.findFirst({ where: { id: Number(id), barbeariaId: ctx.barbeariaId } });
   if (!ag) return { erro: 'Não achei esse agendamento.' };
-  if (ag.clienteTelefone !== telNorm) return { erro: 'Esse agendamento não está no seu número. Confirme com a equipe.' };
+  // Compara por variantes do telefone (com/sem 55, com/sem o 9) — string exata
+  // falha porque o WhatsApp e o cadastro salvam o número em formatos diferentes.
+  const doCliente = variantesTelefone(telNorm).includes(normalizarTelefone(ag.clienteTelefone));
+  if (!doCliente) return { erro: 'Esse agendamento não está no seu número. Confirme com a equipe.' };
   return { ag };
 }
 
