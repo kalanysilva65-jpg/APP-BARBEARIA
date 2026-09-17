@@ -8,7 +8,7 @@
 //   - o barbeariaId e o telefone do cliente vêm do CHAMADOR (servidor), nunca da IA.
 const prisma = require('../config/db');
 const { dataLocal, paraMinutos, duracaoComEncaixe, horariosDisponiveis, todosHorarios } = require('./disponibilidade');
-const { normalizarTelefone, variantesTelefone } = require('../utils/telefone');
+const { normalizarTelefone, variantesTelefone, telefoneCanonicoBR } = require('../utils/telefone');
 const planoServ = require('./plano');
 
 // Há sobreposição com algum atendimento ativo do barbeiro nessa data?
@@ -97,8 +97,11 @@ async function criarAgendamento(barbeariaId, dados) {
       if (usaPlano) {
         clienteId = assinatura.clienteId; // o dono do plano
       } else if (telNorm) {
-        let cliente = await tx.cliente.findUnique({ where: { barbeariaId_telefone: { barbeariaId, telefone: telNorm } } });
-        if (!cliente) cliente = await tx.cliente.create({ data: { barbeariaId, nome: clienteNome, telefone: telNorm } });
+        // Procura por VARIANTES (com/sem 55, com/sem o 9) pra reaproveitar o
+        // cadastro existente — não duplica o perfil por causa do 9º dígito. Só cria
+        // se realmente não existir, salvando no formato correto (com o 9).
+        let cliente = await tx.cliente.findFirst({ where: { barbeariaId, telefone: { in: variantesTelefone(telNorm) } } });
+        if (!cliente) cliente = await tx.cliente.create({ data: { barbeariaId, nome: clienteNome, telefone: telefoneCanonicoBR(telNorm) || telNorm } });
         clienteId = cliente.id;
       }
       return tx.agendamento.create({

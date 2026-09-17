@@ -13,7 +13,7 @@ const notificacoes = require('./notificacoes');
 const { horariosDisponiveis, duracaoComEncaixe, dataLocal } = require('./disponibilidade');
 const agendamentoSeguro = require('./agendamentoSeguro');
 const plano = require('./plano');
-const { normalizarTelefone, variantesTelefone } = require('../utils/telefone');
+const { normalizarTelefone, variantesTelefone, telefoneCanonicoBR } = require('../utils/telefone');
 const { DIAS_SEMANA } = require('../config/constantes');
 
 // "AAAA-MM-DD" a partir dos componentes LOCAIS (evita virar o dia por fuso).
@@ -135,8 +135,10 @@ function telefoneDoCliente(ctx) {
 async function toolBuscarCliente(ctx) {
   const telNorm = telefoneDoCliente(ctx);
   if (!telNorm) return { cadastrado: false, sem_telefone: true };
-  const c = await prisma.cliente.findUnique({
-    where: { barbeariaId_telefone: { barbeariaId: ctx.barbeariaId, telefone: telNorm } },
+  // Procura por variantes (com/sem 55, com/sem o 9) pra achar o cadastro existente
+  // mesmo que o WhatsApp mande o número num formato diferente do que está salvo.
+  const c = await prisma.cliente.findFirst({
+    where: { barbeariaId: ctx.barbeariaId, telefone: { in: variantesTelefone(telNorm) } },
   });
   if (!c) return { cadastrado: false };
   return { cadastrado: true, nome: c.nome, tem_data_nascimento: !!c.dataNascimento };
@@ -159,8 +161,10 @@ async function toolCadastrarCliente(ctx, args) {
     if (d && !isNaN(d.getTime())) nascimento = d;
   }
 
-  const existente = await prisma.cliente.findUnique({
-    where: { barbeariaId_telefone: { barbeariaId: ctx.barbeariaId, telefone: telNorm } },
+  // Procura por VARIANTES do número (com/sem 55, com/sem o 9) pra reaproveitar um
+  // cadastro que já exista — evita duplicar o perfil por causa do 9º dígito.
+  const existente = await prisma.cliente.findFirst({
+    where: { barbeariaId: ctx.barbeariaId, telefone: { in: variantesTelefone(telNorm) } },
   });
   if (existente) {
     const data = {};
@@ -168,8 +172,9 @@ async function toolCadastrarCliente(ctx, args) {
     if (Object.keys(data).length) await prisma.cliente.update({ where: { id: existente.id }, data });
     return { ok: true, ja_cadastrado: true, cliente: { nome: existente.nome, tem_data_nascimento: !!(existente.dataNascimento || nascimento) } };
   }
+  // Novo cadastro: salva no formato correto brasileiro (com o 9), como o painel/app.
   const criado = await prisma.cliente.create({
-    data: { barbeariaId: ctx.barbeariaId, nome, telefone: telNorm, dataNascimento: nascimento },
+    data: { barbeariaId: ctx.barbeariaId, nome, telefone: telefoneCanonicoBR(telNorm) || telNorm, dataNascimento: nascimento },
   });
   return { ok: true, cadastrado: true, cliente: { nome: criado.nome, tem_data_nascimento: !!nascimento } };
 }

@@ -42,4 +42,16 @@ function variantesTelefone(valor) {
   return Array.from(set).filter(Boolean);
 }
 
-module.exports = { normalizarTelefone, formatarTelefone, variantesTelefone };
+// Forma CANÔNICA de um celular brasileiro: DDD + 9 + 8 dígitos (11 no total),
+// SEM o código do país. É o formato em que o painel/app salvam. O WhatsApp manda
+// com "55" e às vezes SEM o 9 do celular — aqui a gente conserta pra não criar
+// cadastro duplicado. Se não parecer um celular BR, devolve os dígitos como estão.
+function telefoneCanonicoBR(valor) {
+  let d = normalizarTelefone(valor);
+  if (!d) return '';
+  if (d.startsWith('55') && (d.length === 12 || d.length === 13)) d = d.slice(2); // tira o país
+  if (d.length === 10) d = d.slice(0, 2) + '9' + d.slice(2); // celular sem o 9 -> adiciona
+  return d;
+}
+
+module.exports = { normalizarTelefone, formatarTelefone, variantesTelefone, telefoneCanonicoBR };
