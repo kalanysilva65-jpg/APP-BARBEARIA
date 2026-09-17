@@ -244,7 +244,12 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
     await emitir(conversa, 'ia', resp);
     await registrarUso(barbeariaId, teto.competencia, usage);
   } catch (e) {
-    console.error('[atendimento] IA falhou:', e.message);
+    // Log detalhado: e.message às vezes vem vazio (ex.: erro da API Anthropic traz
+    // o detalhe em .status/.error). Sem isso não dá pra saber por que a IA caiu.
+    console.error('[atendimento] IA falhou:', e && (e.message || e.name || String(e)));
+    if (e && e.status) console.error('[atendimento] IA status:', e.status);
+    if (e && e.error) { try { console.error('[atendimento] IA erro:', JSON.stringify(e.error)); } catch (_) {} }
+    if (e && e.stack) console.error('[atendimento] IA stack:', e.stack);
     // Nunca deixar o cliente sem resposta: manda um recado curto (fica gravado na
     // conversa mesmo se o envio falhar) para ele não achar que ninguém viu.
     try {
