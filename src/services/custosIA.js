@@ -25,8 +25,13 @@ function modeloCopiloto() {
 }
 function custoUSD(tokensEntrada, tokensSaida, modelo) {
   const p = precoDe(modelo);
+  // tokensEntrada já vem PONDERADO pelo cache (ver secretaria.js/ia.js): leitura
+  // de cache foi guardada a 10% e escrita a 125%. Então aqui é só multiplicar
+  // pelo preço de entrada — o resultado já reflete a fatura real.
   return (tokensEntrada / 1e6) * p.entrada + (tokensSaida / 1e6) * p.saida;
 }
+// Câmbio p/ exibir em R$. Configurável (COTACAO_DOLAR); padrão conservador.
+const COTACAO_BRL = Number(process.env.COTACAO_DOLAR) || 5.5;
 function competenciaAtual() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
@@ -49,7 +54,7 @@ async function resumo(competencia) {
   const usoPor = new Map(usos.map((u) => [u.barbeariaId, u]));
 
   const linhas = [];
-  const totais = { custoUSD: 0, conversas: 0, respostas: 0, copiloto: 0 };
+  const totais = { custoUSD: 0, custoBRL: 0, conversas: 0, respostas: 0, copiloto: 0 };
   for (const b of barbearias) {
     const u = usoPor.get(b.id) || {};
     const conversas = await prisma.conversa.count({
@@ -58,6 +63,7 @@ async function resumo(competencia) {
     const custoWpp = custoUSD(u.tokensEntrada || 0, u.tokensSaida || 0, mw);
     const custoCop = custoUSD(u.copilotoTokensEntrada || 0, u.copilotoTokensSaida || 0, mc);
     const custo = custoWpp + custoCop;
+    const custoBRL = custo * COTACAO_BRL;
     linhas.push({
       id: b.id,
       nome: b.nome,
@@ -67,14 +73,19 @@ async function resumo(competencia) {
       custoWpp,
       custoCop,
       custoUSD: custo,
+      custoBRL,
+      // Custo médio por CONVERSA de WhatsApp no mês (só a parte da secretária).
+      custoPorConversaBRL: conversas > 0 ? (custoWpp * COTACAO_BRL) / conversas : 0,
     });
     totais.custoUSD += custo;
+    totais.custoBRL += custoBRL;
     totais.conversas += conversas;
     totais.respostas += u.respostas || 0;
     totais.copiloto += u.copilotoConsultas || 0;
   }
+  totais.custoPorConversaBRL = totais.conversas > 0 ? (totais.custoBRL / totais.conversas) : 0;
   linhas.sort((a, b) => b.custoUSD - a.custoUSD);
-  return { competencia, modelos: { whatsapp: mw, copiloto: mc }, linhas, totais };
+  return { competencia, cotacao: COTACAO_BRL, modelos: { whatsapp: mw, copiloto: mc }, linhas, totais };
 }
 
 module.exports = { resumo, competenciaAtual };

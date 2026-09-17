@@ -429,7 +429,11 @@ async function responder(ctx, mensagens) {
       tools: FERRAMENTAS,
       messages: msgs,
     });
-    usoTotal.input += (resp.usage?.input_tokens || 0) + (resp.usage?.cache_read_input_tokens || 0) + (resp.usage?.cache_creation_input_tokens || 0);
+    // Tokens EFETIVOS (ponderados pelo cache: leitura ~10%, escrita ~125% da
+    // entrada) — assim o custo estimado bate com a fatura real.
+    usoTotal.input += (resp.usage?.input_tokens || 0)
+      + Math.round((resp.usage?.cache_creation_input_tokens || 0) * 1.25)
+      + Math.round((resp.usage?.cache_read_input_tokens || 0) * 0.1);
     usoTotal.output += resp.usage?.output_tokens || 0;
 
     if (resp.stop_reason === 'tool_use') {

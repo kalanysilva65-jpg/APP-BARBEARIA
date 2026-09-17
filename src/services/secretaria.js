@@ -379,9 +379,12 @@ async function responder(ctx, mensagens) {
       tools,
       messages: msgs,
     });
-    // Soma TODO o input processado (inclui os tokens lidos/criados no cache), pra
-    // o custo estimado não subestimar. A economia real do cache aparece na fatura.
-    uso.input += (resp.usage?.input_tokens || 0) + (resp.usage?.cache_read_input_tokens || 0) + (resp.usage?.cache_creation_input_tokens || 0);
+    // Tokens EFETIVOS (já ponderados pelo cache): leitura de cache custa ~10% e
+    // escrita ~125% do preço de entrada. Guardando assim, o custo estimado bate
+    // com a fatura real (antes somava tudo a preço cheio e inflava ~2x).
+    uso.input += (resp.usage?.input_tokens || 0)
+      + Math.round((resp.usage?.cache_creation_input_tokens || 0) * 1.25)
+      + Math.round((resp.usage?.cache_read_input_tokens || 0) * 0.1);
     uso.output += resp.usage?.output_tokens || 0;
 
     if (resp.stop_reason === 'tool_use') {
