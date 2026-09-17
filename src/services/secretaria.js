@@ -188,10 +188,12 @@ async function toolMeusPlanos(ctx) {
   const vigentes = cliente.planos.filter((a) => plano.vigente(a));
   return {
     planos_ativos: vigentes.map((a) => ({
+      id: a.id, // use este id em criar_agendamento (cliente_plano_id) para usar o plano
       plano: a.plano.nome,
       usos_restantes: a.usosRestantes === null ? 'ilimitado' : a.usosRestantes,
       valido_ate: ymdLocal(new Date(a.dataFim)),
       cobre: a.plano.servico ? a.plano.servico.nome : 'qualquer serviço',
+      cobre_servico_id: a.plano.servicoId || null, // null = cobre qualquer serviço
       dias_permitidos: diasDoPlano(a.plano.diasSemana),
     })),
   };
@@ -277,8 +279,13 @@ async function toolCriarAgendamento(ctx, args) {
     hora: args.hora,
     clienteNome,
     clienteTelefone: ctx.clienteTelefone,
+    clientePlanoId: args.cliente_plano_id || null, // se for usar um plano ativo do cliente
   });
-  if (r.ok) return { ok: true, marcado: true, quando: `${r.data} ${r.hora}`, barbeiro: r.barbeiro, valor: fmtBRL(r.valorCentavos) };
+  if (r.ok) {
+    const base = { ok: true, marcado: true, quando: `${r.data} ${r.hora}`, barbeiro: r.barbeiro, valor: fmtBRL(r.valorCentavos) };
+    if (r.usouPlano) return { ...base, usou_plano: true, plano: r.plano, usos_restantes: r.usosRestantes };
+    return base;
+  }
   return { ok: false, motivo: r.mensagem };
 }
 
@@ -420,7 +427,7 @@ function ferramentasDoModo(modo) {
       },
       {
         name: 'criar_agendamento',
-        description: 'MARCA o horário de verdade. Só chame DEPOIS que o cliente confirmar o resumo. O sistema recusa se o horário não estiver livre.',
+        description: 'MARCA o horário de verdade. Só chame DEPOIS que o cliente confirmar o resumo. O sistema recusa se o horário não estiver livre. Para usar um plano do cliente, passe cliente_plano_id (o sistema valida validade, dia permitido, cobertura e desconta 1 uso).',
         input_schema: {
           type: 'object',
           properties: {
@@ -429,6 +436,7 @@ function ferramentasDoModo(modo) {
             hora: { type: 'string', description: 'HH:MM' },
             barbeiro_id: { type: 'number' },
             servico_ids: { type: 'array', items: { type: 'number' } },
+            cliente_plano_id: { type: 'number', description: 'Opcional: id de um plano ativo (de meus_planos) para usar o plano neste agendamento (desconta 1 uso).' },
           },
           required: ['cliente_nome', 'data', 'hora', 'barbeiro_id', 'servico_ids'],
         },
@@ -549,6 +557,7 @@ function systemPrompt(ctx) {
   if (ctx.modo === 'cortavo') {
     base.push('');
     base.push('AGENDAR: use `horarios_livres` para ver o que está livre, depois `propor_agendamento` para montar o resumo e CONFIRMAR com o cliente. Assim que o cliente disser "sim", chame `criar_agendamento` NA MESMA HORA — não diga que marcou sem antes chamar essa ferramenta e receber o "ok" dela. Se o sistema recusar (horário ocupado), ofereça outro horário livre — nunca marque à força.');
+    base.push('AGENDAR COM PLANO: se o cliente tem um plano ativo (`meus_planos`) que cobre o serviço e o DIA escolhido está entre os dias permitidos do plano, ofereça usar o plano e, ao marcar, passe o `cliente_plano_id` em `criar_agendamento` (isso desconta 1 uso e sai sem custo). Se o dia escolhido NÃO for permitido pelo plano, avise o cliente e ofereça um dia permitido OU marcar normalmente (pagando). Depois de marcar pelo plano, informe quantos usos restaram.');
     base.push('CANCELAR / REMARCAR: use `meus_agendamentos` para achar o agendamento do cliente (e o id), confirme com ele qual é, e então use `cancelar_agendamento` ou `reagendar_agendamento`. Nunca cancele/remarque sem confirmar qual agendamento.');
   } else {
     base.push('');

@@ -8,7 +8,8 @@
 //   - o barbeariaId e o telefone do cliente vêm do CHAMADOR (servidor), nunca da IA.
 const prisma = require('../config/db');
 const { dataLocal, paraMinutos, duracaoComEncaixe, horariosDisponiveis, todosHorarios } = require('./disponibilidade');
-const { normalizarTelefone } = require('../utils/telefone');
+const { normalizarTelefone, variantesTelefone } = require('../utils/telefone');
+const planoServ = require('./plano');
 
 // Há sobreposição com algum atendimento ativo do barbeiro nessa data?
 async function temConflito(tx, barbeariaId, usuarioId, dataDate, iniNovo, fimNovo) {
@@ -29,7 +30,7 @@ async function temConflito(tx, barbeariaId, usuarioId, dataDate, iniNovo, fimNov
 // Cria o agendamento se — e só se — o horário estiver realmente livre.
 // Retorna { ok, agendamentoId, ... } ou { erro, mensagem }.
 async function criarAgendamento(barbeariaId, dados) {
-  const { usuarioId, servicoIds, data, hora, clienteNome, clienteTelefone } = dados || {};
+  const { usuarioId, servicoIds, data, hora, clienteNome, clienteTelefone, clientePlanoId } = dados || {};
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data || '')) || !/^\d{2}:\d{2}$/.test(String(hora || ''))) {
     return { erro: 'entrada', mensagem: 'Data ou horário em formato inválido.' };
@@ -43,6 +44,30 @@ async function criarAgendamento(barbeariaId, dados) {
   const servicos = await prisma.servico.findMany({ where: { id: { in: ids }, barbeariaId, ativo: true } });
   if (!servicos.length) return { erro: 'servico', mensagem: 'Serviço inválido.' };
 
+  // USO DE PLANO (opcional). Mesmas regras do agendamento por plano no painel:
+  // vigência, dia da semana permitido, cobertura de serviço e dono do plano. Se
+  // usar plano: valor = 0 e consome 1 uso (limitado). Trava de segurança: o plano
+  // tem que ser do MESMO número do cliente (não dá pra gastar o plano de outro).
+  let assinatura = null;
+  if (clientePlanoId) {
+    assinatura = await prisma.clientePlano.findFirst({
+      where: { id: Number(clientePlanoId), barbeariaId },
+      include: { plano: true, cliente: true },
+    });
+    if (!assinatura) return { erro: 'plano', mensagem: 'Plano não encontrado.' };
+    if (!planoServ.vigente(assinatura)) return { erro: 'plano_invalido', mensagem: 'Esse plano não está mais ativo (sem usos ou fora da validade).' };
+    const donoOk = variantesTelefone(clienteTelefone).includes(normalizarTelefone(assinatura.cliente.telefone));
+    if (!donoOk) return { erro: 'plano_dono', mensagem: 'Esse plano não é do número deste cliente.' };
+    const dow = dataLocal(data).getDay();
+    const diasPermitidos = new Set(String(assinatura.plano.diasSemana || '0,1,2,3,4,5,6').split(',').map(Number));
+    if (!diasPermitidos.has(dow)) return { erro: 'plano_dia', mensagem: 'Esse plano não pode ser usado nesse dia da semana.' };
+    if (ids.length !== 1) return { erro: 'plano_servico', mensagem: 'Pelo plano dá pra marcar um serviço por vez.' };
+    if (assinatura.plano.servicoId && assinatura.plano.servicoId !== ids[0]) {
+      return { erro: 'plano_servico', mensagem: 'Esse plano cobre outro serviço.' };
+    }
+  }
+  const usaPlano = !!assinatura;
+
   const dur = duracaoComEncaixe(servicos.map((s) => ({ duracaoMin: s.duracaoMin, ehEncaixe: s.ehEncaixe })), { efetiva: true });
 
   // O horário tem que estar na lista de LIVRES (isso já barra passado, fora do
@@ -55,7 +80,8 @@ async function criarAgendamento(barbeariaId, dados) {
   const dataDate = dataLocal(data);
   const iniNovo = paraMinutos(hora);
   const fimNovo = iniNovo + dur;
-  const valorTotal = servicos.reduce((s, x) => s + x.valor, 0);
+  // Plano cobre o atendimento -> valor 0 (igual ao painel).
+  const valorTotal = usaPlano ? 0 : servicos.reduce((s, x) => s + x.valor, 0);
   const telNorm = normalizarTelefone(clienteTelefone) || String(clienteTelefone).trim();
 
   try {
@@ -68,7 +94,9 @@ async function criarAgendamento(barbeariaId, dados) {
         throw e;
       }
       let clienteId = null;
-      if (telNorm) {
+      if (usaPlano) {
+        clienteId = assinatura.clienteId; // o dono do plano
+      } else if (telNorm) {
         let cliente = await tx.cliente.findUnique({ where: { barbeariaId_telefone: { barbeariaId, telefone: telNorm } } });
         if (!cliente) cliente = await tx.cliente.create({ data: { barbeariaId, nome: clienteNome, telefone: telNorm } });
         clienteId = cliente.id;
@@ -78,16 +106,20 @@ async function criarAgendamento(barbeariaId, dados) {
           barbeariaId,
           usuarioId: barbeiro.id,
           clienteId,
+          clientePlanoId: usaPlano ? assinatura.id : null,
           clienteNome,
           clienteTelefone,
           data: dataDate,
           horaInicio: hora,
           status: 'agendado',
           valorTotal,
-          itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: s.valor, quantidade: 1 })) },
+          itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: usaPlano ? 0 : s.valor, quantidade: 1 })) },
         },
       });
     });
+    // Consome 1 uso (limitado; ilimitado não desconta). Fora da transação de
+    // propósito, igual ao painel — não faz parte da corrida pelo horário.
+    if (usaPlano) await planoServ.ajustarUso(assinatura.id, -1);
     return {
       ok: true,
       agendamentoId: ag.id,
@@ -96,6 +128,9 @@ async function criarAgendamento(barbeariaId, dados) {
       data,
       hora,
       valorCentavos: valorTotal,
+      usouPlano: usaPlano,
+      plano: usaPlano ? assinatura.plano.nome : null,
+      usosRestantes: usaPlano ? (assinatura.usosRestantes === null ? 'ilimitado' : Math.max(0, assinatura.usosRestantes - 1)) : null,
     };
   } catch (e) {
     if (e.conflito) return { erro: 'conflito', mensagem: 'Esse horário acabou de ser ocupado. Ofereça outro.' };
