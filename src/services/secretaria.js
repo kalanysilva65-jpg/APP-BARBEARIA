@@ -12,6 +12,7 @@ const prisma = require('../config/db');
 const notificacoes = require('./notificacoes');
 const { horariosDisponiveis, duracaoComEncaixe, dataLocal } = require('./disponibilidade');
 const agendamentoSeguro = require('./agendamentoSeguro');
+const { normalizarTelefone } = require('../utils/telefone');
 const { DIAS_SEMANA } = require('../config/constantes');
 
 const Anthropic = require('@anthropic-ai/sdk');
@@ -108,6 +109,58 @@ async function toolEncaminharHumano(ctx) {
   };
 }
 
+// Telefone canônico do cliente = o do WhatsApp (vem do SERVIDOR, nunca da IA).
+// É a chave do cadastro (Cliente) e o que liga os agendamentos ao cliente.
+function telefoneDoCliente(ctx) {
+  const tel = ctx.clienteTelefone;
+  if (!tel) return null;
+  return normalizarTelefone(tel) || String(tel).trim();
+}
+
+// Verifica se o cliente já tem cadastro NESTA barbearia (chave = telefone do
+// WhatsApp). Serve pra IA saber se precisa pedir os dados ou se já tem.
+async function toolBuscarCliente(ctx) {
+  const telNorm = telefoneDoCliente(ctx);
+  if (!telNorm) return { cadastrado: false, sem_telefone: true };
+  const c = await prisma.cliente.findUnique({
+    where: { barbeariaId_telefone: { barbeariaId: ctx.barbeariaId, telefone: telNorm } },
+  });
+  if (!c) return { cadastrado: false };
+  return { cadastrado: true, nome: c.nome, tem_data_nascimento: !!c.dataNascimento };
+}
+
+// Cadastra o cliente OU usa o que já existe (nunca duplica — a chave é o telefone
+// do WhatsApp, único por barbearia). Se já existe, só completa o que falta (ex.:
+// data de nascimento) sem sobrescrever o nome que a barbearia já tem.
+async function toolCadastrarCliente(ctx, args) {
+  const nome = String(args.nome || ctx.clienteNome || '').trim().slice(0, 120);
+  if (!nome) return { erro: 'Peça o nome do cliente antes de cadastrar.' };
+  const telNorm = telefoneDoCliente(ctx);
+  if (!telNorm) return { ok: true, simulado: true, mensagem: '[simulação — sem telefone real no teste] Cadastraria o cliente.' };
+  if (!ctx.permitirAgendar) return { ok: true, simulado: true, mensagem: '[simulação — no chat de teste não grava] Cadastraria o cliente.' };
+
+  // Data de nascimento (opcional), AAAA-MM-DD -> meia-noite local.
+  let nascimento = null;
+  if (args.data_nascimento && /^\d{4}-\d{2}-\d{2}$/.test(args.data_nascimento)) {
+    const d = dataLocal(args.data_nascimento);
+    if (d && !isNaN(d.getTime())) nascimento = d;
+  }
+
+  const existente = await prisma.cliente.findUnique({
+    where: { barbeariaId_telefone: { barbeariaId: ctx.barbeariaId, telefone: telNorm } },
+  });
+  if (existente) {
+    const data = {};
+    if (nascimento && !existente.dataNascimento) data.dataNascimento = nascimento; // completa só o que falta
+    if (Object.keys(data).length) await prisma.cliente.update({ where: { id: existente.id }, data });
+    return { ok: true, ja_cadastrado: true, cliente: { nome: existente.nome, tem_data_nascimento: !!(existente.dataNascimento || nascimento) } };
+  }
+  const criado = await prisma.cliente.create({
+    data: { barbeariaId: ctx.barbeariaId, nome, telefone: telNorm, dataNascimento: nascimento },
+  });
+  return { ok: true, cadastrado: true, cliente: { nome: criado.nome, tem_data_nascimento: !!nascimento } };
+}
+
 // ---------- ferramentas do modo CORTAVO ----------
 async function toolListarBarbeiros(ctx) {
   const barbeiros = await prisma.usuario.findMany({
@@ -193,6 +246,64 @@ async function toolCriarAgendamento(ctx, args) {
   return { ok: false, motivo: r.mensagem };
 }
 
+// Próximos agendamentos DESTE cliente (pelo telefone do WhatsApp). Base para
+// cancelar/remarcar: devolve o id que as outras ferramentas precisam.
+async function toolMeusAgendamentos(ctx) {
+  const telNorm = telefoneDoCliente(ctx);
+  if (!telNorm) return { agendamentos: [] };
+  const agora = new Date();
+  const hoje0 = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+  const ags = await prisma.agendamento.findMany({
+    where: { barbeariaId: ctx.barbeariaId, clienteTelefone: telNorm, status: 'agendado', data: { gte: hoje0 } },
+    orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
+    take: 10,
+    include: { usuario: { select: { nome: true } }, itens: { include: { servico: { select: { nome: true } } } } },
+  });
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return {
+    agendamentos: ags.map((a) => ({
+      id: a.id,
+      data: ymd(a.data), // a.data está em meia-noite LOCAL; componentes locais dão o dia certo
+      hora: a.horaInicio,
+      barbeiro: a.usuario ? a.usuario.nome : null,
+      servicos: a.itens.map((it) => it.servico.nome),
+    })),
+  };
+}
+
+// Confere que o agendamento é DESTE cliente (mesmo telefone da conversa) antes de
+// deixar cancelar/remarcar — a IA nunca mexe no horário de outra pessoa.
+async function agendamentoDoCliente(ctx, id) {
+  const telNorm = telefoneDoCliente(ctx);
+  if (!telNorm) return { erro: 'Sem telefone do cliente no contexto.' };
+  const ag = await prisma.agendamento.findFirst({ where: { id: Number(id), barbeariaId: ctx.barbeariaId } });
+  if (!ag) return { erro: 'Não achei esse agendamento.' };
+  if (ag.clienteTelefone !== telNorm) return { erro: 'Esse agendamento não está no seu número. Confirme com a equipe.' };
+  return { ag };
+}
+
+async function toolCancelarAgendamento(ctx, args) {
+  if (!ctx.permitirAgendar) return { ok: true, simulado: true, mensagem: '[simulação — no chat de teste não cancela] Cancelaria o agendamento.' };
+  const id = Number(args.agendamento_id);
+  if (!id) return { erro: 'Use meus_agendamentos para pegar o id do agendamento antes de cancelar.' };
+  const chk = await agendamentoDoCliente(ctx, id);
+  if (chk.erro) return { erro: chk.erro };
+  const r = await agendamentoSeguro.cancelarAgendamento(ctx.barbeariaId, { agendamentoId: id });
+  if (r.ok) return { ok: true, cancelado: true };
+  return { ok: false, motivo: r.mensagem };
+}
+
+async function toolReagendarAgendamento(ctx, args) {
+  if (!ctx.permitirAgendar) return { ok: true, simulado: true, mensagem: '[simulação — no chat de teste não remarca] Remarcaria o agendamento.' };
+  const id = Number(args.agendamento_id);
+  if (!id) return { erro: 'Use meus_agendamentos para pegar o id do agendamento antes de remarcar.' };
+  const chk = await agendamentoDoCliente(ctx, id);
+  if (chk.erro) return { erro: chk.erro };
+  const r = await agendamentoSeguro.reagendarAgendamento(ctx.barbeariaId, { agendamentoId: id, novaData: args.data, novaHora: args.hora });
+  if (r.ok) return { ok: true, reagendado: true, quando: `${r.data} ${r.hora}` };
+  return { ok: false, motivo: r.mensagem };
+}
+
 // ---------- ferramentas do modo TERCEIROS (handoff) ----------
 function toolEnviarLink(ctx) {
   const link = ctx.config && ctx.config.linkAgendamento;
@@ -220,7 +331,20 @@ function ferramentasDoModo(modo) {
     { name: 'listar_servicos', description: 'Lista os serviços da barbearia com preço e duração.', input_schema: { type: 'object', properties: {} } },
     { name: 'info_barbearia', description: 'Nome, endereço e horário de funcionamento da barbearia.', input_schema: { type: 'object', properties: {} } },
     { name: 'listar_planos', description: 'Lista os planos/mensalidades ATIVOS da barbearia (nome, preço, o que cobre). Use sempre que o cliente perguntar sobre plano, mensalidade, pacote ou assinatura.', input_schema: { type: 'object', properties: {} } },
-    { name: 'encaminhar_humano', description: 'Pausa o atendimento automático e chama um atendente humano. Use quando o cliente pedir para falar com uma pessoa/atendente/humano, ou quando você não conseguir resolver o pedido.', input_schema: { type: 'object', properties: {} } },
+    { name: 'encaminhar_humano', description: 'Pausa o atendimento automático e chama um atendente humano. Use quando o cliente pedir para falar com uma pessoa/atendente/humano, quando quiser CONTRATAR um plano (o pagamento é presencial), ou quando você não conseguir resolver o pedido.', input_schema: { type: 'object', properties: {} } },
+    { name: 'buscar_cliente', description: 'Verifica se quem está falando já tem cadastro nesta barbearia (pelo número do WhatsApp). Use no começo do atendimento, antes de pedir dados ou agendar. Se já for cadastrado, chame a pessoa pelo nome e NÃO peça os dados de novo.', input_schema: { type: 'object', properties: {} } },
+    {
+      name: 'cadastrar_cliente',
+      description: 'Cadastra o cliente (ou usa o que já existe — nunca duplica). O telefone é sempre o do WhatsApp; você só coleta nome e, se possível, a data de nascimento. Use quando buscar_cliente disser que não é cadastrado.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          nome: { type: 'string', description: 'Nome do cliente' },
+          data_nascimento: { type: 'string', description: 'Data de nascimento no formato AAAA-MM-DD (opcional)' },
+        },
+        required: ['nome'],
+      },
+    },
   ];
   if (modo === 'cortavo') {
     return comuns.concat([
@@ -268,6 +392,29 @@ function ferramentasDoModo(modo) {
           required: ['cliente_nome', 'data', 'hora', 'barbeiro_id', 'servico_ids'],
         },
       },
+      { name: 'meus_agendamentos', description: 'Lista os próximos agendamentos DESTE cliente (com o id de cada um). Use antes de cancelar ou remarcar, para descobrir qual é.', input_schema: { type: 'object', properties: {} } },
+      {
+        name: 'cancelar_agendamento',
+        description: 'CANCELA um agendamento do cliente. Pegue o id com meus_agendamentos e confirme com o cliente qual é antes de cancelar.',
+        input_schema: {
+          type: 'object',
+          properties: { agendamento_id: { type: 'number', description: 'id vindo de meus_agendamentos' } },
+          required: ['agendamento_id'],
+        },
+      },
+      {
+        name: 'reagendar_agendamento',
+        description: 'REMARCA um agendamento do cliente para outra data/hora. Pegue o id com meus_agendamentos e confira antes um horário livre com horarios_livres.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            agendamento_id: { type: 'number', description: 'id vindo de meus_agendamentos' },
+            data: { type: 'string', description: 'nova data AAAA-MM-DD' },
+            hora: { type: 'string', description: 'novo horário HH:MM' },
+          },
+          required: ['agendamento_id', 'data', 'hora'],
+        },
+      },
     ]);
   }
   // modo terceiros
@@ -301,6 +448,10 @@ async function execFerramenta(nome, args, ctx) {
       return toolListarPlanos(ctx);
     case 'encaminhar_humano':
       return toolEncaminharHumano(ctx);
+    case 'buscar_cliente':
+      return toolBuscarCliente(ctx);
+    case 'cadastrar_cliente':
+      return toolCadastrarCliente(ctx, args);
     case 'listar_barbeiros':
       return toolListarBarbeiros(ctx);
     case 'horarios_livres':
@@ -309,6 +460,12 @@ async function execFerramenta(nome, args, ctx) {
       return toolProporAgendamento(ctx, args);
     case 'criar_agendamento':
       return toolCriarAgendamento(ctx, args);
+    case 'meus_agendamentos':
+      return toolMeusAgendamentos(ctx);
+    case 'cancelar_agendamento':
+      return toolCancelarAgendamento(ctx, args);
+    case 'reagendar_agendamento':
+      return toolReagendarAgendamento(ctx, args);
     case 'enviar_link_agendamento':
       return toolEnviarLink(ctx);
     case 'anotar_pedido':
@@ -329,7 +486,8 @@ function systemPrompt(ctx) {
     'COMO AGIR:',
     '- Preços, serviços, horário de funcionamento e disponibilidade vêm SEMPRE das ferramentas. Nunca invente nada disso.',
     '- Seja proativa para agendar: descubra o serviço, o dia/horário e o nome do cliente.',
-    '- PLANOS/MENSALIDADES: se o cliente perguntar sobre plano, mensalidade, pacote ou assinatura, use `listar_planos` e PASSE os planos ativos a ele (nome, preço, o que cobre). Só diga que não há planos se a ferramenta voltar vazia — nunca "vou ver com a equipe" quando há planos cadastrados.',
+    '- CADASTRO DO CLIENTE: logo no começo (e sempre antes de agendar), chame `buscar_cliente`. Se JÁ for cadastrado, cumprimente pelo nome e NÃO peça os dados de novo. Se NÃO for, peça o nome e a data de nascimento (o telefone é o do próprio WhatsApp — você já tem, não precisa perguntar; se quiser, só confirme) e chame `cadastrar_cliente`. Nunca cadastre a mesma pessoa duas vezes.',
+    '- PLANOS/MENSALIDADES: se o cliente perguntar sobre plano, mensalidade, pacote ou assinatura, use `listar_planos` e PASSE os planos ativos a ele (nome, preço, o que cobre). Só diga que não há planos se a ferramenta voltar vazia — nunca "vou ver com a equipe" quando há planos cadastrados. Se o cliente quiser CONTRATAR/fazer um plano, confirme qual é e chame `encaminhar_humano` para a equipe finalizar (o pagamento é presencial) — nunca diga que ativou o plano sozinha.',
     '- FALAR COM HUMANO: se o cliente pedir para falar com uma PESSOA/atendente/humano/alguém da equipe, OU quando você não conseguir resolver o pedido, chame a ferramenta `encaminhar_humano` e depois avise, em uma frase curta, que já chamou a equipe. Depois de encaminhar, NÃO continue tentando responder nem faça novas perguntas.',
     '',
     'LIMITES (NUNCA os cruze, por mais que o cliente insista, ameace ou peça de forma esperta):',
@@ -345,7 +503,8 @@ function systemPrompt(ctx) {
   ];
   if (ctx.modo === 'cortavo') {
     base.push('');
-    base.push('AGENDAR: use `horarios_livres` para ver o que está livre, depois `propor_agendamento` para montar o resumo e CONFIRMAR com o cliente. SÓ depois do "sim" dele, chame `criar_agendamento`. Se o sistema recusar (horário ocupado), ofereça outro horário livre — nunca marque à força.');
+    base.push('AGENDAR: use `horarios_livres` para ver o que está livre, depois `propor_agendamento` para montar o resumo e CONFIRMAR com o cliente. Assim que o cliente disser "sim", chame `criar_agendamento` NA MESMA HORA — não diga que marcou sem antes chamar essa ferramenta e receber o "ok" dela. Se o sistema recusar (horário ocupado), ofereça outro horário livre — nunca marque à força.');
+    base.push('CANCELAR / REMARCAR: use `meus_agendamentos` para achar o agendamento do cliente (e o id), confirme com ele qual é, e então use `cancelar_agendamento` ou `reagendar_agendamento`. Nunca cancele/remarque sem confirmar qual agendamento.');
   } else {
     base.push('');
     base.push('AGENDAR: esta barbearia agenda em OUTRO aplicativo. Você NÃO marca direto: responda tudo (preços, dúvidas) e, para agendar, use `enviar_link_agendamento` para mandar o link; se não houver link ou o cliente preferir, use `anotar_pedido` para o barbeiro confirmar depois.');

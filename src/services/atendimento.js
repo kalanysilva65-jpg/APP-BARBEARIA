@@ -245,6 +245,11 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
     await registrarUso(barbeariaId, teto.competencia, usage);
   } catch (e) {
     console.error('[atendimento] IA falhou:', e.message);
+    // Nunca deixar o cliente sem resposta: manda um recado curto (fica gravado na
+    // conversa mesmo se o envio falhar) para ele não achar que ninguém viu.
+    try {
+      await emitir(conversa, 'ia', 'Tive uma instabilidade rapidinha por aqui 😅 Pode mandar de novo, por favor? Se preferir, escreva SAIR para falar com um atendente.');
+    } catch (_) { /* envio pode falhar; a mensagem já foi tentada */ }
   }
   return { conversaId: conversa.id, respostaIA };
 }
