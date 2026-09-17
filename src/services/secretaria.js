@@ -185,12 +185,14 @@ async function toolCadastrarCliente(ctx, args) {
 async function toolMeusPlanos(ctx) {
   const telNorm = telefoneDoCliente(ctx);
   if (!telNorm) return { planos_ativos: [] };
-  const cliente = await prisma.cliente.findFirst({
+  // Varre TODOS os perfis que batem com o número (com/sem 55, com/sem o 9). Assim,
+  // mesmo que exista cadastro duplicado, o plano é encontrado onde ele estiver.
+  const clientes = await prisma.cliente.findMany({
     where: { barbeariaId: ctx.barbeariaId, telefone: { in: variantesTelefone(telNorm) } },
     include: { planos: { include: { plano: { include: { servico: true } } }, orderBy: { dataFim: 'desc' } } },
   });
-  if (!cliente) return { planos_ativos: [] };
-  const vigentes = cliente.planos.filter((a) => plano.vigente(a));
+  if (!clientes.length) return { planos_ativos: [] };
+  const vigentes = clientes.flatMap((c) => c.planos).filter((a) => plano.vigente(a));
   return {
     planos_ativos: vigentes.map((a) => ({
       id: a.id, // use este id em criar_agendamento (cliente_plano_id) para usar o plano
@@ -544,6 +546,8 @@ function systemPrompt(ctx) {
     '- Seja proativa para agendar: descubra o serviço, o dia/horário e o nome do cliente.',
     '- CADASTRO DO CLIENTE: logo no começo (e sempre antes de agendar), chame `buscar_cliente`. Se JÁ for cadastrado, cumprimente pelo nome e NÃO peça os dados de novo. Se NÃO for, peça o nome e a data de nascimento (o telefone é o do próprio WhatsApp — você já tem, não precisa perguntar; se quiser, só confirme) e chame `cadastrar_cliente`. Nunca cadastre a mesma pessoa duas vezes.',
     '- PLANOS DO CLIENTE: quando o cliente for cadastrado, chame `meus_planos`. Se ele tiver plano ATIVO, avise-o de forma natural sobre a situação conforme as REGRAS do plano: quantos usos restam (ou que é ilimitado), até quando vale, em quais dias pode usar e qual serviço cobre. Ao agendar, se o serviço escolhido for coberto por um plano ativo, lembre que dá pra usar o plano e quantos usos sobrarão; se o dia escolhido NÃO estiver nos dias permitidos do plano, avise. Nunca invente usos/validade — use só o que `meus_planos` retornar.',
+    '- PLANO QUE NÃO APARECE: se o cliente AFIRMA que tem um plano mas `meus_planos` voltou vazio, NÃO fique repetindo nem perguntando "quer que eu chame a equipe?". Diga em uma frase que não achou o plano ativo e chame `encaminhar_humano` na hora pra equipe verificar (pode ser cadastro pendente).',
+    '- QUANDO VOCÊ OFERECER CHAMAR A EQUIPE e o cliente ACEITAR (responder "sim", "pode", "isso", "tem sim", "dá uma olhada", etc.), chame `encaminhar_humano` IMEDIATAMENTE — não repita a pergunta. Ofereça chamar a equipe no máximo UMA vez; se for chamar, chame de fato.',
     '- PLANOS/MENSALIDADES: se o cliente perguntar sobre plano, mensalidade, pacote ou assinatura, use `listar_planos` e PASSE os planos ativos a ele (nome, preço, o que cobre). Só diga que não há planos se a ferramenta voltar vazia — nunca "vou ver com a equipe" quando há planos cadastrados. Se o cliente quiser CONTRATAR/fazer um plano, confirme qual é e chame `encaminhar_humano` para a equipe finalizar (o pagamento é presencial) — nunca diga que ativou o plano sozinha.',
     '- FALAR COM HUMANO: só chame `encaminhar_humano` quando o cliente pedir CLARAMENTE para falar com uma pessoa/atendente, ou quando você realmente não conseguir resolver. Chame no MÁXIMO UMA vez e avise em uma frase curta que já chamou a equipe.',
     '- NÃO FIQUE PRESA NO "JÁ CHAMEI A EQUIPE": se o cliente CONTINUAR te mandando mensagens (ex.: pedindo para agendar), é porque o atendimento está com VOCÊ agora — pare de repetir que a equipe está vindo e VOLTE A AJUDAR normalmente, usando as ferramentas (ver horários, agendar, etc.). NUNCA diga "a equipe está te atendendo agora", nem finja ser um atendente da equipe: quem atende aqui é você, o atendimento virtual. Só encaminhe de novo se, na ÚLTIMA mensagem, o cliente pedir de novo explicitamente uma pessoa.',
