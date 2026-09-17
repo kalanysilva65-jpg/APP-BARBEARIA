@@ -146,6 +146,36 @@ O token do Passo 3 expira em 24h. Para um token que não expira:
   ~R$0,04–0,05; marketing mais caro). A secretária responde dentro das 24h, então o
   uso normal cai na faixa grátis.
 
+## Lembretes automáticos de agendamento
+
+Manda um lembrete pro cliente **1h antes** (configurável) do horário. Reduz falta.
+É mensagem que a barbearia INICIA → precisa de **template aprovado** e tem **custo
+baixo** (utilidade ~R$0,04–0,08). Quem responde o lembrete cai na secretária, na
+janela grátis de 24h.
+
+### 1) Criar o template na Meta
+1. **business.facebook.com** → **WhatsApp Manager** → **Modelos de mensagem** →
+   **Criar modelo**.
+2. Categoria **Utilidade (Utility)**, idioma **Português (BR)** (`pt_BR`).
+3. Nome (só letras minúsculas e `_`), ex.: **`lembrete_agendamento`**.
+4. **Corpo** com 3 variáveis, nesta ordem — {{1}} nome, {{2}} barbearia, {{3}} hora:
+   > Oi {{1}}! Passando pra lembrar do seu horário na {{2}} hoje às {{3}}. 🙂 Se precisar remarcar ou cancelar, é só responder por aqui.
+5. Enviar → aguardar **aprovação** (de minutos a ~1 dia).
+
+### 2) Ligar no painel
+Painel da barbearia → **Secretária** → seção **"Lembretes automáticos"**:
+- marque **ativar**, ponha o **nome do template** (ex.: `lembrete_agendamento`) e a
+  **antecedência** (padrão **60** min). Salvar.
+- Requer o **WhatsApp conectado** (mesma tela).
+
+### 3) Como funciona por trás
+- `src/services/lembretes.js` roda a cada 5 min, acha os agendamentos `agendado`
+  que começam dentro da antecedência e ainda sem lembrete, e dispara o template
+  (`whatsapp.enviarTemplate`). Marca `agendamentos.lembrete_enviado_em` pra não
+  repetir. Só age nas barbearias que ligaram (`lembretes_ativos`).
+- **Deploy exige rodar a migração** (coluna nova): no VPS,
+  `cd /home/cortavo/app && sudo -u cortavo npx prisma migrate deploy && sudo systemctl restart cortavo`.
+
 ## Segurança (já embutida no código)
 - O `POST` do webhook só é aceito com **assinatura válida** (HMAC com o App Secret).
 - Cada mensagem é ligada à barbearia certa pelo **phone_number_id** (multi-tenant).

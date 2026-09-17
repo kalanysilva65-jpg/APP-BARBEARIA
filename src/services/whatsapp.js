@@ -66,4 +66,47 @@ async function enviarTexto(barbeariaId, para, texto) {
   }
 }
 
-module.exports = { credenciais, barbeariaPorPhoneNumberId, enviarTexto };
+// Envia um TEMPLATE aprovado (mensagem que a barbearia INICIA — ex.: lembrete).
+// Diferente do texto livre: fora da janela de 24h só template aprovado passa, e
+// ele TEM custo (utilidade). `params` são os valores do corpo ({{1}},{{2}},...),
+// na ordem. Engole as próprias falhas (loga).
+async function enviarTemplate(barbeariaId, para, nomeTemplate, idioma, params) {
+  const { phoneNumberId, token } = await credenciais(barbeariaId);
+  if (!phoneNumberId || !token) {
+    console.log('[whatsapp] barbearia', barbeariaId, 'sem credenciais — template ignorado.');
+    return { ok: false, motivo: 'sem_credenciais' };
+  }
+  const componentes = [];
+  const lista = (params || []).filter((p) => p != null && String(p) !== '');
+  if (lista.length) {
+    componentes.push({ type: 'body', parameters: lista.map((p) => ({ type: 'text', text: String(p) })) });
+  }
+  const url = `https://graph.facebook.com/${API_VERSION}/${phoneNumberId}/messages`;
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: numeroParaEnvio(para),
+        type: 'template',
+        template: {
+          name: nomeTemplate,
+          language: { code: idioma || 'pt_BR' },
+          ...(componentes.length ? { components: componentes } : {}),
+        },
+      }),
+    });
+    if (!r.ok) {
+      const errTxt = await r.text().catch(() => '');
+      console.log('[whatsapp] template falhou', r.status, errTxt.slice(0, 300));
+      return { ok: false, status: r.status };
+    }
+    return { ok: true };
+  } catch (e) {
+    console.log('[whatsapp] erro de rede no template:', e.message);
+    return { ok: false, erro: e.message };
+  }
+}
+
+module.exports = { credenciais, barbeariaPorPhoneNumberId, enviarTexto, enviarTemplate };

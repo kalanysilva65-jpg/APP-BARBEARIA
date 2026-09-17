@@ -268,4 +268,11 @@ process.on('uncaughtException', (erro) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✓ Barbearia rodando em http://localhost:${PORT}`);
+  // Agendador de lembretes de WhatsApp. Só age nas barbearias que ligaram o
+  // recurso (config `lembretes_ativos`) — seguro deixar sempre ligado.
+  try {
+    require('./services/lembretes').iniciarAgendador();
+  } catch (e) {
+    console.log('[lembretes] não foi possível iniciar o agendador:', (e && e.message) || e);
+  }
 });

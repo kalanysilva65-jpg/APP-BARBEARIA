@@ -1,0 +1,89 @@
+// Lembretes de agendamento por WhatsApp.
+//
+// Um agendador roda de tempos em tempos, acha os agendamentos que começam dentro
+// da janela de antecedência (padrão 1h) e ainda NÃO foram lembrados, e dispara um
+// TEMPLATE aprovado da Meta (mensagem que a barbearia inicia — tem custo baixo).
+// O cliente pode responder o lembrete: como ele iniciou, abre a janela de 24h e a
+// secretária continua de graça.
+//
+// Só age por barbearia que LIGOU os lembretes (config `lembretes_ativos`), tem um
+// template aprovado configurado e o WhatsApp conectado. Falha de envio nunca
+// derruba nada; só é remarcada pra próxima rodada (enquanto o agendamento não passa).
+const prisma = require('../config/db');
+const whatsapp = require('./whatsapp');
+
+const INTERVALO_MS = 5 * 60 * 1000; // roda a cada 5 min
+const IDIOMA = process.env.LEMBRETE_IDIOMA || 'pt_BR';
+const ANTECEDENCIA_PADRAO = 60; // minutos
+
+function primeiroNome(nome) {
+  return (nome || '').trim().split(/\s+/)[0] || 'cliente';
+}
+
+// Início do agendamento em horário LOCAL (mesma convenção do resto do app:
+// getters locais de `data` + horaInicio "HH:MM").
+function inicioLocal(ag) {
+  const [hh, mm] = String(ag.horaInicio || '0:0').split(':').map(Number);
+  return new Date(ag.data.getFullYear(), ag.data.getMonth(), ag.data.getDate(), hh || 0, mm || 0, 0, 0);
+}
+
+// Configs de lembrete + credenciais de TODAS as barbearias, de uma vez.
+async function configPorBarbearia() {
+  const chaves = ['lembretes_ativos', 'lembrete_template_nome', 'lembrete_antecedencia_min', 'whatsapp_phone_number_id', 'whatsapp_token'];
+  const regs = await prisma.configuracao.findMany({ where: { chave: { in: chaves } } });
+  const mapa = new Map();
+  for (const r of regs) {
+    const m = mapa.get(r.barbeariaId) || {};
+    m[r.chave] = r.valor;
+    mapa.set(r.barbeariaId, m);
+  }
+  return mapa;
+}
+
+async function dispararDevidos() {
+  const cfg = await configPorBarbearia();
+  const agora = new Date();
+  for (const [barbeariaId, c] of cfg) {
+    if (c.lembretes_ativos !== '1') continue;
+    if (!c.lembrete_template_nome || !c.whatsapp_phone_number_id || !c.whatsapp_token) continue;
+    const antecedencia = parseInt(c.lembrete_antecedencia_min, 10) || ANTECEDENCIA_PADRAO;
+
+    // Só olha agendamentos de hoje/amanhã ainda 'agendado' e sem lembrete.
+    const ini = new Date(agora); ini.setHours(0, 0, 0, 0);
+    const fim = new Date(agora); fim.setDate(fim.getDate() + 2); fim.setHours(0, 0, 0, 0);
+    const ags = await prisma.agendamento.findMany({
+      where: { barbeariaId, status: 'agendado', lembreteEnviadoEm: null, data: { gte: ini, lt: fim } },
+      select: { id: true, clienteNome: true, clienteTelefone: true, data: true, horaInicio: true },
+    });
+    if (!ags.length) continue;
+
+    const b = await prisma.barbearia.findUnique({ where: { id: barbeariaId }, select: { nome: true } });
+    for (const ag of ags) {
+      if (!ag.clienteTelefone) continue;
+      const minutosAte = (inicioLocal(ag) - agora) / 60000;
+      if (minutosAte <= 0 || minutosAte > antecedencia) continue; // ainda longe, ou já passou
+
+      const params = [primeiroNome(ag.clienteNome), (b && b.nome) || 'a barbearia', ag.horaInicio];
+      const r = await whatsapp.enviarTemplate(barbeariaId, ag.clienteTelefone, c.lembrete_template_nome, IDIOMA, params);
+      if (r.ok) {
+        // Só marca quando REALMENTE enviou. Em falha, tenta de novo na próxima
+        // rodada (até o agendamento sair da janela) — e se o dono corrigir o
+        // template no meio, ainda dá tempo de sair.
+        await prisma.agendamento.update({ where: { id: ag.id }, data: { lembreteEnviadoEm: new Date() } });
+      } else {
+        console.log('[lembretes] falha ao enviar p/ agendamento', ag.id, r.status || r.erro || r.motivo);
+      }
+    }
+  }
+}
+
+let timer = null;
+function iniciarAgendador() {
+  if (timer) return;
+  // 1ª rodada 30s após subir (deixa o app estabilizar), depois a cada INTERVALO_MS.
+  setTimeout(() => dispararDevidos().catch((e) => console.error('[lembretes]', e.message)), 30000);
+  timer = setInterval(() => dispararDevidos().catch((e) => console.error('[lembretes]', e.message)), INTERVALO_MS);
+  console.log('[lembretes] agendador ligado (a cada', INTERVALO_MS / 60000, 'min)');
+}
+
+module.exports = { iniciarAgendador, dispararDevidos };

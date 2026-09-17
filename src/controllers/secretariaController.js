@@ -6,7 +6,7 @@ const onboard = require('../services/whatsappOnboard');
 const prisma = require('../config/db');
 
 // Chaves de configuração da secretária (na tabela Configuracao, por barbearia).
-const CHAVES = ['secretaria_modo', 'secretaria_link', 'secretaria_regras', 'secretaria_teto_mes', 'copiloto_teto_mes', 'secretaria_privacidade_link', 'secretaria_pausada'];
+const CHAVES = ['secretaria_modo', 'secretaria_link', 'secretaria_regras', 'secretaria_teto_mes', 'copiloto_teto_mes', 'secretaria_privacidade_link', 'secretaria_pausada', 'lembretes_ativos', 'lembrete_template_nome', 'lembrete_antecedencia_min'];
 
 const MAX_MSG = 1000;
 const MAX_HIST = 12;
@@ -81,6 +81,9 @@ async function verConfig(req, res) {
       tetoMes: cfg.secretaria_teto_mes || '',
       copilotoTetoMes: cfg.copiloto_teto_mes || '',
       privacidadeLink: cfg.secretaria_privacidade_link || '',
+      lembretesAtivos: cfg.lembretes_ativos === '1',
+      lembreteTemplate: cfg.lembrete_template_nome || '',
+      lembreteAntecedencia: cfg.lembrete_antecedencia_min || '60',
     },
     whatsapp,
     iaPausada: cfg.secretaria_pausada === '1',
@@ -141,6 +144,7 @@ async function desconectarWhatsApp(req, res) {
 async function salvarConfig(req, res) {
   const b = req.barbeariaId;
   const soDigitos = (v) => String(v || '').replace(/\D/g, '');
+  const antecedencia = soDigitos(req.body.lembreteAntecedencia);
   const valores = {
     secretaria_modo: modoValido(req.body.modo),
     secretaria_link: String(req.body.link || '').trim().slice(0, 500),
@@ -148,6 +152,9 @@ async function salvarConfig(req, res) {
     secretaria_teto_mes: soDigitos(req.body.tetoMes),
     copiloto_teto_mes: soDigitos(req.body.copilotoTetoMes),
     secretaria_privacidade_link: String(req.body.privacidadeLink || '').trim().slice(0, 500),
+    lembretes_ativos: req.body.lembretesAtivos ? '1' : '0',
+    lembrete_template_nome: String(req.body.lembreteTemplate || '').trim().slice(0, 100),
+    lembrete_antecedencia_min: antecedencia ? String(Math.min(1440, Math.max(5, parseInt(antecedencia, 10)))) : '60',
   };
   for (const [chave, valor] of Object.entries(valores)) {
     await prisma.configuracao.upsert({
