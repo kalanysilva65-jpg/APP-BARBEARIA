@@ -158,6 +158,29 @@ async function notificarNovoAgendamento(agendamento, servicosLabel) {
   }
 }
 
+// Avisa a EQUIPE (todos os usuários ativos da barbearia) que um cliente pediu
+// atendimento humano no WhatsApp. Chega no app (web push) e fora dele (APNs no
+// iPhone). Falha de push nunca derruba o fluxo do atendimento.
+async function notificarHumanoSolicitado(barbeariaId, conversa) {
+  try {
+    const usuarios = await prisma.usuario.findMany({ where: { barbeariaId, ativo: true }, select: { id: true } });
+    const nome = (conversa && (conversa.clienteNome || conversa.clienteTelefone)) || 'Um cliente';
+    let total = 0;
+    for (const u of usuarios) {
+      total += await enviarParaUsuario(u.id, {
+        titulo: 'Cliente quer falar com atendente',
+        corpo: `${nome} pediu atendimento humano no WhatsApp. Abra as Conversas para assumir.`,
+        url: '/painel/conversas?id=' + (conversa ? conversa.id : ''),
+        tag: 'humano-' + (conversa ? conversa.id : 'x'),
+      });
+    }
+    return total;
+  } catch (e) {
+    console.error('[push] erro ao notificar handoff humano', e.message);
+    return 0;
+  }
+}
+
 module.exports = {
   estaConfigurado,
   chavePublica,
@@ -166,4 +189,5 @@ module.exports = {
   contarDispositivos,
   enviarParaUsuario,
   notificarNovoAgendamento,
+  notificarHumanoSolicitado,
 };

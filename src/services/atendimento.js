@@ -13,6 +13,7 @@ const prisma = require('../config/db');
 const secretaria = require('./secretaria');
 const faq = require('./faq');
 const whatsapp = require('./whatsapp');
+const notificacoes = require('./notificacoes');
 const { normalizarTelefone } = require('../utils/telefone');
 
 const HIST_MAX = 30; // mensagens recentes enviadas à IA como contexto
@@ -34,6 +35,17 @@ function competenciaAtual() {
 function ehOptOut(texto) {
   const limpo = (texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z]/g, '').toUpperCase();
   return PALAVRAS_OPTOUT.includes(limpo);
+}
+
+// Pedido explícito de atendimento HUMANO (além do opt-out). Determinístico: não
+// depende de a IA decidir chamar a ferramenta — garante o handoff mesmo que o
+// modelo hesite ou tente responder. Exige um verbo de "querer/falar" JUNTO de um
+// alvo humano, pra não confundir com "você é humano?" (isso é tratado no prompt).
+function pedeHumano(texto) {
+  const t = (texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const querFalar = /(falar|conversar|atendimento|atender|passar|transferir|me passa|quero|queria|preciso|tem |chama|chamar)/.test(t);
+  const alvoHumano = /(atendente|humano|uma pessoa|com alguem|responsavel|gerente|com o dono|ser humano|pessoa de verdade|nao (e|eh) (robo|bot|ia))/.test(t);
+  return querFalar && alvoHumano;
 }
 
 async function lerConfig(barbeariaId, chave, padrao) {
@@ -158,7 +170,18 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   if (ehOptOut(texto)) {
     await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
     await emitir(conversa, 'ia', 'Tudo bem! 🙂 Vou avisar a equipe para continuar seu atendimento por aqui.');
+    await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
     return { conversaId: conversa.id, optOut: true };
+  }
+
+  // (1b) HANDOFF: cliente pede uma PESSOA. Pausa a IA nesta conversa, avisa a
+  // equipe (push no app e fora dele) e responde curto. Só quando a IA ainda está
+  // ativa na conversa (evita re-notificar depois de já ter passado pra humano).
+  if (conversa.iaAtiva && pedeHumano(texto)) {
+    await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
+    await emitir(conversa, 'ia', 'Claro! 🙂 Já estou chamando a equipe pra continuar seu atendimento por aqui. Um instante, por favor.');
+    await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
+    return { conversaId: conversa.id, handoffHumano: true };
   }
 
   // Portões que impedem a IA de responder automaticamente. `secretaria_pausada`
