@@ -6,6 +6,7 @@
 const crypto = require('crypto');
 const atendimento = require('../services/atendimento');
 const whatsapp = require('../services/whatsapp');
+const transcricao = require('../services/transcricao');
 
 // GET: a Meta manda hub.mode/hub.verify_token/hub.challenge. Se o token bate com
 // o nosso WHATSAPP_VERIFY_TOKEN, devolvemos o challenge (texto puro) e ela ativa.
@@ -58,10 +59,17 @@ async function receber(req, res) {
         const nomeContato =
           (value.contacts && value.contacts[0] && value.contacts[0].profile && value.contacts[0].profile.name) || null;
         for (const msg of value.messages || []) {
-          if (msg.type !== 'text' || !msg.text) continue; // por ora, só texto
-          atendimento
-            .receberMensagemCliente(barbeariaId, { telefone: msg.from, nome: nomeContato, texto: msg.text.body })
-            .catch((e) => console.error('[webhook] processar mensagem:', e.message));
+          if (msg.type === 'text' && msg.text) {
+            atendimento
+              .receberMensagemCliente(barbeariaId, { telefone: msg.from, nome: nomeContato, texto: msg.text.body })
+              .catch((e) => console.error('[webhook] processar mensagem:', e.message));
+          } else if (msg.type === 'audio' && msg.audio && msg.audio.id) {
+            // Áudio de voz: baixa, transcreve (Groq/Whisper) e trata como texto.
+            // Feito em segundo plano pra não segurar o 200 pra Meta.
+            processarAudio(barbeariaId, msg, nomeContato)
+              .catch((e) => console.error('[webhook] processar áudio:', e.message));
+          }
+          // outros tipos (imagem, documento, etc.) por ora são ignorados
         }
         // Status de entrega (sent/delivered/read/failed). Logamos só as FALHAS,
         // que trazem o motivo (ex.: número inválido, fora da janela de 24h).
@@ -75,6 +83,23 @@ async function receber(req, res) {
   } catch (e) {
     console.error('[webhook] erro ao processar:', e.message);
   }
+}
+
+// Baixa o áudio de voz, transcreve e manda o TEXTO pro fluxo normal. Se não der
+// (sem chave, falha de download/transcrição), pede educadamente o texto — sem IA.
+async function processarAudio(barbeariaId, msg, nomeContato) {
+  const midia = await whatsapp.baixarMidia(barbeariaId, msg.audio.id);
+  const texto = midia ? await transcricao.transcrever(midia.buffer, midia.mimeType) : null;
+  if (!texto) {
+    await whatsapp.enviarTexto(
+      barbeariaId,
+      msg.from,
+      'Recebi seu áudio 🎧 mas não consegui entender direito agora. Pode me mandar por texto, por favor?'
+    ).catch(() => {});
+    return;
+  }
+  console.log('[webhook] áudio transcrito:', JSON.stringify(texto.slice(0, 80)));
+  await atendimento.receberMensagemCliente(barbeariaId, { telefone: msg.from, nome: nomeContato, texto });
 }
 
 module.exports = { verificar, receber };

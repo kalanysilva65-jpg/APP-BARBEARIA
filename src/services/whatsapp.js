@@ -109,4 +109,33 @@ async function enviarTemplate(barbeariaId, para, nomeTemplate, idioma, params) {
   }
 }
 
-module.exports = { credenciais, barbeariaPorPhoneNumberId, enviarTexto, enviarTemplate };
+// Baixa uma mídia recebida (ex.: áudio de voz) pelo id. São DOIS passos na Cloud
+// API: 1) GET /{media_id} devolve uma URL temporária; 2) baixa o binário dessa URL
+// (ambos exigem o token da barbearia no header). Retorna { buffer, mimeType } ou null.
+async function baixarMidia(barbeariaId, mediaId) {
+  const { token } = await credenciais(barbeariaId);
+  if (!token || !mediaId) return null;
+  try {
+    const rMeta = await fetch(`https://graph.facebook.com/${API_VERSION}/${mediaId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!rMeta.ok) {
+      console.log('[whatsapp] baixarMidia (meta) falhou', rMeta.status);
+      return null;
+    }
+    const meta = await rMeta.json();
+    if (!meta || !meta.url) return null;
+    const rBin = await fetch(meta.url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!rBin.ok) {
+      console.log('[whatsapp] baixarMidia (binário) falhou', rBin.status);
+      return null;
+    }
+    const ab = await rBin.arrayBuffer();
+    return { buffer: Buffer.from(ab), mimeType: meta.mime_type || 'audio/ogg' };
+  } catch (e) {
+    console.log('[whatsapp] erro ao baixar mídia:', e.message);
+    return null;
+  }
+}
+
+module.exports = { credenciais, barbeariaPorPhoneNumberId, enviarTexto, enviarTemplate, baixarMidia };
