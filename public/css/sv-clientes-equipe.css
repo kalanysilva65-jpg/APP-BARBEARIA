@@ -376,6 +376,8 @@
   color: var(--sv-muted);
 }
 .pg-sv .sv-cl-plano-estado.vig { background: var(--sv-ink); color: var(--sv-line); }
+/* Detalhe do plano (usos, validade, dias): linha própria, menor e discreta. */
+.pg-sv .sv-cl-plano-det { display: block; margin-top: 3px; font-size: 12px; font-weight: 500; color: var(--sv-muted); }
 /* O "x" some visualmente até o toque; a área de clique continua de 30px. */
 .pg-sv .sv-cl-plano-x {
   flex-shrink: 0;

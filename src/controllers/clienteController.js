@@ -3,8 +3,20 @@
 // Regra principal: telefone único por barbearia, comparado de forma NORMALIZADA (só dígitos).
 const prisma = require('../config/db');
 const { normalizarTelefone } = require('../utils/telefone');
+const { DIAS_SEMANA } = require('../config/constantes');
 
 const DIAS_SUMIDO = 30; // mesmo limite usado no HTML original (lastVisitDays >= 30)
+
+// Rótulos amigáveis do plano pra folha do cliente (usos, validade, dias).
+function usosLabelPlano(a) {
+  return a.usosRestantes === null ? 'ilimitado' : `${a.usosRestantes} uso(s) restante(s)`;
+}
+function diasLabelPlano(diasSemana) {
+  const todos = '0,1,2,3,4,5,6';
+  const s = String(diasSemana || todos).trim();
+  if (!s || s === todos) return null; // sem restrição: não precisa mostrar
+  return s.split(',').map((n) => DIAS_SEMANA[Number(n)]).filter(Boolean).join(', ');
+}
 
 // Estatísticas por cliente (gasto total, última visita, serviço/barbeiro mais
 // frequentes) — calculadas a partir do histórico real de agendamentos
@@ -100,6 +112,9 @@ async function listar(req, res) {
     const assinaturas = c.planos.map((a) => ({
       ...a,
       vigente: a.ativo && new Date(a.dataFim) >= hoje && (a.usosRestantes === null || a.usosRestantes > 0),
+      usosLabel: usosLabelPlano(a),
+      validadeLabel: a.dataFim ? new Date(a.dataFim).toLocaleDateString('pt-BR') : null,
+      diasLabel: diasLabelPlano(a.plano && a.plano.diasSemana),
     }));
     const aniversarianteMes = !!c.dataNascimento && new Date(c.dataNascimento).getMonth() === mesAtual;
     // "YYYY-MM-DD" para o <input type="date"> da folha de detalhe. A data é

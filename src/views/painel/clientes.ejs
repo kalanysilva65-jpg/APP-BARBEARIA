@@ -165,8 +165,11 @@
         <% c.assinaturas.forEach(function (a) { %>
           <div class="sv-cl-plano-linha">
             <span>
-              <%= a.plano.nome %>
+              <strong><%= a.plano.nome %></strong>
               <span class="sv-cl-plano-estado <%= a.vigente ? 'vig' : '' %>"><%= a.vigente ? 'ativo' : 'inativo' %></span>
+              <span class="sv-cl-plano-det">
+                <%= a.usosLabel %> · até <%= a.validadeLabel %><% if (a.diasLabel) { %> · <%= a.diasLabel %><% } %>
+              </span>
             </span>
             <form method="POST" action="/painel/clientes/planos/<%= a.id %>/remover" onsubmit="return confirm('Remover este plano do cliente?')">
               <button type="submit" class="sv-cl-plano-x" title="Remover" aria-label="Remover plano">×</button>
