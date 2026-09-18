@@ -259,10 +259,14 @@ async function toolHorariosLivres(ctx, args) {
     });
   }
 
+  // Limite alto o bastante para NUNCA esconder um horário real de um dia inteiro
+  // (48 = 24h em passos de 30min; a lista já vem limitada ao expediente). Antes
+  // era 12, o que cortava a tarde (parava ~14:30).
+  const MAX_HORARIOS = 48;
   const porBarbeiro = [];
   for (const b of barbeiros) {
     const livres = await horariosDisponiveis(b.id, data, duracao);
-    porBarbeiro.push({ barbeiro: b.nome, barbeiro_id: b.id, horarios: livres.slice(0, 12) });
+    porBarbeiro.push({ barbeiro: b.nome, barbeiro_id: b.id, horarios: livres.slice(0, MAX_HORARIOS) });
   }
   return { data, duracao_min: duracao, por_barbeiro: porBarbeiro };
 }
@@ -587,6 +591,7 @@ function systemPrompt(ctx) {
   if (ctx.modo === 'cortavo') {
     base.push('');
     base.push('AGENDAR (passo a passo, NÃO pule etapas): 1) chame `horarios_livres` pra ver os horários; 2) mostre as opções e deixe o cliente escolher; 3) assim que ele escolher/confirmar um horário, chame IMEDIATAMENTE `criar_agendamento` com barbeiro_id, servico_ids, data (AAAA-MM-DD do CALENDÁRIO acima) e hora. `propor_agendamento` é só um resumo opcional — o que MARCA de verdade é `criar_agendamento`. Só considere agendado DEPOIS que `criar_agendamento` retornar ok. Se recusar (horário ocupado), ofereça outro — nunca marque à força.');
+    base.push('MOSTRAR HORÁRIOS: use SEMPRE todos os horários que `horarios_livres` retornou — não invente um "último horário" nem corte a lista por conta própria. Se vierem MUITOS, resuma por período (ex.: "de manhã: 9h, 9h30, 10h…; à tarde: 13h, 13h30… até 19h") e pergunte a preferência, mas deixe claro que há horários até o fim do expediente.');
     base.push('AGENDAR COM PLANO: se o cliente tem um plano ativo (`meus_planos`) que cobre o serviço e o DIA escolhido está entre os dias permitidos do plano, ofereça usar o plano e, ao marcar, passe o `cliente_plano_id` em `criar_agendamento` (isso desconta 1 uso e sai sem custo). Se o dia escolhido NÃO for permitido pelo plano, avise o cliente e ofereça um dia permitido OU marcar normalmente (pagando). Depois de marcar pelo plano, informe quantos usos restaram.');
     base.push('CANCELAR / REMARCAR: use `meus_agendamentos` para achar o agendamento do cliente (e o id), confirme com ele qual é, e então use `cancelar_agendamento` ou `reagendar_agendamento`. Nunca cancele/remarque sem confirmar qual agendamento.');
   } else {
