@@ -23,6 +23,7 @@
     Custo <strong>real</strong> da IA (cache já contado a 10%), convertido a <strong>R$ <%= cotacao.toFixed(2) %></strong>/US$.
     É só a parte da <strong>IA</strong> — a conversa do WhatsApp (Meta) é grátis quando o cliente inicia.
     <br>Margem estimada assumindo plano de <strong>R$ <%= precoPlanoRef.toFixed(2) %></strong>/mês por barbearia ativa (ajuste em <code>PLANO_PRECO_REF</code>).
+    <br><strong>Tokens</strong>: entrada e saída somando WhatsApp + Copiloto (já ponderados pelo cache — é o valor que gera o custo). Passe o mouse na célula pra ver o detalhe por canal.
   </p>
 
   <div class="tabela-rolagem">
@@ -33,6 +34,8 @@
           <th style="text-align:right">Conversas</th>
           <th style="text-align:right">Respostas IA</th>
           <th style="text-align:right">Copiloto</th>
+          <th style="text-align:right">Tokens ent.</th>
+          <th style="text-align:right">Tokens saí.</th>
           <th style="text-align:right">Custo IA (R$)</th>
           <th style="text-align:right">R$/conversa</th>
           <th style="text-align:right">Margem (R$)</th>
@@ -40,19 +43,23 @@
       </thead>
       <tbody id="uso-corpo">
         <% function brl(v){ return (v||0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' }); } %>
+        <% function num(v){ return (v||0).toLocaleString('pt-BR'); } %>
+        <% function detTokens(l){ return 'WhatsApp: ' + num(l.wppTokensEntrada) + ' ent / ' + num(l.wppTokensSaida) + ' saí · Copiloto: ' + num(l.copTokensEntrada) + ' ent / ' + num(l.copTokensSaida) + ' saí'; } %>
         <% linhas.forEach(function (l) { %>
           <tr>
             <td><%= l.nome %></td>
-            <td style="text-align:right"><%= l.conversas.toLocaleString('pt-BR') %></td>
-            <td style="text-align:right"><%= l.respostas.toLocaleString('pt-BR') %></td>
-            <td style="text-align:right"><%= l.copilotoConsultas.toLocaleString('pt-BR') %></td>
+            <td style="text-align:right"><%= num(l.conversas) %></td>
+            <td style="text-align:right"><%= num(l.respostas) %></td>
+            <td style="text-align:right"><%= num(l.copilotoConsultas) %></td>
+            <td style="text-align:right" title="<%= detTokens(l) %>"><%= num(l.tokensEntrada) %></td>
+            <td style="text-align:right" title="<%= detTokens(l) %>"><%= num(l.tokensSaida) %></td>
             <td style="text-align:right"><%= brl(l.custoBRL) %></td>
             <td style="text-align:right"><%= brl(l.custoPorConversaBRL) %></td>
             <td style="text-align:right"><%= l.ativa ? brl(l.margemBRL) + (l.margemPct != null ? ' (' + l.margemPct + '%)' : '') : '—' %></td>
           </tr>
         <% }) %>
         <% if (linhas.length === 0) { %>
-          <tr><td colspan="7" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>
+          <tr><td colspan="9" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>
         <% } %>
       </tbody>
       <tfoot>
@@ -61,6 +68,8 @@
           <td style="text-align:right" id="uso-tot-conversas"><%= totais.conversas.toLocaleString('pt-BR') %></td>
           <td style="text-align:right" id="uso-tot-respostas"><%= totais.respostas.toLocaleString('pt-BR') %></td>
           <td style="text-align:right" id="uso-tot-copiloto"><%= totais.copiloto.toLocaleString('pt-BR') %></td>
+          <td style="text-align:right" id="uso-tot-tokent" title="<%= detTokens(totais) %>"><%= num(totais.tokensEntrada) %></td>
+          <td style="text-align:right" id="uso-tot-toksai" title="<%= detTokens(totais) %>"><%= num(totais.tokensSaida) %></td>
           <td style="text-align:right" id="uso-tot-custo"><%= brl(totais.custoBRL) %></td>
           <td style="text-align:right" id="uso-tot-porconversa"><%= brl(totais.custoPorConversaBRL) %></td>
           <td style="text-align:right" id="uso-tot-margem"><%= brl(totais.margemBRL) %></td>
@@ -78,6 +87,7 @@
     function n(v) { return (v || 0).toLocaleString('pt-BR'); }
     function brl(v) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
     function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+    function detTokens(l) { return esc('WhatsApp: ' + n(l.wppTokensEntrada) + ' ent / ' + n(l.wppTokensSaida) + ' saí · Copiloto: ' + n(l.copTokensEntrada) + ' ent / ' + n(l.copTokensSaida) + ' saí'); }
     async function atualizar() {
       if (document.hidden) return;
       try {
@@ -91,14 +101,18 @@
                 '<td style="text-align:right">' + n(l.conversas) + '</td>' +
                 '<td style="text-align:right">' + n(l.respostas) + '</td>' +
                 '<td style="text-align:right">' + n(l.copilotoConsultas) + '</td>' +
+                '<td style="text-align:right" title="' + detTokens(l) + '">' + n(l.tokensEntrada) + '</td>' +
+                '<td style="text-align:right" title="' + detTokens(l) + '">' + n(l.tokensSaida) + '</td>' +
                 '<td style="text-align:right">' + brl(l.custoBRL) + '</td>' +
                 '<td style="text-align:right">' + brl(l.custoPorConversaBRL) + '</td>' +
                 '<td style="text-align:right">' + (l.ativa ? brl(l.margemBRL) + (l.margemPct != null ? ' (' + l.margemPct + '%)' : '') : '—') + '</td></tr>';
             }).join('')
-          : '<tr><td colspan="7" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>';
+          : '<tr><td colspan="9" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>';
         document.getElementById('uso-tot-conversas').textContent = n(d.totais.conversas);
         document.getElementById('uso-tot-respostas').textContent = n(d.totais.respostas);
         document.getElementById('uso-tot-copiloto').textContent = n(d.totais.copiloto);
+        var te = document.getElementById('uso-tot-tokent'); if (te) { te.textContent = n(d.totais.tokensEntrada); te.title = detTokens(d.totais); }
+        var ts = document.getElementById('uso-tot-toksai'); if (ts) { ts.textContent = n(d.totais.tokensSaida); ts.title = detTokens(d.totais); }
         document.getElementById('uso-tot-custo').textContent = brl(d.totais.custoBRL);
         document.getElementById('uso-tot-porconversa').textContent = brl(d.totais.custoPorConversaBRL);
         var m = document.getElementById('uso-tot-margem'); if (m) m.textContent = brl(d.totais.margemBRL);

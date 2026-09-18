@@ -57,14 +57,22 @@ async function resumo(competencia) {
   const usoPor = new Map(usos.map((u) => [u.barbeariaId, u]));
 
   const linhas = [];
-  const totais = { custoUSD: 0, custoBRL: 0, margemBRL: 0, conversas: 0, respostas: 0, copiloto: 0, ativas: 0 };
+  const totais = {
+    custoUSD: 0, custoBRL: 0, margemBRL: 0, conversas: 0, respostas: 0, copiloto: 0, ativas: 0,
+    tokensEntrada: 0, tokensSaida: 0, wppTokensEntrada: 0, wppTokensSaida: 0, copTokensEntrada: 0, copTokensSaida: 0,
+  };
   for (const b of barbearias) {
     const u = usoPor.get(b.id) || {};
     const conversas = await prisma.conversa.count({
       where: { barbeariaId: b.id, ultimaMensagemEm: { gte: ini, lt: fimExcl } },
     });
-    const custoWpp = custoUSD(u.tokensEntrada || 0, u.tokensSaida || 0, mw);
-    const custoCop = custoUSD(u.copilotoTokensEntrada || 0, u.copilotoTokensSaida || 0, mc);
+    // Tokens medidos (já PONDERADOS pelo cache: leitura 10%, escrita 125%).
+    const wppEnt = u.tokensEntrada || 0;
+    const wppSai = u.tokensSaida || 0;
+    const copEnt = u.copilotoTokensEntrada || 0;
+    const copSai = u.copilotoTokensSaida || 0;
+    const custoWpp = custoUSD(wppEnt, wppSai, mw);
+    const custoCop = custoUSD(copEnt, copSai, mc);
     const custo = custoWpp + custoCop;
     const custoBRL = custo * COTACAO_BRL;
     // "Ativa" = teve algum uso no mês. Só essas contam na margem/receita estimada.
@@ -85,12 +93,25 @@ async function resumo(competencia) {
       ativa,
       margemBRL,
       margemPct: ativa && PLANO_PRECO_REF > 0 ? Math.round((margemBRL / PLANO_PRECO_REF) * 100) : null,
+      // Tokens (para o detalhamento no painel).
+      tokensEntrada: wppEnt + copEnt,
+      tokensSaida: wppSai + copSai,
+      wppTokensEntrada: wppEnt,
+      wppTokensSaida: wppSai,
+      copTokensEntrada: copEnt,
+      copTokensSaida: copSai,
     });
     totais.custoUSD += custo;
     totais.custoBRL += custoBRL;
     totais.conversas += conversas;
     totais.respostas += u.respostas || 0;
     totais.copiloto += u.copilotoConsultas || 0;
+    totais.tokensEntrada += wppEnt + copEnt;
+    totais.tokensSaida += wppSai + copSai;
+    totais.wppTokensEntrada += wppEnt;
+    totais.wppTokensSaida += wppSai;
+    totais.copTokensEntrada += copEnt;
+    totais.copTokensSaida += copSai;
     if (ativa) { totais.ativas += 1; totais.margemBRL += margemBRL; }
   }
   totais.custoPorConversaBRL = totais.conversas > 0 ? (totais.custoBRL / totais.conversas) : 0;
