@@ -20,6 +20,21 @@ const { DIAS_SEMANA } = require('../config/constantes');
 function ymdLocal(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+// Calendário dos próximos dias, pronto para o modelo consultar (ele erra ao
+// calcular "que dia cai a segunda?"). Ex.: "- Segunda 21/09 = 2026-09-21 (amanhã)".
+function calendarioReferencia(hoje, dias = 14) {
+  const linhas = [];
+  for (let i = 0; i < dias; i++) {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + i);
+    const dow = DIAS_SEMANA[d.getDay()];
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const marca = i === 0 ? ' (hoje)' : i === 1 ? ' (amanhã)' : '';
+    linhas.push(`- ${dow} ${dd}/${mm} = ${ymdLocal(d)}${marca}`);
+  }
+  return linhas.join('\n');
+}
 // Dias em que o plano pode ser usado, por extenso. "0,1,2,3,4,5,6" = todos.
 function diasDoPlano(diasSemana) {
   const todos = '0,1,2,3,4,5,6';
@@ -540,7 +555,12 @@ function systemPrompt(ctx) {
   const nome = ctx.nomeBarbearia || 'a barbearia';
   const base = [
     `Você é a recepcionista virtual da ${nome}, atendendo clientes pelo WhatsApp. Fala em português do Brasil, calorosa, educada e OBJETIVA (mensagens curtas, como um bom atendente digita).`,
-    `Hoje é ${hojeStr}. Resolva "hoje", "amanhã", "sábado" em datas AAAA-MM-DD ao usar as ferramentas.`,
+    `Hoje é ${hojeStr}.`,
+    // Calendário PRONTO: o modelo é ruim em calcular "que dia cai a segunda?".
+    // Aqui ele só CONSULTA. NUNCA deve calcular data de cabeça.
+    'CALENDÁRIO (use EXATAMENTE estas datas; nunca calcule dia da semana de cabeça):',
+    calendarioReferencia(hoje),
+    'Ao usar as ferramentas, converta "hoje", "amanhã", "segunda", "dia 22" etc. na data AAAA-MM-DD correspondente DESTA lista. Se o cliente disser um dia da semana, use a próxima ocorrência dele na lista. Se ele der um número de dia (ex.: "dia 22"), confira na lista qual dia da semana é e confirme com ele antes de marcar.',
     'COMO AGIR:',
     '- Preços, serviços, horário de funcionamento e disponibilidade vêm SEMPRE das ferramentas. Nunca invente nada disso.',
     '- Seja proativa para agendar: descubra o serviço, o dia/horário e o nome do cliente.',
