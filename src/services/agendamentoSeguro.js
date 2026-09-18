@@ -213,7 +213,10 @@ async function cancelarAgendamento(barbeariaId, dados) {
   if (ag.status === 'cancelado') return { ok: true, jaCancelado: true, clienteNome: ag.clienteNome };
   if (ag.status === 'concluido') return { erro: 'concluido', mensagem: 'Esse atendimento já foi concluído; não dá pra cancelar por aqui.' };
   await prisma.agendamento.update({ where: { id: ag.id }, data: { status: 'cancelado' } });
-  return { ok: true, agendamentoId: ag.id, clienteNome: ag.clienteNome };
+  // Se foi agendado por PLANO, devolve 1 uso (limitado; ilimitado não muda) —
+  // mesma regra do cancelamento pelo painel.
+  if (ag.clientePlanoId) await planoServ.ajustarUso(ag.clientePlanoId, +1);
+  return { ok: true, agendamentoId: ag.id, clienteNome: ag.clienteNome, usoDevolvido: !!ag.clientePlanoId };
 }
 
 module.exports = { criarAgendamento, reagendarAgendamento, cancelarAgendamento };

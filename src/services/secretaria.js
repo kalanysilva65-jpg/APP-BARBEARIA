@@ -362,7 +362,7 @@ async function toolCancelarAgendamento(ctx, args) {
   const chk = await agendamentoDoCliente(ctx, id);
   if (chk.erro) return { erro: chk.erro };
   const r = await agendamentoSeguro.cancelarAgendamento(ctx.barbeariaId, { agendamentoId: id });
-  if (r.ok) return { ok: true, cancelado: true };
+  if (r.ok) return { ok: true, cancelado: true, uso_do_plano_devolvido: !!r.usoDevolvido };
   return { ok: false, motivo: r.mensagem };
 }
 
