@@ -57,6 +57,7 @@ model Barbearia {
   metas              Meta[]
   conversas          Conversa[]
   usoIA              UsoIA[]
+  usoIAModelo        UsoIAModelo[]
 
   @@map("barbearias")
 }
@@ -611,4 +612,26 @@ model UsoIA {
 
   @@unique([barbeariaId, competencia])
   @@map("uso_ia")
+}
+
+/// Consumo de IA DETALHADO por MODELO, para o custo do painel-mestre bater mesmo
+/// quando o modelo muda no meio do mês (ex.: Haiku -> Sonnet). Uma linha por
+/// (barbearia, competência, canal, modelo). O custo soma cada linha pelo preço do
+/// seu próprio modelo, em vez de reprecificar tudo pelo modelo atual. A `UsoIA`
+/// continua sendo a base do TETO e das contagens; esta tabela é só para custo.
+model UsoIAModelo {
+  id            Int      @id @default(autoincrement())
+  barbeariaId   Int      @map("barbearia_id")
+  competencia   String // "AAAA-MM"
+  canal         String // "whatsapp" | "copiloto"
+  modelo        String // ex.: "claude-haiku-4-5"
+  tokensEntrada Int      @default(0) @map("tokens_entrada") // já ponderados pelo cache
+  tokensSaida   Int      @default(0) @map("tokens_saida")
+  chamadas      Int      @default(0) // respostas (whatsapp) ou consultas (copiloto)
+  atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em")
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+
+  @@unique([barbeariaId, competencia, canal, modelo])
+  @@map("uso_ia_modelo")
 }

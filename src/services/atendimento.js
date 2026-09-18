@@ -147,12 +147,29 @@ async function estadoTetoCopiloto(barbeariaId) {
   return { competencia, teto, consultas, atingido: consultas >= teto };
 }
 
+// Registra o uso DETALHADO por modelo (canal whatsapp|copiloto) — base do custo
+// exato no painel-mestre, mesmo trocando de modelo no meio do mês.
+async function registrarUsoModelo(barbeariaId, competencia, canal, modelo, usage) {
+  if (!modelo) return;
+  try {
+    await prisma.usoIAModelo.upsert({
+      where: { barbeariaId_competencia_canal_modelo: { barbeariaId, competencia, canal, modelo } },
+      create: { barbeariaId, competencia, canal, modelo, tokensEntrada: usage?.input || 0, tokensSaida: usage?.output || 0, chamadas: 1 },
+      update: { tokensEntrada: { increment: usage?.input || 0 }, tokensSaida: { increment: usage?.output || 0 }, chamadas: { increment: 1 } },
+    });
+  } catch (e) {
+    console.error('[uso-modelo] falhou:', e.message);
+  }
+}
+
 async function registrarUso(barbeariaId, competencia, usage) {
   await prisma.usoIA.upsert({
     where: { barbeariaId_competencia: { barbeariaId, competencia } },
     create: { barbeariaId, competencia, respostas: 1, tokensEntrada: usage?.input || 0, tokensSaida: usage?.output || 0 },
     update: { respostas: { increment: 1 }, tokensEntrada: { increment: usage?.input || 0 }, tokensSaida: { increment: usage?.output || 0 } },
   });
+  // Modelo REAL usado pela secretária (para o custo por modelo).
+  await registrarUsoModelo(barbeariaId, competencia, 'whatsapp', secretaria.MODELO, usage);
 }
 // Uso do COPILOTO (Assistente do painel) — contado à parte do WhatsApp.
 async function registrarUsoCopiloto(barbeariaId, usage) {
@@ -172,6 +189,9 @@ async function registrarUsoCopiloto(barbeariaId, usage) {
       copilotoTokensSaida: { increment: usage?.output || 0 },
     },
   });
+  // Modelo REAL do copiloto (mesma lógica de env do services/ia.js).
+  const modeloCop = process.env.IA_MODELO_COPILOTO || process.env.IA_MODELO || 'claude-haiku-4-5';
+  await registrarUsoModelo(barbeariaId, competencia, 'copiloto', modeloCop, usage);
 }
 
 async function marcarAvisadoTeto(barbeariaId, competencia) {

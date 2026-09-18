@@ -50,11 +50,18 @@ async function resumo(competencia) {
   const mw = modeloWhatsapp();
   const mc = modeloCopiloto();
 
-  const [barbearias, usos] = await Promise.all([
+  const [barbearias, usos, usosModelo] = await Promise.all([
     prisma.barbearia.findMany({ orderBy: { nome: 'asc' }, select: { id: true, nome: true } }),
     prisma.usoIA.findMany({ where: { competencia } }),
+    prisma.usoIAModelo.findMany({ where: { competencia } }),
   ]);
   const usoPor = new Map(usos.map((u) => [u.barbeariaId, u]));
+  // Uso por modelo agrupado por barbearia (para custo exato por preço de modelo).
+  const modeloPor = new Map();
+  for (const r of usosModelo) {
+    if (!modeloPor.has(r.barbeariaId)) modeloPor.set(r.barbeariaId, []);
+    modeloPor.get(r.barbeariaId).push(r);
+  }
 
   const linhas = [];
   const totais = {
@@ -67,12 +74,25 @@ async function resumo(competencia) {
       where: { barbeariaId: b.id, ultimaMensagemEm: { gte: ini, lt: fimExcl } },
     });
     // Tokens medidos (já PONDERADOS pelo cache: leitura 10%, escrita 125%).
-    const wppEnt = u.tokensEntrada || 0;
-    const wppSai = u.tokensSaida || 0;
-    const copEnt = u.copilotoTokensEntrada || 0;
-    const copSai = u.copilotoTokensSaida || 0;
-    const custoWpp = custoUSD(wppEnt, wppSai, mw);
-    const custoCop = custoUSD(copEnt, copSai, mc);
+    // Se HÁ detalhe por modelo (UsoIAModelo), o custo soma cada linha pelo preço
+    // do SEU modelo (exato mesmo trocando de modelo no mês). Senão, cai no
+    // agregado antigo, precificado pelo modelo atual (meses anteriores à tabela).
+    const rowsModelo = modeloPor.get(b.id) || [];
+    let wppEnt = 0, wppSai = 0, copEnt = 0, copSai = 0, custoWpp = 0, custoCop = 0;
+    if (rowsModelo.length) {
+      for (const r of rowsModelo) {
+        const c = custoUSD(r.tokensEntrada || 0, r.tokensSaida || 0, r.modelo);
+        if (r.canal === 'copiloto') { copEnt += r.tokensEntrada || 0; copSai += r.tokensSaida || 0; custoCop += c; }
+        else { wppEnt += r.tokensEntrada || 0; wppSai += r.tokensSaida || 0; custoWpp += c; }
+      }
+    } else {
+      wppEnt = u.tokensEntrada || 0;
+      wppSai = u.tokensSaida || 0;
+      copEnt = u.copilotoTokensEntrada || 0;
+      copSai = u.copilotoTokensSaida || 0;
+      custoWpp = custoUSD(wppEnt, wppSai, mw);
+      custoCop = custoUSD(copEnt, copSai, mc);
+    }
     const custo = custoWpp + custoCop;
     const custoBRL = custo * COTACAO_BRL;
     // "Ativa" = teve algum uso no mês. Só essas contam na margem/receita estimada.
