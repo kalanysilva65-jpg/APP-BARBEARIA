@@ -183,9 +183,12 @@ async function marcarAvisadoTeto(barbeariaId, competencia) {
 }
 
 // Freio anti-abuso: quantas mensagens do cliente nesta conversa na última 1h.
-async function floodNaConversa(conversaId) {
+// Respeita o "recomeço" (iaContextoDesde): ao devolver o atendimento à IA, o
+// contador zera junto — a equipe já tratou, então a janela começa do zero.
+async function floodNaConversa(conversaId, desde) {
   const umaHora = new Date(Date.now() - 60 * 60 * 1000);
-  return prisma.mensagem.count({ where: { conversaId, autor: 'cliente', criadoEm: { gte: umaHora } } });
+  const limite = desde && new Date(desde) > umaHora ? new Date(desde) : umaHora;
+  return prisma.mensagem.count({ where: { conversaId, autor: 'cliente', criadoEm: { gte: limite } } });
 }
 
 // Mensagem RECEBIDA de um cliente. Ponto único chamado pelo webhook (3.3).
@@ -252,7 +255,7 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   // (3) Freio anti-abuso: muitas mensagens do mesmo cliente em 1h. Em vez de ficar
   // muda (deixa o cliente no vácuo e a conversa no limbo), passa pra um humano e
   // para de gastar IA nesta conversa. iaAtiva=false evita re-notificar a cada msg.
-  if ((await floodNaConversa(conversa.id)) > ABUSO_MAX_HORA) {
+  if ((await floodNaConversa(conversa.id, conversa.iaContextoDesde)) > ABUSO_MAX_HORA) {
     console.log('[atendimento] handoff por FLOOD (anti-abuso) conversa', conversa.id);
     await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
     await emitir(conversa, 'ia', 'Vou pedir pra alguém da equipe continuar seu atendimento por aqui, tá? 🙂');
