@@ -701,7 +701,9 @@ async function horariosJson(req, res) {
   const b = req.barbeariaId;
   const barbeiroId = idNum(req.query.barbeiroId);
   const data = req.query.data;
-  const servicoId = idNum(req.query.servicoId);
+  // Múltiplos serviços (CSV); mantém compat com o `servicoId` único.
+  const servicoIds = String(req.query.servicoIds || req.query.servicoId || '')
+    .split(',').map((x) => idNum(x)).filter(Boolean);
 
   const barbeiro = await prisma.usuario.findFirst({ where: { id: barbeiroId, barbeariaId: b, ativo: true } });
   if (!req.ehAdmin && barbeiro && barbeiro.id !== req.session.usuario.id) return res.json({ horarios: [] });
@@ -710,8 +712,13 @@ async function horariosJson(req, res) {
   // de erro dentro de uma resposta que o script espera que seja JSON.
   if (!barbeiro || !dataValida(data)) return res.json({ horarios: [] });
 
-  const servico = servicoId ? await prisma.servico.findFirst({ where: { id: servicoId, barbeariaId: b } }) : null;
-  const horarios = await todosHorarios(barbeiroId, data, servico ? servico.duracaoMin : 0);
+  // Duração = soma efetiva de todos os serviços escolhidos (regra de encaixe).
+  let duracao = 0;
+  if (servicoIds.length) {
+    const servicos = await prisma.servico.findMany({ where: { id: { in: servicoIds }, barbeariaId: b } });
+    duracao = duracaoComEncaixe(servicos.map((s) => ({ duracaoMin: s.duracaoMin, ehEncaixe: s.ehEncaixe })), { efetiva: true });
+  }
+  const horarios = await todosHorarios(barbeiroId, data, duracao);
   res.json({ horarios });
 }
 
@@ -735,7 +742,9 @@ async function criarManual(req, res) {
 
   // Barbeiro: admin escolhe; funcionário agenda sempre para si.
   const usuarioId = ehAdmin ? idNum(req.body.barbeiroId) : usuario.id;
-  const servicoId = idNum(req.body.servicoId);
+  // Serviços: agora MÚLTIPLOS (CSV de ids). Mantém compat com o campo antigo `servicoId`.
+  const servicoIds = String(req.body.servicoIds || req.body.servicoId || '')
+    .split(',').map((x) => idNum(x)).filter(Boolean);
   const data = req.body.data;
   const hora = req.body.hora;
   const nome = (req.body.cliente_nome || '').trim();
@@ -743,19 +752,27 @@ async function criarManual(req, res) {
   const telefone = (req.body.cliente_telefone || '').trim();
 
   const barbeiro = await prisma.usuario.findFirst({ where: { id: usuarioId, barbeariaId: b, ativo: true } });
-  const servico = await prisma.servico.findFirst({ where: { id: servicoId, barbeariaId: b, ativo: true } });
+  const servicos = servicoIds.length
+    ? await prisma.servico.findMany({ where: { id: { in: servicoIds }, barbeariaId: b, ativo: true } })
+    : [];
 
   const erros = [];
   if (!barbeiro) erros.push('Selecione um barbeiro.');
-  if (!servico) erros.push('Selecione um serviço.');
+  if (!servicos.length) erros.push('Selecione ao menos um serviço.');
   if (!data || !hora) erros.push('Informe data e horário.');
   if (!nome) erros.push('Informe o nome do cliente.');
   if (!telefone) erros.push('Informe o telefone do cliente.');
 
+  // Duração efetiva somando todos os serviços (regra de encaixe incluída).
+  const duracaoTotal = duracaoComEncaixe(
+    servicos.map((s) => ({ duracaoMin: s.duracaoMin, ehEncaixe: s.ehEncaixe })),
+    { efetiva: true }
+  );
+
   // Bloqueio de conflito: o novo horário não pode sobrepor outro atendimento do barbeiro.
-  if (barbeiro && servico && dataValida(data) && hora) {
+  if (barbeiro && servicos.length && dataValida(data) && hora) {
     const iniNovo = paraMinutos(hora);
-    const fimNovo = iniNovo + duracaoEfetiva(servico.duracaoMin);
+    const fimNovo = iniNovo + duracaoTotal;
     const existentes = await prisma.agendamento.findMany({
       where: { barbeariaId: b, usuarioId, data: dataLocal(data), status: { not: 'cancelado' } },
       include: { itens: { include: { servico: true } } },
@@ -790,6 +807,7 @@ async function criarManual(req, res) {
     clienteId = cliente.id;
   }
 
+  const valorTotal = servicos.reduce((soma, s) => soma + s.valor, 0);
   await prisma.agendamento.create({
     data: {
       barbeariaId: b,
@@ -801,8 +819,8 @@ async function criarManual(req, res) {
       data: dataLocal(data),
       horaInicio: hora,
       status: 'agendado',
-      valorTotal: servico.valor,
-      itens: { create: [{ servicoId: servico.id, valorUnitario: servico.valor, quantidade: 1 }] },
+      valorTotal,
+      itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: s.valor, quantidade: 1 })) },
     },
   });
 

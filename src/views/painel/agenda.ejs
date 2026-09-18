@@ -231,8 +231,8 @@
         </div>
 
         <div class="sv-ag-campo sv-ag-campo--pills">
-          <div class="sv-ag-campo-rot">Serviço</div>
-          <input type="hidden" name="servicoId" id="servicoId-novo" required />
+          <div class="sv-ag-campo-rot">Serviços <span class="texto-sutil">(pode escolher mais de um)</span></div>
+          <input type="hidden" name="servicoIds" id="servicoIds-novo" required />
           <div class="pill-group" id="pills-servico">
             <% servicos.forEach(function (s) { %>
               <button type="button" class="pill-opcao" data-id="<%= s.id %>" data-duracao="<%= s.duracaoMin %>"><%= s.nome %></button>
@@ -359,9 +359,15 @@
       var a = document.querySelector('#' + grupoId + ' .pill-opcao.ativo');
       return a ? a.textContent.trim() : '';
     }
+    function textosAtivos(grupoId) {
+      return Array.prototype.map.call(
+        document.querySelectorAll('#' + grupoId + ' .pill-opcao.ativo'),
+        function (a) { return a.textContent.trim(); }
+      );
+    }
     function atualizar() {
       resumo.cliente.textContent = (nome && nome.value.trim()) || '—';
-      resumo.servico.textContent = textoAtivo('pills-servico') || 'Escolha o serviço';
+      resumo.servico.textContent = textosAtivos('pills-servico').join(', ') || 'Escolha o serviço';
       resumo.hora.textContent = textoAtivo('pills-horario') || '--:--';
       if (document.getElementById('pills-barbeiro')) {
         resumo.barbeiro.textContent = textoAtivo('pills-barbeiro');
@@ -440,11 +446,12 @@
     var form = document.getElementById('form-novo-agendamento');
     if (!form) return;
     var dataInput = document.getElementById('data-novo');
-    var servicoInput = document.getElementById('servicoId-novo');
+    var servicoInput = document.getElementById('servicoIds-novo');
     var barbeiroInput = document.getElementById('barbeiroId-novo');
     var horaInput = document.getElementById('hora-novo');
     var pillsHorario = document.getElementById('pills-horario');
 
+    // Seleção ÚNICA (barbeiro): troca o ativo.
     function ligarGrupo(containerId, hiddenInput, aoMudar) {
       var container = document.getElementById(containerId);
       if (!container) return;
@@ -460,6 +467,22 @@
       });
     }
 
+    // Seleção MÚLTIPLA (serviços): alterna cada pílula e junta os ids (CSV).
+    function ligarMulti(containerId, hiddenInput, aoMudar) {
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      container.addEventListener('click', function (e) {
+        var btn = e.target.closest('.pill-opcao');
+        if (!btn) return;
+        btn.classList.toggle('ativo');
+        var ids = Array.prototype.map.call(container.querySelectorAll('.pill-opcao.ativo'), function (b) {
+          return b.getAttribute('data-id');
+        });
+        hiddenInput.value = ids.join(',');
+        if (aoMudar) aoMudar();
+      });
+    }
+
     function buscarHorarios() {
       horaInput.value = '';
       if (!barbeiroInput || !barbeiroInput.value) {
@@ -469,7 +492,7 @@
       // O serviço é opcional aqui: sem ele, mostra o grid com a duração
       // mínima (o servidor usa 0 = intervalo padrão); ao escolher o
       // serviço, o grid é refeito considerando a duração real dele.
-      var qs = new URLSearchParams({ barbeiroId: barbeiroInput.value, data: (dataInput && dataInput.value) || '', servicoId: servicoInput.value || '' });
+      var qs = new URLSearchParams({ barbeiroId: barbeiroInput.value, data: (dataInput && dataInput.value) || '', servicoIds: servicoInput.value || '' });
       fetch('/painel/agenda/horarios?' + qs.toString())
         .then(function (r) { return r.json(); })
         .then(function (json) {
@@ -497,7 +520,7 @@
       horaInput.value = btn.getAttribute('data-hora');
     });
 
-    ligarGrupo('pills-servico', servicoInput, buscarHorarios);
+    ligarMulti('pills-servico', servicoInput, buscarHorarios);
     if (barbeiroInput) ligarGrupo('pills-barbeiro', barbeiroInput, buscarHorarios);
     // Trocar a data refaz o grid de horários daquele dia.
     if (dataInput) dataInput.addEventListener('change', buscarHorarios);
