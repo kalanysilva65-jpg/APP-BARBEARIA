@@ -323,8 +323,22 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
 
   let respostaIA = null;
   try {
-    const { texto: resp, usage, ferramentas } = await secretaria.responder(ctx, historico);
+    const { texto: resp, usage, ferramentas, semTexto } = await secretaria.responder(ctx, historico);
     respostaIA = resp;
+    // TRAVA anti-spam de NÃO-RESPOSTA: quando a IA não consegue responder de
+    // verdade (texto vazio -> "pode repetir?") e a resposta ANTERIOR também já
+    // foi uma não-resposta, para de repetir e passa pra um humano.
+    if (semTexto) {
+      const ultimaIa = await prisma.mensagem.findFirst({ where: { conversaId: conversa.id, autor: 'ia' }, orderBy: { criadoEm: 'desc' } });
+      const anteriorNaoResp = ultimaIa && /desculpa, pode repetir|vou te transferir|instabilidade/i.test((ultimaIa.texto || '').normalize('NFD').replace(/[̀-ͯ]/g, ''));
+      if (anteriorNaoResp) {
+        console.log('[atendimento] TRAVA nao-resposta -> humano, conversa', conversa.id);
+        await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
+        await emitir(conversa, 'ia', 'Deixa eu chamar alguém da equipe pra te ajudar com isso, tá? 🙂 Já já te respondem por aqui.');
+        await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
+        return { conversaId: conversa.id, travaNaoResposta: true };
+      }
+    }
     // Diagnóstico: a IA AFIRMOU que agendou/cancelou/remarcou sem ter chamado a
     // ferramenta que faz isso de verdade? (alucinação — o horário não foi mexido).
     const afirmaAgendou = /\b(agendad|agendei|marcad|marquei|confirmad|confirmei|reservad|reservei|cancelad|cancelei|remarcad|remarquei)/i

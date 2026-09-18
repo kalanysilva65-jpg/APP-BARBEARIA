@@ -664,9 +664,13 @@ async function responder(ctx, mensagens) {
     }
 
     const texto = resp.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
-    return { texto: texto || 'Desculpa, pode repetir?', usage: uso, ferramentas: ferramentasChamadas };
+    if (!texto) {
+      console.log('[secretaria] resposta SEM TEXTO. stop_reason:', resp.stop_reason, '| blocos:', (resp.content || []).map((b) => b.type).join(',') || 'vazio');
+    }
+    return { texto: texto || 'Desculpa, pode repetir?', usage: uso, ferramentas: ferramentasChamadas, semTexto: !texto };
   }
-  return { texto: 'Vou te transferir para um atendente para te ajudar melhor.', usage: uso, ferramentas: ferramentasChamadas };
+  console.log('[secretaria] estourou MAX_ITERACOES sem resposta final.');
+  return { texto: 'Vou te transferir para um atendente para te ajudar melhor.', usage: uso, ferramentas: ferramentasChamadas, semTexto: true };
 }
 
 module.exports = { habilitada, responder, execFerramenta, ferramentasDoModo, MODELO };
