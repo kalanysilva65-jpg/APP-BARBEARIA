@@ -323,8 +323,16 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
 
   let respostaIA = null;
   try {
-    const { texto: resp, usage } = await secretaria.responder(ctx, historico);
+    const { texto: resp, usage, ferramentas } = await secretaria.responder(ctx, historico);
     respostaIA = resp;
+    // Diagnóstico: a IA AFIRMOU que agendou/cancelou/remarcou sem ter chamado a
+    // ferramenta que faz isso de verdade? (alucinação — o horário não foi mexido).
+    const afirmaAgendou = /\b(agendad|agendei|marcad|marquei|confirmad|confirmei|reservad|reservei|cancelad|cancelei|remarcad|remarquei)/i
+      .test((resp || '').normalize('NFD').replace(/[̀-ͯ]/g, ''));
+    const ferramentaAcao = (ferramentas || []).some((f) => ['criar_agendamento', 'cancelar_agendamento', 'reagendar_agendamento'].includes(f));
+    if (afirmaAgendou && !ferramentaAcao) {
+      console.log('[atendimento] ALERTA: IA alegou agendar/cancelar SEM chamar a ferramenta. conversa', conversa.id, '| ferramentas:', JSON.stringify(ferramentas || []));
+    }
     await emitir(conversa, 'ia', resp);
     await registrarUso(barbeariaId, teto.competencia, usage);
     // HANDOFF DETERMINÍSTICO: se a IA ANUNCIOU que vai chamar a equipe mas a IA
