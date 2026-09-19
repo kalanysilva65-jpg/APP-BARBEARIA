@@ -565,6 +565,7 @@ function systemPrompt(ctx) {
     'CALENDÁRIO (use EXATAMENTE estas datas; nunca calcule dia da semana de cabeça):',
     calendarioReferencia(hoje),
     'Ao usar as ferramentas, converta "hoje", "amanhã", "segunda", "dia 22" etc. na data AAAA-MM-DD correspondente DESTA lista. Se o cliente disser um dia da semana, use a próxima ocorrência dele na lista. Se ele der um número de dia (ex.: "dia 22"), confira na lista qual dia da semana é e confirme com ele antes de marcar.',
+    'NUNCA confunda HORÁRIO com DATA: "17:30", "18h", "seis e meia" são HORAS do dia, NÃO o número do dia do mês. Jamais deduza o dia a partir do horário (17:30 não é "dia 17"). A data é sempre HOJE (data acima) ou a que o cliente pediu, tirada do CALENDÁRIO. Ao confirmar um agendamento, diga a DATA real e o HORÁRIO separadamente (ex.: "hoje, ' + hojeStr + ', às 17:30").',
     'COMO AGIR:',
     '- Preços, serviços, horário de funcionamento e disponibilidade vêm SEMPRE das ferramentas. Nunca invente nada disso.',
     '- Seja proativa para agendar: descubra o serviço, o dia/horário e o nome do cliente.',
