@@ -11,6 +11,7 @@
 // derruba nada; só é remarcada pra próxima rodada (enquanto o agendamento não passa).
 const prisma = require('../config/db');
 const whatsapp = require('./whatsapp');
+const { telefoneCanonicoBR } = require('../utils/telefone');
 
 const INTERVALO_MS = 5 * 60 * 1000; // roda a cada 5 min
 const IDIOMA = process.env.LEMBRETE_IDIOMA || 'pt_BR';
@@ -18,6 +19,16 @@ const ANTECEDENCIA_PADRAO = 60; // minutos
 
 function primeiroNome(nome) {
   return (nome || '').trim().split(/\s+/)[0] || 'cliente';
+}
+
+// Número no formato que a Meta ENTREGA: DDI 55 + DDD + 9 + número.
+// O agendamento guarda o telefone digitado no painel ("(51) 99983-2112"), que
+// vem SEM o código do país. Sem o "55" a Meta lê o "51" como outro DDI (Peru) e
+// ACEITA a mensagem sem ENTREGAR — some sem erro. (Nas RESPOSTAS isso não acontece
+// porque lá o número vem do `wa_id` da Meta, que já traz o 55.)
+function paraEnvioBR(valor) {
+  const canon = telefoneCanonicoBR(valor); // DDD + 9 + 8 díg, sem país
+  return canon ? '55' + canon : '';
 }
 
 // Início do agendamento em horário LOCAL (mesma convenção do resto do app:
@@ -60,11 +71,13 @@ async function dispararDevidos() {
     const b = await prisma.barbearia.findUnique({ where: { id: barbeariaId }, select: { nome: true } });
     for (const ag of ags) {
       if (!ag.clienteTelefone) continue;
+      const paraEnvio = paraEnvioBR(ag.clienteTelefone);
+      if (!paraEnvio) continue;
       const minutosAte = (inicioLocal(ag) - agora) / 60000;
       if (minutosAte <= 0 || minutosAte > antecedencia) continue; // ainda longe, ou já passou
 
       const params = [primeiroNome(ag.clienteNome), (b && b.nome) || 'a barbearia', ag.horaInicio];
-      const r = await whatsapp.enviarTemplate(barbeariaId, ag.clienteTelefone, c.lembrete_template_nome, IDIOMA, params);
+      const r = await whatsapp.enviarTemplate(barbeariaId, paraEnvio, c.lembrete_template_nome, IDIOMA, params);
       if (r.ok) {
         // Só marca quando REALMENTE enviou. Em falha, tenta de novo na próxima
         // rodada (até o agendamento sair da janela) — e se o dono corrigir o
