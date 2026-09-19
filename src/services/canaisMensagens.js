@@ -54,11 +54,12 @@ async function resumo(competencia) {
       select: { barbeariaId: true, origem: true, clienteNome: true, criadoEm: true, data: true, horaInicio: true },
       orderBy: { criadoEm: 'desc' },
     }),
-    // Lembretes DISPARADOS no mês.
-    prisma.agendamento.findMany({
-      where: { lembreteEnviadoEm: { gte: ini, lt: fimExcl } },
-      select: { barbeariaId: true, clienteNome: true, clienteTelefone: true, lembreteEnviadoEm: true, data: true, horaInicio: true },
-      orderBy: { lembreteEnviadoEm: 'desc' },
+    // Lembretes DISPARADOS no mês — da tabela de log durável (sobrevive à
+    // exclusão do agendamento), não da marca no próprio agendamento.
+    prisma.lembreteLog.findMany({
+      where: { enviadoEm: { gte: ini, lt: fimExcl } },
+      select: { barbeariaId: true, clienteNome: true, clienteTelefone: true, enviadoEm: true, horaAgendamento: true },
+      orderBy: { enviadoEm: 'desc' },
     }),
     // Mensagens que a IA ENVIOU no mês (autor = 'ia').
     prisma.mensagem.findMany({
@@ -105,15 +106,15 @@ async function resumo(competencia) {
   // --- Mensagens: lembretes -------------------------------------------------
   const lembretePorBarbearia = new Map();
   const lembreteLista = [];
-  for (const ag of lembretes) {
-    lembretePorBarbearia.set(ag.barbeariaId, (lembretePorBarbearia.get(ag.barbeariaId) || 0) + 1);
+  for (const lg of lembretes) {
+    lembretePorBarbearia.set(lg.barbeariaId, (lembretePorBarbearia.get(lg.barbeariaId) || 0) + 1);
     if (lembreteLista.length < MAX_LISTA) {
       lembreteLista.push({
-        cliente: ag.clienteNome || '—',
-        telefone: ag.clienteTelefone || '',
-        barbearia: nomeBarbearia.get(ag.barbeariaId) || ('#' + ag.barbeariaId),
-        quando: fmtQuando(ag.lembreteEnviadoEm),
-        para: ag.horaInicio,
+        cliente: lg.clienteNome || '—',
+        telefone: lg.clienteTelefone || '',
+        barbearia: nomeBarbearia.get(lg.barbeariaId) || ('#' + lg.barbeariaId),
+        quando: fmtQuando(lg.enviadoEm),
+        para: lg.horaAgendamento || '',
       });
     }
   }

@@ -58,6 +58,7 @@ model Barbearia {
   conversas          Conversa[]
   usoIA              UsoIA[]
   usoIAModelo        UsoIAModelo[]
+  lembreteLogs       LembreteLog[]
 
   @@map("barbearias")
 }
@@ -261,6 +262,7 @@ model Agendamento {
   itens        AgendamentoItem[]
   caixa        Caixa[]
   pagamentos   PagamentoAgendamento[]
+  lembreteLogs LembreteLog[]
 
   // `agendamentos` é a tabela que mais cresce (nunca é limpa). Os dois filtros
   // quentes são: disponibilidade do barbeiro numa data (agendamento público) e
@@ -591,6 +593,28 @@ model Mensagem {
 
   @@index([conversaId, criadoEm])
   @@map("mensagens")
+}
+
+/// Registro DURÁVEL de cada lembrete de WhatsApp enviado (services/lembretes.js).
+/// Existe além da marca `Agendamento.lembreteEnviadoEm` porque o histórico não
+/// pode depender do agendamento continuar vivo: se ele for cancelado/apagado, o
+/// lembrete já enviado não some do relatório. Por isso os dados do cliente são
+/// COPIADOS aqui (não só referenciados) e `agendamentoId` é opcional (SetNull).
+model LembreteLog {
+  id              Int       @id @default(autoincrement())
+  barbeariaId     Int       @map("barbearia_id")
+  agendamentoId   Int?      @map("agendamento_id") // referência; nula se o agendamento for apagado
+  clienteNome     String    @map("cliente_nome")
+  clienteTelefone String    @map("cliente_telefone")
+  horaAgendamento String?   @map("hora_agendamento") // "HH:MM" lembrado
+  dataAgendamento DateTime? @map("data_agendamento") // dia do agendamento
+  enviadoEm       DateTime  @default(now()) @map("enviado_em")
+
+  barbearia   Barbearia    @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  agendamento Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
+
+  @@index([barbeariaId, enviadoEm])
+  @@map("lembrete_logs")
 }
 
 /// Consumo mensal da secretária de IA por barbearia (Fase 3.5) — base do TETO de

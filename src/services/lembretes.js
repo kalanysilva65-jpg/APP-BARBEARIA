@@ -87,6 +87,19 @@ async function dispararDevidos() {
         // rodada (até o agendamento sair da janela) — e se o dono corrigir o
         // template no meio, ainda dá tempo de sair.
         await prisma.agendamento.update({ where: { id: ag.id }, data: { lembreteEnviadoEm: new Date() } });
+        // Registro DURÁVEL do lembrete (sobrevive se o agendamento for cancelado
+        // ou apagado depois). Copia os dados do cliente; o log é bônus, então um
+        // erro aqui nunca derruba o envio (o `update` acima é a trava de repetição).
+        await prisma.lembreteLog.create({
+          data: {
+            barbeariaId,
+            agendamentoId: ag.id,
+            clienteNome: ag.clienteNome || '',
+            clienteTelefone: ag.clienteTelefone || '',
+            horaAgendamento: ag.horaInicio || null,
+            dataAgendamento: ag.data || null,
+          },
+        }).catch((e) => console.log('[lembretes] log falhou p/ agendamento', ag.id, e.message));
       } else {
         console.log('[lembretes] falha ao enviar p/ agendamento', ag.id, r.status || r.erro || r.motivo);
       }
