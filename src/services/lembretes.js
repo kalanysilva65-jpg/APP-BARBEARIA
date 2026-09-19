@@ -16,6 +16,9 @@ const { telefoneCanonicoBR } = require('../utils/telefone');
 const INTERVALO_MS = 5 * 60 * 1000; // roda a cada 5 min
 const IDIOMA = process.env.LEMBRETE_IDIOMA || 'pt_BR';
 const ANTECEDENCIA_PADRAO = 60; // minutos
+// Nome do template usado quando a barbearia liga os lembretes mas não digita um
+// nome próprio — assim já funciona "de fábrica" (o template padrão do Cortavo).
+const TEMPLATE_PADRAO = process.env.LEMBRETE_TEMPLATE_PADRAO || 'lembrete_agendamento';
 
 function primeiroNome(nome) {
   return (nome || '').trim().split(/\s+/)[0] || 'cliente';
@@ -56,7 +59,8 @@ async function dispararDevidos() {
   const agora = new Date();
   for (const [barbeariaId, c] of cfg) {
     if (c.lembretes_ativos !== '1') continue;
-    if (!c.lembrete_template_nome || !c.whatsapp_phone_number_id || !c.whatsapp_token) continue;
+    if (!c.whatsapp_phone_number_id || !c.whatsapp_token) continue; // sem WhatsApp conectado, não há como enviar
+    const templateNome = c.lembrete_template_nome || TEMPLATE_PADRAO; // pré-programado se o dono não digitou um nome
     const antecedencia = parseInt(c.lembrete_antecedencia_min, 10) || ANTECEDENCIA_PADRAO;
 
     // Só olha agendamentos de hoje/amanhã ainda 'agendado' e sem lembrete.
@@ -77,7 +81,7 @@ async function dispararDevidos() {
       if (minutosAte <= 0 || minutosAte > antecedencia) continue; // ainda longe, ou já passou
 
       const params = [primeiroNome(ag.clienteNome), (b && b.nome) || 'a barbearia', ag.horaInicio];
-      const r = await whatsapp.enviarTemplate(barbeariaId, paraEnvio, c.lembrete_template_nome, IDIOMA, params);
+      const r = await whatsapp.enviarTemplate(barbeariaId, paraEnvio, templateNome, IDIOMA, params);
       if (r.ok) {
         // Só marca quando REALMENTE enviou. Em falha, tenta de novo na próxima
         // rodada (até o agendamento sair da janela) — e se o dono corrigir o

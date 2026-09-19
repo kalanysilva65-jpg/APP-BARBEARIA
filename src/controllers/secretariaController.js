@@ -82,7 +82,7 @@ async function verConfig(req, res) {
       copilotoTetoMes: cfg.copiloto_teto_mes || '',
       privacidadeLink: cfg.secretaria_privacidade_link || '',
       lembretesAtivos: cfg.lembretes_ativos === '1',
-      lembreteTemplate: cfg.lembrete_template_nome || '',
+      lembreteTemplate: cfg.lembrete_template_nome || 'lembrete_agendamento', // já vem pré-programado
       lembreteAntecedencia: cfg.lembrete_antecedencia_min || '60',
     },
     whatsapp,
