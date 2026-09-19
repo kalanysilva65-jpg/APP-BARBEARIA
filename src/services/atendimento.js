@@ -112,6 +112,12 @@ function historicoParaIA(mensagens) {
     }
   }
   while (arr.length && arr[0].role !== 'user') arr.shift();
+  // A conversa enviada ao modelo TEM que TERMINAR numa mensagem do usuário — o
+  // Sonnet não aceita "prefill" (terminar em assistant) e devolve 400. Com
+  // mensagens em rajada processadas em paralelo (ex.: vários áudios seguidos),
+  // uma resposta da IA pode ganhar timestamp posterior e cair no fim do
+  // histórico; aqui descartamos qualquer mensagem de assistant pendurada no fim.
+  while (arr.length && arr[arr.length - 1].role !== 'user') arr.pop();
   return arr;
 }
 
