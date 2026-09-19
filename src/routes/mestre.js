@@ -28,6 +28,8 @@ router.get('/auditoria', mestreController.auditoriaLista);
 // Uso & custos de IA por barbearia (tempo real via /uso.json)
 router.get('/uso', mestreController.usoCustos);
 router.get('/uso.json', mestreController.usoCustosJson);
+// Canais de agendamento + mensagens enviadas (todas as barbearias, por mês)
+router.get('/canais', mestreController.canaisMensagensView);
 router.get('/nova', mestreController.formNova);
 router.post('/barbearias', mestreController.criarBarbearia);
 

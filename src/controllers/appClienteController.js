@@ -233,6 +233,7 @@ async function confirmar(req, res) {
       horaInicio: hora,
       status: 'agendado',
       valorTotal,
+      origem: 'app', // agendamento pelo app do cliente (marketplace)
       itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: s.valor, quantidade: 1 })) },
     },
   });

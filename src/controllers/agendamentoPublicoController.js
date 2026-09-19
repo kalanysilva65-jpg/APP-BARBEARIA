@@ -532,6 +532,7 @@ async function confirmar(req, res) {
           horaInicio: hora,
           status: 'agendado',
           valorTotal,
+          origem: 'publico', // agendamento pelo link público da barbearia
           itens: {
             create: servicos.map((s) => ({
               servicoId: s.id,

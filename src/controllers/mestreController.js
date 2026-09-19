@@ -9,6 +9,7 @@ const { caminhoDoUpload } = require('../config/paths');
 const { geocodificar } = require('../services/geocodificacao');
 const auditoria = require('../services/auditoria');
 const custosIA = require('../services/custosIA');
+const canaisMensagens = require('../services/canaisMensagens');
 
 // Quantas barbearias por página na lista (paginação server-side).
 const POR_PAGINA = 20;
@@ -560,10 +561,18 @@ async function usoCustosJson(req, res) {
   res.json(await custosIA.resumo(req.query.competencia));
 }
 
+// GET /mestre/canais — canais de agendamento + mensagens enviadas (mês, todas
+// as barbearias). ?competencia=AAAA-MM.
+async function canaisMensagensView(req, res) {
+  const dados = await canaisMensagens.resumo(req.query.competencia);
+  res.render('mestre/canais', { layout: 'layouts/mestre', titulo: 'Canais & mensagens', ...dados });
+}
+
 module.exports = {
   painel,
   usoCustos,
   usoCustosJson,
+  canaisMensagensView,
   formNova,
   criarBarbearia,
   detalhe,

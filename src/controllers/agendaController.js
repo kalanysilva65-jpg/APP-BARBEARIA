@@ -820,6 +820,7 @@ async function criarManual(req, res) {
       horaInicio: hora,
       status: 'agendado',
       valorTotal,
+      origem: 'barbeiro', // criado manualmente no painel pela equipe
       itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: s.valor, quantidade: 1 })) },
     },
   });

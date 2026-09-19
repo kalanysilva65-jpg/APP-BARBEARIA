@@ -116,6 +116,7 @@ async function criarAgendamento(barbeariaId, dados) {
           horaInicio: hora,
           status: 'agendado',
           valorTotal,
+          origem: 'whatsapp', // agendado pela secretária de IA no WhatsApp
           itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: usaPlano ? 0 : s.valor, quantidade: 1 })) },
         },
       });

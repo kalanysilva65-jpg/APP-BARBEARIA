@@ -247,6 +247,10 @@ model Agendamento {
   clienteId       Int?     @map("cliente_id") // vínculo opcional ao cadastro LOCAL (CRM) da barbearia
   contaClienteId  Int?     @map("conta_cliente_id") // conta GLOBAL do app do cliente (marketplace)
   clientePlanoId  Int?     @map("cliente_plano_id") // assinatura usada (agendamento via plano)
+  // Canal de origem do agendamento: publico (link) | app (marketplace) |
+  // whatsapp (secretária IA) | barbeiro (manual no painel). Nulo = registros
+  // anteriores a este campo (mostrados como "Anterior" no painel-mestre).
+  origem          String?  @map("origem")
   criadoEm        DateTime @default(now()) @map("criado_em")
 
   barbearia    Barbearia         @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
