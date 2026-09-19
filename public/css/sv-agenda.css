@@ -417,6 +417,21 @@
    #F2F2F2) desapareceriam dentro dela. */
 .pg-sv .sv-ag-campo--pills { background: transparent; padding: 4px 2px 0; }
 .pg-sv .sv-ag-campo--pills .pill-group { margin-top: 8px; }
+/* Hora livre: encaixe fora da grade de 30 min (ex.: 14:10). Fica numa caixinha
+   ao lado do rótulo, sem poluir a grade de pílulas. */
+.pg-sv .sv-ag-hora-livre {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.pg-sv .ag-modal-box .sv-ag-campo--pills .sv-ag-hora-livre input.sv-ag-inp:not([type='hidden']) {
+  width: auto;
+  flex: 0 0 auto;
+  background: var(--sv-bg);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
 
 /* A cadeia de `:not()` do painel-app.css (`.ag-modal-box input:not([type=…])`)
    tem especificidade 0-4-1 e ganharia de qualquer seletor de duas classes —

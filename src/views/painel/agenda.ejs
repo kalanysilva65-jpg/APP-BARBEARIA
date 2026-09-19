@@ -260,6 +260,12 @@
           <div class="pill-group" id="pills-horario">
             <span class="texto-sutil"><%= ehAdmin ? 'Selecione o barbeiro.' : 'Carregando horários…' %></span>
           </div>
+          <%/* Hora livre: encaixe fora da grade de 30 min (ex.: 14:10). A grade
+               continua limpa; aqui o barbeiro digita qualquer horário. */%>
+          <div class="sv-ag-hora-livre">
+            <span class="texto-sutil">ou digite um horário exato</span>
+            <input type="time" id="hora-livre" class="sv-ag-inp" />
+          </div>
         </div>
       </div>
 
@@ -368,7 +374,8 @@
     function atualizar() {
       resumo.cliente.textContent = (nome && nome.value.trim()) || '—';
       resumo.servico.textContent = textosAtivos('pills-servico').join(', ') || 'Escolha o serviço';
-      resumo.hora.textContent = textoAtivo('pills-horario') || '--:--';
+      var horaLivre = document.getElementById('hora-livre');
+      resumo.hora.textContent = textoAtivo('pills-horario') || (horaLivre && horaLivre.value) || '--:--';
       if (document.getElementById('pills-barbeiro')) {
         resumo.barbeiro.textContent = textoAtivo('pills-barbeiro');
       }
@@ -450,6 +457,7 @@
     var barbeiroInput = document.getElementById('barbeiroId-novo');
     var horaInput = document.getElementById('hora-novo');
     var pillsHorario = document.getElementById('pills-horario');
+    var horaLivre = document.getElementById('hora-livre');
 
     // Seleção ÚNICA (barbeiro): troca o ativo.
     function ligarGrupo(containerId, hiddenInput, aoMudar) {
@@ -484,7 +492,8 @@
     }
 
     function buscarHorarios() {
-      horaInput.value = '';
+      // Preserva a hora livre digitada quando o grid é refeito (troca de serviço/data).
+      horaInput.value = (horaLivre && horaLivre.value) ? horaLivre.value : '';
       if (!barbeiroInput || !barbeiroInput.value) {
         pillsHorario.innerHTML = '<span class="texto-sutil">Selecione o barbeiro.</span>';
         return;
@@ -518,7 +527,20 @@
       });
       btn.classList.add('ativo');
       horaInput.value = btn.getAttribute('data-hora');
+      if (horaLivre) horaLivre.value = ''; // escolher na grade limpa a hora livre
     });
+
+    // Hora livre: digitar aqui limpa a seleção da grade e vira a hora escolhida.
+    if (horaLivre) {
+      horaLivre.addEventListener('input', function () {
+        Array.prototype.forEach.call(pillsHorario.querySelectorAll('.pill-opcao'), function (b) {
+          b.classList.remove('ativo');
+        });
+        horaInput.value = horaLivre.value;
+        var rh = document.getElementById('resumo-hora');
+        if (rh) rh.textContent = horaLivre.value || '--:--';
+      });
+    }
 
     ligarMulti('pills-servico', servicoInput, buscarHorarios);
     if (barbeiroInput) ligarGrupo('pills-barbeiro', barbeiroInput, buscarHorarios);
