@@ -413,6 +413,12 @@
   white-space: nowrap;
 }
 .pg-sv .sv-ag-campo-val--sm { font-size: 14px; font-weight: 500; }
+/* Selo "Plano": indica que o atendimento saiu pelo PLANO do cliente (sem custo).
+   No card é um trechinho em negrito na sub-linha; no detalhe, o campo ganha uma
+   barra de destaque à esquerda. */
+.pg-sv .sv-ag-plano-tag { font-weight: 600; color: var(--sv-ink); }
+.pg-sv .sv-ag-campo--plano { box-shadow: inset 3px 0 0 var(--sv-ink); }
+.pg-sv .sv-ag-campo--plano .sv-ag-campo-rot { color: var(--sv-ink); font-weight: 600; }
 /* Campo que hospeda pílulas: sem caixa, senão as pílulas (que também são
    #F2F2F2) desapareceriam dentro dela. */
 .pg-sv .sv-ag-campo--pills { background: transparent; padding: 4px 2px 0; }

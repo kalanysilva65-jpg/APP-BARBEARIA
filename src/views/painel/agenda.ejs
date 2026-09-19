@@ -100,11 +100,11 @@
                 <span class="sv-ag-card-nome"><%= ag.clienteNome %></span>
                 <span class="sv-ag-selo"><%= _selo(ag) %></span>
               </span>
-              <span class="sv-ag-card-sub"><%= servicosLabel %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome.split(' ')[0] %><% } %></span>
+              <span class="sv-ag-card-sub"><%= servicosLabel %><% if (mostrarBarbeiroNoCard) { %> · <%= ag.usuario.nome.split(' ')[0] %><% } %><% if (ag.clientePlanoId) { %> · <span class="sv-ag-plano-tag">Plano<% if (ag.clientePlano && ag.clientePlano.plano) { %> <%= ag.clientePlano.plano.nome %><% } %></span><% } %></span>
             </span>
             <span class="sv-ag-card-dir">
               <span class="sv-ag-card-hora"><%= ag.horaInicio %></span>
-              <span class="sv-ag-card-val"><%= fmtT6(ag.valorTotal) %></span>
+              <span class="sv-ag-card-val"><% if (ag.clientePlanoId) { %>Plano<% } else { %><%= fmtT6(ag.valorTotal) %><% } %></span>
             </span>
           </button>
         <% } else { var bl = e.bl; %>

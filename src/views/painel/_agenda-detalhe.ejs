@@ -47,6 +47,12 @@
     <div class="sv-ag-campo-rot">Serviço</div>
     <div class="sv-ag-campo-val"><%= svcLabel %></div>
   </div>
+  <% if (ag.clientePlanoId) { %>
+  <div class="sv-ag-campo sv-ag-campo--plano">
+    <div class="sv-ag-campo-rot">Plano</div>
+    <div class="sv-ag-campo-val sv-ag-campo-val--sm">✓ Agendado pelo plano<% if (ag.clientePlano && ag.clientePlano.plano) { %> <strong><%= ag.clientePlano.plano.nome %></strong><% } %> · sem custo</div>
+  </div>
+  <% } %>
   <div class="sv-ag-campo">
     <div class="sv-ag-campo-rot">Barbeiro</div>
     <div class="sv-ag-campo-val sv-ag-campo-val--sm"><%= ag.usuario.nome %></div>

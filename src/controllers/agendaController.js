@@ -252,6 +252,7 @@ async function verAgenda(req, res) {
       usuario: true,
       itens: { include: { servico: true } },
       pagamentos: { orderBy: { id: 'asc' } },
+      clientePlano: { include: { plano: true } },
     },
     orderBy: [{ data: 'asc' }, { horaInicio: 'asc' }],
   });
@@ -608,6 +609,7 @@ async function detalheFragmento(req, res) {
       usuario: true,
       itens: { include: { servico: true } },
       pagamentos: { orderBy: { id: 'asc' } },
+      clientePlano: { include: { plano: true } },
     },
   });
   if (!ag) return res.status(404).send('');
