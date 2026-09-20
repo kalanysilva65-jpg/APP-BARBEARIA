@@ -51,30 +51,11 @@ async function criarAgendamento(barbeariaId, dados) {
   let assinatura = null;
   let cobertoId = null; // id do serviço que o plano cobre (sai de graça) nesta seleção
   if (clientePlanoId) {
-    assinatura = await prisma.clientePlano.findFirst({
-      where: { id: Number(clientePlanoId), barbeariaId },
-      include: { plano: true, cliente: true },
-    });
-    if (!assinatura) return { erro: 'plano', mensagem: 'Plano não encontrado.' };
-    if (!planoServ.vigente(assinatura)) return { erro: 'plano_invalido', mensagem: 'Esse plano não está mais ativo (sem usos ou fora da validade).' };
-    const donoOk = variantesTelefone(clienteTelefone).includes(normalizarTelefone(assinatura.cliente.telefone));
-    if (!donoOk) return { erro: 'plano_dono', mensagem: 'Esse plano não é do número deste cliente.' };
-    const dow = dataLocal(data).getDay();
-    const diasPermitidos = new Set(String(assinatura.plano.diasSemana || '0,1,2,3,4,5,6').split(',').map(Number));
-    if (!diasPermitidos.has(dow)) return { erro: 'plano_dia', mensagem: 'Esse plano não pode ser usado nesse dia da semana.' };
-    // Qual serviço da seleção o plano cobre (sai de graça, consome 1 uso). Plano
-    // de serviço ESPECÍFICO cobre esse serviço — que tem que estar na seleção;
-    // plano "qualquer serviço" (servicoId null) cobre o MAIS CARO da seleção
-    // (melhor pro cliente). Os DEMAIS serviços são cobrados normalmente — assim
-    // "corte (plano) + barba" fica só a barba, em vez de recusar o plano.
-    if (assinatura.plano.servicoId) {
-      if (!ids.includes(assinatura.plano.servicoId)) {
-        return { erro: 'plano_servico', mensagem: 'Esse plano cobre outro serviço.' };
-      }
-      cobertoId = assinatura.plano.servicoId;
-    } else {
-      cobertoId = servicos.slice().sort((a, b) => b.valor - a.valor)[0].id;
-    }
+    // Validação + cobertura no service (mesma regra do painel — fonte única).
+    const cob = await planoServ.avaliarCobertura({ clientePlanoId, barbeariaId, clienteTelefone, servicos, data });
+    if (cob.erro) return { erro: cob.erro, mensagem: cob.mensagem };
+    assinatura = cob.assinatura;
+    cobertoId = cob.cobertoId;
   }
   const usaPlano = !!assinatura;
 

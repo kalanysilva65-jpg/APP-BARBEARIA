@@ -174,6 +174,7 @@ router.post('/notificacoes/testar', notificacaoController.testar);
 // --- Agenda (todos: funcionário vê a sua, admin vê todas) -----------------
 router.get('/agenda', agendaController.verAgenda);
 router.get('/agenda/horarios', agendaController.horariosJson); // JSON p/ o pop-up "Novo agendamento"
+router.get('/agenda/planos', agendaController.planosJson); // JSON: planos ativos do cliente (marcar pelo plano)
 router.get('/agenda/novo', agendaController.formNovo); // agendamento manual
 router.post('/agenda/novo', agendaController.criarManual);
 router.get('/agenda/:id/detalhe', agendaController.detalheFragmento); // miolo da folha, p/ atualizar sem recarregar

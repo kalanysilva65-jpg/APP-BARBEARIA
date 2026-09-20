@@ -419,6 +419,9 @@
 .pg-sv .sv-ag-plano-tag { font-weight: 600; color: var(--sv-ink); }
 .pg-sv .sv-ag-campo--plano { box-shadow: inset 3px 0 0 var(--sv-ink); }
 .pg-sv .sv-ag-campo--plano .sv-ag-campo-rot { color: var(--sv-ink); font-weight: 600; }
+/* "Marcar pelo plano" no pop-up Novo agendamento. */
+.pg-sv .sv-ag-plano-opt { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; font-weight: 500; }
+.pg-sv .ag-modal-box .sv-ag-plano-opt input[type='checkbox'] { width: 18px; height: 18px; flex: 0 0 auto; margin: 0; accent-color: var(--sv-ink); }
 /* Campo que hospeda pílulas: sem caixa, senão as pílulas (que também são
    #F2F2F2) desapareceriam dentro dela. */
 .pg-sv .sv-ag-campo--pills { background: transparent; padding: 4px 2px 0; }

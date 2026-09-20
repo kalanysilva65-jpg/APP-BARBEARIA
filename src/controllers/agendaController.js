@@ -724,6 +724,24 @@ async function horariosJson(req, res) {
   res.json({ horarios });
 }
 
+// GET /painel/agenda/planos?telefone=... — planos ATIVOS do cliente (por variantes
+// do telefone), pra o pop-up "Novo agendamento" oferecer marcar pelo plano.
+async function planosJson(req, res) {
+  const b = req.barbeariaId;
+  const telefone = String(req.query.telefone || '');
+  if (normalizarTelefone(telefone).length < 8) return res.json({ planos: [] });
+  const assinaturas = await planoServ.assinaturasVigentesPorVariantes(b, telefone);
+  const planos = assinaturas.map((a) => ({
+    id: a.id,
+    nome: a.plano.nome,
+    servicoId: a.plano.servicoId || null,
+    servicoNome: a.plano.servico ? a.plano.servico.nome : null,
+    ilimitado: a.usosRestantes === null,
+    usosRestantes: a.usosRestantes,
+  }));
+  res.json({ planos });
+}
+
 // GET /painel/agenda/novo — formulário de agendamento manual
 async function formNovo(req, res) {
   const dados = await dadosForm(req);
@@ -790,6 +808,16 @@ async function criarManual(req, res) {
     if (conflita) erros.push('Esse horário conflita com outro atendimento desse barbeiro. Escolha outro.');
   }
 
+  // Plano (opcional): o barbeiro pode marcar pelo plano do cliente. Valida e
+  // descobre qual serviço ele cobre (mesma regra da secretária — plano.js).
+  const clientePlanoId = idNum(req.body.clientePlanoId);
+  let cobertura = null;
+  if (clientePlanoId && barbeiro && servicos.length && dataValida(data) && telefone) {
+    const cob = await planoServ.avaliarCobertura({ clientePlanoId, barbeariaId: b, clienteTelefone: telefone, servicos, data });
+    if (cob.erro) erros.push(cob.mensagem);
+    else cobertura = cob;
+  }
+
   if (erros.length) {
     req.session.flash = { tipo: 'erro', texto: erros.join(' ') };
     const qs = new URLSearchParams();
@@ -799,9 +827,12 @@ async function criarManual(req, res) {
   }
 
   // Alimenta/vincula o cliente pelo telefone normalizado (igual ao agendamento do site).
+  // Se marcou por PLANO, vincula ao DONO do plano (a assinatura já foi validada).
   const telNorm = normalizarTelefone(telefone);
   let clienteId = null;
-  if (telNorm) {
+  if (cobertura) {
+    clienteId = cobertura.assinatura.clienteId;
+  } else if (telNorm) {
     let cliente = await prisma.cliente.findUnique({
       where: { barbeariaId_telefone: { barbeariaId: b, telefone: telNorm } },
     });
@@ -809,7 +840,9 @@ async function criarManual(req, res) {
     clienteId = cliente.id;
   }
 
-  const valorTotal = servicos.reduce((soma, s) => soma + s.valor, 0);
+  // Plano cobre 1 serviço (o `cobertoId`) -> ele sai 0; os demais somam normal.
+  const cobertoId = cobertura ? cobertura.cobertoId : null;
+  const valorTotal = servicos.reduce((soma, s) => soma + (s.id === cobertoId ? 0 : s.valor), 0);
   await prisma.agendamento.create({
     data: {
       barbeariaId: b,
@@ -823,9 +856,12 @@ async function criarManual(req, res) {
       status: 'agendado',
       valorTotal,
       origem: 'barbeiro', // criado manualmente no painel pela equipe
-      itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: s.valor, quantidade: 1 })) },
+      clientePlanoId: cobertura ? cobertura.assinatura.id : null,
+      itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: s.id === cobertoId ? 0 : s.valor, quantidade: 1 })) },
     },
   });
+  // Consome 1 uso do plano (limitado; ilimitado não muda) — igual à secretária.
+  if (cobertura) await planoServ.ajustarUso(cobertura.assinatura.id, -1);
 
   req.session.flash = { tipo: 'sucesso', texto: 'Agendamento criado.' };
   res.redirect('/painel/agenda?data=' + data + (ehAdmin ? '&barbeiro=' + usuarioId : ''));
@@ -868,4 +904,4 @@ async function removerBloqueio(req, res) {
   res.redirect('/painel/agenda' + (s ? '?' + s : ''));
 }
 
-module.exports = { verAgenda, adicionarItem, removerItem, alterarValorItem, alterarTotal, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson };
+module.exports = { verAgenda, adicionarItem, removerItem, alterarValorItem, alterarTotal, mudarStatus, excluir, detalheFragmento, formNovo, criarManual, criarBloqueio, removerBloqueio, horariosJson, planosJson };

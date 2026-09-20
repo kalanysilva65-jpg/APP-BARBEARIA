@@ -240,6 +240,16 @@
           </div>
         </div>
 
+        <%/* Plano do cliente: aparece só se o telefone digitado tiver plano ATIVO.
+             Marcar aqui faz o plano cobrir 1 serviço (grátis) e cobrar o resto. */%>
+        <div class="sv-ag-campo sv-ag-plano-novo" id="plano-novo-area" style="display:none">
+          <input type="hidden" name="clientePlanoId" id="clientePlanoId-novo" value="" />
+          <label class="sv-ag-plano-opt">
+            <input type="checkbox" id="plano-novo-check" />
+            <span id="plano-novo-label">Marcar pelo plano</span>
+          </label>
+        </div>
+
         <% if (ehAdmin) { %>
           <div class="sv-ag-campo sv-ag-campo--pills">
             <div class="sv-ag-campo-rot">Barbeiro</div>
@@ -432,6 +442,8 @@
         btn.addEventListener('click', function () {
           inputNome.value = btn.getAttribute('data-nome');
           inputTel.value = fmtTel(btn.getAttribute('data-tel'));
+          // Dispara 'input' pra quem escuta o telefone reagir (ex.: busca de plano).
+          inputTel.dispatchEvent(new Event('input', { bubbles: true }));
           fechar();
           inputTel.focus();
         });
@@ -550,6 +562,48 @@
     // Se já há um barbeiro pré-selecionado (funcionário, ou admin filtrando um
     // barbeiro específico na Agenda), já carrega os horários ao abrir.
     if (barbeiroInput && barbeiroInput.value) buscarHorarios();
+  })();
+</script>
+
+<script>
+  // Pop-up "Novo agendamento": oferece MARCAR PELO PLANO quando o telefone
+  // digitado tem plano ATIVO. Busca em /painel/agenda/planos; marcar seta o
+  // clientePlanoId (hidden) que o criarManual usa pra cobrir 1 serviço.
+  (function () {
+    var tel = document.getElementById('cliente_telefone-novo');
+    var area = document.getElementById('plano-novo-area');
+    var check = document.getElementById('plano-novo-check');
+    var label = document.getElementById('plano-novo-label');
+    var hidden = document.getElementById('clientePlanoId-novo');
+    if (!tel || !area || !check || !hidden) return;
+    var planoAtual = null;
+    var timer = null;
+
+    function esconder() { area.style.display = 'none'; check.checked = false; hidden.value = ''; planoAtual = null; }
+    function buscar() {
+      var t = (tel.value || '').replace(/\D/g, '');
+      if (t.length < 8) { esconder(); return; }
+      fetch('/painel/agenda/planos?telefone=' + encodeURIComponent(t))
+        .then(function (r) { return r.json(); })
+        .then(function (json) {
+          var planos = (json && json.planos) || [];
+          if (!planos.length) { esconder(); return; }
+          planoAtual = planos[0];
+          var cobre = planoAtual.servicoNome ? ('cobre ' + planoAtual.servicoNome) : 'cobre 1 serviço';
+          var usos = planoAtual.ilimitado ? 'ilimitado' : (planoAtual.usosRestantes + ' uso(s)');
+          label.textContent = 'Marcar pelo plano ' + planoAtual.nome + ' (' + cobre + ' · ' + usos + ')';
+          area.style.display = '';
+        })
+        .catch(function () { esconder(); });
+    }
+    tel.addEventListener('input', function () {
+      hidden.value = ''; check.checked = false;
+      clearTimeout(timer); timer = setTimeout(buscar, 400);
+    });
+    check.addEventListener('change', function () {
+      hidden.value = (check.checked && planoAtual) ? String(planoAtual.id) : '';
+    });
+    if (tel.value) buscar();
   })();
 </script>
 
