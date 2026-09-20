@@ -629,7 +629,7 @@ async function responder(ctx, mensagens) {
   // prefixo (ferramentas vêm antes, então entram no cache) e nas próximas chamadas
   // essa parte custa ~10%. Calculado UMA vez pra o prefixo ficar byte-a-byte estável.
   const system = [{ type: 'text', text: systemPrompt(ctx), cache_control: { type: 'ephemeral' } }];
-  let uso = { input: 0, output: 0 };
+  let uso = { input: 0, output: 0, inputCru: 0 };
   const ferramentasChamadas = []; // nomes das ferramentas executadas nesta resposta
 
   for (let i = 0; i < MAX_ITERACOES; i++) {
@@ -647,6 +647,10 @@ async function responder(ctx, mensagens) {
       + Math.round((resp.usage?.cache_creation_input_tokens || 0) * 1.25)
       + Math.round((resp.usage?.cache_read_input_tokens || 0) * 0.1);
     uso.output += resp.usage?.output_tokens || 0;
+    // Entrada CRUA (sem os pesos do cache): tokens de entrada realmente processados.
+    uso.inputCru += (resp.usage?.input_tokens || 0)
+      + (resp.usage?.cache_creation_input_tokens || 0)
+      + (resp.usage?.cache_read_input_tokens || 0);
 
     if (resp.stop_reason === 'tool_use') {
       msgs.push({ role: 'assistant', content: resp.content });

@@ -67,6 +67,7 @@ async function resumo(competencia) {
   const totais = {
     custoUSD: 0, custoBRL: 0, margemBRL: 0, conversas: 0, respostas: 0, copiloto: 0, ativas: 0,
     tokensEntrada: 0, tokensSaida: 0, wppTokensEntrada: 0, wppTokensSaida: 0, copTokensEntrada: 0, copTokensSaida: 0,
+    tokensEntradaCru: 0,
   };
   for (const b of barbearias) {
     const u = usoPor.get(b.id) || {};
@@ -78,18 +79,20 @@ async function resumo(competencia) {
     // do SEU modelo (exato mesmo trocando de modelo no mês). Senão, cai no
     // agregado antigo, precificado pelo modelo atual (meses anteriores à tabela).
     const rowsModelo = modeloPor.get(b.id) || [];
-    let wppEnt = 0, wppSai = 0, copEnt = 0, copSai = 0, custoWpp = 0, custoCop = 0;
+    let wppEnt = 0, wppSai = 0, copEnt = 0, copSai = 0, custoWpp = 0, custoCop = 0, wppEntCru = 0, copEntCru = 0;
     if (rowsModelo.length) {
       for (const r of rowsModelo) {
         const c = custoUSD(r.tokensEntrada || 0, r.tokensSaida || 0, r.modelo);
-        if (r.canal === 'copiloto') { copEnt += r.tokensEntrada || 0; copSai += r.tokensSaida || 0; custoCop += c; }
-        else { wppEnt += r.tokensEntrada || 0; wppSai += r.tokensSaida || 0; custoWpp += c; }
+        if (r.canal === 'copiloto') { copEnt += r.tokensEntrada || 0; copSai += r.tokensSaida || 0; copEntCru += r.tokensEntradaCru || 0; custoCop += c; }
+        else { wppEnt += r.tokensEntrada || 0; wppSai += r.tokensSaida || 0; wppEntCru += r.tokensEntradaCru || 0; custoWpp += c; }
       }
     } else {
       wppEnt = u.tokensEntrada || 0;
       wppSai = u.tokensSaida || 0;
       copEnt = u.copilotoTokensEntrada || 0;
       copSai = u.copilotoTokensSaida || 0;
+      wppEntCru = u.tokensEntradaCru || 0;
+      copEntCru = u.copilotoTokensEntradaCru || 0;
       custoWpp = custoUSD(wppEnt, wppSai, mw);
       custoCop = custoUSD(copEnt, copSai, mc);
     }
@@ -116,6 +119,7 @@ async function resumo(competencia) {
       // Tokens (para o detalhamento no painel).
       tokensEntrada: wppEnt + copEnt,
       tokensSaida: wppSai + copSai,
+      tokensEntradaCru: wppEntCru + copEntCru,
       wppTokensEntrada: wppEnt,
       wppTokensSaida: wppSai,
       copTokensEntrada: copEnt,
@@ -128,6 +132,7 @@ async function resumo(competencia) {
     totais.copiloto += u.copilotoConsultas || 0;
     totais.tokensEntrada += wppEnt + copEnt;
     totais.tokensSaida += wppSai + copSai;
+    totais.tokensEntradaCru += wppEntCru + copEntCru;
     totais.wppTokensEntrada += wppEnt;
     totais.wppTokensSaida += wppSai;
     totais.copTokensEntrada += copEnt;

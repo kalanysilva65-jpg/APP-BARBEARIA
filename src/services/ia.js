@@ -420,7 +420,7 @@ async function responder(ctx, mensagens) {
   // PROMPT CACHING: cacheia o prefixo fixo (ferramentas + system), estável na
   // conversa. Nas chamadas seguintes essa parte custa ~10%. Ver secretaria.js.
   const system = [{ type: 'text', text: systemPrompt(ctx), cache_control: { type: 'ephemeral' } }];
-  let usoTotal = { input: 0, output: 0 };
+  let usoTotal = { input: 0, output: 0, inputCru: 0 };
 
   for (let i = 0; i < MAX_ITERACOES; i++) {
     const resp = await client.messages.create({
@@ -436,6 +436,10 @@ async function responder(ctx, mensagens) {
       + Math.round((resp.usage?.cache_creation_input_tokens || 0) * 1.25)
       + Math.round((resp.usage?.cache_read_input_tokens || 0) * 0.1);
     usoTotal.output += resp.usage?.output_tokens || 0;
+    // Entrada CRUA (sem os pesos do cache): tokens de entrada realmente processados.
+    usoTotal.inputCru += (resp.usage?.input_tokens || 0)
+      + (resp.usage?.cache_creation_input_tokens || 0)
+      + (resp.usage?.cache_read_input_tokens || 0);
 
     if (resp.stop_reason === 'tool_use') {
       msgs.push({ role: 'assistant', content: resp.content });

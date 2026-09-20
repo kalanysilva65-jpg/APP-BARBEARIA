@@ -629,11 +629,15 @@ model UsoIA {
   respostas     Int      @default(0)
   tokensEntrada Int      @default(0) @map("tokens_entrada")
   tokensSaida   Int      @default(0) @map("tokens_saida")
+  // Entrada CRUA (tokens de entrada reais, SEM a ponderação do cache). Base da
+  // coluna "Entrada crua" no painel de uso; medida a partir de 2026-09-20.
+  tokensEntradaCru Int   @default(0) @map("tokens_entrada_cru")
   avisadoTeto   Boolean  @default(false) @map("avisado_teto")
   // Copiloto (Assistente do painel) — contado à parte (modelo/preço diferentes).
   copilotoConsultas     Int @default(0) @map("copiloto_consultas")
   copilotoTokensEntrada Int @default(0) @map("copiloto_tokens_entrada")
   copilotoTokensSaida   Int @default(0) @map("copiloto_tokens_saida")
+  copilotoTokensEntradaCru Int @default(0) @map("copiloto_tokens_entrada_cru")
   atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em")
 
   barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
@@ -655,6 +659,7 @@ model UsoIAModelo {
   modelo        String // ex.: "claude-haiku-4-5"
   tokensEntrada Int      @default(0) @map("tokens_entrada") // já ponderados pelo cache
   tokensSaida   Int      @default(0) @map("tokens_saida")
+  tokensEntradaCru Int   @default(0) @map("tokens_entrada_cru") // input REAL (sem ponderar cache)
   chamadas      Int      @default(0) // respostas (whatsapp) ou consultas (copiloto)
   atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em")
 

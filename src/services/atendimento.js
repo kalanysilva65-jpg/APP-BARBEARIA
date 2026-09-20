@@ -160,8 +160,8 @@ async function registrarUsoModelo(barbeariaId, competencia, canal, modelo, usage
   try {
     await prisma.usoIAModelo.upsert({
       where: { barbeariaId_competencia_canal_modelo: { barbeariaId, competencia, canal, modelo } },
-      create: { barbeariaId, competencia, canal, modelo, tokensEntrada: usage?.input || 0, tokensSaida: usage?.output || 0, chamadas: 1 },
-      update: { tokensEntrada: { increment: usage?.input || 0 }, tokensSaida: { increment: usage?.output || 0 }, chamadas: { increment: 1 } },
+      create: { barbeariaId, competencia, canal, modelo, tokensEntrada: usage?.input || 0, tokensSaida: usage?.output || 0, tokensEntradaCru: usage?.inputCru || 0, chamadas: 1 },
+      update: { tokensEntrada: { increment: usage?.input || 0 }, tokensSaida: { increment: usage?.output || 0 }, tokensEntradaCru: { increment: usage?.inputCru || 0 }, chamadas: { increment: 1 } },
     });
   } catch (e) {
     console.error('[uso-modelo] falhou:', e.message);
@@ -171,8 +171,8 @@ async function registrarUsoModelo(barbeariaId, competencia, canal, modelo, usage
 async function registrarUso(barbeariaId, competencia, usage) {
   await prisma.usoIA.upsert({
     where: { barbeariaId_competencia: { barbeariaId, competencia } },
-    create: { barbeariaId, competencia, respostas: 1, tokensEntrada: usage?.input || 0, tokensSaida: usage?.output || 0 },
-    update: { respostas: { increment: 1 }, tokensEntrada: { increment: usage?.input || 0 }, tokensSaida: { increment: usage?.output || 0 } },
+    create: { barbeariaId, competencia, respostas: 1, tokensEntrada: usage?.input || 0, tokensSaida: usage?.output || 0, tokensEntradaCru: usage?.inputCru || 0 },
+    update: { respostas: { increment: 1 }, tokensEntrada: { increment: usage?.input || 0 }, tokensSaida: { increment: usage?.output || 0 }, tokensEntradaCru: { increment: usage?.inputCru || 0 } },
   });
   // Modelo REAL usado pela secretária (para o custo por modelo).
   await registrarUsoModelo(barbeariaId, competencia, 'whatsapp', secretaria.MODELO, usage);
@@ -188,11 +188,13 @@ async function registrarUsoCopiloto(barbeariaId, usage) {
       copilotoConsultas: 1,
       copilotoTokensEntrada: usage?.input || 0,
       copilotoTokensSaida: usage?.output || 0,
+      copilotoTokensEntradaCru: usage?.inputCru || 0,
     },
     update: {
       copilotoConsultas: { increment: 1 },
       copilotoTokensEntrada: { increment: usage?.input || 0 },
       copilotoTokensSaida: { increment: usage?.output || 0 },
+      copilotoTokensEntradaCru: { increment: usage?.inputCru || 0 },
     },
   });
   // Modelo REAL do copiloto (mesma lógica de env do services/ia.js).

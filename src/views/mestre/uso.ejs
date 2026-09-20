@@ -23,7 +23,7 @@
     Custo <strong>real</strong> da IA (cache já contado a 10%), convertido a <strong>R$ <%= cotacao.toFixed(2) %></strong>/US$.
     É só a parte da <strong>IA</strong> — a conversa do WhatsApp (Meta) é grátis quando o cliente inicia.
     <br>Margem estimada assumindo plano de <strong>R$ <%= precoPlanoRef.toFixed(2) %></strong>/mês por barbearia ativa (ajuste em <code>PLANO_PRECO_REF</code>).
-    <br><strong>Tokens</strong> (formato <em>entrada / saída</em>): separados por canal — WhatsApp (secretária) e Copiloto (assistente do painel). Já ponderados pelo cache (é o valor que gera o custo).
+    <br><strong>Tokens</strong> (formato <em>entrada / saída</em>): separados por canal — WhatsApp (secretária) e Copiloto (assistente do painel). Já ponderados pelo cache (é o valor que gera o custo). A coluna <strong>Entrada crua</strong> mostra os tokens de entrada REAIS, sem a ponderação do cache (a saída já é crua) — medida só a partir de 20/09/2026 (meses anteriores aparecem como —).
     <br><span class="texto-secundario">Obs.: o custo é <strong>estimado com o modelo ATUAL</strong> (WhatsApp <%= modelos.whatsapp %>). Se você trocou de modelo no meio do mês (ex.: Haiku → Sonnet), os tokens antigos são reprecificados pelo novo modelo e a estimativa pode ficar <strong>acima</strong> do valor real da Anthropic — que é a fatura oficial. No mês seguinte (modelo estável) os números se aproximam.</span>
   </p>
 
@@ -37,6 +37,7 @@
           <th style="text-align:right">Copiloto</th>
           <th style="text-align:right">WhatsApp tok. (ent/saí)</th>
           <th style="text-align:right">Copiloto tok. (ent/saí)</th>
+          <th style="text-align:right">Entrada crua</th>
           <th style="text-align:right">Custo IA (R$)</th>
           <th style="text-align:right">R$/conversa</th>
           <th style="text-align:right">Margem (R$)</th>
@@ -46,6 +47,7 @@
         <% function brl(v){ return (v||0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' }); } %>
         <% function num(v){ return (v||0).toLocaleString('pt-BR'); } %>
         <% function tok(e, s){ return num(e) + ' / ' + num(s); } %>
+        <% function cru(l){ var v = l.tokensEntradaCru || 0; if (v === 0 && (l.tokensEntrada || 0) > 0) return '—'; return num(v); } %>
         <% linhas.forEach(function (l) { %>
           <tr>
             <td><%= l.nome %></td>
@@ -54,13 +56,14 @@
             <td style="text-align:right"><%= num(l.copilotoConsultas) %></td>
             <td style="text-align:right"><%= tok(l.wppTokensEntrada, l.wppTokensSaida) %></td>
             <td style="text-align:right"><%= tok(l.copTokensEntrada, l.copTokensSaida) %></td>
+            <td style="text-align:right"><%= cru(l) %></td>
             <td style="text-align:right"><%= brl(l.custoBRL) %></td>
             <td style="text-align:right"><%= brl(l.custoPorConversaBRL) %></td>
             <td style="text-align:right"><%= l.ativa ? brl(l.margemBRL) + (l.margemPct != null ? ' (' + l.margemPct + '%)' : '') : '—' %></td>
           </tr>
         <% }) %>
         <% if (linhas.length === 0) { %>
-          <tr><td colspan="9" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>
+          <tr><td colspan="10" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>
         <% } %>
       </tbody>
       <tfoot>
@@ -71,6 +74,7 @@
           <td style="text-align:right" id="uso-tot-copiloto"><%= totais.copiloto.toLocaleString('pt-BR') %></td>
           <td style="text-align:right" id="uso-tot-wpptok"><%= tok(totais.wppTokensEntrada, totais.wppTokensSaida) %></td>
           <td style="text-align:right" id="uso-tot-coptok"><%= tok(totais.copTokensEntrada, totais.copTokensSaida) %></td>
+          <td style="text-align:right" id="uso-tot-cru"><%= (totais.tokensEntradaCru === 0 && totais.tokensEntrada > 0) ? '—' : num(totais.tokensEntradaCru) %></td>
           <td style="text-align:right" id="uso-tot-custo"><%= brl(totais.custoBRL) %></td>
           <td style="text-align:right" id="uso-tot-porconversa"><%= brl(totais.custoPorConversaBRL) %></td>
           <td style="text-align:right" id="uso-tot-margem"><%= brl(totais.margemBRL) %></td>
@@ -89,6 +93,7 @@
     function brl(v) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
     function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
     function tok(e, s) { return n(e) + ' / ' + n(s); }
+    function cru(l) { var v = l.tokensEntradaCru || 0; if (v === 0 && (l.tokensEntrada || 0) > 0) return '—'; return n(v); }
     async function atualizar() {
       if (document.hidden) return;
       try {
@@ -104,16 +109,18 @@
                 '<td style="text-align:right">' + n(l.copilotoConsultas) + '</td>' +
                 '<td style="text-align:right">' + tok(l.wppTokensEntrada, l.wppTokensSaida) + '</td>' +
                 '<td style="text-align:right">' + tok(l.copTokensEntrada, l.copTokensSaida) + '</td>' +
+                '<td style="text-align:right">' + cru(l) + '</td>' +
                 '<td style="text-align:right">' + brl(l.custoBRL) + '</td>' +
                 '<td style="text-align:right">' + brl(l.custoPorConversaBRL) + '</td>' +
                 '<td style="text-align:right">' + (l.ativa ? brl(l.margemBRL) + (l.margemPct != null ? ' (' + l.margemPct + '%)' : '') : '—') + '</td></tr>';
             }).join('')
-          : '<tr><td colspan="9" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>';
+          : '<tr><td colspan="10" class="texto-secundario">Nenhum uso registrado neste mês.</td></tr>';
         document.getElementById('uso-tot-conversas').textContent = n(d.totais.conversas);
         document.getElementById('uso-tot-respostas').textContent = n(d.totais.respostas);
         document.getElementById('uso-tot-copiloto').textContent = n(d.totais.copiloto);
         var wt = document.getElementById('uso-tot-wpptok'); if (wt) wt.textContent = tok(d.totais.wppTokensEntrada, d.totais.wppTokensSaida);
         var ct = document.getElementById('uso-tot-coptok'); if (ct) ct.textContent = tok(d.totais.copTokensEntrada, d.totais.copTokensSaida);
+        var cruTot = document.getElementById('uso-tot-cru'); if (cruTot) cruTot.textContent = (d.totais.tokensEntradaCru === 0 && d.totais.tokensEntrada > 0) ? '—' : n(d.totais.tokensEntradaCru);
         document.getElementById('uso-tot-custo').textContent = brl(d.totais.custoBRL);
         document.getElementById('uso-tot-porconversa').textContent = brl(d.totais.custoPorConversaBRL);
         var m = document.getElementById('uso-tot-margem'); if (m) m.textContent = brl(d.totais.margemBRL);
