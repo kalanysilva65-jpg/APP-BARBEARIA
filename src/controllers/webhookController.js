@@ -21,11 +21,21 @@ function verificar(req, res) {
 }
 
 // Confere a assinatura do corpo (garante que o POST veio mesmo da Meta).
-// Sem META_APP_SECRET configurado (ambiente de dev), não bloqueia — mas em
-// produção o segredo DEVE estar setado.
+// Sem META_APP_SECRET: em DEV liberamos (facilita testar no localhost); em
+// PRODUÇÃO é FAIL-CLOSED — rejeitamos e logamos alto. Aceitar sem conferir
+// deixaria qualquer um injetar mensagem forjada em nome de um cliente, então é
+// melhor o webhook recusar (erro visível no log) do que passar inseguro em
+// silêncio — mesma lógica do guard do SESSION_SECRET no server.js.
 function assinaturaValida(req) {
   const secret = process.env.META_APP_SECRET;
-  if (!secret) return true;
+  if (!secret) {
+    const ehProducao = process.env.NODE_ENV === 'production' || !!process.env.APP_DOMAIN;
+    if (ehProducao) {
+      console.log('[SEGURANÇA] META_APP_SECRET ausente em produção — webhook do WhatsApp REJEITADO (fail-closed). Defina o segredo no .env do VPS e reinicie.');
+      return false;
+    }
+    return true; // dev: sem segredo, não bloqueia
+  }
   const assinatura = req.get('x-hub-signature-256') || '';
   if (!req.rawBody) return false;
   const esperado = 'sha256=' + crypto.createHmac('sha256', secret).update(req.rawBody).digest('hex');
