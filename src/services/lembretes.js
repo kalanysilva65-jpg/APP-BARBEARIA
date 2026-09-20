@@ -54,56 +54,81 @@ async function configPorBarbearia() {
   return mapa;
 }
 
+// Evita duas rodadas SOBREPOSTAS: se uma rodada demora mais que o INTERVALO
+// (muitos agendamentos / API lenta), o setInterval dispararia outra por cima e o
+// mesmo agendamento (ainda sem `lembreteEnviadoEm`) poderia sair 2× antes de
+// qualquer rodada marcá-lo. Com o flag, a rodada nova espera a próxima volta.
+let rodando = false;
+
 async function dispararDevidos() {
-  const cfg = await configPorBarbearia();
-  const agora = new Date();
-  for (const [barbeariaId, c] of cfg) {
-    if (c.lembretes_ativos !== '1') continue;
-    if (!c.whatsapp_phone_number_id || !c.whatsapp_token) continue; // sem WhatsApp conectado, não há como enviar
-    const templateNome = c.lembrete_template_nome || TEMPLATE_PADRAO; // pré-programado se o dono não digitou um nome
-    const antecedencia = parseInt(c.lembrete_antecedencia_min, 10) || ANTECEDENCIA_PADRAO;
+  if (rodando) return;
+  rodando = true;
+  try {
+    const cfg = await configPorBarbearia();
+    const agora = new Date();
+    for (const [barbeariaId, c] of cfg) {
+      // Isola a barbearia: um erro aqui (ex.: falha de banco ao ler os
+      // agendamentos) NÃO pode abortar a rodada e deixar as OUTRAS sem lembrete.
+      try {
+        if (c.lembretes_ativos !== '1') continue;
+        if (!c.whatsapp_phone_number_id || !c.whatsapp_token) continue; // sem WhatsApp conectado, não há como enviar
+        const templateNome = c.lembrete_template_nome || TEMPLATE_PADRAO; // pré-programado se o dono não digitou um nome
+        const antecedencia = parseInt(c.lembrete_antecedencia_min, 10) || ANTECEDENCIA_PADRAO;
 
-    // Só olha agendamentos de hoje/amanhã ainda 'agendado' e sem lembrete.
-    const ini = new Date(agora); ini.setHours(0, 0, 0, 0);
-    const fim = new Date(agora); fim.setDate(fim.getDate() + 2); fim.setHours(0, 0, 0, 0);
-    const ags = await prisma.agendamento.findMany({
-      where: { barbeariaId, status: 'agendado', lembreteEnviadoEm: null, data: { gte: ini, lt: fim } },
-      select: { id: true, clienteNome: true, clienteTelefone: true, data: true, horaInicio: true },
-    });
-    if (!ags.length) continue;
+        // Só olha agendamentos de hoje/amanhã ainda 'agendado' e sem lembrete.
+        const ini = new Date(agora); ini.setHours(0, 0, 0, 0);
+        const fim = new Date(agora); fim.setDate(fim.getDate() + 2); fim.setHours(0, 0, 0, 0);
+        const ags = await prisma.agendamento.findMany({
+          where: { barbeariaId, status: 'agendado', lembreteEnviadoEm: null, data: { gte: ini, lt: fim } },
+          select: { id: true, clienteNome: true, clienteTelefone: true, data: true, horaInicio: true },
+        });
+        if (!ags.length) continue;
 
-    const b = await prisma.barbearia.findUnique({ where: { id: barbeariaId }, select: { nome: true } });
-    for (const ag of ags) {
-      if (!ag.clienteTelefone) continue;
-      const paraEnvio = paraEnvioBR(ag.clienteTelefone);
-      if (!paraEnvio) continue;
-      const minutosAte = (inicioLocal(ag) - agora) / 60000;
-      if (minutosAte <= 0 || minutosAte > antecedencia) continue; // ainda longe, ou já passou
+        const b = await prisma.barbearia.findUnique({ where: { id: barbeariaId }, select: { nome: true } });
+        for (const ag of ags) {
+          // Isola cada agendamento: um que dê erro (envio ou banco) não impede os
+          // seguintes. Sem marcar `lembreteEnviadoEm`, ele volta na próxima rodada.
+          try {
+            if (!ag.clienteTelefone) continue;
+            const paraEnvio = paraEnvioBR(ag.clienteTelefone);
+            if (!paraEnvio) continue;
+            const minutosAte = (inicioLocal(ag) - agora) / 60000;
+            if (minutosAte <= 0 || minutosAte > antecedencia) continue; // ainda longe, ou já passou
 
-      const params = [primeiroNome(ag.clienteNome), (b && b.nome) || 'a barbearia', ag.horaInicio];
-      const r = await whatsapp.enviarTemplate(barbeariaId, paraEnvio, templateNome, IDIOMA, params);
-      if (r.ok) {
-        // Só marca quando REALMENTE enviou. Em falha, tenta de novo na próxima
-        // rodada (até o agendamento sair da janela) — e se o dono corrigir o
-        // template no meio, ainda dá tempo de sair.
-        await prisma.agendamento.update({ where: { id: ag.id }, data: { lembreteEnviadoEm: new Date() } });
-        // Registro DURÁVEL do lembrete (sobrevive se o agendamento for cancelado
-        // ou apagado depois). Copia os dados do cliente; o log é bônus, então um
-        // erro aqui nunca derruba o envio (o `update` acima é a trava de repetição).
-        await prisma.lembreteLog.create({
-          data: {
-            barbeariaId,
-            agendamentoId: ag.id,
-            clienteNome: ag.clienteNome || '',
-            clienteTelefone: ag.clienteTelefone || '',
-            horaAgendamento: ag.horaInicio || null,
-            dataAgendamento: ag.data || null,
-          },
-        }).catch((e) => console.log('[lembretes] log falhou p/ agendamento', ag.id, e.message));
-      } else {
-        console.log('[lembretes] falha ao enviar p/ agendamento', ag.id, r.status || r.erro || r.motivo);
+            const params = [primeiroNome(ag.clienteNome), (b && b.nome) || 'a barbearia', ag.horaInicio];
+            const r = await whatsapp.enviarTemplate(barbeariaId, paraEnvio, templateNome, IDIOMA, params);
+            if (!r.ok) {
+              // Não marca -> retenta na próxima rodada (até sair da janela).
+              console.log('[lembretes] falha ao enviar p/ agendamento', ag.id, r.status || r.erro || r.motivo);
+              continue;
+            }
+            // Só marca quando REALMENTE enviou. Em falha, tenta de novo na próxima
+            // rodada (até o agendamento sair da janela) — e se o dono corrigir o
+            // template no meio, ainda dá tempo de sair.
+            await prisma.agendamento.update({ where: { id: ag.id }, data: { lembreteEnviadoEm: new Date() } });
+            // Registro DURÁVEL do lembrete (sobrevive se o agendamento for cancelado
+            // ou apagado depois). Copia os dados do cliente; o log é bônus, então um
+            // erro aqui nunca derruba o envio (o `update` acima é a trava de repetição).
+            await prisma.lembreteLog.create({
+              data: {
+                barbeariaId,
+                agendamentoId: ag.id,
+                clienteNome: ag.clienteNome || '',
+                clienteTelefone: ag.clienteTelefone || '',
+                horaAgendamento: ag.horaInicio || null,
+                dataAgendamento: ag.data || null,
+              },
+            }).catch((e) => console.log('[lembretes] log falhou p/ agendamento', ag.id, e.message));
+          } catch (e) {
+            console.log('[lembretes] erro no agendamento', ag.id, e.message);
+          }
+        }
+      } catch (e) {
+        console.log('[lembretes] erro na barbearia', barbeariaId, e.message);
       }
     }
+  } finally {
+    rodando = false;
   }
 }
 
