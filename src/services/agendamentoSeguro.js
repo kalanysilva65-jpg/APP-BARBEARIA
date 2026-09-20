@@ -49,6 +49,7 @@ async function criarAgendamento(barbeariaId, dados) {
   // usar plano: valor = 0 e consome 1 uso (limitado). Trava de segurança: o plano
   // tem que ser do MESMO número do cliente (não dá pra gastar o plano de outro).
   let assinatura = null;
+  let cobertoId = null; // id do serviço que o plano cobre (sai de graça) nesta seleção
   if (clientePlanoId) {
     assinatura = await prisma.clientePlano.findFirst({
       where: { id: Number(clientePlanoId), barbeariaId },
@@ -61,9 +62,18 @@ async function criarAgendamento(barbeariaId, dados) {
     const dow = dataLocal(data).getDay();
     const diasPermitidos = new Set(String(assinatura.plano.diasSemana || '0,1,2,3,4,5,6').split(',').map(Number));
     if (!diasPermitidos.has(dow)) return { erro: 'plano_dia', mensagem: 'Esse plano não pode ser usado nesse dia da semana.' };
-    if (ids.length !== 1) return { erro: 'plano_servico', mensagem: 'Pelo plano dá pra marcar um serviço por vez.' };
-    if (assinatura.plano.servicoId && assinatura.plano.servicoId !== ids[0]) {
-      return { erro: 'plano_servico', mensagem: 'Esse plano cobre outro serviço.' };
+    // Qual serviço da seleção o plano cobre (sai de graça, consome 1 uso). Plano
+    // de serviço ESPECÍFICO cobre esse serviço — que tem que estar na seleção;
+    // plano "qualquer serviço" (servicoId null) cobre o MAIS CARO da seleção
+    // (melhor pro cliente). Os DEMAIS serviços são cobrados normalmente — assim
+    // "corte (plano) + barba" fica só a barba, em vez de recusar o plano.
+    if (assinatura.plano.servicoId) {
+      if (!ids.includes(assinatura.plano.servicoId)) {
+        return { erro: 'plano_servico', mensagem: 'Esse plano cobre outro serviço.' };
+      }
+      cobertoId = assinatura.plano.servicoId;
+    } else {
+      cobertoId = servicos.slice().sort((a, b) => b.valor - a.valor)[0].id;
     }
   }
   const usaPlano = !!assinatura;
@@ -80,8 +90,10 @@ async function criarAgendamento(barbeariaId, dados) {
   const dataDate = dataLocal(data);
   const iniNovo = paraMinutos(hora);
   const fimNovo = iniNovo + dur;
-  // Plano cobre o atendimento -> valor 0 (igual ao painel).
-  const valorTotal = usaPlano ? 0 : servicos.reduce((s, x) => s + x.valor, 0);
+  // Plano cobre 1 serviço (o `cobertoId`) -> ele sai 0; os demais somam normal.
+  const valorTotal = usaPlano
+    ? servicos.reduce((s, x) => s + (x.id === cobertoId ? 0 : x.valor), 0)
+    : servicos.reduce((s, x) => s + x.valor, 0);
   const telNorm = normalizarTelefone(clienteTelefone) || String(clienteTelefone).trim();
 
   try {
@@ -117,7 +129,7 @@ async function criarAgendamento(barbeariaId, dados) {
           status: 'agendado',
           valorTotal,
           origem: 'whatsapp', // agendado pela secretária de IA no WhatsApp
-          itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: usaPlano ? 0 : s.valor, quantidade: 1 })) },
+          itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: (usaPlano && s.id === cobertoId) ? 0 : s.valor, quantidade: 1 })) },
         },
       });
     });
@@ -129,6 +141,8 @@ async function criarAgendamento(barbeariaId, dados) {
       agendamentoId: ag.id,
       barbeiro: barbeiro.nome,
       servicos: servicos.map((s) => s.nome),
+      // Serviço que saiu de graça pelo plano (os demais entram em valorCentavos).
+      servicoCoberto: usaPlano && cobertoId ? ((servicos.find((s) => s.id === cobertoId) || {}).nome || null) : null,
       data,
       hora,
       valorCentavos: valorTotal,
