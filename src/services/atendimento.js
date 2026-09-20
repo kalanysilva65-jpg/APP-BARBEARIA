@@ -217,6 +217,41 @@ async function floodNaConversa(conversaId, desde) {
   return prisma.mensagem.count({ where: { conversaId, autor: 'cliente', criadoEm: { gte: limite } } });
 }
 
+// Agrupamento de mensagens (debounce). LIGADO só quando SECRETARIA_DEBOUNCE_MS>0:
+// a resposta da IA espera esse tempo; se o cliente manda mais mensagens (áudios ou
+// textos picados) o timer REINICIA, e no fim tudo é respondido de uma vez — uma
+// chamada de IA e uma resposta coerente, em vez de N respostas fragmentadas.
+// Padrão 0 = desligado (responde inline, comportamento de sempre). É in-process
+// (o app roda num processo só), keyed por conversa.
+const DEBOUNCE_MS = Math.max(0, parseInt(process.env.SECRETARIA_DEBOUNCE_MS, 10) || 0);
+const _debounce = new Map(); // conversaId -> timeout pendente
+const _processando = new Set(); // conversaId sendo respondida agora (evita 2 IA em paralelo)
+
+function _agendarResposta(barbeariaId, conversaId) {
+  const anterior = _debounce.get(conversaId);
+  if (anterior) clearTimeout(anterior);
+  const t = setTimeout(function () {
+    _debounce.delete(conversaId);
+    // Se já há uma resposta rodando pra esta conversa, espera terminar (re-agenda)
+    // pra não disparar duas chamadas de IA em paralelo na mesma conversa.
+    if (_processando.has(conversaId)) return _agendarResposta(barbeariaId, conversaId);
+    _processando.add(conversaId);
+    responderConversa(barbeariaId, conversaId)
+      .catch((e) => console.error('[atendimento] responder (debounce) falhou:', e && (e.message || e)))
+      .finally(() => _processando.delete(conversaId));
+  }, DEBOUNCE_MS);
+  _debounce.set(conversaId, t);
+}
+
+// Cancela uma resposta agendada (ex.: cliente mandou SAIR / pediu humano no meio).
+function _cancelarResposta(conversaId) {
+  const t = _debounce.get(conversaId);
+  if (t) {
+    clearTimeout(t);
+    _debounce.delete(conversaId);
+  }
+}
+
 // Mensagem RECEBIDA de um cliente. Ponto único chamado pelo webhook (3.3).
 async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   const tel = normalizarTelefone(telefone) || String(telefone || '').trim();
@@ -243,6 +278,7 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
 
   // (1) OPT-OUT: pausa a IA nesta conversa e chama um humano.
   if (ehOptOut(texto)) {
+    _cancelarResposta(conversa.id); // cancela resposta agrupada pendente, se houver
     await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
     await emitir(conversa, 'ia', 'Tudo bem! 🙂 Vou avisar a equipe para continuar seu atendimento por aqui.');
     await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
@@ -254,6 +290,7 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   // ativa na conversa (evita re-notificar depois de já ter passado pra humano).
   if (conversa.iaAtiva && pedeHumano(texto)) {
     console.log('[atendimento] handoff DETERMINISTICO (pedeHumano) por:', JSON.stringify(texto.slice(0, 60)));
+    _cancelarResposta(conversa.id); // cancela resposta agrupada pendente, se houver
     await prisma.conversa.update({ where: { id: conversa.id }, data: { iaAtiva: false } });
     await emitir(conversa, 'ia', 'Claro! 🙂 Já estou chamando a equipe pra continuar seu atendimento por aqui. Um instante, por favor.');
     await notificacoes.notificarHumanoSolicitado(barbeariaId, conversa);
@@ -277,6 +314,35 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
     aviso += ` (Se preferir um atendente, é só escrever SAIR.)`;
     await emitir(conversa, 'ia', aviso);
   }
+
+  // A resposta da IA: AGRUPADA (debounce) quando SECRETARIA_DEBOUNCE_MS>0, senão
+  // INLINE (comportamento atual). O agrupamento relê tudo do banco quando dispara,
+  // então uma rajada de mensagens do cliente vira UMA resposta, não N fragmentadas.
+  if (DEBOUNCE_MS > 0) {
+    _agendarResposta(barbeariaId, conversa.id);
+    return { conversaId: conversa.id, agendado: true };
+  }
+  return responderConversa(barbeariaId, conversa.id);
+}
+
+// Gera e ENVIA a resposta da IA de uma conversa. Chamada inline logo após gravar a
+// mensagem (debounce off) ou pelo agendador depois que a rajada do cliente assenta.
+// Relê a conversa e o histórico do banco — por isso agrupa naturalmente a rajada.
+async function responderConversa(barbeariaId, conversaId) {
+  const conversa = await prisma.conversa.findUnique({ where: { id: conversaId } });
+  if (!conversa) return { conversaId, respostaIA: null };
+  // Estado pode ter mudado entre agendar e disparar (opt-out / pausa / handoff).
+  const pausada = (await lerConfig(barbeariaId, 'secretaria_pausada', null)) === '1';
+  const ligada = secretaria.habilitada() && process.env.SECRETARIA_DESLIGADA !== '1' && !pausada;
+  if (!conversa.iaAtiva || !ligada) return { conversaId, respostaIA: null };
+
+  // Texto da ÚLTIMA mensagem do cliente (para o cache de FAQ). No modo agrupado é a
+  // última da rajada; no inline é a que acabou de chegar — mesmo resultado.
+  const ultimaCliente = await prisma.mensagem.findFirst({
+    where: { conversaId: conversa.id, autor: 'cliente' },
+    orderBy: { criadoEm: 'desc' },
+  });
+  const texto = ultimaCliente ? ultimaCliente.texto : '';
 
   // (3) Freio anti-abuso: muitas mensagens do mesmo cliente em 1h. Em vez de ficar
   // muda (deixa o cliente no vácuo e a conversa no limbo), passa pra um humano e
