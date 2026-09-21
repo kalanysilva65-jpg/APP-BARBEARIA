@@ -14,9 +14,6 @@
     "setup:prod": "node scripts/ensure-sqlite.js && prisma migrate deploy && node prisma/seed.js",
     "postinstall": "prisma generate && node scripts/ensure-sqlite.js && prisma migrate deploy && node prisma/seed.js"
   },
-  "prisma": {
-    "seed": "node prisma/seed.js"
-  },
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
