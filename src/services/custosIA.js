@@ -35,6 +35,13 @@ const COTACAO_BRL = Number(process.env.COTACAO_DOLAR) || 5.5;
 // Preço de referência do plano (por barbearia/mês) p/ estimar a MARGEM no painel.
 // Configurável (PLANO_PRECO_REF); é só um parâmetro de exibição, não cobra nada.
 const PLANO_PRECO_REF = Number(process.env.PLANO_PRECO_REF) || 199;
+// Cobrança da Meta por mensagem (a partir de 01/10/2026). As mensagens de SERVIÇO
+// (respostas da IA/equipe na janela de 24h) têm 1.000 grátis por NÚMERO por mês;
+// daí em diante ~R$0,035 cada. Lembretes são template (utilidade): pagos desde a 1ª.
+// Como a cobrança é centralizada no cartão da Cortavo, isso entra na MARGEM.
+const WPP_GRATIS_MES = Number(process.env.WHATSAPP_GRATIS_MES) || 1000;
+const WPP_PRECO_MSG_BRL = Number(process.env.WHATSAPP_PRECO_MSG_BRL) || 0.035;
+const WPP_ALERTA_MSGS = Math.round(WPP_GRATIS_MES * 0.8); // avisa ao chegar em 80% da franquia
 function competenciaAtual() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
@@ -67,7 +74,7 @@ async function resumo(competencia) {
   const totais = {
     custoUSD: 0, custoBRL: 0, margemBRL: 0, conversas: 0, respostas: 0, copiloto: 0, ativas: 0,
     tokensEntrada: 0, tokensSaida: 0, wppTokensEntrada: 0, wppTokensSaida: 0, copTokensEntrada: 0, copTokensSaida: 0,
-    tokensEntradaCru: 0,
+    tokensEntradaCru: 0, msgsEnviadas: 0, msgsPagas: 0, lembretesMes: 0, custoMetaBRL: 0,
   };
   for (const b of barbearias) {
     const u = usoPor.get(b.id) || {};
@@ -96,10 +103,20 @@ async function resumo(competencia) {
       custoWpp = custoUSD(wppEnt, wppSai, mw);
       custoCop = custoUSD(copEnt, copSai, mc);
     }
+    // Mensagens ENVIADAS no WhatsApp (IA + equipe): toda saída passa por emitir(),
+    // que grava em Mensagem — então o histórico já serve de contador, sem tabela nova.
+    const [msgsEnviadas, lembretesMes] = await Promise.all([
+      prisma.mensagem.count({
+        where: { autor: { in: ['ia', 'humano'] }, criadoEm: { gte: ini, lt: fimExcl }, conversa: { barbeariaId: b.id } },
+      }),
+      prisma.lembreteLog.count({ where: { barbeariaId: b.id, enviadoEm: { gte: ini, lt: fimExcl } } }),
+    ]);
+    const msgsPagas = Math.max(0, msgsEnviadas - WPP_GRATIS_MES);
+    const custoMetaBRL = (msgsPagas + lembretesMes) * WPP_PRECO_MSG_BRL;
     const custo = custoWpp + custoCop;
-    const custoBRL = custo * COTACAO_BRL;
+    const custoBRL = custo * COTACAO_BRL + custoMetaBRL;
     // "Ativa" = teve algum uso no mês. Só essas contam na margem/receita estimada.
-    const ativa = conversas > 0 || (u.respostas || 0) > 0 || (u.copilotoConsultas || 0) > 0;
+    const ativa = conversas > 0 || (u.respostas || 0) > 0 || (u.copilotoConsultas || 0) > 0 || msgsEnviadas > 0;
     const margemBRL = ativa ? PLANO_PRECO_REF - custoBRL : 0;
     linhas.push({
       id: b.id,
@@ -120,6 +137,12 @@ async function resumo(competencia) {
       tokensEntrada: wppEnt + copEnt,
       tokensSaida: wppSai + copSai,
       tokensEntradaCru: wppEntCru + copEntCru,
+      // WhatsApp (cobrança da Meta).
+      msgsEnviadas,
+      msgsPagas,
+      lembretesMes,
+      custoMetaBRL,
+      alertaMsgs: msgsEnviadas >= WPP_ALERTA_MSGS,
       wppTokensEntrada: wppEnt,
       wppTokensSaida: wppSai,
       copTokensEntrada: copEnt,
@@ -133,6 +156,10 @@ async function resumo(competencia) {
     totais.tokensEntrada += wppEnt + copEnt;
     totais.tokensSaida += wppSai + copSai;
     totais.tokensEntradaCru += wppEntCru + copEntCru;
+    totais.msgsEnviadas += msgsEnviadas;
+    totais.msgsPagas += msgsPagas;
+    totais.lembretesMes += lembretesMes;
+    totais.custoMetaBRL += custoMetaBRL;
     totais.wppTokensEntrada += wppEnt;
     totais.wppTokensSaida += wppSai;
     totais.copTokensEntrada += copEnt;
@@ -141,7 +168,7 @@ async function resumo(competencia) {
   }
   totais.custoPorConversaBRL = totais.conversas > 0 ? (totais.custoBRL / totais.conversas) : 0;
   linhas.sort((a, b) => b.custoUSD - a.custoUSD);
-  return { competencia, cotacao: COTACAO_BRL, precoPlanoRef: PLANO_PRECO_REF, modelos: { whatsapp: mw, copiloto: mc }, linhas, totais };
+  return { competencia, cotacao: COTACAO_BRL, wppGratisMes: WPP_GRATIS_MES, wppPrecoMsgBRL: WPP_PRECO_MSG_BRL, precoPlanoRef: PLANO_PRECO_REF, modelos: { whatsapp: mw, copiloto: mc }, linhas, totais };
 }
 
 module.exports = { resumo, competenciaAtual };
