@@ -307,15 +307,9 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   const ligada = secretaria.habilitada() && process.env.SECRETARIA_DESLIGADA !== '1' && !pausada;
   if (!conversa.iaAtiva || !ligada) return { conversaId: conversa.id, respostaIA: null };
 
-  // Aviso de privacidade (LGPD) — só na PRIMEIRA mensagem da conversa.
-  if (nova) {
-    const b0 = await prisma.barbearia.findUnique({ where: { id: barbeariaId } });
-    const link = await lerConfig(barbeariaId, 'secretaria_privacidade_link', null);
-    let aviso = `Você fala com o atendimento virtual 🤖 da ${b0 ? b0.nome : 'nossa barbearia'}. Usamos seus dados apenas para te atender e agendar.`;
-    if (link) aviso += ` Política de privacidade: ${link}`;
-    aviso += ` (Se preferir um atendente, é só escrever SAIR.)`;
-    await emitir(conversa, 'ia', aviso);
-  }
+  // O aviso de privacidade (LGPD) NÃO sai mais como mensagem separada: vai junto
+  // da PRIMEIRA resposta (ver avisoPrivacidadeSeNovo). Desde 01/10/2026 a Meta
+  // cobra cada mensagem enviada — assim a 1ª conversa custa 1 mensagem, não 2.
 
   // A resposta da IA: AGRUPADA (debounce) quando SECRETARIA_DEBOUNCE_MS>0, senão
   // INLINE (comportamento atual). O agrupamento relê tudo do banco quando dispara,
@@ -325,6 +319,20 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
     return { conversaId: conversa.id, agendado: true };
   }
   return responderConversa(barbeariaId, conversa.id);
+}
+
+// Aviso de privacidade (LGPD) para PREFIXAR a primeira resposta da conversa.
+// "Primeira" = ainda não há nenhuma mensagem da IA nesta conversa. Devolve '' se
+// o aviso já foi dado. Vai na MESMA mensagem da resposta (economia na Meta).
+async function avisoPrivacidadeSeNovo(barbeariaId, conversaId) {
+  const jaFalou = await prisma.mensagem.count({ where: { conversaId, autor: 'ia' } });
+  if (jaFalou) return '';
+  const b0 = await prisma.barbearia.findUnique({ where: { id: barbeariaId } });
+  const link = await lerConfig(barbeariaId, 'secretaria_privacidade_link', null);
+  let aviso = `Você fala com o atendimento virtual 🤖 da ${b0 ? b0.nome : 'nossa barbearia'}. Usamos seus dados apenas para te atender e agendar.`;
+  if (link) aviso += ` Política de privacidade: ${link}`;
+  aviso += ` (Se preferir um atendente, é só escrever SAIR.)`;
+  return aviso + String.fromCharCode(10, 10);
 }
 
 // Gera e ENVIA a resposta da IA de uma conversa. Chamada inline logo após gravar a
@@ -361,7 +369,7 @@ async function responderConversa(barbeariaId, conversaId) {
   // direto dos dados — SEM IA (custo zero), e vale mesmo se o teto da IA estourou.
   const respostaFaq = await faq.tentarResponder(barbeariaId, texto);
   if (respostaFaq) {
-    await emitir(conversa, 'ia', respostaFaq);
+    await emitir(conversa, 'ia', (await avisoPrivacidadeSeNovo(barbeariaId, conversa.id)) + respostaFaq);
     return { conversaId: conversa.id, respostaIA: respostaFaq, faqHit: true };
   }
 
@@ -444,7 +452,7 @@ async function responderConversa(barbeariaId, conversaId) {
     if (afirmaAgendou && !ferramentaAcao) {
       console.log('[atendimento] ALERTA: IA alegou agendar/cancelar SEM chamar a ferramenta. conversa', conversa.id, '| ferramentas:', JSON.stringify(ferramentas || []));
     }
-    await emitir(conversa, 'ia', resp);
+    await emitir(conversa, 'ia', (await avisoPrivacidadeSeNovo(barbeariaId, conversa.id)) + resp);
     await registrarUso(barbeariaId, teto.competencia, usage);
     // HANDOFF DETERMINÍSTICO: se a IA ANUNCIOU que vai chamar a equipe mas a IA
     // ainda está ativa (a ferramenta encaminhar_humano não foi de fato chamada),
