@@ -91,7 +91,7 @@ async function verConfig(req, res) {
       disponivel: onboard.configurado(),
       appId: process.env.META_APP_ID || '',
       configId: process.env.WHATSAPP_ES_CONFIG_ID || '',
-      apiVersion: process.env.WHATSAPP_API_VERSION || 'v21.0',
+      apiVersion: process.env.WHATSAPP_ES_SDK_VERSION || 'v23.0', // coexistência (featureType) exige SDK recente
     },
   });
 }
