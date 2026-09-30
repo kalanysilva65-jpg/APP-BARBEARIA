@@ -131,4 +131,27 @@ async function remover(req, res) {
   res.redirect('/painel/metas');
 }
 
-module.exports = { listar, criar, remover };
+// Cartões de metas da Home. Admin vê todas; barbeiro vê só as metas DELE
+// (funcionário não enxerga números da barbearia toda).
+async function paraHome(barbeariaId, usuarioId, ehAdmin) {
+  const where = { barbeariaId };
+  if (!ehAdmin) where.usuarioId = usuarioId;
+  const metas = await prisma.meta.findMany({ where, include: { usuario: true }, orderBy: { criadoEm: 'asc' } });
+  if (!metas.length) return [];
+  const ap = await apurar(barbeariaId);
+  return metas.map((m) => {
+    const conf = METRICAS[m.metrica] || { label: m.metrica, dinheiro: false };
+    const atual = atualDe(m, ap);
+    return {
+      label: conf.label,
+      dinheiro: !!conf.dinheiro,
+      escopo: m.usuario ? m.usuario.nome.split(' ')[0] : 'Barbearia',
+      alvo: m.alvo,
+      atual,
+      pct: m.alvo > 0 ? Math.min(100, Math.round((atual / m.alvo) * 100)) : 0,
+      batida: m.alvo > 0 && atual >= m.alvo,
+    };
+  });
+}
+
+module.exports = { listar, criar, remover, paraHome };

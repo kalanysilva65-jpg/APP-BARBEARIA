@@ -3,6 +3,7 @@
 // cliente, faturamento do dia + barras da semana, produtividade (ocupação),
 // retenção e novos clientes. Tudo escopado pela barbearia do contexto.
 const prisma = require('../config/db');
+const { paraHome: metasDaHome } = require('./metaController');
 const { paraMinutos, duracaoComEncaixe } = require('../services/disponibilidade');
 
 // Date -> meia-noite local do mesmo dia.
@@ -223,6 +224,9 @@ async function ver(req, res) {
 
   // Só o que a view consome. `barras`/`maxBarra` continuam existindo acima,
   // mas como matéria-prima de `barrasSemana` — não vão para a view.
+  const u = req.session.usuario;
+  const metasHome = await metasDaHome(b, u.id, !!req.ehAdmin);
+
   res.render('painel/dashboard', {
     titulo: 'Painel',
     totalHoje,
@@ -240,6 +244,7 @@ async function ver(req, res) {
     faturamentoSemanal,
     barrasSemana,
     estoqueBaixo,
+    metasHome,
   });
 }
 

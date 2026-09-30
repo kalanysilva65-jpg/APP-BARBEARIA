@@ -21,16 +21,6 @@
         { href: '/painel/agenda', num: restantesHoje, rot: 'Restantes' },
       ];
 
-  // 4º atalho: o funcionário não tem acesso a /painel/caixa (exigeAdmin), então
-  // no lugar de "Lançar" ele recebe o Estoque, que usa no dia a dia.
-  var atalhos = [
-    { href: '/painel/agenda', rot: 'Agendar', icone: '<path d="M12 5v14M5 12h14"/>' },
-    ehAdmin
-      ? { href: '/painel/caixa', rot: 'Lançar', icone: '<path d="M12 19V5M5 12l7-7 7 7"/>' }
-      : { href: '/painel/estoque', rot: 'Estoque', icone: '<path d="M20 12V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v4M2 12h20v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/><path d="M12 12v8"/>' },
-    { href: '/painel/clientes', rot: 'Clientes', icone: '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6"/>' },
-    { href: '/painel/produtos', rot: 'Produtos', icone: '<path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5z"/><path d="M4 8.5 12 13l8-4.5M12 13v7"/>' },
-  ];
 %>
 <script>
   /* A Home só faz o show de animações na PRIMEIRA visita por sessão (pedido do
@@ -100,16 +90,28 @@
     </div>
   </a>
 
-  <div class="sv-atalhos sv-reveal sv-hm-p3">
-    <% atalhos.forEach(function (at) { %>
-      <a href="<%= at.href %>" class="sv-atalho">
-        <span class="sv-atalho-caixa">
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><%- at.icone %></svg>
-        </span>
-        <span class="sv-atalho-rot"><%= at.rot %></span>
+  <%/* Cards de METAS no lugar dos atalhos (pedido do dono, 2026-09-30):
+       mostram as metas configuradas em /painel/metas com o progresso do mês.
+       Barbeiro vê só as metas dele. */%>
+  <% if (metasHome.length) { %>
+    <div class="sv-hm-metas sv-reveal sv-hm-p3">
+      <% metasHome.forEach(function (m) { %>
+        <a href="<%= ehAdmin ? '/painel/metas' : '/painel' %>" class="sv-hm-meta<%= m.batida ? ' sv-hm-meta--ok' : '' %>">
+          <span class="sv-hm-meta-rot"><%= m.label %> · <%= m.escopo %></span>
+          <span class="sv-hm-meta-num"><%= m.dinheiro ? fmtT6(m.atual) : m.atual %><small> / <%= m.dinheiro ? fmtT6(m.alvo) : m.alvo %></small></span>
+          <span class="sv-hm-meta-barra"><span style="width:<%= m.pct %>%"></span></span>
+          <span class="sv-hm-meta-pct"><%= m.batida ? 'Meta batida!' : m.pct + '% do mês' %></span>
+        </a>
+      <% }) %>
+    </div>
+  <% } else if (ehAdmin) { %>
+    <div class="sv-hm-metas sv-reveal sv-hm-p3">
+      <a href="/painel/metas" class="sv-hm-meta sv-hm-meta--vazia">
+        <span class="sv-hm-meta-rot">Metas do mês</span>
+        <span class="sv-hm-meta-pct">Nenhuma meta configurada · toque para criar</span>
       </a>
-    <% }) %>
-  </div>
+    </div>
+  <% } %>
 
   <% if (seguintesCortes.length) { %>
     <div class="sv-hm-secao sv-reveal sv-hm-p4">
