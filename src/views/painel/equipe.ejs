@@ -140,6 +140,24 @@
           <div class="sv-eq-desc-dica">Aparece no card do profissional quando o cliente agenda. Em branco, mostra só o cargo.</div>
         </div>
 
+        <% if (m.papel === 'funcionario') { %>
+          <%/* Acessos (pedido do dono, 2026-09-30): o admin escolhe as telas que
+               este barbeiro abre. Desmarcado = some do menu e o servidor bloqueia. */%>
+          <div class="sv-cartao sv-eq-bloco">
+            <div class="sv-eq-bloco-tit">O que este barbeiro pode acessar</div>
+            <input type="hidden" name="acessosForm" value="1" />
+            <div class="sv-eq-acessos">
+              <% modulosAcesso.forEach(function (mod) { %>
+                <label class="sv-eq-acesso">
+                  <input type="checkbox" name="acesso_<%= mod.chave %>" value="1" <%= m.bloqueados.has(mod.chave) ? '' : 'checked' %> />
+                  <span><%= mod.rotulo %></span>
+                </label>
+              <% }) %>
+            </div>
+            <div class="sv-eq-desc-dica">A agenda dele está sempre liberada. Caixa, relatórios, metas e equipe são só do administrador.</div>
+          </div>
+        <% } %>
+
         <%/* Prévia de como a foto aparece no card do agendamento público, com
              ajuste de enquadramento por ARRASTE (object-position). O que o admin
              arrasta aqui é o que o cliente vê lá. */%>

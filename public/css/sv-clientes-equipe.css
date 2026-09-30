@@ -895,3 +895,8 @@
 .pg-sv .sv-eq-desc { width: 100%; resize: vertical; min-height: 56px; margin-top: 8px; font: inherit; }
 .pg-sv .sv-eq-desc-dica { margin-top: 6px; font-size: 12px; color: var(--sv-muted, #6b6b6b); }
 .pg-sv label.sv-eq-bloco-tit { display: block; }
+
+/* Acessos do barbeiro (checkboxes na página do membro). */
+.sv-eq-acessos { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 10px; }
+.sv-eq-acesso { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: #f3f3f3; font-size: 14px; cursor: pointer; }
+.sv-eq-acesso input { width: 18px; height: 18px; accent-color: #1a1a1a; }

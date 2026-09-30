@@ -3,6 +3,7 @@
 // admin da própria barbearia também precisa gerenciar seu time no dia a dia.
 // Exclusivo do admin (exigeAdmin nas rotas) — ver memória de permissões.
 const bcrypt = require('bcryptjs');
+const permissoes = require('../services/permissoes');
 const fs = require('fs');
 const prisma = require('../config/db');
 const { caminhoDoUpload } = require('../config/paths');
@@ -177,12 +178,13 @@ async function listar(req, res) {
     // Avatar da lista quando o barbeiro não tem foto.
     iniciais: m.nome.split(' ').filter(Boolean).map((p) => p[0]).slice(0, 2).join('').toUpperCase(),
     jornadaLabel: jornadas.get(m.id) || 'Sem jornada definida',
+    bloqueados: permissoes.bloqueadosDe(m),
   }));
   const historico = await historicoRecente(b);
   // `aba` vem só da querystring pra que um link possa cair direto no Histórico;
   // a troca no dia a dia é no clique, sem recarregar.
   const aba = req.query.aba === 'historico' ? 'historico' : 'equipe';
-  res.render('painel/equipe', { titulo: 'Equipe', membros, historico, aba });
+  res.render('painel/equipe', { titulo: 'Equipe', membros, historico, aba, modulosAcesso: permissoes.MODULOS });
 }
 
 // Barbeiro é CADASTRO, não conta de acesso (pedido do dono, 2026-07-28: "só
@@ -255,6 +257,8 @@ async function atualizar(req, res) {
   // Enquadramento da foto no card público (object-position). Só toca no campo
   // quando o formulário o envia; valor inválido vira null (centralizado).
   if (req.body.fotoPos !== undefined) data.fotoPos = normalizarFotoPos(req.body.fotoPos);
+  // Acessos do funcionário: só quando o formulário traz o bloco (marcador).
+  if (req.body.acessosForm && membro.papel === 'funcionario') data.acessosBloqueados = permissoes.bloqueadosDoForm(req.body);
 
   await prisma.usuario.update({ where: { id }, data });
   req.session.flash = { tipo: 'sucesso', texto: 'Membro atualizado.' };

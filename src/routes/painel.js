@@ -20,6 +20,7 @@ const fidelidadeController = require('../controllers/fidelidadeController');
 const notificacaoController = require('../controllers/notificacaoController');
 const exportacaoController = require('../controllers/exportacaoController');
 const metaController = require('../controllers/metaController');
+const permissoes = require('../services/permissoes');
 const iaController = require('../controllers/iaController');
 const secretariaController = require('../controllers/secretariaController');
 const conversasController = require('../controllers/conversasController');
@@ -98,6 +99,22 @@ router.use(async (req, res, next) => {
   // O item "Assistente" no menu só aparece quando a IA está configurada (chave
   // da API presente no servidor).
   res.locals.iaAtiva = ia.iaHabilitada();
+
+  // Telas que ESTE funcionário não pode abrir (escolhidas pelo admin na Equipe).
+  // Admin/dono nunca é restringido.
+  const bloqueados = req.ehAdmin ? new Set() : permissoes.bloqueadosDe(usuarioDb);
+  res.locals.podeAcessar = (href) => {
+    const mod = permissoes.moduloDoCaminho(String(href || '').replace(/^\/painel/, '') || '/');
+    return !mod || !bloqueados.has(mod.chave);
+  };
+  const modAtual = permissoes.moduloDoCaminho(req.path);
+  if (modAtual && bloqueados.has(modAtual.chave)) {
+    if (req.method === 'GET' && !req.xhr && (req.headers.accept || '').includes('text/html')) {
+      req.session.flash = { tipo: 'erro', texto: 'Você não tem acesso a ' + modAtual.rotulo + '. Fale com o responsável da barbearia.' };
+      return res.redirect('/painel');
+    }
+    return res.status(403).json({ erro: 'Sem acesso a esta área.' });
+  }
 
   // Alerta de estoque baixo (admin) — mostrado no subtítulo do cabeçalho em todas as telas.
   res.locals.estoqueBaixoCount = 0;
