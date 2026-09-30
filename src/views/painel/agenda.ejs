@@ -164,9 +164,12 @@
       <div class="sv-ag-folha-tit">Bloquear horário</div>
       <div class="sv-ag-folha-sub"><%= dataExtenso %></div>
       <form method="POST" action="/painel/agenda/bloqueios">
-        <input type="hidden" name="data" value="<%= dataStr %>" />
         <input type="hidden" name="barbeiro" value="<%= barbeiroSelecionado %>" />
         <div class="sv-ag-campos">
+          <div class="sv-ag-campo">
+            <label class="sv-ag-campo-rot" for="bloq-data">Data</label>
+            <input id="bloq-data" type="date" name="data" class="sv-ag-inp" value="<%= dataStr %>" required />
+          </div>
           <div class="sv-ag-campo">
             <label class="sv-ag-campo-rot" for="bloq-barbeiro">Barbeiro</label>
             <select id="bloq-barbeiro" name="barbeiroId" class="sv-ag-inp" required>
@@ -202,6 +205,7 @@
       var ini = document.getElementById('bloq-ini');
       var fim = document.getElementById('bloq-fim');
       var folha = document.getElementById('agm-bloqueio');
+      var dataInp = document.getElementById('bloq-data');
       if (!ini || !fim || !folha) return;
       function p2(n) { return (n < 10 ? '0' : '') + n; }
       function sugerir() {
@@ -217,7 +221,7 @@
         var p = ini.value.split(':'), h = +p[0] + 1;
         if (!fim.value || fim.value <= ini.value) fim.value = p2(Math.min(h, 23)) + ':' + p[1];
       });
-      [ini, fim].forEach(function (inp) {
+      [ini, fim, dataInp].filter(Boolean).forEach(function (inp) {
         inp.closest('.sv-ag-campo').addEventListener('click', function (e) {
           if (e.target !== inp) { inp.focus(); try { inp.showPicker(); } catch (_) {} }
         });
