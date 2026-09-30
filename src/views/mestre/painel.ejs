@@ -11,6 +11,22 @@
   </div>
 </div>
 
+<%/* Backup semanal (scripts/backup-semanal.js). Vermelho se falhou/atrasou. */%>
+<% var bk = backup, fmtBk = function (d) { return new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }); }; %>
+<div class="card" style="border-left:4px solid <%= bk.situacao === 'ok' ? '#2e9e5b' : '#d93025' %>">
+  <strong>Backup semanal:</strong>
+  <% if (bk.situacao === 'ok') { %>
+    ✅ último em <%= fmtBk(bk.ultimoOk.quando) %> — <%= (bk.ultimoOk.bytes / 1048576).toFixed(1) %> MB, conferido no Supabase.
+  <% } else if (bk.situacao === 'nunca') { %>
+    ⚠️ nenhum backup registrado ainda.
+  <% } else if (bk.situacao === 'falhou') { %>
+    ❌ o último (<%= fmtBk(bk.ultimo.quando) %>) FALHOU: <%= bk.ultimo.erro %>
+  <% } else { %>
+    ⚠️ atrasado — o último que deu certo foi em <%= fmtBk(bk.ultimoOk.quando) %>. Confira o cron no VPS.
+  <% } %>
+  <% if (bk.teste) { %><span class="texto-secundario"> · teste de restauração OK em <%= fmtBk(bk.teste.quando) %></span><% } %>
+</div>
+
 <!-- Busca + filtro de status (paginação server-side) -->
 <div class="card">
   <form method="GET" action="/mestre" class="flex gap-8" style="flex-wrap:wrap;align-items:flex-end">

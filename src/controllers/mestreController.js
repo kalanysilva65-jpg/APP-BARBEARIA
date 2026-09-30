@@ -97,7 +97,29 @@ async function painel(req, res) {
     total,
     filtros: { q, status },
     paginacao: { pagina: paginaAtual, totalPaginas },
+    backup: statusBackup(),
   });
+}
+
+// Situação do backup semanal (scripts/backup-semanal.js grava o histórico).
+// "Atrasado" = último backup OK há mais de 8 dias — pega também o caso de o
+// cron simplesmente NÃO ter rodado (sem erro nenhum registrado).
+function statusBackup() {
+  let hist = [];
+  try {
+    hist = JSON.parse(require('fs').readFileSync(require('path').join(require('../config/paths').appDataDir, 'backups', 'historico.json'), 'utf8'));
+  } catch (_) { /* ainda não rodou */ }
+  const backups = hist.filter((h) => !h.teste);
+  const ultimo = backups[0] || null;
+  const ultimoOk = backups.find((h) => h.ok) || null;
+  const dias = ultimoOk ? (Date.now() - new Date(ultimoOk.quando).getTime()) / 86400000 : null;
+  const teste = hist.find((h) => h.teste) || null;
+  return {
+    ultimo,
+    ultimoOk,
+    teste,
+    situacao: !ultimo ? 'nunca' : !ultimo.ok ? 'falhou' : dias > 8 ? 'atrasado' : 'ok',
+  };
 }
 
 // GET /mestre/nova — formulário de nova barbearia (+ primeiro admin).

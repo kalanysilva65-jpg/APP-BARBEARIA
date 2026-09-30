@@ -53,3 +53,8 @@ ios/App/App.xcworkspace/xcuserdata/
 
 # Export da migração para Supabase (contém dados/hashes — nunca versionar)
 deploy/_migracao-dados.json
+
+# Mídias do WhatsApp e backups locais (dados de clientes — nunca versionar)
+data/wa-midia/
+data/backups/
+.playwright-mcp/
