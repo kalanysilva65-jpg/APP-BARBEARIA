@@ -102,7 +102,7 @@ async function painel(req, res) {
 }
 
 // Situação do backup semanal (scripts/backup-semanal.js grava o histórico).
-// "Atrasado" = último backup OK há mais de 8 dias — pega também o caso de o
+// "Atrasado" = último backup OK há mais de 2 dias — pega também o caso de o
 // cron simplesmente NÃO ter rodado (sem erro nenhum registrado).
 function statusBackup() {
   let hist = [];
@@ -118,7 +118,7 @@ function statusBackup() {
     ultimo,
     ultimoOk,
     teste,
-    situacao: !ultimo ? 'nunca' : !ultimo.ok ? 'falhou' : dias > 8 ? 'atrasado' : 'ok',
+    situacao: !ultimo ? 'nunca' : !ultimo.ok ? 'falhou' : dias > 2 ? 'atrasado' : 'ok',
   };
 }
 

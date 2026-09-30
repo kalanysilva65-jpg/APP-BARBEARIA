@@ -1,4 +1,4 @@
-// BACKUP SEMANAL VERIFICADO (pedido do dono, 2026-09-30: "toda semana, sem
+// BACKUP DIÁRIO + SEMANAL VERIFICADO (pedido do dono, 2026-09-30: "toda semana, sem
 // erro, 100% correto").
 //
 // O que faz, nesta ordem — e só declara SUCESSO se TODAS as etapas passarem:
@@ -19,8 +19,8 @@
 // USO (no VPS, dentro de /home/cortavo/app):
 //   sudo -u cortavo node scripts/backup-semanal.js              # faz o backup
 //   sudo -u cortavo node scripts/backup-semanal.js --testar     # restauração de teste do último
-// Cron (domingo 03:00):
-//   0 3 * * 0 cd /home/cortavo/app && node scripts/backup-semanal.js >> /home/cortavo/cortavo-data/backups/backup.log 2>&1
+// Cron (todo dia 03:00):
+//   0 3 * * * cd /home/cortavo/app && node scripts/backup-semanal.js >> /home/cortavo/cortavo-data/backups/backup.log 2>&1
 //
 // .env: SUPABASE_URL, SUPABASE_SERVICE_KEY, (opcional) SUPABASE_BUCKET=cortavo-backups,
 //       BACKUP_MANTER_SEMANAS=8
@@ -35,7 +35,11 @@ const { appDataDir, uploadsDir } = require('../src/config/paths');
 const DIR_BACKUPS = path.join(appDataDir, 'backups');
 const HISTORICO = path.join(DIR_BACKUPS, 'historico.json');
 const BUCKET = process.env.SUPABASE_BUCKET || 'cortavo-backups';
+// Roda TODO DIA (o uso diário também impede o Supabase grátis de pausar o
+// projeto). O de domingo vai para semanal/ (fica 8 semanas); os outros vão
+// para diario/ (ficam 7 dias).
 const MANTER = Math.max(2, parseInt(process.env.BACKUP_MANTER_SEMANAS, 10) || 8);
+const MANTER_DIARIOS = Math.max(2, parseInt(process.env.BACKUP_MANTER_DIARIOS, 10) || 7);
 const PARTE_MAX = 45 * 1024 * 1024; // Supabase (plano free) limita 50 MB por arquivo: fatia abaixo disso
 
 fs.mkdirSync(DIR_BACKUPS, { recursive: true });
@@ -292,20 +296,25 @@ async function backup() {
     // 5. Fora do servidor, com prova de integridade.
     const s = supa();
     if (!s) throw new Error('SUPABASE_URL / SUPABASE_SERVICE_KEY não configurados no .env — backup ficou SÓ no disco do VPS');
-    const pasta = 'semanal/' + carimbo;
+    const tipo = inicio.getDay() === 0 ? 'semanal' : 'diario';
+    const pasta = tipo + '/' + carimbo;
+    reg.tipo = tipo;
     await enviarVerificado(s, pasta, pacote, { arquivo: reg.arquivo, bytes: reg.bytes, sha256: reg.sha256, criadoEm: reg.quando, contagens: reg.contagens, barbearias: reg.barbearias });
     reg.remoto = BUCKET + '/' + pasta;
     etapa('enviado ao Supabase (' + reg.remoto + ') e conferido baixando de volta');
 
     // 6. Retenção (remoto e local).
-    const pastas = (await s.listar('semanal/')).map((o) => o.name).filter((n) => /^\d{4}-/.test(n)).sort();
-    for (const velha of pastas.slice(0, Math.max(0, pastas.length - MANTER))) {
-      const itens = await s.listar('semanal/' + velha + '/');
-      await s.apagar(itens.map((i) => 'semanal/' + velha + '/' + i.name));
+    for (const [prefixo, manter] of [['semanal', MANTER], ['diario', MANTER_DIARIOS]]) {
+      const pastas = (await s.listar(prefixo + '/')).map((o) => o.name).filter((n) => /^\d{4}-/.test(n)).sort();
+      for (const velha of pastas.slice(0, Math.max(0, pastas.length - manter))) {
+        const itens = await s.listar(prefixo + '/' + velha + '/');
+        await s.apagar(itens.map((i) => prefixo + '/' + velha + '/' + i.name));
+      }
     }
+    // No VPS só os 3 mais recentes (a cópia que vale está fora do servidor).
     const locais = fs.readdirSync(DIR_BACKUPS).filter((n) => /^cortavo-.*\.tar\.gz$/.test(n)).sort();
-    locais.slice(0, Math.max(0, locais.length - MANTER)).forEach((n) => fs.unlinkSync(path.join(DIR_BACKUPS, n)));
-    etapa('retenção: mantidas as últimas ' + MANTER + ' semanas');
+    locais.slice(0, Math.max(0, locais.length - 3)).forEach((n) => fs.unlinkSync(path.join(DIR_BACKUPS, n)));
+    etapa('retenção: ' + MANTER_DIARIOS + ' diários + ' + MANTER + ' semanais no Supabase, 3 no VPS');
 
     reg.ok = true;
   } catch (e) {
@@ -327,9 +336,13 @@ async function backup() {
 async function testarRestauracao() {
   const s = supa();
   if (!s) throw new Error('Supabase não configurado');
-  const pastas = (await s.listar('semanal/')).map((o) => o.name).filter((n) => /^\d{4}-/.test(n)).sort();
-  if (!pastas.length) throw new Error('nenhum backup no Supabase');
-  const pasta = 'semanal/' + pastas[pastas.length - 1];
+  const todas = [];
+  for (const p of ['semanal', 'diario']) {
+    (await s.listar(p + '/')).forEach((o) => { if (/^\d{4}-/.test(o.name)) todas.push({ nome: o.name, pasta: p + '/' + o.name }); });
+  }
+  if (!todas.length) throw new Error('nenhum backup no Supabase');
+  todas.sort((a, b) => a.nome.localeCompare(b.nome));
+  const pasta = todas[todas.length - 1].pasta;
   const man = JSON.parse((await s.baixar(pasta + '/manifesto.json')).toString());
   const dir = path.join(DIR_BACKUPS, 'teste-restauracao');
   fs.rmSync(dir, { recursive: true, force: true });

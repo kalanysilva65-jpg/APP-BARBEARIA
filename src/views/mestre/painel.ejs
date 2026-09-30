@@ -14,7 +14,7 @@
 <%/* Backup semanal (scripts/backup-semanal.js). Vermelho se falhou/atrasou. */%>
 <% var bk = backup, fmtBk = function (d) { return new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }); }; %>
 <div class="card" style="border-left:4px solid <%= bk.situacao === 'ok' ? '#2e9e5b' : '#d93025' %>">
-  <strong>Backup semanal:</strong>
+  <strong>Backup (diário):</strong>
   <% if (bk.situacao === 'ok') { %>
     ✅ último em <%= fmtBk(bk.ultimoOk.quando) %> — <%= (bk.ultimoOk.bytes / 1048576).toFixed(1) %> MB, conferido no Supabase.
   <% } else if (bk.situacao === 'nunca') { %>
