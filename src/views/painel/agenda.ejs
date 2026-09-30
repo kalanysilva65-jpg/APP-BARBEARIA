@@ -195,6 +195,35 @@
       </form>
     </div>
   </div>
+  <script>
+    /* Ao abrir, já sugere a próxima hora cheia e +1h (o campo nunca abre vazio),
+       e tocar em qualquer parte do cartão abre o seletor de hora. */
+    (function () {
+      var ini = document.getElementById('bloq-ini');
+      var fim = document.getElementById('bloq-fim');
+      var folha = document.getElementById('agm-bloqueio');
+      if (!ini || !fim || !folha) return;
+      function p2(n) { return (n < 10 ? '0' : '') + n; }
+      function sugerir() {
+        if (ini.value) return;
+        var h = Math.min(new Date().getHours() + 1, 22);
+        ini.value = p2(h) + ':00';
+        fim.value = p2(h + 1) + ':00';
+      }
+      new MutationObserver(sugerir).observe(folha, { attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
+      sugerir();
+      ini.addEventListener('change', function () {
+        if (!ini.value) return;
+        var p = ini.value.split(':'), h = +p[0] + 1;
+        if (!fim.value || fim.value <= ini.value) fim.value = p2(Math.min(h, 23)) + ':' + p[1];
+      });
+      [ini, fim].forEach(function (inp) {
+        inp.closest('.sv-ag-campo').addEventListener('click', function (e) {
+          if (e.target !== inp) { inp.focus(); try { inp.showPicker(); } catch (_) {} }
+        });
+      });
+    })();
+  </script>
 <% } %>
 
 <%/* ------------------------------------------------------------------------

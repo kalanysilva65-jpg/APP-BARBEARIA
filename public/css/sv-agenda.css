@@ -963,3 +963,26 @@
 .pg-sv .sv-ag-topo { view-transition-name: sv-ag-topo; }
 .pg-sv .sv-ag-dias { view-transition-name: sv-ag-dias; }
 .pg-sv .sv-ag-filtros { view-transition-name: sv-ag-filtros; }
+
+/* Bloquear horário (dono, 2026-09-30: "ao abrir não mostra onde clicar").
+   Campo de hora vazio ficava invisível (fundo transparente e, no iOS, altura
+   zero). Agora vira um botão claro, com borda, relógio e altura fixa. */
+.pg-sv #agm-bloqueio .sv-ag-campos { display: grid; grid-template-columns: 1fr 1fr; }
+.pg-sv #agm-bloqueio .sv-ag-campo:first-child,
+.pg-sv #agm-bloqueio .sv-ag-campo:last-child { grid-column: 1 / -1; }
+.pg-sv #agm-bloqueio .sv-ag-campo { cursor: pointer; }
+.pg-sv .ag-modal-box input.sv-ag-inp[type='time']:not([readonly]) {
+  display: block;
+  min-height: 46px;
+  margin-top: 8px;
+  padding: 0 14px;
+  background: var(--sv-surface, #fff) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B6B6B' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E") no-repeat right 12px center;
+  border: 1.5px solid var(--sv-line);
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.pg-sv .ag-modal-box input.sv-ag-inp[type='time']:focus { border-color: var(--sv-ink); }
+.pg-sv .ag-modal-box input.sv-ag-inp[type='time']::-webkit-calendar-picker-indicator { opacity: 0; }
