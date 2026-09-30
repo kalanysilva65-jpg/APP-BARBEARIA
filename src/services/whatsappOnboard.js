@@ -108,13 +108,15 @@ async function salvarCredenciais(barbeariaId, dados) {
 }
 
 // Fluxo completo chamado pelo controller depois que o popup termina.
-async function conectar(barbeariaId, { code, phoneNumberId, wabaId }) {
+async function conectar(barbeariaId, { code, phoneNumberId, wabaId, coexistencia }) {
   if (!configurado()) throw new Error('Embedded Signup não configurado no servidor.');
   if (!code) throw new Error('faltou o código de autorização do popup.');
   const token = await trocarCodePorToken(code);
   if (wabaId) await assinarAppNaWaba(wabaId, token);
   const pin = String(Math.floor(100000 + Math.random() * 900000));
-  if (phoneNumberId) await registrarNumero(phoneNumberId, token, pin);
+  // Na coexistência NÃO se registra o número (/register): ele já está ativo no
+  // app do barbeiro e registrar poderia tirá-lo de lá.
+  if (phoneNumberId && !coexistencia) await registrarNumero(phoneNumberId, token, pin);
   const det = phoneNumberId ? await detalhesNumero(phoneNumberId, token) : {};
   await salvarCredenciais(barbeariaId, { phoneNumberId, token, wabaId, pin, numero: det.numero });
   return { numero: det.numero || null, nome: det.nome || null };

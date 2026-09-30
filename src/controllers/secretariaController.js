@@ -125,7 +125,8 @@ async function conectarWhatsApp(req, res) {
   const wabaId = req.body && req.body.wabaId;
   if (!code) return res.status(400).json({ erro: 'Faltou o código de autorização do popup.' });
   try {
-    const r = await onboard.conectar(req.barbeariaId, { code, phoneNumberId, wabaId });
+    const coexistencia = !!(req.body && req.body.coexistencia);
+    const r = await onboard.conectar(req.barbeariaId, { code, phoneNumberId, wabaId, coexistencia });
     res.json({ ok: true, numero: r.numero });
   } catch (e) {
     console.error('[wa-onboard] conectar falhou:', e.message);
