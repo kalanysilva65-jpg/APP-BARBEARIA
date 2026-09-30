@@ -921,7 +921,7 @@
   transition: max-height 0.28s ease, opacity 0.2s ease, margin-top 0.2s ease;
 }
 .sv-ag6-servico.sel .sv-ag6-servico-desc {
-  max-height: 140px;
+  max-height: 800px;
   opacity: 1;
   margin-top: 8px;
   color: var(--sv-line);

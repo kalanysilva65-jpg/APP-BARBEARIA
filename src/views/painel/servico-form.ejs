@@ -11,9 +11,9 @@
 
     <div class="campo">
       <label for="descricao">Descrição <span class="texto-sutil">(opcional)</span></label>
-      <textarea id="descricao" name="descricao" maxlength="300" rows="3"
+      <textarea id="descricao" name="descricao" maxlength="1000" rows="5"
                 placeholder="Ex.: Corte na tesoura e máquina, lavagem e finalização com pomada."><%= servico && servico.descricao ? servico.descricao : '' %></textarea>
-      <span class="texto-sutil">No agendamento do cliente, aparece quando ele toca no serviço (fica escondida até lá). Até 300 caracteres.</span>
+      <span class="texto-sutil">No agendamento do cliente, aparece quando ele toca no serviço (fica escondida até lá). Até 1000 caracteres.</span>
     </div>
 
     <div class="grid-2">
