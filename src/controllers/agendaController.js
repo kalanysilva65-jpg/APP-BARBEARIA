@@ -4,6 +4,7 @@
 //  - Admin (e o dono operando a barbearia) vê a agenda de todos e altera qualquer um.
 // Tudo é escopado pela barbearia do contexto (req.barbeariaId).
 const prisma = require('../config/db');
+const precos = require('../services/precos');
 const { dataLocal, paraMinutos, duracaoEfetiva, todosHorarios, duracaoComEncaixe } = require('../services/disponibilidade');
 const { DIAS_SEMANA, INTERVALO_SLOT_MIN } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
@@ -377,11 +378,13 @@ async function adicionarItem(req, res) {
 
   let aviso = null;
   if (servico) {
+    // Preço do barbeiro DESTE agendamento (pode diferir do padrão).
+    const [comPreco] = await precos.comPrecoDoBarbeiro([servico], agendamento.usuarioId);
     await prisma.agendamentoItem.create({
       data: {
         agendamentoId: agendamento.id,
         servicoId: servico.id,
-        valorUnitario: servico.valor, // congela o preço atual (editável depois)
+        valorUnitario: comPreco.valor, // congela o preço atual (editável depois)
         quantidade,
       },
     });
@@ -772,9 +775,11 @@ async function criarManual(req, res) {
   const telefone = (req.body.cliente_telefone || '').trim();
 
   const barbeiro = await prisma.usuario.findFirst({ where: { id: usuarioId, barbeariaId: b, ativo: true } });
-  const servicos = servicoIds.length
+  const servicosBase = servicoIds.length
     ? await prisma.servico.findMany({ where: { id: { in: servicoIds }, barbeariaId: b, ativo: true } })
     : [];
+  // Preço do barbeiro escolhido (pode diferir do padrão — services/precos.js).
+  const servicos = barbeiro ? await precos.comPrecoDoBarbeiro(servicosBase, barbeiro.id) : servicosBase;
 
   const erros = [];
   if (!barbeiro) erros.push('Selecione um barbeiro.');

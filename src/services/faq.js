@@ -6,6 +6,7 @@
 // qualquer dúvida (ou se envolver DATA/DISPONIBILIDADE), retorna null e a IA
 // assume. Assim nunca devolve uma resposta pronta errada.
 const prisma = require('../config/db');
+const precos = require('./precos');
 const { DIAS_SEMANA } = require('../config/constantes');
 
 function normalizar(t) {
@@ -54,7 +55,12 @@ async function tentarResponder(barbeariaId, texto) {
       orderBy: { nome: 'asc' },
     });
     if (!servicos.length) return null;
-    const linhas = servicos.map((s) => `• ${s.nome}: ${fmtBRL(s.valor)}`);
+    // Preço pode variar por barbeiro: mostra "a partir de" (menor entre os ativos).
+    const faixas = await precos.faixasDePreco(barbeariaId, servicos);
+    const linhas = servicos.map((s) => {
+      const f = faixas[s.id];
+      return f && f.min !== f.max ? `• ${s.nome}: a partir de ${fmtBRL(f.min)}` : `• ${s.nome}: ${fmtBRL(f ? f.min : s.valor)}`;
+    });
     return `💈 Nossos serviços e valores:\n${linhas.join('\n')}\n\nQuer marcar algum? É só me dizer o dia. 🙂`;
   }
 

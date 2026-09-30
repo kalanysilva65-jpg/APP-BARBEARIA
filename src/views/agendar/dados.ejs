@@ -61,7 +61,7 @@
       </div>
       <div class="sv-ag6-resumo-linha sv-ag6-resumo-linha--sep sv-ag6-resumo-linha--total">
         <span class="sv-ag6-resumo-rot">Total</span>
-        <span class="sv-ag6-resumo-total"><%= assinatura ? 'Plano' : fmtT6(valorTotal) %></span>
+        <span class="sv-ag6-resumo-total"><%= assinatura ? 'Plano' : (typeof aPartirDe !== 'undefined' && aPartirDe ? 'a partir de ' : '') + fmtT6(valorTotal) %></span>
       </div>
     </div>
     <div style="height:20px"></div>

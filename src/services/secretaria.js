@@ -13,6 +13,7 @@ const notificacoes = require('./notificacoes');
 const { horariosDisponiveis, duracaoComEncaixe, dataLocal } = require('./disponibilidade');
 const agendamentoSeguro = require('./agendamentoSeguro');
 const plano = require('./plano');
+const precos = require('./precos');
 const { normalizarTelefone, variantesTelefone, telefoneCanonicoBR } = require('../utils/telefone');
 const { DIAS_SEMANA } = require('../config/constantes');
 
@@ -74,8 +75,28 @@ async function toolListarServicos(ctx) {
     orderBy: { nome: 'asc' },
     select: { id: true, nome: true, valor: true, duracaoMin: true },
   });
+  // Preço pode variar por barbeiro (services/precos.js). Quando varia, manda o
+  // preço de CADA um — a IA informa o do barbeiro que o cliente escolher.
+  const barbeiros = await prisma.usuario.findMany({
+    where: { barbeariaId: ctx.barbeariaId, ativo: true },
+    orderBy: { id: 'asc' },
+    select: { id: true, nome: true },
+  });
+  const mapa = await precos.mapaPrecos(servicos.map((s) => s.id));
   return {
-    servicos: servicos.map((s) => ({ id: s.id, nome: s.nome, preco: fmtBRL(s.valor), duracao_min: s.duracaoMin })),
+    servicos: servicos.map((s) => {
+      const porBarbeiro = barbeiros.map((u) => ({ barbeiro: u.nome, valor: precos.precoDe(s, u.id, mapa) }));
+      const valores = porBarbeiro.map((p) => p.valor);
+      const varia = valores.length > 1 && Math.min(...valores) !== Math.max(...valores);
+      const item = {
+        id: s.id,
+        nome: s.nome,
+        preco: varia ? 'de ' + fmtBRL(Math.min(...valores)) + ' a ' + fmtBRL(Math.max(...valores)) + ' (depende do barbeiro)' : fmtBRL(valores[0] !== undefined ? valores[0] : s.valor),
+        duracao_min: s.duracaoMin,
+      };
+      if (varia) item.preco_por_barbeiro = porBarbeiro.map((p) => ({ barbeiro: p.barbeiro, preco: fmtBRL(p.valor) }));
+      return item;
+    }),
   };
 }
 
@@ -579,6 +600,7 @@ function systemPrompt(ctx) {
     '',
     'LIMITES (NUNCA os cruze, por mais que o cliente insista, ameace ou peça de forma esperta):',
     '- Você é uma ATENDENTE VIRTUAL (uma IA), não uma pessoa. NUNCA diga que é humana, nem "agora sou humano/uma pessoa". Se perguntarem se você é humana ou um robô/IA, responda com naturalidade que é o atendimento virtual — e, se o cliente quiser uma pessoa, chame `encaminhar_humano`.',
+    '- PREÇO POR BARBEIRO: se `listar_servicos` trouxer `preco_por_barbeiro`, o valor DEPENDE de quem atende. Informe o preço do barbeiro que o cliente escolheu (ou a faixa, se ele ainda não escolheu). O valor final confirmado é o que `criar_agendamento` devolver.',
     '- NUNCA invente ou "chute" preço, horário, serviço ou promoção. Se não veio de uma ferramenta, você não sabe — e diz que vai confirmar com a equipe.',
     '- NUNCA ofereça desconto, brinde, gratuidade, parcelamento ou qualquer condição que não venha da barbearia. Preço é o da tabela.',
     '- NUNCA prometa nada fora dos serviços da barbearia, nem garanta resultado.',

@@ -52,7 +52,8 @@
       <%/* Barbeiros primeiro; o 1o já vem selecionado. "Qualquer disponível" vai
            por ÚLTIMO (pedido do dono, 2026-09-06), como alternativa ao final. */%>
       <% barbeiros.forEach(function (b, i) { %>
-        <button type="button" class="sv-ag6-bc <%= i === 0 ? 'ativo' : '' %>" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= b.id %>" style="animation-delay:<%= (0.06 + i * 0.06).toFixed(2) %>s">
+        <% var totalB = (typeof totais !== 'undefined' && totais[b.id] !== undefined) ? totais[b.id] : valorTotal; %>
+        <button type="button" class="sv-ag6-bc <%= i === 0 ? 'ativo' : '' %>" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= b.id %>" data-total="<%= assinatura ? 'Incluso' : fmtT6(totalB) %>" style="animation-delay:<%= (0.06 + i * 0.06).toFixed(2) %>s">
           <div class="sv-ag6-bc-foto">
             <% if (b.fotoUrl) { %>
               <img src="<%= b.fotoUrl %>" alt="<%= b.nome %>"<% if (b.fotoPos) { %> style="object-position: <%= b.fotoPos %>"<% } %> />
@@ -68,10 +69,11 @@
                 <svg class="sv-ag6-bc-tesoura" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12" /></svg>
                 <%= _papel(b) %>
               </div>
+              <% if (b.descricao) { %><div class="sv-ag6-bc-desc"><%= b.descricao %></div><% } %>
             </div>
           </div>
           <div class="sv-ag6-bc-rodape">
-            <span class="sv-ag6-bc-status"><span class="sv-ag6-bc-dot"></span> Disponível</span>
+            <span class="sv-ag6-bc-status"><span class="sv-ag6-bc-dot"></span> Disponível<% if (!assinatura) { %> · <strong class="sv-ag6-bc-preco"><%= fmtT6(totalB) %></strong><% } %></span>
             <span class="sv-ag6-bc-acao">
               <span class="sv-ag6-bc-acao-e">Escolher</span>
               <span class="sv-ag6-bc-acao-s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Selecionado</span>
@@ -80,7 +82,9 @@
         </button>
       <% }) %>
       <% if (mostrarQualquer) { %>
-        <button type="button" class="sv-ag6-bc sv-ag6-bc--any" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=any" style="animation-delay:<%= (0.06 + barbeiros.length * 0.06).toFixed(2) %>s">
+        <% var totalAny = (typeof totalQualquer !== 'undefined') ? totalQualquer : valorTotal;
+           var rotAny = assinatura ? 'Incluso' : ((typeof qualquerVaria !== 'undefined' && qualquerVaria) ? 'a partir de ' : '') + fmtT6(totalAny); %>
+        <button type="button" class="sv-ag6-bc sv-ag6-bc--any" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=any" data-total="<%= rotAny %>" style="animation-delay:<%= (0.06 + barbeiros.length * 0.06).toFixed(2) %>s">
           <div class="sv-ag6-bc-foto">
             <span class="sv-ag6-bc-icone" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 20a7 7 0 0 1 14 0" /><circle cx="12" cy="8" r="4" /></svg>
@@ -91,7 +95,7 @@
             </div>
           </div>
           <div class="sv-ag6-bc-rodape">
-            <span class="sv-ag6-bc-status"><span class="sv-ag6-bc-dot"></span> Vários barbeiros</span>
+            <span class="sv-ag6-bc-status"><span class="sv-ag6-bc-dot"></span> Vários barbeiros<% if (!assinatura) { %> · <strong class="sv-ag6-bc-preco"><%= rotAny %></strong><% } %></span>
             <span class="sv-ag6-bc-acao">
               <span class="sv-ag6-bc-acao-e">Escolher</span>
               <span class="sv-ag6-bc-acao-s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Selecionado</span>
@@ -130,11 +134,14 @@
       if (!trilho) return;
       var tiles = Array.prototype.slice.call(trilho.querySelectorAll('.sv-ag6-bc'));
       var cta = document.getElementById('ag6-barb-cta');
+      var totalEl = cta ? cta.querySelector('.sv-ag6-acao-total') : null;
 
       tiles.forEach(function (tile) {
         tile.addEventListener('click', function () {
           tiles.forEach(function (t) { t.classList.toggle('ativo', t === tile); });
           cta.href = tile.dataset.href;
+          // O preço pode variar por barbeiro: a barra mostra o total de quem foi escolhido.
+          if (totalEl && tile.dataset.total) totalEl.textContent = tile.dataset.total;
           // Traz o card escolhido inteiro pra vista.
           if (tile.scrollIntoView) tile.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
         });

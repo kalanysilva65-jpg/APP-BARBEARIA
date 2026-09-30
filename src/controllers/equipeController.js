@@ -243,6 +243,11 @@ async function atualizar(req, res) {
   // campo ausente rebaixaria para "funcionario" qualquer administrador salvo
   // por aqui — inclusive o próprio dono, que perderia o acesso ao painel.
   const data = { nome, comissaoPercentual };
+  // Descrição curta do profissional no agendamento público (ex.: "Especialista
+  // em degradê"). Só mexe quando o formulário envia o campo; vazio = remove.
+  if (req.body.descricao !== undefined) {
+    data.descricao = String(req.body.descricao).trim().slice(0, 120) || null;
+  }
   if (req.file) {
     apagarFoto(membro.fotoUrl);
     data.fotoUrl = '/uploads/' + req.file.filename;

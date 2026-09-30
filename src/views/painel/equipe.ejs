@@ -133,6 +133,13 @@
           </div>
         </div>
 
+        <div class="sv-cartao sv-eq-bloco">
+          <label class="sv-eq-bloco-tit" for="eq-desc-<%= m.id %>">Descrição no agendamento</label>
+          <textarea class="sv-campo-input sv-eq-desc" id="eq-desc-<%= m.id %>" name="descricao" rows="2" maxlength="120"
+                    placeholder="Ex.: Especialista em degradê e barba desenhada"><%= m.descricao || '' %></textarea>
+          <div class="sv-eq-desc-dica">Aparece no card do profissional quando o cliente agenda. Em branco, mostra só o cargo.</div>
+        </div>
+
         <%/* Prévia de como a foto aparece no card do agendamento público, com
              ajuste de enquadramento por ARRASTE (object-position). O que o admin
              arrasta aqui é o que o cliente vê lá. */%>

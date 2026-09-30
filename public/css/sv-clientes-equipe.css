@@ -890,3 +890,8 @@
 /* Salvar e Desativar são formulários irmãos: o segundo cola no primeiro em
    vez de abrir o mesmo respiro do fim de uma seção. */
 .pg-sv .sv-eq-acoes + .sv-eq-acoes .sv-btn { margin-top: 10px; }
+
+/* Descrição do profissional (aparece no card do agendamento público). */
+.pg-sv .sv-eq-desc { width: 100%; resize: vertical; min-height: 56px; margin-top: 8px; font: inherit; }
+.pg-sv .sv-eq-desc-dica { margin-top: 6px; font-size: 12px; color: var(--sv-muted, #6b6b6b); }
+.pg-sv label.sv-eq-bloco-tit { display: block; }

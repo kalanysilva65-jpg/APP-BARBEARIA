@@ -902,3 +902,50 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---- Descrição do serviço (2026-09-30): escondida; abre ao selecionar ----
+   Fica dentro do cartão do serviço. Fechada = altura 0; com .sel, desliza
+   aberta. No cartão selecionado (fundo preto) o texto usa o cinza claro. */
+.sv-ag6-servico-desc {
+  display: block;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin-top: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--sv-muted);
+  text-align: left;
+  white-space: normal;
+  transition: max-height 0.28s ease, opacity 0.2s ease, margin-top 0.2s ease;
+}
+.sv-ag6-servico.sel .sv-ag6-servico-desc {
+  max-height: 140px;
+  opacity: 1;
+  margin-top: 8px;
+  color: var(--sv-line);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sv-ag6-servico-desc { transition: none; }
+}
+
+/* ---- Descrição do profissional no card (2026-09-30) ---- */
+.sv-ag6-bc-desc {
+  margin: 6px auto 0;
+  max-width: 260px;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--sv-ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* Com descrição, o degradê claro do topo desce um pouco pra o texto não
+   ficar em cima da parte escura da foto. */
+.sv-ag6-bc-foto:has(.sv-ag6-bc-desc) .sv-ag6-bc-scrim { height: 130px; }
+
+/* ---- Preço do barbeiro no rodapé do card (pode variar por barbeiro) ---- */
+.sv-ag6-bc-preco { color: var(--sv-ink); font-weight: 700; }

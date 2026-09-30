@@ -57,11 +57,19 @@
         <div class="sv-ag6-secao-val" id="ag6-conta">toque para escolher</div>
       </div>
       <div class="sv-ag6-lista" id="lista-servicos">
-        <% servicos.forEach(function (s, i) { %>
-          <button type="button" class="sv-ag6-servico" data-id="<%= s.id %>" data-valor="<%= s.valor %>" data-min="<%= s.duracaoMin %>" data-encaixe="<%= s.ehEncaixe ? '1' : '' %>" onclick="toggleServico(this)" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
+        <% servicos.forEach(function (s, i) {
+             /* Preço pode variar por barbeiro: aqui o barbeiro ainda não foi
+                escolhido, então mostra "a partir de" o menor valor. */
+             var fx = (typeof faixas !== 'undefined' && faixas[s.id]) || { min: s.valor, max: s.valor };
+             var varia = fx.min !== fx.max; %>
+          <button type="button" class="sv-ag6-servico" data-id="<%= s.id %>" data-valor="<%= fx.min %>" data-varia="<%= varia ? '1' : '' %>" data-min="<%= s.duracaoMin %>" data-encaixe="<%= s.ehEncaixe ? '1' : '' %>" onclick="toggleServico(this)" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
             <span class="sv-ag6-servico-txt">
               <span class="sv-ag6-servico-nome"><%= s.nome %></span>
-              <span class="sv-ag6-servico-meta"><%= s.duracaoMin %> min · <%= fmtT6(s.valor) %></span>
+              <span class="sv-ag6-servico-meta"><%= s.duracaoMin %> min · <%= varia ? 'a partir de ' : '' %><%= fmtT6(fx.min) %></span>
+              <% if (s.descricao) { %>
+                <%/* Descrição escondida: abre quando o serviço é selecionado (.sel). */%>
+                <span class="sv-ag6-servico-desc"><%= s.descricao %></span>
+              <% } %>
             </span>
             <% if (s.fotoUrl) { %><span class="sv-ag6-servico-foto"><img src="<%= s.fotoUrl %>" alt="" /></span><% } %>
             <span class="sv-ag6-servico-check">
@@ -101,8 +109,10 @@
     const precos = {};
     const duracoes = {};
     const encaixes = {};
+    const variam = {};
     document.querySelectorAll('#lista-servicos .sv-ag6-servico').forEach(function (el) {
       precos[el.dataset.id] = Number(el.dataset.valor);
+      variam[el.dataset.id] = el.dataset.varia === '1';
       duracoes[el.dataset.id] = Number(el.dataset.min);
       encaixes[el.dataset.id] = el.dataset.encaixe === '1';
     });
@@ -144,7 +154,9 @@
       const ids = Array.from(selecionados);
       const total = ids.reduce(function (s, id) { return s + precos[id]; }, 0);
       const min = duracaoSelecao(ids);
-      document.getElementById('ag6-cta-total').textContent = fmtT6Local(total);
+      // Se algum escolhido muda de preço conforme o barbeiro, o total é "a partir de".
+      const algumVaria = ids.some(function (id) { return variam[id]; });
+      document.getElementById('ag6-cta-total').textContent = (algumVaria ? 'a partir de ' : '') + fmtT6Local(total);
       document.getElementById('ag6-cta-sub').textContent =
         n + ' serviço' + (n > 1 ? 's' : '') + ' · ' + fmtDuracaoLocal(min);
       // Vazio (nada escolhido) x info + "Continuar" (com escolha).

@@ -85,7 +85,7 @@
       <span class="sv-ag6-lembrete-rot">Toque num horário livre</span>
       <span class="sv-ag6-lembrete-sub"><%= servicos.length %> serviço<%= servicos.length > 1 ? 's' : '' %> · <%= _duracao(duracaoTotal) %></span>
     </span>
-    <span class="sv-ag6-lembrete-total"><%= assinatura ? 'Incluso' : fmtT6(valorTotal) %></span>
+    <span class="sv-ag6-lembrete-total"><%= assinatura ? 'Incluso' : (typeof aPartirDe !== 'undefined' && aPartirDe ? 'a partir de ' : '') + fmtT6(valorTotal) %></span>
   </div>
 </div>
 

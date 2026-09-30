@@ -11,10 +11,9 @@
 
     <div class="campo">
       <label for="descricao">Descrição <span class="texto-sutil">(opcional)</span></label>
-      <input id="descricao" name="descricao" maxlength="80"
-             placeholder="Ex.: Corte tradicional com finalização."
-             value="<%= servico && servico.descricao ? servico.descricao : '' %>" />
-      <span class="texto-sutil">Aparece embaixo do nome no agendamento do cliente.</span>
+      <textarea id="descricao" name="descricao" maxlength="300" rows="3"
+                placeholder="Ex.: Corte na tesoura e máquina, lavagem e finalização com pomada."><%= servico && servico.descricao ? servico.descricao : '' %></textarea>
+      <span class="texto-sutil">No agendamento do cliente, aparece quando ele toca no serviço (fica escondida até lá). Até 300 caracteres.</span>
     </div>
 
     <div class="grid-2">
@@ -63,8 +62,30 @@
         document.getElementById('campo-comissao-produto').style.display = ehProd ? 'block' : 'none';
         var enc = document.getElementById('campo-encaixe');
         if (enc) enc.style.display = ehProd ? 'none' : 'block';
+        var pb = document.getElementById('campo-precos-barbeiro');
+        if (pb) pb.style.display = ehProd ? 'none' : 'block';
       }
     </script>
+
+    <% if (barbeiros && barbeiros.length > 1) { %>
+      <%/* Preço por barbeiro (opcional): em branco = usa o valor padrão acima.
+           Regra única de leitura em services/precos.js — agendamento público,
+           app, agenda manual e secretária cobram o mesmo valor. */%>
+      <div class="campo" id="campo-precos-barbeiro" style="display:<%= servico && servico.ehProduto ? 'none' : 'block' %>">
+        <label>Preço por barbeiro <span class="texto-sutil">(opcional)</span></label>
+        <span class="texto-sutil">Deixe em branco para usar o valor padrão. Preencha só para quem cobra diferente.</span>
+        <div class="grid-2" style="margin-top:8px">
+          <% barbeiros.forEach(function (u) { %>
+            <div class="campo" style="margin:0">
+              <label for="pb-<%= u.id %>" style="font-weight:500"><%= u.nome %></label>
+              <input id="pb-<%= u.id %>" name="precoBarbeiro_<%= u.id %>" type="number" step="0.01" min="0" inputmode="decimal"
+                     placeholder="padrão"
+                     value="<%= precosBarbeiro && precosBarbeiro[u.id] !== undefined ? (precosBarbeiro[u.id] / 100).toFixed(2) : '' %>" />
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    <% } %>
 
     <div class="campo">
       <label for="categoriaId">Categoria</label>

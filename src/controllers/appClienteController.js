@@ -6,6 +6,7 @@
 // A lógica de disponibilidade e as regras de criação de agendamento são as
 // mesmas do fluxo público (services/disponibilidade); só a apresentação muda.
 const prisma = require('../config/db');
+const precos = require('../services/precos');
 const { todosHorarios, horariosDisponiveis, dataLocal, duracaoComEncaixe } = require('../services/disponibilidade');
 const { DIAS_SEMANA } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
@@ -184,8 +185,10 @@ async function confirmar(req, res) {
   const data = req.body.data;
   const hora = req.body.hora;
 
-  const servicos = await prisma.servico.findMany({ where: { id: { in: ids }, barbeariaId: b.id, ativo: true } });
+  const servicosBase = await prisma.servico.findMany({ where: { id: { in: ids }, barbeariaId: b.id, ativo: true } });
   const barbeiro = await prisma.usuario.findFirst({ where: { id: barbeiroId, barbeariaId: b.id, ativo: true } });
+  // Preço do barbeiro escolhido (pode diferir do padrão — services/precos.js).
+  const servicos = barbeiro ? await precos.comPrecoDoBarbeiro(servicosBase, barbeiro.id) : servicosBase;
 
   const voltar = () => {
     const qs = new URLSearchParams({ servicos: ids.join(','), barbeiro: barbeiroId || '', data: data || '' });

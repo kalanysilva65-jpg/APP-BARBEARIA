@@ -9,6 +9,7 @@ const { horariosDisponiveis, todosHorarios, dataLocal, duracaoComEncaixe, paraMi
 const { DIAS_SEMANA } = require('../config/constantes');
 const { normalizarTelefone } = require('../utils/telefone');
 const planoServ = require('../services/plano');
+const precos = require('../services/precos');
 const notifServ = require('../services/notificacoes');
 const { lerJanelaAgendamento } = require('./horarioController');
 
@@ -110,6 +111,20 @@ async function passoPlano(req, res) {
 }
 
 // Converte "1,2,3" ou "1" em [1, 2, 3]
+// Preço conforme o barbeiro (services/precos.js). Barbeiro escolhido: o preço
+// DELE. 'any' (qualquer disponível): o MENOR preço entre os ativos, e a tela
+// mostra 'a partir de' quando varia — quem atender é decidido só na confirmação.
+async function precificar(barbeariaId, servicos, barbeiroId) {
+  if (barbeiroId && barbeiroId !== 'any') {
+    return { servicos: await precos.comPrecoDoBarbeiro(servicos, barbeiroId), aPartirDe: false };
+  }
+  const faixas = await precos.faixasDePreco(barbeariaId, servicos);
+  return {
+    servicos: servicos.map((s) => ({ ...s, valor: faixas[s.id].min })),
+    aPartirDe: servicos.some((s) => faixas[s.id].min !== faixas[s.id].max),
+  };
+}
+
 function parseIds(str) {
   return (str || '').toString().split(',').map(Number).filter(Boolean);
 }
@@ -122,7 +137,9 @@ async function passoServico(req, res) {
     include: { categoria: true },
     orderBy: { nome: 'asc' },
   });
+  const faixas = await precos.faixasDePreco(req.barbeariaId, servicos);
   res.render('agendar/servico', {
+    faixas,
     layout: 'layouts/publico',
     titulo: 'Agendar',
     passo: 1,
@@ -147,9 +164,13 @@ async function passoBarbeiro(req, res) {
 
   const servicoIdsStr = servicos.map((s) => s.id).join(',');
   const duracaoTotal = duracaoComEncaixe(servicos.map((x) => ({ duracaoMin: x.duracaoMin, ehEncaixe: x.ehEncaixe })), { efetiva: false });
-  const valorTotal = servicos.reduce((s, x) => s + x.valor, 0);
-
   const barbeiros = await prisma.usuario.findMany({ where: { barbeariaId: req.barbeariaId, ativo: true }, orderBy: { id: 'asc' } });
+  // Total dos serviços escolhidos PARA CADA barbeiro (preço pode variar por barbeiro).
+  const totais = await precos.totaisPorBarbeiro(servicos, barbeiros.map((u) => u.id));
+  const valoresTotais = Object.values(totais);
+  const totalQualquer = valoresTotais.length ? Math.min(...valoresTotais) : 0;
+  const qualquerVaria = valoresTotais.some((v) => v !== totalQualquer);
+  const valorTotal = barbeiros.length ? totais[barbeiros[0].id] : servicos.reduce((s, x) => s + x.valor, 0);
   res.render('agendar/barbeiro', {
     layout: 'layouts/publico',
     titulo: 'Escolha o barbeiro',
@@ -158,6 +179,9 @@ async function passoBarbeiro(req, res) {
     servicoIdsStr,
     duracaoTotal,
     valorTotal,
+    totais,
+    totalQualquer,
+    qualquerVaria,
     barbeiros,
     // "Qualquer disponível" só faz sentido com mais de 1 barbeiro ativo.
     mostrarQualquer: barbeiros.length > 1,
@@ -262,7 +286,9 @@ async function passoHorario(req, res) {
 
   const servicoIdsStr = servicos.map((s) => s.id).join(',');
   const duracaoTotal = duracaoComEncaixe(servicos.map((x) => ({ duracaoMin: x.duracaoMin, ehEncaixe: x.ehEncaixe })), { efetiva: false });
-  const valorTotal = servicos.reduce((s, x) => s + x.valor, 0);
+  const precoH = await precificar(req.barbeariaId, servicos, ehQualquer ? 'any' : barbeiro.id);
+  const valorTotal = precoH.servicos.reduce((s, x) => s + x.valor, 0);
+  const aPartirDe = precoH.aPartirDe;
   const ilimitado = assinatura && assinatura.plano.tipo === 'ilimitado';
   // Dias em que o plano da assinatura pode ser usado (null = sem restrição de plano).
   const diasPlano = assinatura ? new Set(assinatura.plano.diasSemana.split(',').map(Number)) : null;
@@ -325,6 +351,7 @@ async function passoHorario(req, res) {
     titulo: 'Escolha o horário',
     passo: 3,
     servicos,
+    aPartirDe,
     servicoIdsStr,
     duracaoTotal,
     valorTotal,
@@ -356,13 +383,15 @@ async function passoDados(req, res) {
   if (!servicos.length || !barbeiro || !data || !hora) return res.redirect('/agendar');
 
   const servicoIdsStr = servicos.map((s) => s.id).join(',');
-  const valorTotal = servicos.reduce((s, x) => s + x.valor, 0);
+  const precoD = await precificar(req.barbeariaId, servicos, ehQualquer ? 'any' : barbeiro.id);
+  const valorTotal = precoD.servicos.reduce((s, x) => s + x.valor, 0);
 
   res.render('agendar/dados', {
     layout: 'layouts/publico',
     titulo: 'Seus dados',
     passo: 4,
-    servicos,
+    servicos: precoD.servicos,
+    aPartirDe: precoD.aPartirDe,
     servicoIdsStr,
     valorTotal,
     barbeiro,
@@ -430,7 +459,9 @@ async function confirmar(req, res) {
     telefone = assinatura.cliente.telefone;
   }
 
-  const valorTotal = usaPlano ? 0 : servicos.reduce((s, x) => s + x.valor, 0);
+  // Preço de QUEM vai atender (no 'qualquer', o barbeiro já foi resolvido acima).
+  const servicosPreco = barbeiro ? await precos.comPrecoDoBarbeiro(servicos, barbeiro.id) : servicos;
+  const valorTotal = usaPlano ? 0 : servicosPreco.reduce((s, x) => s + x.valor, 0);
 
   const erros = [];
   if (!servicos.length) erros.push('Serviço inválido.');
@@ -534,7 +565,7 @@ async function confirmar(req, res) {
           valorTotal,
           origem: 'publico', // agendamento pelo link público da barbearia
           itens: {
-            create: servicos.map((s) => ({
+            create: servicosPreco.map((s) => ({
               servicoId: s.id,
               valorUnitario: usaPlano ? 0 : s.valor,
               quantidade: 1,

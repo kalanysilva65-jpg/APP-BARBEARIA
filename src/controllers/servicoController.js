@@ -2,6 +2,7 @@
 // Alterar é exclusivo do admin (rotas com exigeAdmin). LISTAR é aberto ao
 // funcionário: ele precisa do catálogo e dos preços para montar o atendimento.
 const prisma = require('../config/db');
+const precos = require('../services/precos');
 const fs = require('fs');
 const { caminhoDoUpload } = require('../config/paths');
 
@@ -138,10 +139,16 @@ async function salvarInsumos(barbeariaId, servicoId, body) {
 }
 
 // GET /painel/servicos/novo — formulário de criação
+// Barbeiros ativos para a seção "Preço por barbeiro" do formulário.
+function barbeirosDoForm(barbeariaId) {
+  return prisma.usuario.findMany({ where: { barbeariaId, ativo: true }, orderBy: { id: 'asc' }, select: { id: true, nome: true } });
+}
+
 async function formNovo(req, res) {
   const categorias = await prisma.categoriaServico.findMany({ where: { barbeariaId: req.barbeariaId }, orderBy: { nome: 'asc' } });
   const { estoqueItens, insumosMap } = await dadosInsumos(req.barbeariaId, null);
-  res.render('painel/servico-form', { titulo: 'Novo serviço', servico: null, categorias, estoqueItens, insumosMap });
+  const barbeiros = await barbeirosDoForm(req.barbeariaId);
+  res.render('painel/servico-form', { titulo: 'Novo serviço', servico: null, categorias, estoqueItens, insumosMap, barbeiros, precosBarbeiro: {} });
 }
 
 // POST /painel/servicos — cria um serviço/produto
@@ -165,6 +172,7 @@ async function criar(req, res) {
 
   const novoServico = await prisma.servico.create({ data: { barbeariaId: req.barbeariaId, nome, descricao, valor, duracaoMin, categoriaId, ehProduto, ehEncaixe, comissaoPercentual, fotoUrl } });
   await salvarInsumos(req.barbeariaId, novoServico.id, req.body);
+  if (!ehProduto) await precos.salvarPrecosDoForm(req.barbeariaId, novoServico.id, req.body, reaisParaCentavos);
   req.session.flash = { tipo: 'sucesso', texto: ehProduto ? 'Produto criado.' : 'Serviço criado.' };
   res.redirect(destino(ehProduto));
 }
@@ -175,7 +183,10 @@ async function formEditar(req, res) {
   if (!servico) return res.redirect('/painel/servicos');
   const categorias = await prisma.categoriaServico.findMany({ where: { barbeariaId: req.barbeariaId }, orderBy: { nome: 'asc' } });
   const { estoqueItens, insumosMap } = await dadosInsumos(req.barbeariaId, servico.id);
-  res.render('painel/servico-form', { titulo: 'Editar serviço', servico, categorias, estoqueItens, insumosMap });
+  const barbeiros = await barbeirosDoForm(req.barbeariaId);
+  const linhas = await prisma.servicoPrecoBarbeiro.findMany({ where: { servicoId: servico.id } });
+  const precosBarbeiro = Object.fromEntries(linhas.map((l) => [l.usuarioId, l.valor]));
+  res.render('painel/servico-form', { titulo: 'Editar serviço', servico, categorias, estoqueItens, insumosMap, barbeiros, precosBarbeiro });
 }
 
 // POST /painel/servicos/:id — atualiza um serviço/produto
@@ -210,6 +221,7 @@ async function atualizar(req, res) {
 
   await prisma.servico.update({ where: { id }, data });
   await salvarInsumos(req.barbeariaId, id, req.body);
+  if (!ehProduto) await precos.salvarPrecosDoForm(req.barbeariaId, id, req.body, reaisParaCentavos);
   req.session.flash = { tipo: 'sucesso', texto: ehProduto ? 'Produto atualizado.' : 'Serviço atualizado.' };
   res.redirect(destino(ehProduto));
 }

@@ -7,6 +7,7 @@
 //   - exige que o horário esteja REALMENTE livre (barra passado / fora do expediente);
 //   - o barbeariaId e o telefone do cliente vêm do CHAMADOR (servidor), nunca da IA.
 const prisma = require('../config/db');
+const precos = require('./precos');
 const { dataLocal, paraMinutos, duracaoComEncaixe, horariosDisponiveis, todosHorarios } = require('./disponibilidade');
 const { normalizarTelefone, variantesTelefone, telefoneCanonicoBR } = require('../utils/telefone');
 const planoServ = require('./plano');
@@ -41,7 +42,9 @@ async function criarAgendamento(barbeariaId, dados) {
   if (!barbeiro) return { erro: 'barbeiro', mensagem: 'Barbeiro inválido.' };
 
   const ids = (servicoIds || []).map(Number).filter(Boolean);
-  const servicos = await prisma.servico.findMany({ where: { id: { in: ids }, barbeariaId, ativo: true } });
+  const servicosBase = await prisma.servico.findMany({ where: { id: { in: ids }, barbeariaId, ativo: true } });
+  // Preço do barbeiro escolhido (pode diferir do padrão — services/precos.js).
+  const servicos = await precos.comPrecoDoBarbeiro(servicosBase, barbeiro.id);
   if (!servicos.length) return { erro: 'servico', mensagem: 'Serviço inválido.' };
 
   // USO DE PLANO (opcional). Mesmas regras do agendamento por plano no painel:

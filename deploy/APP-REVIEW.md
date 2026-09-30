@@ -62,5 +62,11 @@ acontecendo, sem edição que "pule" etapas.
 ## Estado atual
 - O código da coexistência está pronto (botão "Conectar WhatsApp" na tela
   Secretária, `src/services/whatsappOnboard.js`). Ver [WHATSAPP.md](./WHATSAPP.md).
-- Gargalo real: (1) **um número de WhatsApp real** para conectar/testar e gravar os
-  vídeos; (2) **App Review** aprovado para liberar o autoatendimento das barbearias.
+- **App Review ENVIADO em 2026-09-20** — status "Análise em andamento" (prazo até
+  ~20 dias). Solicitadas: `whatsapp_business_messaging`, `whatsapp_business_management`
+  e `public_profile`. Ícone 1024, plataforma Site (cortavo.com.br), tratamento de
+  dados (provedores: Hostinger/BR, Anthropic/EUA, Groq/EUA), 2 vídeos (msg = fluxo de
+  remarcação ponta a ponta; management = GET message_templates no Graph API Explorer)
+  e login de teste `revisor-meta@cortavo.com.br` na Barbearia Demonstração (script
+  `deploy/conta-revisor-meta.js`). **FALTA só:** aguardar a aprovação e então
+  **Publicar o app** (menu Publicar) para as barbearias de fora se conectarem.

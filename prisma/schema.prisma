@@ -74,6 +74,7 @@ model Usuario {
   senhaHash   String   @map("senha_hash")
   fotoUrl     String?  @map("foto_url") // foto do barbeiro (em /uploads)
   fotoPos     String?  @map("foto_pos") // enquadramento da foto no card público (object-position, ex.: "50% 30%")
+  descricao   String? // texto curto do profissional no agendamento público (ex.: "Especialista em degradê")
   papel       String // "dono" | "admin" | "funcionario"
   ativo       Boolean  @default(true)
   senhaProvisoria Boolean @default(false) @map("senha_provisoria") // senha padrão/criada pelo admin: força troca no 1º login
@@ -87,6 +88,7 @@ model Usuario {
   dispositivosPush DispositivoPush[]
   logsAuditoria    LogAuditoria[]
   metas            Meta[]
+  precosServico    ServicoPrecoBarbeiro[]
 
   // E-mail único DENTRO de cada barbearia (o mesmo e-mail pode existir em barbearias diferentes).
   @@unique([barbeariaId, email])
@@ -189,8 +191,28 @@ model Servico {
   itens     AgendamentoItem[]
   planos    Plano[]
   insumos   ServicoInsumo[]
+  precosBarbeiro ServicoPrecoBarbeiro[]
 
   @@map("servicos")
+}
+
+/// Preço de um serviço PARA UM barbeiro específico (opcional). Sem linha aqui,
+/// vale o preço padrão do serviço (Servico.valor). Regra única de leitura em
+/// services/precos.js — usada pelo agendamento público, app, agenda manual,
+/// secretária e FAQ, pra todos cobrarem o mesmo valor.
+model ServicoPrecoBarbeiro {
+  id          Int @id @default(autoincrement())
+  barbeariaId Int @map("barbearia_id")
+  servicoId   Int @map("servico_id")
+  usuarioId   Int @map("usuario_id")
+  valor       Int // centavos
+
+  servico Servico @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([servicoId, usuarioId])
+  @@index([barbeariaId])
+  @@map("servico_precos_barbeiro")
 }
 
 /// "Receita" de consumo de estoque de um serviço/produto: ao CONCLUIR um
