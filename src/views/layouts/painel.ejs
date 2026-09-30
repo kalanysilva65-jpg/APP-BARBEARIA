@@ -95,7 +95,11 @@
        do painel-novo.css (cabeçalho sem cartão, pop-ups de vidro etc). As
        classes .pg-<tela> continuam existindo para o que É específico de
        cada uma (o hero só existe na Home, por exemplo). */%>
-  <body class="app-painel <%= ehSuave ? 'pg-sv' : classeTela + ' ' + (classeTela ? 'pg-novo' : '') %>">
+  <%
+    // Telas de tela cheia, sem a barra de navegação (pedido do dono, 2026-09-30).
+    var semNav = ['/painel/ia', '/painel/conversas', '/painel/mais'].indexOf(currentPath) !== -1;
+  %>
+  <body class="app-painel <%= ehSuave ? 'pg-sv' : classeTela + ' ' + (classeTela ? 'pg-novo' : '') %><%= semNav ? ' sem-nav' : '' %>">
     <%- include('../partials/splash') %>
     <div class="app-topo-fixo">
       <%- include('../partials/header-painel') %>

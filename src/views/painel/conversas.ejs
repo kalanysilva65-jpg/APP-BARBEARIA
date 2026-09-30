@@ -3,7 +3,7 @@
 <%
   function inic(nome) { var p = (nome || '?').trim().split(/\s+/); return ((p[0] || '?')[0] + (p[1] ? p[1][0] : '')).toUpperCase(); }
 %>
-<div class="sv-tela sv-cv">
+<div class="sv-tela sv-cv<%= aberta ? ' sv-cv--chat' : '' %>">
 
 <% if (!aberta) { %>
   <%/* ---------------- LISTA ---------------- */%>
@@ -87,7 +87,8 @@
 
 <% } else { %>
   <%/* ---------------- CONVERSA ABERTA ---------------- */%>
-  <div class="sv-cv-thtopo sv-reveal">
+  <div class="sv-cv-barra">
+  <div class="sv-cv-thtopo">
     <a href="/painel/conversas" class="sv-cv-voltar" aria-label="Voltar">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
     </a>
@@ -109,6 +110,7 @@
     <form method="POST" action="/painel/conversas/<%= aberta.conversa.id %>/excluir" class="sv-cv-excluir" onsubmit="return confirm('Excluir esta conversa e todas as mensagens? Isso apaga os dados do cliente e não dá para desfazer.')">
       <button type="submit">Excluir</button>
     </form>
+  </div>
   </div>
 
   <div class="sv-cv-thread" id="cv-thread" data-id="<%= aberta.conversa.id %>">

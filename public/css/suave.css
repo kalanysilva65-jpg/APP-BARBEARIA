@@ -827,3 +827,8 @@ html:has(> body.pg-sv)::-webkit-scrollbar,
   .pg-sv [role="button"],
   .pg-sv [onclick] { transition: none; }
 }
+
+/* Sem barra de navegação: telas cheias (Assistente, Conversas, Perfil) e a
+   página do barbeiro aberta na Equipe (pedido do dono, 2026-09-30). */
+.sem-nav .sv-nav,
+.pg-sv:has(.sv-eq-pg:not([hidden])) .sv-nav { display: none !important; }

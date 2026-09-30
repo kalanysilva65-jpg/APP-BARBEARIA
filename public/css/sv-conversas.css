@@ -119,3 +119,27 @@
   border: none; background: var(--sv-ink); color: #fff; border-radius: 50%; cursor: pointer;
 }
 .pg-sv .sv-cv-enviar:active { transform: scale(0.92); }
+
+/* ===== Conversa aberta estilo WhatsApp (pedido do dono, 2026-09-30) =====
+   Barra do topo FIXA (não rola), fundo bege do WhatsApp, balões verde/branco
+   e caixa de resposta fixa no rodapé (a barra de navegação some nesta tela). */
+.pg-sv .sv-cv--chat { min-height: 100vh; min-height: 100dvh; background: #efeae2; }
+.pg-sv:has(.sv-cv--chat) { background: #efeae2; }
+.pg-sv .sv-cv-barra {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+  background: #fff; border-bottom: 1px solid var(--sv-line); box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.pg-sv .sv-cv-barra .sv-cv-thtopo { padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 6px 4px; gap: 8px; }
+.pg-sv .sv-cv-barra .sv-cv-status { margin: 0; padding: 4px 14px 6px; border-top: 1px solid var(--sv-line); }
+.pg-sv .sv-cv--chat .sv-cv-thread { padding: calc(118px + env(safe-area-inset-top, 0px)) 10px calc(84px + env(safe-area-inset-bottom, 0px)); gap: 3px; }
+.pg-sv .sv-cv--chat .cv-msg { box-shadow: 0 1px .5px rgba(11,20,26,.13); border: none; border-radius: 8px; }
+.pg-sv .sv-cv--chat .cv-msg--in { background: #fff; color: #111b21; border-top-left-radius: 0; border-bottom-left-radius: 8px; }
+.pg-sv .sv-cv--chat .cv-msg--out { background: #d9fdd3; color: #111b21; border-top-right-radius: 0; border-bottom-right-radius: 8px; }
+.pg-sv .sv-cv--chat .cv-msg-meta { color: #667781; opacity: 1; }
+.pg-sv .sv-cv--chat .cv-sep span { background: #fff; border: none; color: #54656f; box-shadow: 0 1px .5px rgba(11,20,26,.13); }
+.pg-sv .sv-cv--chat .sv-cv-composer {
+  left: 0; right: 0; bottom: 0; max-width: none; border-radius: 0; border: none; box-shadow: none;
+  background: #f0f2f5; padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+}
+.pg-sv .sv-cv--chat .sv-cv-input { background: #fff; border-radius: 22px; padding: 11px 16px; }
+.pg-sv .sv-cv--chat .sv-cv-enviar { width: 46px; height: 46px; background: #00a884; }
