@@ -156,6 +156,10 @@ async function salvarConfig(req, res) {
     lembrete_template_nome: String(req.body.lembreteTemplate || '').trim().slice(0, 100),
     lembrete_antecedencia_min: antecedencia ? String(Math.min(1440, Math.max(5, parseInt(antecedencia, 10)))) : '60',
   };
+  // Só o dono do sistema mexe no técnico; o admin da barbearia salva só a antecedência.
+  if (req.session.usuario.papel !== 'dono') {
+    for (const k of Object.keys(valores)) if (k !== 'lembrete_antecedencia_min') delete valores[k];
+  }
   for (const [chave, valor] of Object.entries(valores)) {
     await prisma.configuracao.upsert({
       where: { barbeariaId_chave: { barbeariaId: b, chave } },
