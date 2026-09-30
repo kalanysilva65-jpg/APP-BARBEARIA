@@ -27,6 +27,17 @@ const conversasController = require('../controllers/conversasController');
 const { limiteIA } = require('../middlewares/rateLimit');
 const ia = require('../services/ia');
 const upload = require('../middlewares/upload');
+const multer = require('multer');
+
+// Mídia enviada pelo painel no chat do WhatsApp: fica na MEMÓRIA (vai direto
+// pra Meta e pro armazenamento privado). 16 MB = teto da Meta p/ áudio/vídeo.
+const uploadWa = multer({ storage: multer.memoryStorage(), limits: { fileSize: 16 * 1024 * 1024 } });
+function uploadMidiaWa(req, res, next) {
+  uploadWa.single('arquivo')(req, res, (err) => {
+    if (err) return res.status(400).json({ erro: err.code === 'LIMIT_FILE_SIZE' ? 'Arquivo maior que 16 MB.' : 'Falha no envio do arquivo.' });
+    next();
+  });
+}
 
 // Envolve o upload do multer para tratar erros (tamanho/formato) com mensagem amigável.
 function uploadFoto(req, res, next) {
@@ -171,6 +182,8 @@ router.get('/conversas', conversasController.ver);
 router.get('/conversas/fragmento', conversasController.fragmento); // auto-atualização da lista
 router.post('/conversas/simular', exigeAdmin, limiteIA, conversasController.simular);
 router.get('/conversas/:id/novas', conversasController.novas); // auto-atualização do chat
+router.get('/conversas/midia/:mensagemId', conversasController.midia); // mídia das conversas (privada)
+router.post('/conversas/:id/midia', uploadMidiaWa, conversasController.enviarMidia);
 router.post('/conversas/:id/responder', conversasController.responder);
 router.post('/conversas/:id/ia', conversasController.definirIA);
 router.post('/conversas/:id/excluir', conversasController.excluir);

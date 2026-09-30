@@ -113,81 +113,53 @@
   </div>
   </div>
 
-  <div class="sv-cv-thread" id="cv-thread" data-id="<%= aberta.conversa.id %>">
-    <% aberta.mensagens.forEach(function (m) { %>
-      <% if (m.sep) { %><div class="cv-sep"><span><%= m.sep %></span></div><% } %>
-      <div class="cv-msg cv-msg--<%= m.autor === 'cliente' ? 'in' : 'out' %>" data-id="<%= m.id %>" data-dia="<%= m.dia %>">
-        <span class="cv-msg-txt"><%= m.texto %></span>
-        <span class="cv-msg-meta"><% if (m.autor === 'ia') { %>IA · <% } else if (m.autor === 'humano') { %>Você · <% } %><%= m.hora %></span>
-      </div>
-    <% }) %>
+  <div class="sv-cv-thread" id="cv-thread" data-id="<%= aberta.conversa.id %>"></div>
+  <script type="application/json" id="cv-dados"><%- JSON.stringify(aberta.mensagens).split('<').join(String.fromCharCode(92) + 'u003c') %></script>
+
+  <%/* Fora da janela de 24h da Meta, texto/mídia livres NÃO são entregues. */%>
+  <div class="sv-cv-janela" id="cv-janela" <%= aberta.conversa.janelaAberta ? 'hidden' : '' %>>
+    ⏱️ Passaram 24h desde a última mensagem do cliente. Pelas regras do WhatsApp, só dá pra retomar com uma <strong>mensagem modelo</strong> — ou esperar ele escrever.
   </div>
 
-  <form class="sv-cv-composer" method="POST" action="/painel/conversas/<%= aberta.conversa.id %>/responder" autocomplete="off">
-    <input class="sv-cv-input" name="texto" placeholder="Responder…" maxlength="2000" required aria-label="Sua resposta" />
-    <button type="submit" class="sv-cv-enviar" aria-label="Enviar">
+  <form class="sv-cv-composer" id="cv-form" method="POST" action="/painel/conversas/<%= aberta.conversa.id %>/responder" autocomplete="off">
+    <label class="sv-cv-anexo" title="Enviar foto, vídeo ou arquivo" aria-label="Anexar">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/></svg>
+      <input type="file" id="cv-arquivo" hidden accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt" />
+    </label>
+    <input class="sv-cv-input" id="cv-texto" name="texto" placeholder="Mensagem" maxlength="2000" aria-label="Sua resposta" />
+    <button type="button" class="sv-cv-enviar sv-cv-mic" id="cv-mic" aria-label="Gravar áudio">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg>
+    </button>
+    <button type="submit" class="sv-cv-enviar" id="cv-enviar" aria-label="Enviar" hidden>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
     </button>
   </form>
 
-  <script>
-    (function () {
-      var thread = document.getElementById('cv-thread');
-      if (!thread) return;
-      var convId = thread.getAttribute('data-id');
-      function irAoFim() { window.scrollTo(0, document.body.scrollHeight); }
-      irAoFim();
+  <%/* Gravando áudio: barra por cima do composer. */%>
+  <div class="sv-cv-gravando" id="cv-gravando" hidden>
+    <button type="button" class="sv-cv-grav-cancel" id="cv-grav-cancel" aria-label="Cancelar">✕</button>
+    <span class="sv-cv-grav-ponto"></span><span id="cv-grav-tempo">0:00</span>
+    <button type="button" class="sv-cv-enviar" id="cv-grav-ok" aria-label="Enviar áudio">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
+    </button>
+  </div>
 
-      function ultimoId() {
-        var msgs = thread.querySelectorAll('.cv-msg');
-        return msgs.length ? Number(msgs[msgs.length - 1].getAttribute('data-id')) : 0;
-      }
-      function ultimoDia() {
-        var msgs = thread.querySelectorAll('.cv-msg');
-        return msgs.length ? msgs[msgs.length - 1].getAttribute('data-dia') : '';
-      }
-      function addSep(label) {
-        var s = document.createElement('div');
-        s.className = 'cv-sep';
-        var span = document.createElement('span');
-        span.textContent = label;
-        s.appendChild(span);
-        thread.appendChild(s);
-      }
-      function addMsg(m) {
-        var el = document.createElement('div');
-        el.className = 'cv-msg cv-msg--' + (m.autor === 'cliente' ? 'in' : 'out');
-        el.setAttribute('data-id', m.id);
-        el.setAttribute('data-dia', m.dia);
-        var txt = document.createElement('span');
-        txt.className = 'cv-msg-txt';
-        txt.textContent = m.texto;
-        el.appendChild(txt);
-        var meta = document.createElement('span');
-        meta.className = 'cv-msg-meta';
-        meta.textContent = (m.autor === 'ia' ? 'IA · ' : (m.autor === 'humano' ? 'Você · ' : '')) + m.hora;
-        el.appendChild(meta);
-        thread.appendChild(el);
-      }
-      async function atualizar() {
-        if (document.hidden) return;
-        try {
-          var r = await fetch('/painel/conversas/' + convId + '/novas?apos=' + ultimoId(), { headers: { 'X-Requested-With': 'fetch' } });
-          if (!r.ok || r.redirected) return;
-          var d = await r.json();
-          if (!d.mensagens || !d.mensagens.length) return;
-          var perto = (window.innerHeight + window.scrollY) >= document.body.scrollHeight - 160;
-          var dia = ultimoDia();
-          d.mensagens.forEach(function (m) {
-            if (m.dia !== dia) { addSep(m.diaLabel); dia = m.dia; }
-            addMsg(m);
-          });
-          if (perto) irAoFim();
-        } catch (e) {}
-      }
-      setInterval(atualizar, 4000);
-    })();
-  </script>
+  <%/* Prévia do anexo antes de enviar (com legenda), igual ao WhatsApp. */%>
+  <div class="sv-cv-previa-anexo" id="cv-previa" hidden>
+    <div class="sv-cv-prev-topo">
+      <button type="button" id="cv-prev-fechar" aria-label="Cancelar">✕</button>
+      <span id="cv-prev-nome"></span>
+    </div>
+    <div class="sv-cv-prev-corpo" id="cv-prev-corpo"></div>
+    <div class="sv-cv-prev-pe">
+      <input id="cv-prev-legenda" placeholder="Adicionar legenda…" maxlength="1000" />
+      <button type="button" class="sv-cv-enviar" id="cv-prev-enviar" aria-label="Enviar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <script src="/js/chat-whatsapp.js" defer></script>
 <% } %>
 
 </div>

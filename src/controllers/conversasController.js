@@ -3,7 +3,10 @@
 // /painel/conversas com ?id= para abrir (o detalhe não vira path novo).
 // Extras: separadores de data no chat, busca (no cliente) e auto-atualização
 // (endpoints `fragmento` p/ a lista e `:id/novas` p/ o chat).
+const fs = require('fs');
+const prisma = require('../config/db');
 const atendimento = require('../services/atendimento');
+const waMidia = require('../services/waMidia');
 const secretaria = require('../services/secretaria');
 const { formatarTelefone } = require('../utils/telefone');
 
@@ -43,6 +46,28 @@ async function listaMapeada(barbeariaId, abertaId) {
   }));
 }
 
+// Formato de uma mensagem para a tela (e para o JSON do polling).
+function paraView(m) {
+  return {
+    id: m.id,
+    autor: m.autor,
+    texto: m.texto,
+    tipo: m.tipo || 'texto',
+    midia: m.midiaArquivo ? '/painel/conversas/midia/' + m.id : null,
+    midiaNome: m.midiaNome || null,
+    status: m.autor !== 'cliente' ? m.statusEnvio || null : null,
+    hora: horaCurta(m.criadoEm),
+  };
+}
+
+// Janela de 24h da Meta: fora dela, texto/mídia livres não são entregues — só
+// modelo (template) aprovado. Conta a partir da última mensagem do CLIENTE.
+const JANELA_MS = 24 * 60 * 60 * 1000;
+function janelaAberta(conversa) {
+  const t = conversa.ultimaMsgClienteEm ? new Date(conversa.ultimaMsgClienteEm).getTime() : 0;
+  return t > 0 && Date.now() - t < JANELA_MS;
+}
+
 // Anexa separadores de data às mensagens (o `sep` aparece antes da 1ª msg do dia).
 function comSeparadores(mensagens) {
   let prev = null;
@@ -50,7 +75,7 @@ function comSeparadores(mensagens) {
     const k = diaKey(m.criadoEm);
     const sep = k !== prev ? rotuloDia(m.criadoEm) : null;
     prev = k;
-    return { id: m.id, autor: m.autor, texto: m.texto, hora: horaCurta(m.criadoEm), dia: k, sep };
+    return { ...paraView(m), dia: k, sep };
   });
 }
 
@@ -77,6 +102,7 @@ async function ver(req, res) {
             nome: aberta.conversa.clienteNome || formatarTelefone(aberta.conversa.clienteTelefone),
             telefone: formatarTelefone(aberta.conversa.clienteTelefone),
             iaAtiva: aberta.conversa.iaAtiva,
+            janelaAberta: janelaAberta(aberta.conversa),
           },
           mensagens: comSeparadores(aberta.mensagens),
         }
@@ -96,7 +122,10 @@ async function novas(req, res) {
   if (!r) return res.status(404).json({ erro: 'Conversa não encontrada.' });
   res.json({
     iaAtiva: r.conversa.iaAtiva,
-    mensagens: r.msgs.map((m) => ({ id: m.id, autor: m.autor, texto: m.texto, hora: horaCurta(m.criadoEm), dia: diaKey(m.criadoEm), diaLabel: rotuloDia(m.criadoEm) })),
+    mensagens: r.msgs.map((m) => ({ ...paraView(m), dia: diaKey(m.criadoEm), diaLabel: rotuloDia(m.criadoEm) })),
+    // Tiques das últimas mensagens de SAÍDA (mudam depois de enviadas).
+    status: await atendimento.statusRecentes(r.conversa.id),
+    janelaAberta: janelaAberta(r.conversa),
   });
 }
 
@@ -133,4 +162,30 @@ async function excluir(req, res) {
   res.redirect('/painel/conversas');
 }
 
-module.exports = { ver, fragmento, novas, responder, definirIA, simular, excluir };
+// GET /painel/conversas/midia/:mensagemId — entrega a mídia (só logado, só da
+// própria barbearia). Não fica em /uploads porque é dado de cliente.
+async function midia(req, res) {
+  const m = await prisma.mensagem.findFirst({
+    where: { id: Number(req.params.mensagemId), conversa: { barbeariaId: req.barbeariaId } },
+    select: { midiaArquivo: true, midiaMime: true, midiaNome: true },
+  });
+  const arq = m && waMidia.caminho(m.midiaArquivo);
+  if (!arq || !fs.existsSync(arq)) return res.sendStatus(404);
+  res.setHeader('Content-Type', (m.midiaMime || 'application/octet-stream').split(';')[0]);
+  res.setHeader('Cache-Control', 'private, max-age=86400');
+  if (m.midiaNome) res.setHeader('Content-Disposition', 'inline; filename="' + m.midiaNome.replace(/[^\w.\- ]/g, '_') + '"');
+  fs.createReadStream(arq).pipe(res);
+}
+
+// POST /painel/conversas/:id/midia — humano envia foto/vídeo/áudio/documento.
+async function enviarMidia(req, res) {
+  const f = req.file;
+  if (!f) return res.status(400).json({ erro: 'Nenhum arquivo.' });
+  const r = await atendimento.enviarMidiaComoHumano(req.barbeariaId, req.params.id, {
+    buffer: f.buffer, mime: f.mimetype, nome: f.originalname, legenda: req.body.legenda,
+  });
+  if (!r) return res.status(404).json({ erro: 'Conversa não encontrada.' });
+  res.json({ ok: r.ok, erro: r.ok ? null : r.erro || 'O WhatsApp recusou o arquivo.' });
+}
+
+module.exports = { ver, fragmento, novas, responder, definirIA, simular, excluir, midia, enviarMidia };

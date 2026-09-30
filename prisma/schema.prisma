@@ -593,6 +593,7 @@ model Conversa {
   naoLidas         Int      @default(0) @map("nao_lidas")
   ultimaPrevia     String?  @map("ultima_previa")
   ultimaMensagemEm DateTime @default(now()) @map("ultima_mensagem_em")
+  ultimaMsgClienteEm DateTime? @map("ultima_msg_cliente_em") // janela de 24h da Meta
   criadoEm         DateTime @default(now()) @map("criado_em")
 
   barbearia Barbearia  @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
@@ -609,12 +610,20 @@ model Mensagem {
   id         Int      @id @default(autoincrement())
   conversaId Int      @map("conversa_id")
   autor      String // cliente | ia | humano
-  texto      String
+  texto      String // texto, legenda da mídia ou transcrição do áudio
+  // "Clone do WhatsApp" (2026-09-30): mídia + id/status da Meta.
+  tipo         String  @default("texto") // texto | imagem | video | audio | documento | figurinha | localizacao | contato
+  midiaArquivo String? @map("midia_arquivo") // nome do arquivo em <APP_DATA_DIR>/wa-midia (servido só logado)
+  midiaMime    String? @map("midia_mime")
+  midiaNome    String? @map("midia_nome") // nome original (documentos)
+  waId         String? @map("wa_id") // wamid da Meta — liga os status (entregue/lida)
+  statusEnvio  String? @map("status_envio") // enviada | entregue | lida | falhou (só saída)
   criadoEm   DateTime @default(now()) @map("criado_em")
 
   conversa Conversa @relation(fields: [conversaId], references: [id], onDelete: Cascade)
 
   @@index([conversaId, criadoEm])
+  @@index([waId])
   @@map("mensagens")
 }
 

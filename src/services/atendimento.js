@@ -13,6 +13,7 @@ const prisma = require('../config/db');
 const secretaria = require('./secretaria');
 const faq = require('./faq');
 const whatsapp = require('./whatsapp');
+const waMidia = require('./waMidia');
 const notificacoes = require('./notificacoes');
 const { normalizarTelefone } = require('../utils/telefone');
 
@@ -103,7 +104,12 @@ async function modoDaBarbearia(barbeariaId) {
 
 function historicoParaIA(mensagens) {
   const arr = [];
-  for (const m of mensagens) {
+  for (let m of mensagens) {
+    // Mídia sem texto vira um marcador ("[📷 Foto]") pra IA saber que houve algo.
+    if (!m.texto) {
+      if (!m.tipo || m.tipo === 'texto') continue;
+      m = { ...m, texto: '[' + (ROTULO_MIDIA[m.tipo] || 'arquivo') + ']' };
+    }
     const role = m.autor === 'cliente' ? 'user' : 'assistant';
     if (arr.length && arr[arr.length - 1].role === role) {
       arr[arr.length - 1].content += '\n' + m.texto;
@@ -131,9 +137,35 @@ async function enviarWhatsApp(conversa, texto) {
 // Grava uma mensagem de saída (IA ou sistema), atualiza a prévia e envia.
 async function emitir(conversa, autor, texto) {
   const limpo = semSurrogatesSoltos(texto);
-  await prisma.mensagem.create({ data: { conversaId: conversa.id, autor, texto: limpo } });
+  const msg = await prisma.mensagem.create({ data: { conversaId: conversa.id, autor, texto: limpo } });
   await prisma.conversa.update({ where: { id: conversa.id }, data: { ultimaPrevia: previa(limpo), ultimaMensagemEm: new Date() } });
-  await enviarWhatsApp(conversa, limpo);
+  const r = await enviarWhatsApp(conversa, limpo);
+  await registrarEnvio(msg.id, r);
+}
+
+// Guarda o wamid + status inicial do envio (os tiques vêm depois pelo webhook).
+async function registrarEnvio(mensagemId, r) {
+  const data = r && r.ok ? { waId: r.waId || null, statusEnvio: 'enviada' } : { statusEnvio: r && r.motivo === 'sem_credenciais' ? null : 'falhou' };
+  await prisma.mensagem.update({ where: { id: mensagemId }, data }).catch(() => {});
+}
+
+// Rótulo curto de uma mídia (prévia da lista e texto de mensagens sem legenda).
+const ROTULO_MIDIA = {
+  imagem: '📷 Foto', video: '🎥 Vídeo', audio: '🎤 Áudio', documento: '📄 Documento',
+  figurinha: '💟 Figurinha', localizacao: '📍 Localização', contato: '👤 Contato',
+};
+
+// Status de entrega vindo do webhook (sent/delivered/read/failed). Nunca
+// "rebaixa" (um 'delivered' atrasado não desfaz o 'read').
+const ORDEM_STATUS = { enviada: 1, entregue: 2, lida: 3 };
+const STATUS_META = { sent: 'enviada', delivered: 'entregue', read: 'lida', failed: 'falhou' };
+async function atualizarStatusEnvio(waId, statusMeta) {
+  const novo = STATUS_META[statusMeta];
+  if (!waId || !novo) return;
+  const m = await prisma.mensagem.findFirst({ where: { waId }, select: { id: true, statusEnvio: true } });
+  if (!m) return;
+  if (novo !== 'falhou' && (ORDEM_STATUS[m.statusEnvio] || 0) >= ORDEM_STATUS[novo]) return;
+  await prisma.mensagem.update({ where: { id: m.id }, data: { statusEnvio: novo } });
 }
 
 // --- Teto de custo (uso mensal de IA por barbearia) ---
@@ -255,9 +287,11 @@ function _cancelarResposta(conversaId) {
 }
 
 // Mensagem RECEBIDA de um cliente. Ponto único chamado pelo webhook (3.3).
-async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
+async function receberMensagemCliente(barbeariaId, { telefone, nome, texto, tipo, midia, waId }) {
   const tel = normalizarTelefone(telefone) || String(telefone || '').trim();
-  if (!tel || !texto) return { erro: 'Dados insuficientes.' };
+  tipo = tipo || 'texto';
+  texto = texto || '';
+  if (!tel || (!texto && tipo === 'texto')) return { erro: 'Dados insuficientes.' };
   // Blinda contra emoji cortado/malformado vindo do cliente (mesmo motivo da
   // previa): evita quebrar o Prisma ao gravar/atualizar a conversa.
   texto = semSurrogatesSoltos(texto);
@@ -272,11 +306,26 @@ async function receberMensagemCliente(barbeariaId, { telefone, nome, texto }) {
   } else if (nome && !conversa.clienteNome) {
     await prisma.conversa.update({ where: { id: conversa.id }, data: { clienteNome: nome } });
   }
-  await prisma.mensagem.create({ data: { conversaId: conversa.id, autor: 'cliente', texto } });
+  await prisma.mensagem.create({
+    data: {
+      conversaId: conversa.id, autor: 'cliente', texto, tipo, waId: waId || null,
+      midiaArquivo: (midia && midia.arquivo) || null, midiaMime: (midia && midia.mime) || null, midiaNome: (midia && midia.nome) || null,
+    },
+  });
+  const agora = new Date();
+  const rotulo = tipo !== 'texto' ? ROTULO_MIDIA[tipo] || '📎 Arquivo' : '';
   await prisma.conversa.update({
     where: { id: conversa.id },
-    data: { ultimaPrevia: previa(texto), ultimaMensagemEm: new Date(), naoLidas: { increment: 1 }, status: 'aberta' },
+    data: {
+      ultimaPrevia: previa(tipo === 'texto' ? texto : rotulo + (texto && tipo !== 'audio' ? ' ' + texto : '')),
+      ultimaMensagemEm: agora, ultimaMsgClienteEm: agora, naoLidas: { increment: 1 }, status: 'aberta',
+    },
   });
+
+  // Mídia sem texto (foto sem legenda, figurinha, localização...): fica na caixa
+  // de entrada pro humano ver, mas a IA não tem o que responder. Áudio chega aqui
+  // já TRANSCRITO em `texto`, então segue o fluxo normal.
+  if (!texto) return { conversaId: conversa.id, respostaIA: null };
 
   // (1) OPT-OUT: pausa a IA nesta conversa e chama um humano.
   if (ehOptOut(texto)) {
@@ -501,6 +550,9 @@ async function abrirConversa(barbeariaId, conversaId) {
     conversa.naoLidas = 0;
   }
   const mensagens = await prisma.mensagem.findMany({ where: { conversaId: conversa.id }, orderBy: { criadoEm: 'asc' } });
+  // Tiques azuis pro cliente: marca como lida a última mensagem dele.
+  const ultimaDoCliente = [...mensagens].reverse().find((m) => m.autor === 'cliente' && m.waId);
+  if (ultimaDoCliente) whatsapp.marcarLida(barbeariaId, ultimaDoCliente.waId).catch(() => {});
   return { conversa, mensagens };
 }
 
@@ -509,6 +561,27 @@ async function responderComoHumano(barbeariaId, conversaId, texto) {
   if (!conversa || !texto) return null;
   await emitir(conversa, 'humano', texto);
   return conversa;
+}
+
+// Humano envia MÍDIA pelo painel (foto, vídeo, áudio gravado, documento).
+async function enviarMidiaComoHumano(barbeariaId, conversaId, { buffer, mime, nome, legenda }) {
+  const conversa = await prisma.conversa.findFirst({ where: { id: Number(conversaId), barbeariaId } });
+  if (!conversa || !buffer) return null;
+  const tipo = waMidia.tipoDoMime(mime);
+  const arquivo = waMidia.salvar(buffer, mime, nome);
+  const texto = semSurrogatesSoltos(String(legenda || '').slice(0, 1024));
+  const msg = await prisma.mensagem.create({
+    data: { conversaId: conversa.id, autor: 'humano', texto, tipo, midiaArquivo: arquivo, midiaMime: mime, midiaNome: nome || null },
+  });
+  await prisma.conversa.update({
+    where: { id: conversa.id },
+    data: { ultimaPrevia: previa(ROTULO_MIDIA[tipo] + (texto ? ' ' + texto : '')), ultimaMensagemEm: new Date() },
+  });
+  const r = await whatsapp.enviarMidia(barbeariaId, conversa.clienteTelefone, {
+    tipo: waMidia.TIPO_API[tipo], buffer, mime: String(mime).split(';')[0], nome, legenda: texto,
+  });
+  await registrarEnvio(msg.id, r);
+  return { conversa, ok: !!(r && r.ok), erro: r && r.erro };
 }
 
 async function definirIA(barbeariaId, conversaId, ativa) {
@@ -533,7 +606,20 @@ async function mensagensApos(barbeariaId, conversaId, aposId) {
   if (msgs.length && conversa.naoLidas > 0) {
     await prisma.conversa.update({ where: { id: conversa.id }, data: { naoLidas: 0 } });
   }
+  const novaDoCliente = [...msgs].reverse().find((m) => m.autor === 'cliente' && m.waId);
+  if (novaDoCliente) whatsapp.marcarLida(barbeariaId, novaDoCliente.waId).catch(() => {});
   return { conversa, msgs };
+}
+
+// { mensagemId: status } das últimas mensagens de saída (tiques no polling).
+async function statusRecentes(conversaId) {
+  const ms = await prisma.mensagem.findMany({
+    where: { conversaId, autor: { not: 'cliente' } },
+    orderBy: { id: 'desc' }, take: 40, select: { id: true, statusEnvio: true },
+  });
+  const out = {};
+  ms.forEach((m) => { out[m.id] = m.statusEnvio || null; });
+  return out;
 }
 
 // LGPD: exclui uma conversa e todas as suas mensagens (direito de exclusão).
@@ -554,6 +640,10 @@ async function expirarConversasAntigas() {
 
 module.exports = {
   receberMensagemCliente,
+  enviarMidiaComoHumano,
+  statusRecentes,
+  atualizarStatusEnvio,
+  ROTULO_MIDIA,
   listarConversas,
   abrirConversa,
   mensagensApos,

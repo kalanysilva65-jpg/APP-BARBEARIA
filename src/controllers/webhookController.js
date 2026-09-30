@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const atendimento = require('../services/atendimento');
 const whatsapp = require('../services/whatsapp');
 const transcricao = require('../services/transcricao');
+const waMidia = require('../services/waMidia');
 
 // GET: a Meta manda hub.mode/hub.verify_token/hub.challenge. Se o token bate com
 // o nosso WHATSAPP_VERIFY_TOKEN, devolvemos o challenge (texto puro) e ela ativa.
@@ -58,7 +59,7 @@ async function receber(req, res) {
     if (body.object !== 'whatsapp_business_account') return;
     for (const entry of body.entry || []) {
       for (const ch of entry.changes || []) {
-        if (ch.field !== 'messages') continue; // ignora 'statuses' (entregue/lido) etc.
+        if (ch.field !== 'messages') continue; // mensagens E status (entregue/lido) vêm neste campo
         const value = ch.value || {};
         const pnid = value.metadata && value.metadata.phone_number_id;
         const barbeariaId = await whatsapp.barbeariaPorPhoneNumberId(pnid);
@@ -69,21 +70,13 @@ async function receber(req, res) {
         const nomeContato =
           (value.contacts && value.contacts[0] && value.contacts[0].profile && value.contacts[0].profile.name) || null;
         for (const msg of value.messages || []) {
-          if (msg.type === 'text' && msg.text) {
-            atendimento
-              .receberMensagemCliente(barbeariaId, { telefone: msg.from, nome: nomeContato, texto: msg.text.body })
-              .catch((e) => console.error('[webhook] processar mensagem:', e.message));
-          } else if (msg.type === 'audio' && msg.audio && msg.audio.id) {
-            // Áudio de voz: baixa, transcreve (Groq/Whisper) e trata como texto.
-            // Feito em segundo plano pra não segurar o 200 pra Meta.
-            processarAudio(barbeariaId, msg, nomeContato)
-              .catch((e) => console.error('[webhook] processar áudio:', e.message));
-          }
-          // outros tipos (imagem, documento, etc.) por ora são ignorados
+          processarMensagem(barbeariaId, msg, nomeContato)
+            .catch((e) => console.error('[webhook] processar mensagem (' + msg.type + '):', e.message));
         }
-        // Status de entrega (sent/delivered/read/failed). Logamos só as FALHAS,
-        // que trazem o motivo (ex.: número inválido, fora da janela de 24h).
+        // Status de entrega (sent/delivered/read/failed): viram os tiques no
+        // painel. As FALHAS também vão pro log, com o motivo.
         for (const st of value.statuses || []) {
+          atendimento.atualizarStatusEnvio(st.id, st.status).catch(() => {});
           if (st.status === 'failed') {
             console.log('[webhook] entrega FALHOU para', st.recipient_id, '-', JSON.stringify(st.errors || []));
           }
@@ -95,21 +88,56 @@ async function receber(req, res) {
   }
 }
 
-// Baixa o áudio de voz, transcreve e manda o TEXTO pro fluxo normal. Se não der
-// (sem chave, falha de download/transcrição), pede educadamente o texto — sem IA.
-async function processarAudio(barbeariaId, msg, nomeContato) {
-  const midia = await whatsapp.baixarMidia(barbeariaId, msg.audio.id);
-  const texto = midia ? await transcricao.transcrever(midia.buffer, midia.mimeType) : null;
-  if (!texto) {
-    await whatsapp.enviarTexto(
-      barbeariaId,
-      msg.from,
-      'Recebi seu áudio 🎧 mas não consegui entender direito agora. Pode me mandar por texto, por favor?'
-    ).catch(() => {});
-    return;
+// Tipos de mídia da Cloud API -> nosso tipo.
+const TIPO_NOSSO = { image: 'imagem', video: 'video', audio: 'audio', document: 'documento', sticker: 'figurinha' };
+
+// Uma mensagem recebida, de qualquer tipo ("clone do WhatsApp", 2026-09-30).
+// Texto e respostas de botão seguem direto; mídia é baixada e guardada (fica
+// visível no painel); áudio também é TRANSCRITO pra IA entender.
+async function processarMensagem(barbeariaId, msg, nomeContato) {
+  const base = { telefone: msg.from, nome: nomeContato, waId: msg.id };
+
+  if (msg.type === 'text' && msg.text) {
+    return atendimento.receberMensagemCliente(barbeariaId, { ...base, texto: msg.text.body });
   }
-  console.log('[webhook] áudio transcrito:', JSON.stringify(texto.slice(0, 80)));
-  await atendimento.receberMensagemCliente(barbeariaId, { telefone: msg.from, nome: nomeContato, texto });
+  if (msg.type === 'button' && msg.button) {
+    return atendimento.receberMensagemCliente(barbeariaId, { ...base, texto: msg.button.text || msg.button.payload || '' });
+  }
+  if (msg.type === 'interactive' && msg.interactive) {
+    const r = msg.interactive.button_reply || msg.interactive.list_reply || {};
+    return atendimento.receberMensagemCliente(barbeariaId, { ...base, texto: r.title || '' });
+  }
+  if (msg.type === 'location' && msg.location) {
+    const l = msg.location;
+    const texto = [l.name, l.address].filter(Boolean).join(' — ') +
+      (l.latitude != null ? (l.name || l.address ? '\n' : '') + 'https://maps.google.com/?q=' + l.latitude + ',' + l.longitude : '');
+    return atendimento.receberMensagemCliente(barbeariaId, { ...base, tipo: 'localizacao', texto: texto.trim() || '📍 Localização' });
+  }
+  if (msg.type === 'contacts' && msg.contacts) {
+    const texto = msg.contacts.map((ct) => {
+      const nome = (ct.name && (ct.name.formatted_name || ct.name.first_name)) || 'Contato';
+      const tels = (ct.phones || []).map((p) => p.phone || p.wa_id).filter(Boolean).join(', ');
+      return nome + (tels ? ': ' + tels : '');
+    }).join('\n');
+    return atendimento.receberMensagemCliente(barbeariaId, { ...base, tipo: 'contato', texto });
+  }
+
+  const tipo = TIPO_NOSSO[msg.type];
+  const dado = tipo && msg[msg.type];
+  if (!dado || !dado.id) return; // reação, pedido, etc.: ignorados por ora
+
+  const midia = await whatsapp.baixarMidia(barbeariaId, dado.id);
+  const mime = (midia && midia.mimeType) || dado.mime_type || null;
+  const arquivo = midia ? waMidia.salvar(midia.buffer, mime, dado.filename) : null;
+  const infoMidia = { arquivo, mime, nome: dado.filename || null };
+
+  if (tipo === 'audio') {
+    const texto = midia ? await transcricao.transcrever(midia.buffer, mime) : null;
+    if (texto) console.log('[webhook] áudio transcrito:', JSON.stringify(texto.slice(0, 80)));
+    // Sem transcrição o áudio fica na caixa de entrada pra alguém ouvir.
+    return atendimento.receberMensagemCliente(barbeariaId, { ...base, tipo, midia: infoMidia, texto: texto || '' });
+  }
+  return atendimento.receberMensagemCliente(barbeariaId, { ...base, tipo, midia: infoMidia, texto: dado.caption || '' });
 }
 
 module.exports = { verificar, receber };

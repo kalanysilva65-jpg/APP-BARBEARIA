@@ -34,6 +34,16 @@ async function barbeariaPorPhoneNumberId(pnid) {
   return c ? c.barbeariaId : null;
 }
 
+// wamid da mensagem enviada (liga os status entregue/lida do webhook).
+async function waIdDaResposta(r) {
+  try {
+    const j = await r.json();
+    return (j && j.messages && j.messages[0] && j.messages[0].id) || null;
+  } catch (_) {
+    return null;
+  }
+}
+
 // Envia uma mensagem de TEXTO para um número (formato internacional, só dígitos).
 // Engole as próprias falhas (loga) — um erro de envio não pode derrubar o fluxo.
 async function enviarTexto(barbeariaId, para, texto) {
@@ -59,7 +69,7 @@ async function enviarTexto(barbeariaId, para, texto) {
       console.log('[whatsapp] envio falhou', r.status, errTxt.slice(0, 300));
       return { ok: false, status: r.status };
     }
-    return { ok: true };
+    return { ok: true, waId: await waIdDaResposta(r) };
   } catch (e) {
     console.log('[whatsapp] erro de rede no envio:', e.message);
     return { ok: false, erro: e.message };
@@ -138,4 +148,58 @@ async function baixarMidia(barbeariaId, mediaId) {
   }
 }
 
-module.exports = { credenciais, barbeariaPorPhoneNumberId, enviarTexto, enviarTemplate, baixarMidia };
+// Envia MÍDIA (imagem, vídeo, áudio, documento). Dois passos: sobe o arquivo em
+// /{phone_number_id}/media (multipart) e manda a mensagem apontando o id.
+// Limites da Meta: imagem 5 MB, áudio/vídeo 16 MB, documento 100 MB.
+async function enviarMidia(barbeariaId, para, { tipo, buffer, mime, nome, legenda }) {
+  const { phoneNumberId, token } = await credenciais(barbeariaId);
+  if (!phoneNumberId || !token) return { ok: false, motivo: 'sem_credenciais' };
+  try {
+    const form = new FormData();
+    form.append('messaging_product', 'whatsapp');
+    form.append('type', mime);
+    form.append('file', new Blob([buffer], { type: mime }), nome || 'arquivo');
+    const up = await fetch(`https://graph.facebook.com/${API_VERSION}/${phoneNumberId}/media`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const uj = await up.json().catch(() => ({}));
+    if (!up.ok || !uj.id) {
+      console.log('[whatsapp] upload de mídia falhou', up.status, JSON.stringify(uj).slice(0, 300));
+      return { ok: false, status: up.status, erro: (uj.error && uj.error.message) || 'upload falhou' };
+    }
+    const corpo = { id: uj.id };
+    if (legenda && tipo !== 'audio') corpo.caption = String(legenda).slice(0, 1024);
+    if (tipo === 'document' && nome) corpo.filename = nome;
+    const r = await fetch(`https://graph.facebook.com/${API_VERSION}/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to: numeroParaEnvio(para), type: tipo, [tipo]: corpo }),
+    });
+    if (!r.ok) {
+      const errTxt = await r.text().catch(() => '');
+      console.log('[whatsapp] envio de mídia falhou', r.status, errTxt.slice(0, 300));
+      return { ok: false, status: r.status };
+    }
+    return { ok: true, waId: await waIdDaResposta(r) };
+  } catch (e) {
+    console.log('[whatsapp] erro ao enviar mídia:', e.message);
+    return { ok: false, erro: e.message };
+  }
+}
+
+// Marca como LIDA uma mensagem recebida (o cliente vê os tiques azuis).
+async function marcarLida(barbeariaId, waId) {
+  const { phoneNumberId, token } = await credenciais(barbeariaId);
+  if (!phoneNumberId || !token || !waId) return;
+  try {
+    await fetch(`https://graph.facebook.com/${API_VERSION}/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', status: 'read', message_id: waId }),
+    });
+  } catch (_) { /* best-effort */ }
+}
+
+module.exports = { credenciais, barbeariaPorPhoneNumberId, enviarTexto, enviarTemplate, baixarMidia, enviarMidia, marcarLida };
