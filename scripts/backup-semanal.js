@@ -156,11 +156,12 @@ function supa() {
   const url = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
   const chave = process.env.SUPABASE_SERVICE_KEY || '';
   if (!url || !chave) return null;
-  // Aceita os DOIS formatos de chave do Supabase: a antiga (JWT "eyJ...",
-  // service_role) vai no apikey E no Authorization; a nova ("sb_secret_...")
-  // não é JWT — vai SÓ no apikey (no Authorization dá "Invalid Compact JWS").
-  const ehJwt = chave.split('.').length === 3;
-  const h = ehJwt ? { Authorization: 'Bearer ' + chave, apikey: chave } : { apikey: chave };
+  // Use a chave service_role (JWT "eyJ...", em API Keys → Legacy). O Storage
+  // exige o Authorization — sem ele: "headers must have required property".
+  if (chave.split('.').length !== 3) {
+    console.log('  AVISO: SUPABASE_SERVICE_KEY não parece a service_role (JWT "eyJ..."). Use a da aba API Keys → Legacy.');
+  }
+  const h = { Authorization: 'Bearer ' + chave, apikey: chave };
   return {
     async enviar(caminho, buf) {
       const r = await fetch(url + '/storage/v1/object/' + BUCKET + '/' + caminho, {
