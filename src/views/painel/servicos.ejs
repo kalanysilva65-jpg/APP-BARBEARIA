@@ -95,7 +95,7 @@
       </div>
       <div class="sv-campo">
         <label class="sv-campo-rot" for="descricao-novo">Descrição</label>
-        <textarea class="sv-campo-input" id="descricao-novo" name="descricao" rows="2" maxlength="80" placeholder="O que está incluso"></textarea>
+        <textarea class="sv-campo-input" id="descricao-novo" name="descricao" rows="4" maxlength="1000" placeholder="O que está incluso"></textarea>
       </div>
       <div class="sv-campo">
         <label class="sv-campo-rot" for="foto-novo">Foto</label>
@@ -151,7 +151,7 @@
         </div>
         <div class="sv-campo">
           <label class="sv-campo-rot" for="descricao-<%= s.id %>">Descrição</label>
-          <textarea class="sv-campo-input" id="descricao-<%= s.id %>" name="descricao" rows="2" maxlength="80"><%= s.descricao || '' %></textarea>
+          <textarea class="sv-campo-input" id="descricao-<%= s.id %>" name="descricao" rows="4" maxlength="1000"><%= s.descricao || '' %></textarea>
         </div>
         <div class="sv-campo">
           <label class="sv-campo-rot" for="foto-<%= s.id %>">Foto</label>
