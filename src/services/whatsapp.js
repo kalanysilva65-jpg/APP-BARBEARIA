@@ -19,11 +19,14 @@ function numeroParaEnvio(valor) {
 // Credenciais de uma barbearia (ou nulos se ainda não configurou).
 async function credenciais(barbeariaId) {
   const cfgs = await prisma.configuracao.findMany({
-    where: { barbeariaId, chave: { in: ['whatsapp_phone_number_id', 'whatsapp_token'] } },
+    where: { barbeariaId, chave: { in: ['whatsapp_phone_number_id', 'whatsapp_token', 'whatsapp_modo'] } },
   });
   const mapa = {};
   cfgs.forEach((c) => { mapa[c.chave] = c.valor; });
-  return { phoneNumberId: mapa.whatsapp_phone_number_id || null, token: mapa.whatsapp_token || null };
+  // Número da conta de WhatsApp da CORTAVO (services/waNumeroCortavo.js): o
+  // token é o do System User da Cortavo, no .env — não fica copiado por barbearia.
+  const token = mapa.whatsapp_modo === 'cortavo' ? process.env.WHATSAPP_SYSTEM_TOKEN || null : mapa.whatsapp_token || null;
+  return { phoneNumberId: mapa.whatsapp_phone_number_id || null, token };
 }
 
 // Descobre de qual barbearia é um phone_number_id recebido no webhook.

@@ -172,6 +172,10 @@ router.post('/secretaria/teste/mensagem', exigeAdmin, limiteIA, secretariaContro
 // Conectar o WhatsApp da barbearia por Embedded Signup (coexistência) — só admin.
 router.post('/secretaria/whatsapp/conectar', exigeAdmin, secretariaController.conectarWhatsApp);
 router.post('/secretaria/whatsapp/desconectar', exigeAdmin, secretariaController.desconectarWhatsApp);
+// Número registrado pela conta de WhatsApp da Cortavo (cobrança no cartão da Cortavo).
+router.post('/secretaria/whatsapp/numero/codigo', exigeAdmin, secretariaController.pedirCodigoNumero);
+router.post('/secretaria/whatsapp/numero/reenviar', exigeAdmin, secretariaController.reenviarCodigoNumero);
+router.post('/secretaria/whatsapp/numero/verificar', exigeAdmin, secretariaController.verificarCodigoNumero);
 // Pausar/reativar a IA por barbearia (mantém o número conectado).
 router.post('/secretaria/ia/pausar', exigeAdmin, secretariaController.pausarIA);
 

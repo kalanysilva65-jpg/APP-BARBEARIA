@@ -125,10 +125,15 @@ async function conectar(barbeariaId, { code, phoneNumberId, wabaId, coexistencia
 // Status da conexão (para a tela): conectado? qual número?
 async function statusConexao(barbeariaId) {
   const regs = await prisma.configuracao.findMany({
-    where: { barbeariaId, chave: { in: ['whatsapp_phone_number_id', 'whatsapp_token', 'whatsapp_numero'] } },
+    where: { barbeariaId, chave: { in: ['whatsapp_phone_number_id', 'whatsapp_token', 'whatsapp_numero', 'whatsapp_modo'] } },
   });
   const m = Object.fromEntries(regs.map((r) => [r.chave, r.valor]));
-  return { conectado: !!(m.whatsapp_phone_number_id && m.whatsapp_token), numero: m.whatsapp_numero || null };
+  const modoCortavo = m.whatsapp_modo === 'cortavo';
+  return {
+    conectado: !!(m.whatsapp_phone_number_id && (m.whatsapp_token || (modoCortavo && process.env.WHATSAPP_SYSTEM_TOKEN))),
+    numero: m.whatsapp_numero || null,
+    modoCortavo,
+  };
 }
 
 // Remove as credenciais (a secretária para de atender no número).
@@ -136,7 +141,7 @@ async function desconectar(barbeariaId) {
   await prisma.configuracao.deleteMany({
     where: {
       barbeariaId,
-      chave: { in: ['whatsapp_phone_number_id', 'whatsapp_token', 'whatsapp_waba_id', 'whatsapp_pin', 'whatsapp_numero'] },
+      chave: { in: ['whatsapp_phone_number_id', 'whatsapp_token', 'whatsapp_waba_id', 'whatsapp_pin', 'whatsapp_numero', 'whatsapp_modo'] },
     },
   });
 }

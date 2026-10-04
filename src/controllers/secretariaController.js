@@ -3,6 +3,7 @@
 // Tudo só admin.
 const secretaria = require('../services/secretaria');
 const onboard = require('../services/whatsappOnboard');
+const numeroCortavo = require('../services/waNumeroCortavo');
 const prisma = require('../config/db');
 
 // Chaves de configuração da secretária (na tabela Configuracao, por barbearia).
@@ -86,6 +87,10 @@ async function verConfig(req, res) {
       lembreteAntecedencia: cfg.lembrete_antecedencia_min || '60',
     },
     whatsapp,
+    numeroCortavo: {
+      disponivel: numeroCortavo.disponivel(),
+      nomeSugerido: (res.locals.barbeariaAtual && res.locals.barbeariaAtual.nome) || '',
+    },
     iaPausada: cfg.secretaria_pausada === '1',
     es: {
       disponivel: onboard.configurado(),
@@ -134,6 +139,48 @@ async function conectarWhatsApp(req, res) {
   }
 }
 
+// POST /painel/secretaria/whatsapp/numero/codigo — passo 1 do caminho "pela Cortavo":
+// cadastra o número e manda o código (SMS ou ligação). Guarda o id na sessão.
+async function pedirCodigoNumero(req, res) {
+  try {
+    const r = await numeroCortavo.solicitarCodigo({
+      numero: req.body.numero, nomeExibicao: req.body.nomeExibicao, metodo: req.body.metodo,
+    });
+    req.session.waPendente = { phoneNumberId: r.phoneNumberId, exibicao: r.exibicao, barbeariaId: req.barbeariaId };
+    res.json({ ok: true, exibicao: r.exibicao });
+  } catch (e) {
+    console.error('[wa-numero] pedir código falhou:', e.message);
+    res.status(400).json({ erro: e.message });
+  }
+}
+
+// POST /painel/secretaria/whatsapp/numero/reenviar — outro código (SMS/ligação).
+async function reenviarCodigoNumero(req, res) {
+  const p = req.session.waPendente;
+  if (!p || p.barbeariaId !== req.barbeariaId) return res.status(400).json({ erro: 'Comece de novo: informe o número.' });
+  try {
+    await numeroCortavo.reenviarCodigo(p.phoneNumberId, req.body.metodo);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(400).json({ erro: e.message });
+  }
+}
+
+// POST /painel/secretaria/whatsapp/numero/verificar — passo 2: confere o código
+// e liga o número na barbearia.
+async function verificarCodigoNumero(req, res) {
+  const p = req.session.waPendente;
+  if (!p || p.barbeariaId !== req.barbeariaId) return res.status(400).json({ erro: 'Comece de novo: informe o número.' });
+  try {
+    const r = await numeroCortavo.verificarEAtivar(req.barbeariaId, p.phoneNumberId, req.body.codigo, p.exibicao);
+    delete req.session.waPendente;
+    res.json({ ok: true, numero: r.numero });
+  } catch (e) {
+    console.error('[wa-numero] verificar falhou:', e.message);
+    res.status(400).json({ erro: e.message });
+  }
+}
+
 // POST /painel/secretaria/whatsapp/desconectar — remove as credenciais.
 async function desconectarWhatsApp(req, res) {
   await onboard.desconectar(req.barbeariaId);
@@ -172,4 +219,4 @@ async function salvarConfig(req, res) {
   res.redirect('/painel/secretaria');
 }
 
-module.exports = { verConfig, salvarConfig, verTeste, mensagemTeste, conectarWhatsApp, desconectarWhatsApp, pausarIA };
+module.exports = { pedirCodigoNumero, reenviarCodigoNumero, verificarCodigoNumero, verConfig, salvarConfig, verTeste, mensagemTeste, conectarWhatsApp, desconectarWhatsApp, pausarIA };
