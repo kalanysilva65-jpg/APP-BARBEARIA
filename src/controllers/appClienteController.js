@@ -39,6 +39,9 @@ async function home(req, res) {
   const barbearias = await prisma.barbearia.findMany({
     where: {
       ativo: true,
+      // A "Barbearia Demonstração" (dados fictícios) tem agendamento público
+      // aberto pelo subdomínio, mas NÃO entra na lista de barbearias reais.
+      slug: { not: 'demo' },
       ...(termo ? { nome: { contains: termo } } : {}),
     },
     orderBy: { nome: 'asc' },

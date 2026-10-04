@@ -16,6 +16,11 @@
 //
 // Por isso: uma barbearia separada, com gente inventada.
 //
+// (ATUALIZADO 2026-10-04) A demo agora é `ativo: true`: o agendamento público
+// em https://demo.cortavo.com.br/agendar abre. Ela continua FORA da lista do app
+// do cliente (appClienteController filtra slug "demo"). O texto abaixo é o
+// histórico de quando ela nascia oculta:
+//
 // A BARBEARIA NASCE `ativo: false` — DE PROPÓSITO
 // Esse campo NÃO bloqueia o login no painel (o authController só olha
 // `usuario.ativo`), mas bloqueia duas coisas que precisam ficar bloqueadas:
@@ -100,11 +105,11 @@ async function remover() {
 async function criar() {
   const barbearia = await prisma.barbearia.upsert({
     where: { slug: SLUG },
-    update: { ativo: false },
+    update: { ativo: true },
     create: {
       nome: 'Barbearia Demonstração',
       slug: SLUG,
-      ativo: false,
+      ativo: true,
       endereco: 'Rua das Tesouras, 100 — Centro',
     },
   });
@@ -605,7 +610,7 @@ async function criar() {
 
   const real = (c) => 'R$ ' + (c / 100).toFixed(2).replace('.', ',');
   console.log('');
-  console.log('  Barbearia .. ' + barbearia.nome + '  (slug "' + SLUG + '", oculta do app do cliente)');
+  console.log('  Barbearia .. ' + barbearia.nome + '  (slug "' + SLUG + '", agendamento público em https://demo.cortavo.com.br/agendar; fora da lista do app)');
   const nProdutos = Object.values(servicos).filter((s) => s.ehProduto).length;
   console.log(
     '  Conteúdo ... ' + historico.length + ' atendimentos concluídos em ~30 dias (' + real(faturado) + '), ' +
