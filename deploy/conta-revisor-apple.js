@@ -34,6 +34,8 @@
 // não muda o login que está no formulário de revisão (trocar quebraria uma
 // revisão em andamento). Popula ~1 mês de atendimentos na barbearia demo.
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const prisma = require('../src/config/db');
@@ -111,6 +113,19 @@ async function criar() {
   // Zera o conteúdo antes de repovoar: rodar duas vezes não pode empilhar dados.
   // Ordem importa por causa das FKs (ex.: ClientePlano->Plano é Restrict; caixa
   // referencia agendamento/categoria). NÃO apaga usuários (o revisor sobrevive).
+  // Conversas: apaga também as fotos da rodada anterior (arquivos em wa-midia).
+  try {
+    const waMidiaLimpa = require('../src/services/waMidia');
+    const antigas = await prisma.mensagem.findMany({
+      where: { conversa: { barbeariaId: bid }, midiaArquivo: { not: null } },
+      select: { midiaArquivo: true },
+    });
+    for (const m of antigas) {
+      const arq = waMidiaLimpa.caminho(m.midiaArquivo);
+      if (arq && fs.existsSync(arq)) fs.unlinkSync(arq);
+    }
+  } catch (_) { /* limpeza é best-effort */ }
+  await prisma.conversa.deleteMany({ where: { barbeariaId: bid } }); // + mensagens (cascata)
   await prisma.caixa.deleteMany({ where: { barbeariaId: bid } });
   await prisma.clientePlano.deleteMany({ where: { barbeariaId: bid } });
   await prisma.fidelidadeResgate.deleteMany({ where: { barbeariaId: bid } });
@@ -478,6 +493,115 @@ async function criar() {
       { barbeariaId: bid, usuarioId: carlos.id, metrica: 'faturamento', alvo: 400000 },
     ],
   });
+
+  // ---- Novidades: descrições, preço por barbeiro e conversas de WhatsApp ----
+  // Descrições mais completas (o limite agora é 1000 caracteres; aparecem
+  // escondidas no agendamento público e abrem ao selecionar o serviço).
+  const descricoes = {
+    'Corte social': 'Corte na máquina e na tesoura, do jeito que você pedir, com acabamento na navalha e finalização com pomada. Inclui lavagem rápida e massagem no couro cabeludo. Ideal para manter o visual alinhado toda semana.',
+    'Barba completa': 'Barba desenhada na navalha com toalha quente, esfoliação leve e hidratação com óleo. Relaxa a pele, abre os poros e deixa o acabamento muito mais duradouro.',
+    'Corte + barba': 'O combo completo: corte social e barba completa no mesmo horário, com preço especial. Você sai com o visual inteiro resolvido em uma hora.',
+    'Hidratação capilar': 'Máscara de hidratação profunda com massagem e vapor. Devolve brilho e maciez, ótima para cabelos ressecados por sol, piscina ou química.',
+  };
+  for (const [nome, descricao] of Object.entries(descricoes)) {
+    if (servicos[nome]) await prisma.servico.update({ where: { id: servicos[nome].id }, data: { descricao } });
+  }
+  // Descrição dos profissionais (aparece no card da escolha de barbeiro).
+  await prisma.usuario.update({ where: { id: carlos.id }, data: { descricao: 'Especialista em degradê e barba desenhada. 8 anos de experiência.' } });
+  await prisma.usuario.update({ where: { id: revisor.id }, data: { descricao: 'Barbeiro e dono. Cortes clássicos, tesoura e atendimento sem pressa.' } });
+  // Preço por barbeiro: o Carlos (mais experiente) cobra um pouco mais.
+  if (servicos['Corte social'] && servicos['Barba completa']) {
+    await prisma.servicoPrecoBarbeiro.createMany({
+      data: [
+        { barbeariaId: bid, servicoId: servicos['Corte social'].id, usuarioId: carlos.id, valor: 5500 },
+        { barbeariaId: bid, servicoId: servicos['Barba completa'].id, usuarioId: carlos.id, valor: 4000 },
+      ],
+    });
+  }
+
+  // Conversas de WhatsApp (caixa de entrada): mostram o atendimento da IA, uma
+  // conversa assumida pelo atendente, mídia, tiques e a janela de 24h vencida.
+  let imagemDemo = null;
+  try {
+    const waMidia = require('../src/services/waMidia');
+    const png = fs.readFileSync(path.join(__dirname, '..', 'public', 'apple-touch-icon.png'));
+    imagemDemo = waMidia.salvar(png, 'image/png');
+  } catch (_) { /* sem imagem: a conversa segue só com texto */ }
+
+  const minAtras = (m) => new Date(Date.now() - m * 60000);
+  const conversasDemo = [
+    {
+      cliente: clientes[0], ia: true, naoLidas: 0,
+      msgs: [
+        [95, 'cliente', 'Boa tarde! Tem horário amanhã pra corte e barba?'],
+        [94, 'ia', 'Boa tarde, Rafael! 😊 Amanhã tenho 10:00, 14:30 e 16:00 com o Carlos. Qual prefere?', 'lida'],
+        [90, 'cliente', '14:30 tá ótimo'],
+        [89, 'ia', 'Perfeito! Agendei Corte + barba amanhã às 14:30 com o Carlos. Qualquer coisa é só avisar por aqui. ✂️', 'lida'],
+        [88, 'cliente', 'Valeu!'],
+      ],
+    },
+    {
+      cliente: clientes[1], ia: true, naoLidas: 1,
+      msgs: [
+        [40, 'cliente', 'Oi, onde vocês ficam?'],
+        [39, 'ia', 'Oi, Tiago! Ficamos na Rua das Tesouras, 100 — Centro. Atendemos de terça a sábado, das 9h às 19h. 😉', 'entregue'],
+        [12, 'cliente', 'Consegue mandar a localização?'],
+        [11, 'ia', 'Claro! Aqui está: https://maps.google.com/?q=-23.5505,-46.6333', 'entregue'],
+        [3, 'cliente', 'Chego em 15 min, pode ser?'],
+      ],
+    },
+    {
+      cliente: clientes[2], ia: false, naoLidas: 0,
+      msgs: [
+        [180, 'cliente', 'Queria fazer um corte parecido com esse, dá pra fazer?', null, 'imagem'],
+        [178, 'ia', 'Que corte bonito! Vou chamar um dos barbeiros para confirmar os detalhes com você, um instante. 🙂', 'lida'],
+        [170, 'humano', 'Oi Vinícius! Dá sim, é um degradê médio com a parte de cima mais longa. Quer vir hoje às 17h?', 'lida'],
+        [165, 'cliente', 'Pode ser! Fecha 17h'],
+        [160, 'humano', 'Fechado, te espero. 👍', 'lida'],
+      ],
+    },
+    {
+      cliente: clientes[3], ia: false, naoLidas: 0, antigo: true,
+      msgs: [
+        [3200, 'cliente', 'Bom dia, vocês fazem pigmentação de barba?'],
+        [3195, 'humano', 'Bom dia, Otávio! Fazemos sim. Valor a partir de R$ 60. Quer agendar?', 'entregue'],
+      ],
+    },
+    {
+      cliente: clientes[4], ia: true, naoLidas: 0,
+      msgs: [
+        [20, 'cliente', 'Quanto custa o corte e a barba?'],
+        [19, 'ia', 'O combo Corte + barba sai por R$ 70,00 (cerca de 1h). Corte social: R$ 45,00 e barba completa: R$ 35,00. Quer que eu veja um horário? 😊', 'lida'],
+      ],
+    },
+  ];
+  for (const c of conversasDemo) {
+    const mensagens = c.msgs.map(([min, autor, texto, status, tipo]) => ({
+      autor,
+      texto,
+      tipo: tipo || 'texto',
+      midiaArquivo: tipo === 'imagem' ? imagemDemo : null,
+      midiaMime: tipo === 'imagem' && imagemDemo ? 'image/png' : null,
+      statusEnvio: autor === 'cliente' ? null : status || 'enviada',
+      criadoEm: minAtras(min),
+    }));
+    const ultima = c.msgs[c.msgs.length - 1];
+    const ultimaCliente = [...c.msgs].reverse().find((m) => m[1] === 'cliente');
+    const rotulo = ultima[4] === 'imagem' ? '📷 Foto' : ultima[2];
+    await prisma.conversa.create({
+      data: {
+        barbeariaId: bid,
+        clienteTelefone: c.cliente.telefone,
+        clienteNome: c.cliente.nome,
+        iaAtiva: c.ia,
+        naoLidas: c.naoLidas,
+        ultimaPrevia: String(rotulo).slice(0, 80),
+        ultimaMensagemEm: minAtras(ultima[0]),
+        ultimaMsgClienteEm: ultimaCliente ? minAtras(ultimaCliente[0]) : null,
+        mensagens: { create: mensagens },
+      },
+    });
+  }
 
   const real = (c) => 'R$ ' + (c / 100).toFixed(2).replace('.', ',');
   console.log('');
