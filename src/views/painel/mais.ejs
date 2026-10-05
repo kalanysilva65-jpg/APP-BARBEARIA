@@ -39,6 +39,11 @@
     <div class="sv-pf-funcao"><%= cargo %></div>
     <div class="sv-pf-dica">Toque no círculo para trocar a foto</div>
   </form>
+  <% if (usuarioFotoUrl) { %>
+    <form method="POST" action="/painel/perfil/foto/remover" class="sv-pf-remover">
+      <button type="submit" class="sv-foto-rem" onclick="return confirm('Remover a sua foto de perfil?')">Remover foto</button>
+    </form>
+  <% } %>
 
   <div class="sv-pf-secao sv-reveal sv-pf-p3">
     <div class="sv-pf-secao-tit">Conta</div>

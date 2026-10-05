@@ -832,3 +832,9 @@ html:has(> body.pg-sv)::-webkit-scrollbar,
    página do barbeiro aberta na Equipe (pedido do dono, 2026-09-30). */
 .sem-nav .sv-nav,
 .pg-sv:has(.sv-eq-pg:not([hidden])) .sv-nav { display: none !important; }
+
+/* "Remover foto" (perfil, barbeiro, serviço, produto) */
+.sv-foto-rem { display: inline-block; margin-top: 8px; padding: 0; border: 0; background: none; color: #b91c1c; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline; }
+.sv-foto-rem:active { opacity: .6; }
+.sv-foto-rem--x { margin: 0 0 0 4px; font-size: 20px; line-height: 1; text-decoration: none; vertical-align: middle; }
+.sv-pf-remover { display: flex; justify-content: center; margin: -4px 0 8px; }

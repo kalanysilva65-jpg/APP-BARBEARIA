@@ -62,5 +62,5 @@ function filtro(req, file, cb) {
 module.exports = multer({
   storage,
   fileFilter: filtro,
-  limits: { fileSize: 4 * 1024 * 1024 }, // 4 MB
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8 MB (o navegador já reduz a foto antes de enviar)
 });

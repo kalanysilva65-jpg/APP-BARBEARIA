@@ -100,7 +100,7 @@
       <div class="sv-campo">
         <label class="sv-campo-rot" for="foto-novo">Foto</label>
         <input class="sv-campo-input sv-cat-arquivo" id="foto-novo" name="foto" type="file" accept="image/*" />
-        <span class="sv-cat-ajuda">JPG, PNG ou WEBP, até 4 MB.</span>
+        <span class="sv-cat-ajuda">JPG, PNG ou WEBP. A foto é reduzida automaticamente.</span>
       </div>
       <div class="sv-campo">
         <label class="sv-cat-check">
@@ -159,7 +159,8 @@
             <div class="sv-cat-foto"><img src="<%= s.fotoUrl %>" alt="Foto de <%= s.nome %>" /></div>
           <% } %>
           <input class="sv-campo-input sv-cat-arquivo" id="foto-<%= s.id %>" name="foto" type="file" accept="image/*" />
-          <span class="sv-cat-ajuda">JPG, PNG ou WEBP, até 4 MB.<%= s.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %></span>
+          <span class="sv-cat-ajuda">JPG, PNG ou WEBP. A foto é reduzida automaticamente.<%= s.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %></span>
+          <% if (s.fotoUrl) { %><button type="submit" class="sv-foto-rem" formaction="/painel/servicos/<%= s.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover esta foto?')">Remover foto</button><% } %>
         </div>
         <div class="sv-campo">
           <label class="sv-cat-check">

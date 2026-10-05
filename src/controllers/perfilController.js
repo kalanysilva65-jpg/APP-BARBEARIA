@@ -86,4 +86,16 @@ async function salvarFoto(req, res) {
   res.redirect(destino);
 }
 
-module.exports = { ver, salvarFoto };
+// POST /painel/perfil/foto/remover — tira a foto do próprio usuário logado.
+async function removerFoto(req, res) {
+  const destino = req.get('Referer') || '/painel/mais';
+  const id = req.session.usuario.id;
+  const atual = await prisma.usuario.findUnique({ where: { id } });
+  const anterior = atual && caminhoDoUpload(atual.fotoUrl);
+  if (anterior) fs.unlink(anterior, () => {});
+  await prisma.usuario.update({ where: { id }, data: { fotoUrl: null, fotoPos: null } });
+  req.session.flash = { tipo: 'sucesso', texto: 'Foto removida.' };
+  res.redirect(destino);
+}
+
+module.exports = { ver, salvarFoto, removerFoto };

@@ -159,6 +159,7 @@
             <div class="sv-cat-foto"><img src="<%= p.fotoUrl %>" alt="Foto de <%= p.nome %>" /></div>
           <% } %>
           <input class="sv-campo-input sv-cat-arquivo" id="foto-<%= p.id %>" name="foto" type="file" accept="image/*" />
+          <% if (p.fotoUrl) { %><button type="submit" class="sv-foto-rem" formaction="/painel/servicos/<%= p.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover esta foto?')">Remover foto</button><% } %>
           <span class="sv-cat-ajuda">JPG, PNG ou WEBP, até 4 MB.<%= p.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %></span>
         </div>
         <%- include('_consumo-estoque', { estoqueItens: estoqueItens, mapa: (insumosPorServico && insumosPorServico[p.id]) || {} }) %>

@@ -141,6 +141,7 @@ router.get('/', dashboardController.ver);
 
 // Foto do próprio usuário logado (hero do painel).
 router.post('/perfil/foto', uploadFotoPerfil, perfilController.salvarFoto);
+router.post('/perfil/foto/remover', perfilController.removerFoto);
 // A jornada é editada no Perfil (a tela /painel/horarios saiu do menu em
 // 2026-08-01). Reusa o mesmo controller: a regra de "funcionário só edita a
 // própria jornada" já vive lá, e duplicá-la seria criar dois lugares para
@@ -246,6 +247,8 @@ router.post('/planos/:id', exigeAdmin, planoController.atualizar);
 router.get('/equipe', exigeAdmin, equipeController.listar);
 router.post('/equipe', exigeAdmin, equipeController.criar);
 router.post('/equipe/:id/toggle', exigeAdmin, equipeController.alternarAtivo);
+router.post('/equipe/:id/foto/remover', exigeAdmin, equipeController.removerFoto);
+router.post('/comissoes/:id/foto/remover', exigeAdmin, equipeController.removerFoto);
 router.post('/equipe/:id', exigeAdmin, uploadFotoEquipe, equipeController.atualizar);
 
 // --- Comissões ----------------------------------------------------
@@ -281,6 +284,7 @@ router.post('/servicos/categorias/:id', exigeAdmin, servicoController.renomearCa
 // para a tela certa, conforme o ehProduto do registro)
 router.get('/servicos/:id/editar', exigeAdmin, servicoController.formEditar);
 router.post('/servicos/:id/toggle', exigeAdmin, servicoController.alternarAtivo);
+router.post('/servicos/:id/foto/remover', exigeAdmin, servicoController.removerFoto);
 router.post('/servicos/:id/remover', exigeAdmin, servicoController.remover);
 router.post('/servicos/:id', exigeAdmin, uploadFoto, servicoController.atualizar);
 

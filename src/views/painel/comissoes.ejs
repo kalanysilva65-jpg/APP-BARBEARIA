@@ -114,6 +114,7 @@
               <% } %>
               <input type="file" name="foto" accept="image/*" onchange="this.form.submit()" hidden />
             </label>
+            <% if (g.barbeiro.fotoUrl) { %><button type="submit" class="sv-foto-rem sv-foto-rem--x" title="Remover foto" aria-label="Remover foto" formaction="/painel/comissoes/<%= g.barbeiro.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover a foto deste barbeiro?')">×</button><% } %>
           </form>
         <% } else { %>
           <span class="equipe-foto equipe-foto--view" style="width:36px;height:36px;">

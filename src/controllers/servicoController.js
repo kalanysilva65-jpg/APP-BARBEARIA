@@ -19,6 +19,16 @@ function apagarFoto(fotoUrl) {
   if (caminho) fs.unlink(caminho, () => {});
 }
 
+// POST /painel/servicos/:id/foto/remover — tira a foto de um serviço OU produto (admin).
+async function removerFoto(req, res) {
+  const s = await prisma.servico.findFirst({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } });
+  if (!s) return res.redirect('/painel/servicos');
+  if (s.fotoUrl) apagarFoto(s.fotoUrl);
+  await prisma.servico.update({ where: { id: s.id }, data: { fotoUrl: null } });
+  req.session.flash = { tipo: 'sucesso', texto: 'Foto removida.' };
+  res.redirect(destino(s.ehProduto));
+}
+
 // Serviços e Produtos são telas separadas, mas a mesma tabela/registro por
 // trás — o redirect volta para a tela certa conforme o ehProduto do item.
 function destino(ehProduto) {
@@ -292,5 +302,4 @@ module.exports = {
   remover,
   criarCategoria,
   renomearCategoria,
-  removerCategoria,
-};
+  removerCategoria, removerFoto };

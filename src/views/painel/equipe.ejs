@@ -130,6 +130,7 @@
             <div class="sv-eq-papel"><%= m.ativo ? (PAPEL_LABEL[m.papel] || m.papel) : 'Inativo' %></div>
             <span class="sv-pilula sv-eq-hero-pilula"><%= m.jornadaLabel %></span>
             <div class="sv-eq-foto-dica" id="eq-foto-dica-<%= m.id %>">Toque na foto para trocar</div>
+            <% if (m.fotoUrl) { %><button type="submit" class="sv-foto-rem" formaction="/painel/equipe/<%= m.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover esta foto?')">Remover foto</button><% } %>
           </div>
         </div>
 

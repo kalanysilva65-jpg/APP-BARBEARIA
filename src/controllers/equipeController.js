@@ -265,6 +265,30 @@ async function atualizar(req, res) {
   res.redirect('/painel/equipe');
 }
 
+
+// Volta para a página de onde o usuário veio (só se for o MESMO site); senão, o padrão.
+function voltarPara(req, padrao) {
+  try {
+    const u = new URL(req.get('Referer') || '', 'http://x');
+    const host = req.get('host');
+    const ref = req.get('Referer') || '';
+    if (ref && new URL(ref).host === host) return u.pathname + u.search;
+  } catch (_) { /* referer inválido */ }
+  return padrao;
+}
+
+// POST /painel/equipe/:id/foto/remover — tira a foto do barbeiro (admin).
+async function removerFoto(req, res) {
+  const id = Number(req.params.id);
+  const membro = await prisma.usuario.findFirst({ where: { id, barbeariaId: req.barbeariaId } });
+  const destino = voltarPara(req, '/painel/equipe');
+  if (!membro) return res.redirect(destino);
+  if (membro.fotoUrl) apagarFoto(membro.fotoUrl);
+  await prisma.usuario.update({ where: { id }, data: { fotoUrl: null, fotoPos: null } });
+  req.session.flash = { tipo: 'sucesso', texto: 'Foto removida.' };
+  res.redirect(destino);
+}
+
 // POST /painel/equipe/:id/toggle
 async function alternarAtivo(req, res) {
   const membro = await prisma.usuario.findFirst({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } });
@@ -272,4 +296,4 @@ async function alternarAtivo(req, res) {
   res.redirect('/painel/equipe');
 }
 
-module.exports = { listar, criar, atualizar, alternarAtivo };
+module.exports = { listar, criar, atualizar, alternarAtivo, removerFoto };

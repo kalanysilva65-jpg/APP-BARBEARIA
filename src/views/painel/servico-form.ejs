@@ -104,8 +104,9 @@
       <% } %>
       <input id="foto" name="foto" type="file" accept="image/*" />
       <span class="texto-sutil">
-        JPG, PNG ou WEBP, até 4 MB.<%= servico && servico.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %>
+        JPG, PNG ou WEBP. A foto é reduzida automaticamente.<%= servico && servico.fotoUrl ? ' Enviar uma nova substitui a atual.' : '' %>
       </span>
+      <% if (servico && servico.fotoUrl) { %><button type="submit" class="sv-foto-rem" formaction="/painel/servicos/<%= servico.id %>/foto/remover" formmethod="post" formnovalidate onclick="return confirm('Remover esta foto?')">Remover foto</button><% } %>
     </div>
 
     <%/* Receita de consumo de estoque (2026-09-03): baixa automática ao concluir
