@@ -23,6 +23,7 @@ const metaController = require('../controllers/metaController');
 const permissoes = require('../services/permissoes');
 const iaController = require('../controllers/iaController');
 const secretariaController = require('../controllers/secretariaController');
+const logoController = require('../controllers/logoController');
 const conversasController = require('../controllers/conversasController');
 const { limiteIA } = require('../middlewares/rateLimit');
 const ia = require('../services/ia');
@@ -45,6 +46,17 @@ function uploadFoto(req, res, next) {
     if (err) {
       req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload da imagem.' };
       return res.redirect('/painel/servicos');
+    }
+    next();
+  });
+}
+
+// Upload da logo do agendamento público (dono da barbearia).
+function uploadLogo(req, res, next) {
+  upload.single('logo')(req, res, (err) => {
+    if (err) {
+      req.session.flash = { tipo: 'erro', texto: err.message || 'Falha no upload da imagem.' };
+      return res.redirect('/painel/logo');
     }
     next();
   });
@@ -140,6 +152,9 @@ router.use(async (req, res, next) => {
 router.get('/', dashboardController.ver);
 
 // Foto do próprio usuário logado (hero do painel).
+router.get('/logo', exigeAdmin, logoController.ver);
+router.post('/logo', exigeAdmin, uploadLogo, logoController.salvar);
+router.post('/logo/remover', exigeAdmin, logoController.remover);
 router.post('/perfil/foto', uploadFotoPerfil, perfilController.salvarFoto);
 router.post('/perfil/foto/remover', perfilController.removerFoto);
 // A jornada é editada no Perfil (a tela /painel/horarios saiu do menu em

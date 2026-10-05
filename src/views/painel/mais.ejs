@@ -66,6 +66,18 @@
   </div>
 
   <% if (ehAdmin) { %>
+    <div class="sv-pf-secao sv-reveal">
+      <div class="sv-pf-secao-tit">Agendamento online</div>
+      <a class="sv-cartao sv-pf-lista sv-pf-link" href="/painel/logo">
+        <div class="sv-pf-item" style="display:flex;justify-content:space-between;align-items:center">
+          <div><div class="sv-pf-item-rot">Logo da barbearia</div><div class="sv-pf-item-val">Adicionar, trocar, posição e tamanho</div></div>
+          <span aria-hidden="true">›</span>
+        </div>
+      </a>
+    </div>
+  <% } %>
+
+  <% if (ehAdmin) { %>
     <%/* Backup manual dos dados (só admin: inclui financeiro e todos os
          clientes). Dois formatos com propósitos diferentes — o PDF é para ler
          e imprimir; o JSON é o que realmente permite restaurar se o banco for

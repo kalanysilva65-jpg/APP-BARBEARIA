@@ -168,10 +168,14 @@ app.use((req, res, next) => {
   require('./controllers/configuracaoMarcaController').lerMarca(ctxId).then((marca) => {
     res.locals.marcaLogoUrl = marca.logoUrl;
     res.locals.marcaMostrarPoweredBy = marca.mostrarPoweredBy;
+    res.locals.marcaLogoAlinhamento = marca.logoAlinhamento;
+    res.locals.marcaLogoTamanho = marca.logoTamanho;
     next();
   }).catch(() => {
     res.locals.marcaLogoUrl = null;
     res.locals.marcaMostrarPoweredBy = true;
+    res.locals.marcaLogoAlinhamento = 'centro';
+    res.locals.marcaLogoTamanho = 168;
     next();
   });
 });

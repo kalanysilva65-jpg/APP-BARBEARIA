@@ -1,0 +1,73 @@
+<%/* Logo do agendamento público — só admin (dono da barbearia). */%>
+<div class="sv-tela sv-logo">
+  <div class="sv-pf-topo sv-reveal">
+    <div class="sv-titulo">Logo do agendamento</div>
+    <a href="/painel/mais" class="sv-pf-fechar" title="Voltar" aria-label="Voltar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </a>
+  </div>
+
+  <form method="POST" action="/painel/logo" enctype="multipart/form-data" class="sv-cartao sv-logo-form sv-reveal" id="svLogoForm">
+    <div class="sv-logo-previa" id="svLogoPrevia">
+      <div class="sv-logo-linha" id="svLogoLinha" data-alinh="<%= marca.logoAlinhamento %>">
+        <img id="svLogoImg" src="<%= marca.logoUrl || '' %>" alt="Logo" style="height:<%= marca.logoTamanho %>px;max-width:100%" <%- marca.logoUrl ? '' : 'hidden' %> />
+        <span class="sv-logo-vazio" id="svLogoVazio" <%- marca.logoUrl ? 'hidden' : '' %>>Sem logo — o cliente vê a inicial e o nome da barbearia</span>
+      </div>
+    </div>
+    <div class="sv-pf-dica">Prévia do topo do agendamento online</div>
+
+    <label class="sv-btn sv-btn--claro sv-logo-escolher">
+      <%= marca.logoUrl ? 'Trocar logo' : 'Adicionar logo' %>
+      <input type="file" name="logo" id="svLogoArquivo" accept="image/*" hidden />
+    </label>
+
+    <div class="sv-campo">
+      <span class="sv-campo-rot">Posição</span>
+      <input type="hidden" name="alinhamento" id="svLogoAlinh" value="<%= marca.logoAlinhamento %>" />
+      <div class="pill-group">
+        <% [['esquerda','Esquerda'],['centro','Centro'],['direita','Direita']].forEach(function (o) { %>
+          <button type="button" class="pill-opcao <%= marca.logoAlinhamento === o[0] ? 'ativo' : '' %>" data-alinh="<%= o[0] %>"><%= o[1] %></button>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="sv-campo">
+      <label class="sv-campo-rot" for="svLogoTam">Tamanho: <strong id="svLogoTamTxt"><%= marca.logoTamanho %></strong> px</label>
+      <input type="range" name="tamanho" id="svLogoTam" min="80" max="240" step="4" value="<%= marca.logoTamanho %>" />
+    </div>
+
+    <button class="sv-btn sv-pl-cta" type="submit">Salvar</button>
+  </form>
+
+  <% if (marca.logoUrl) { %>
+    <form method="POST" action="/painel/logo/remover" class="sv-pf-remover">
+      <button type="submit" class="sv-foto-rem" onclick="return confirm('Excluir a logo? O cliente passa a ver a inicial e o nome da barbearia.')">Excluir logo</button>
+    </form>
+  <% } %>
+</div>
+
+<script>
+  (function () {
+    var img = document.getElementById('svLogoImg'), linha = document.getElementById('svLogoLinha');
+    var vazio = document.getElementById('svLogoVazio'), tam = document.getElementById('svLogoTam');
+    function aplicar() {
+      var t = tam.value; document.getElementById('svLogoTamTxt').textContent = t;
+      img.style.height = t + 'px';
+      linha.setAttribute('data-alinh', document.getElementById('svLogoAlinh').value);
+    }
+    tam.addEventListener('input', aplicar);
+    document.querySelectorAll('[data-alinh].pill-opcao').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('[data-alinh].pill-opcao').forEach(function (x) { x.classList.remove('ativo'); });
+        b.classList.add('ativo');
+        document.getElementById('svLogoAlinh').value = b.getAttribute('data-alinh');
+        aplicar();
+      });
+    });
+    document.getElementById('svLogoArquivo').addEventListener('change', function () {
+      var f = this.files && this.files[0];
+      if (f) { img.src = URL.createObjectURL(f); img.hidden = false; vazio.hidden = true; }
+    });
+    aplicar();
+  })();
+</script>

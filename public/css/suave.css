@@ -838,3 +838,15 @@ html:has(> body.pg-sv)::-webkit-scrollbar,
 .sv-foto-rem:active { opacity: .6; }
 .sv-foto-rem--x { margin: 0 0 0 4px; font-size: 20px; line-height: 1; text-decoration: none; vertical-align: middle; }
 .sv-pf-remover { display: flex; justify-content: center; margin: -4px 0 8px; }
+
+/* Tela "Logo do agendamento" (dono da barbearia) */
+.sv-logo-form { display: flex; flex-direction: column; gap: 14px; }
+.sv-logo-previa { background: #f2f2f2; border-radius: 14px; padding: 16px; min-height: 120px; display: flex; align-items: center; }
+.sv-logo-linha { width: 100%; display: flex; justify-content: center; }
+.sv-logo-linha[data-alinh="esquerda"] { justify-content: flex-start; }
+.sv-logo-linha[data-alinh="direita"] { justify-content: flex-end; }
+.sv-logo-linha img { object-fit: contain; display: block; }
+.sv-logo-vazio { font-size: 13px; color: #777; text-align: center; }
+.sv-logo-escolher { text-align: center; cursor: pointer; }
+.sv-logo-form input[type=range] { width: 100%; accent-color: #16a34a; }
+.sv-pf-link { display: block; text-decoration: none; color: inherit; }

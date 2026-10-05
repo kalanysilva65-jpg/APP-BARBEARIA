@@ -35,7 +35,12 @@
   <body class="sv-ag-body">
     <div class="sv-ag6-tela">
       <header class="sv-ag6-topo">
-        <div class="sv-ag6-marca-linha">
+        <%
+          var _logoAlinh = (typeof marcaLogoAlinhamento !== 'undefined' && marcaLogoAlinhamento) || 'centro';
+          var _logoTam = (typeof marcaLogoTamanho !== 'undefined' && marcaLogoTamanho) || 168;
+          var _temLogo = typeof marcaLogoUrl !== 'undefined' && marcaLogoUrl;
+        %>
+        <div class="sv-ag6-marca-linha sv-ag6-marca-linha--<%= _temLogo ? _logoAlinh : 'centro' %>" style="--logo-tam:<%= _logoTam %>px">
           <%/* O acesso da equipe (login) saiu do topo público a pedido do dono
                (2026-09-06): a página é do cliente, e o atalho da equipe poluía.
                A equipe entra por cortavo.com.br/login direto. */%>
@@ -48,7 +53,7 @@
             <% } %>
           </a>
           <% if (agVoltar) { %>
-            <a class="sv-ag6-pilula sv-ag6-pilula--canto sv-ag6-pilula--dir" href="<%= agVoltar %>">Voltar</a>
+            <a class="sv-ag6-pilula sv-ag6-pilula--canto <%= _temLogo && _logoAlinh === 'direita' ? 'sv-ag6-pilula--esq' : 'sv-ag6-pilula--dir' %>" href="<%= agVoltar %>">Voltar</a>
           <% } %>
         </div>
 

@@ -132,19 +132,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 112px;
+  min-height: max(112px, var(--logo-tam, 112px));
 }
+/* Posição da logo (escolhida pelo dono da barbearia no painel). */
+.sv-ag6-marca-linha--esquerda { justify-content: flex-start; }
+.sv-ag6-marca-linha--direita { justify-content: flex-end; }
 
 .sv-ag6-marca {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  max-width: 60%;
+  max-width: calc(100% - 100px); /* deixa espaço pro botão Voltar */
 }
+.sv-ag6-marca-linha--esquerda .sv-ag6-marca { align-items: flex-start; }
+.sv-ag6-marca-linha--direita .sv-ag6-marca { align-items: flex-end; }
 .sv-ag6-marca-logo {
-  max-width: 112px;
-  max-height: 112px;
+  height: var(--logo-tam, 112px); /* altura fixa: logo pequena também CRESCE */
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
   display: block;
 }
@@ -888,8 +894,8 @@
 
 /* Telas baixas: o cabeçalho de 112px + manchete de 46px não cabem juntos. */
 @media (max-height: 700px) {
-  .sv-ag6-marca-linha { min-height: 84px; }
-  .sv-ag6-marca-logo { max-height: 84px; }
+  .sv-ag6-marca-linha { min-height: min(84px, var(--logo-tam, 84px)); }
+  .sv-ag6-marca-logo { height: min(110px, var(--logo-tam, 84px)); }
   .sv-ag6-pronto-manchete { font-size: 38px; letter-spacing: -1.6px; }
   .sv-ag6-titulo { font-size: 24px; letter-spacing: -0.8px; }
 }
