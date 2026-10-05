@@ -174,6 +174,15 @@ router.post('/secretaria/teste/mensagem', exigeAdmin, limiteIA, secretariaContro
 router.post('/secretaria/whatsapp/conectar', exigeAdmin, secretariaController.conectarWhatsApp);
 router.post('/secretaria/whatsapp/desconectar', exigeAdmin, secretariaController.desconectarWhatsApp);
 // Número registrado pela conta de WhatsApp da Cortavo (cobrança no cartão da Cortavo).
+// Perfil comercial do WhatsApp (foto, sobre, descrição...) — só admin.
+function uploadFotoPerfilWa(req, res, next) {
+  uploadWa.single('foto')(req, res, (err) => {
+    if (err) return res.status(400).json({ erro: err.code === 'LIMIT_FILE_SIZE' ? 'Foto maior que o limite.' : 'Falha no envio da foto.' });
+    next();
+  });
+}
+router.get('/secretaria/whatsapp/perfil', exigeAdmin, secretariaController.lerPerfilWa);
+router.post('/secretaria/whatsapp/perfil', exigeAdmin, uploadFotoPerfilWa, secretariaController.salvarPerfilWa);
 router.post('/secretaria/whatsapp/numero/codigo', exigeAdmin, secretariaController.pedirCodigoNumero);
 router.post('/secretaria/whatsapp/numero/reenviar', exigeAdmin, secretariaController.reenviarCodigoNumero);
 router.post('/secretaria/whatsapp/numero/verificar', exigeAdmin, secretariaController.verificarCodigoNumero);

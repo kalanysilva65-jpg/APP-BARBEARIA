@@ -4,6 +4,7 @@
 const secretaria = require('../services/secretaria');
 const onboard = require('../services/whatsappOnboard');
 const numeroCortavo = require('../services/waNumeroCortavo');
+const waPerfil = require('../services/waPerfil');
 const prisma = require('../config/db');
 
 // Chaves de configuração da secretária (na tabela Configuracao, por barbearia).
@@ -139,6 +140,27 @@ async function conectarWhatsApp(req, res) {
   }
 }
 
+// GET /painel/secretaria/whatsapp/perfil — perfil comercial atual (JSON).
+async function lerPerfilWa(req, res) {
+  try {
+    res.json({ ok: true, perfil: await waPerfil.obter(req.barbeariaId) });
+  } catch (e) {
+    res.status(400).json({ erro: e.message });
+  }
+}
+
+// POST /painel/secretaria/whatsapp/perfil — salva foto/sobre/descrição/endereço/e-mail/site.
+async function salvarPerfilWa(req, res) {
+  try {
+    const b = req.body || {};
+    await waPerfil.salvar(req.barbeariaId, { sobre: b.sobre, descricao: b.descricao, endereco: b.endereco, email: b.email, site: b.site }, req.file && req.file.buffer);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[wa-perfil] salvar falhou:', e.message);
+    res.status(400).json({ erro: e.message });
+  }
+}
+
 // POST /painel/secretaria/whatsapp/numero/codigo — passo 1 do caminho "pela Cortavo":
 // cadastra o número e manda o código (SMS ou ligação). Guarda o id na sessão.
 async function pedirCodigoNumero(req, res) {
@@ -219,4 +241,4 @@ async function salvarConfig(req, res) {
   res.redirect('/painel/secretaria');
 }
 
-module.exports = { pedirCodigoNumero, reenviarCodigoNumero, verificarCodigoNumero, verConfig, salvarConfig, verTeste, mensagemTeste, conectarWhatsApp, desconectarWhatsApp, pausarIA };
+module.exports = { pedirCodigoNumero, reenviarCodigoNumero, verificarCodigoNumero, verConfig, salvarConfig, verTeste, mensagemTeste, conectarWhatsApp, desconectarWhatsApp, pausarIA, lerPerfilWa, salvarPerfilWa };
