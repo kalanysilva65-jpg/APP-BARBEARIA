@@ -25,7 +25,7 @@ async function assinaturasVigentesPorTelefone(barbeariaId, telefoneNorm) {
   if (!telefoneNorm || !barbeariaId) return { cliente: null, assinaturas: [] };
   const cliente = await prisma.cliente.findUnique({
     where: { barbeariaId_telefone: { barbeariaId, telefone: telefoneNorm } },
-    include: { planos: { include: { plano: { include: { servico: true } } }, orderBy: { dataFim: 'desc' } } },
+    include: { planos: { include: { plano: { include: { servicos: { include: { servico: true } } } } }, orderBy: { dataFim: 'desc' } } },
   });
   if (!cliente) return { cliente: null, assinaturas: [] };
   return { cliente, assinaturas: cliente.planos.filter((a) => vigente(a)) };
@@ -49,14 +49,20 @@ async function assinaturasVigentesPorVariantes(barbeariaId, telefone) {
   if (!telNorm || !barbeariaId) return [];
   const clientes = await prisma.cliente.findMany({
     where: { barbeariaId, telefone: { in: variantesTelefone(telNorm) } },
-    include: { planos: { include: { plano: { include: { servico: true } } }, orderBy: { dataFim: 'desc' } } },
+    include: { planos: { include: { plano: { include: { servicos: { include: { servico: true } } } } }, orderBy: { dataFim: 'desc' } } },
   });
   const out = [];
   for (const c of clientes) for (const a of c.planos) if (vigente(a)) out.push(a);
   return out;
 }
 
-// Valida um plano para um agendamento e diz QUAL serviço da seleção ele cobre
+// Serviços que o plano cobre, como [{ id, nome }] (vazio = qualquer serviço).
+// Precisa do plano carregado com `servicos: { include: { servico: true } }`.
+function servicosDoPlano(plano) {
+  return ((plano && plano.servicos) || []).map((x) => ({ id: x.servicoId, nome: x.servico ? x.servico.nome : null }));
+}
+
+// Valida um plano para um agendamento e diz QUAIS serviços da seleção ele cobre
 // (sai de graça, consome 1 uso). Mesmas regras nos dois caminhos (secretária e
 // painel). `servicos`: [{ id, valor }]. Retorna { assinatura, cobertoId } ou
 // { erro, mensagem }. Plano de serviço específico cobre esse serviço (tem que
@@ -65,7 +71,7 @@ async function avaliarCobertura({ clientePlanoId, barbeariaId, clienteTelefone, 
   const ids = (servicos || []).map((s) => s.id);
   const assinatura = await prisma.clientePlano.findFirst({
     where: { id: Number(clientePlanoId), barbeariaId },
-    include: { plano: true, cliente: true },
+    include: { plano: { include: { servicos: true } }, cliente: true },
   });
   if (!assinatura) return { erro: 'plano', mensagem: 'Plano não encontrado.' };
   if (!vigente(assinatura)) return { erro: 'plano_invalido', mensagem: 'Esse plano não está mais ativo (sem usos ou fora da validade).' };
@@ -74,14 +80,18 @@ async function avaliarCobertura({ clientePlanoId, barbeariaId, clienteTelefone, 
   const dow = _dataLocal(data).getDay();
   const diasPermitidos = new Set(String(assinatura.plano.diasSemana || '0,1,2,3,4,5,6').split(',').map(Number));
   if (!diasPermitidos.has(dow)) return { erro: 'plano_dia', mensagem: 'Esse plano não pode ser usado nesse dia da semana.' };
-  let cobertoId;
-  if (assinatura.plano.servicoId) {
-    if (!ids.includes(assinatura.plano.servicoId)) return { erro: 'plano_servico', mensagem: 'Esse plano cobre outro serviço.' };
-    cobertoId = assinatura.plano.servicoId;
+  // Plano com serviços escolhidos: TODOS os serviços da seleção que estão na
+  // lista do plano saem de graça (os demais somam normal). Sem lista ("qualquer
+  // serviço"): cobre só o MAIS CARO da seleção.
+  const doPlano = (assinatura.plano.servicos || []).map((x) => x.servicoId);
+  let cobertosIds;
+  if (doPlano.length) {
+    cobertosIds = ids.filter((id) => doPlano.includes(id));
+    if (!cobertosIds.length) return { erro: 'plano_servico', mensagem: 'Esse plano não cobre esses serviços.' };
   } else {
-    cobertoId = servicos.slice().sort((a, b) => b.valor - a.valor)[0].id;
+    cobertosIds = [servicos.slice().sort((a, b) => b.valor - a.valor)[0].id];
   }
-  return { assinatura, cobertoId };
+  return { assinatura, cobertoId: cobertosIds[0], cobertosIds };
 }
 
-module.exports = { vigente, assinaturasVigentesPorTelefone, assinaturasVigentesPorVariantes, avaliarCobertura, ajustarUso };
+module.exports = { servicosDoPlano, vigente, assinaturasVigentesPorTelefone, assinaturasVigentesPorVariantes, avaliarCobertura, ajustarUso };

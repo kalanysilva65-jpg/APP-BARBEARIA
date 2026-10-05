@@ -69,7 +69,8 @@
           var diasAtivos = _diasArr(p.diasSemana);
           var tipoRot = ilimitado ? 'Ilimitado' : 'Limitado';
           var usosRot = ilimitado ? 'usos livres' : (p.usos || 0) + 'x por mês';
-          var descricao = (p.servico ? p.servico.nome : 'Qualquer serviço') + ' · validade de ' + p.validadeDias + ' dias';
+          var nomesServ = (p.servicos || []).map(function (x) { return x.servico.nome; });
+          var descricao = (nomesServ.length ? nomesServ.join(' + ') : 'Qualquer serviço') + ' · validade de ' + p.validadeDias + ' dias';
         %>
         <%/* Só o admin edita, então só para ele o cartão é <button> (abre a
              folha). Para o funcionário sai um <div> — sem cursor, sem toque,
@@ -144,7 +145,7 @@
         </div>
 
         <div class="sv-campo">
-          <span class="sv-campo-rot">Dias disponíveis</span>
+          <span class="sv-campo-rot">Dias disponíveis <small class="sv-pl-legenda"><b class="verde">verde</b> = funciona · <b class="vermelho">vermelho</b> = não funciona</small></span>
           <input type="hidden" name="diasSemana" id="dias-novo" value="0,1,2,3,4,5,6" />
           <div class="pill-group" id="dias-group-novo">
             <% ORDEM_SEMANA.forEach(function (i) { %>
@@ -154,14 +155,14 @@
         </div>
 
         <div class="sv-campo">
-          <label class="sv-campo-rot" for="servicoId-novo">Serviço incluso</label>
-          <select class="sv-campo-input sv-pl-select" id="servicoId-novo" name="servicoId">
-            <option value="">Qualquer serviço</option>
+          <span class="sv-campo-rot">Serviços inclusos</span>
+          <input type="hidden" name="servicoIds" id="servs-novo" value="" />
+          <div class="pill-group" id="servs-group-novo">
             <% servicos.forEach(function (s) { %>
-              <option value="<%= s.id %>"><%= s.nome %></option>
+              <button type="button" class="pill-opcao" data-serv="<%= s.id %>" onclick="svPlServ(this,'novo')"><%= s.nome %></button>
             <% }) %>
-          </select>
-          <div class="sv-pl-ajuda">É o serviço que o cliente agenda usando o plano.</div>
+          </div>
+          <div class="sv-pl-ajuda">Toque para marcar um ou mais serviços do plano. Sem nenhum marcado, o plano vale para qualquer serviço.</div>
         </div>
 
         <div class="sv-campo">
@@ -177,7 +178,7 @@
 
   <%/* Uma folha de edição por plano. */%>
   <% planos.forEach(function (p) { %>
-    <% var diasAtivosEdit = _diasArr(p.diasSemana); %>
+    <% var diasAtivosEdit = _diasArr(p.diasSemana); var servIdsEdit = (p.servicos || []).map(function (x) { return x.servicoId; }); %>
     <div class="sv-folha-fundo" id="sv-pl-folha-<%= p.id %>" hidden>
       <div class="sv-folha">
         <div class="sv-folha-puxador"></div>
@@ -209,7 +210,7 @@
           </div>
 
           <div class="sv-campo">
-            <span class="sv-campo-rot">Dias disponíveis</span>
+            <span class="sv-campo-rot">Dias disponíveis <small class="sv-pl-legenda"><b class="verde">verde</b> = funciona · <b class="vermelho">vermelho</b> = não funciona</small></span>
             <input type="hidden" name="diasSemana" id="dias-<%= p.id %>" value="<%= p.diasSemana %>" />
             <div class="pill-group" id="dias-group-<%= p.id %>">
               <% ORDEM_SEMANA.forEach(function (i) { %>
@@ -219,13 +220,14 @@
           </div>
 
           <div class="sv-campo">
-            <label class="sv-campo-rot" for="servicoId-<%= p.id %>">Serviço incluso</label>
-            <select class="sv-campo-input sv-pl-select" id="servicoId-<%= p.id %>" name="servicoId">
-              <option value="">Qualquer serviço</option>
+            <span class="sv-campo-rot">Serviços inclusos</span>
+            <input type="hidden" name="servicoIds" id="servs-<%= p.id %>" value="<%= servIdsEdit.join(',') %>" />
+            <div class="pill-group" id="servs-group-<%= p.id %>">
               <% servicos.forEach(function (s) { %>
-                <option value="<%= s.id %>" <%= p.servicoId === s.id ? 'selected' : '' %>><%= s.nome %></option>
+                <button type="button" class="pill-opcao <%= servIdsEdit.indexOf(s.id) !== -1 ? 'ativo' : '' %>" data-serv="<%= s.id %>" onclick="svPlServ(this,'<%= p.id %>')"><%= s.nome %></button>
               <% }) %>
-            </select>
+            </div>
+            <div class="sv-pl-ajuda">Sem nenhum marcado, o plano vale para qualquer serviço.</div>
           </div>
 
           <div class="sv-campo">
@@ -281,6 +283,15 @@
       document.getElementById('tipo-' + id).value = btn.getAttribute('data-valor');
       var campoUsos = document.getElementById('campo-usos-' + id);
       if (campoUsos) campoUsos.style.display = btn.getAttribute('data-valor') === 'ilimitado' ? 'none' : '';
+    }
+    // Serviços inclusos: seleção múltipla (alterna cada serviço). Vazio = qualquer.
+    function svPlServ(btn, id) {
+      btn.classList.toggle('ativo');
+      var grupo = document.getElementById('servs-group-' + id);
+      var ids = Array.prototype.filter.call(grupo.querySelectorAll('.pill-opcao'), function (b) {
+        return b.classList.contains('ativo');
+      }).map(function (b) { return b.getAttribute('data-serv'); });
+      document.getElementById('servs-' + id).value = ids.join(',');
     }
     // Dias disponíveis: seleção múltipla (alterna cada dia).
     function svPlDia(btn, id) {

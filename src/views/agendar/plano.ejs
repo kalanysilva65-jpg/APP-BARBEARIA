@@ -37,12 +37,12 @@
         </div>
         <div class="sv-ag6-lista">
           <% resultado.assinaturas.forEach(function (a, i) { %>
-            <a class="sv-ag6-item" href="<%= a.plano.servicoId ? '/agendar/barbeiro?servicoId=' + a.plano.servicoId + '&assinatura=' + a.id : '/agendar?assinatura=' + a.id %>" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
+            <a class="sv-ag6-item" href="<%= a.plano.servicos.length === 1 ? '/agendar/barbeiro?servicoId=' + a.plano.servicos[0].servicoId + '&assinatura=' + a.id : '/agendar?assinatura=' + a.id %>" style="animation-delay:<%= (0.2 + i * 0.07).toFixed(2) %>s">
               <span>
                 <span class="sv-ag6-item-nome"><%= a.plano.nome %></span>
                 <span class="sv-ag6-item-sub">
                   <%= a.plano.tipo === 'ilimitado' ? 'Ilimitado · ' + _diasPlanoLabel(a.plano.diasSemana) : a.usosRestantes + ' uso(s) restante(s)' %>
-                  · até <%= fmtData(a.dataFim) %><%= a.plano.servico ? ' · ' + a.plano.servico.nome : '' %>
+                  · até <%= fmtData(a.dataFim) %><%= a.plano.servicos.length ? ' · ' + a.plano.servicos.map(function (x) { return x.servico.nome; }).join(' + ') : '' %>
                 </span>
               </span>
               <span class="sv-ag6-item-acao">Usar →</span>

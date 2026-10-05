@@ -52,13 +52,13 @@ async function criarAgendamento(barbeariaId, dados) {
   // usar plano: valor = 0 e consome 1 uso (limitado). Trava de segurança: o plano
   // tem que ser do MESMO número do cliente (não dá pra gastar o plano de outro).
   let assinatura = null;
-  let cobertoId = null; // id do serviço que o plano cobre (sai de graça) nesta seleção
+  let cobertosIds = []; // ids dos serviços que o plano cobre (saem de graça) nesta seleção
   if (clientePlanoId) {
     // Validação + cobertura no service (mesma regra do painel — fonte única).
     const cob = await planoServ.avaliarCobertura({ clientePlanoId, barbeariaId, clienteTelefone, servicos, data });
     if (cob.erro) return { erro: cob.erro, mensagem: cob.mensagem };
     assinatura = cob.assinatura;
-    cobertoId = cob.cobertoId;
+    cobertosIds = cob.cobertosIds;
   }
   const usaPlano = !!assinatura;
 
@@ -74,9 +74,9 @@ async function criarAgendamento(barbeariaId, dados) {
   const dataDate = dataLocal(data);
   const iniNovo = paraMinutos(hora);
   const fimNovo = iniNovo + dur;
-  // Plano cobre 1 serviço (o `cobertoId`) -> ele sai 0; os demais somam normal.
+  // Os serviços que o plano cobre saem 0; os demais somam normal.
   const valorTotal = usaPlano
-    ? servicos.reduce((s, x) => s + (x.id === cobertoId ? 0 : x.valor), 0)
+    ? servicos.reduce((s, x) => s + (cobertosIds.includes(x.id) ? 0 : x.valor), 0)
     : servicos.reduce((s, x) => s + x.valor, 0);
   const telNorm = normalizarTelefone(clienteTelefone) || String(clienteTelefone).trim();
 
@@ -113,7 +113,7 @@ async function criarAgendamento(barbeariaId, dados) {
           status: 'agendado',
           valorTotal,
           origem: 'whatsapp', // agendado pela secretária de IA no WhatsApp
-          itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: (usaPlano && s.id === cobertoId) ? 0 : s.valor, quantidade: 1 })) },
+          itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: (usaPlano && cobertosIds.includes(s.id)) ? 0 : s.valor, quantidade: 1 })) },
         },
       });
     });
@@ -126,7 +126,7 @@ async function criarAgendamento(barbeariaId, dados) {
       barbeiro: barbeiro.nome,
       servicos: servicos.map((s) => s.nome),
       // Serviço que saiu de graça pelo plano (os demais entram em valorCentavos).
-      servicoCoberto: usaPlano && cobertoId ? ((servicos.find((s) => s.id === cobertoId) || {}).nome || null) : null,
+      servicoCoberto: usaPlano && cobertosIds.length ? servicos.filter((s) => cobertosIds.includes(s.id)).map((s) => s.nome).join(', ') : null,
       data,
       hora,
       valorCentavos: valorTotal,

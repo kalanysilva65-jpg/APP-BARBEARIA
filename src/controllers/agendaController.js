@@ -737,8 +737,9 @@ async function planosJson(req, res) {
   const planos = assinaturas.map((a) => ({
     id: a.id,
     nome: a.plano.nome,
-    servicoId: a.plano.servicoId || null,
-    servicoNome: a.plano.servico ? a.plano.servico.nome : null,
+    servicoIds: planoServ.servicosDoPlano(a.plano).map((s) => s.id),
+    // Nomes juntos ("Corte, Barba") para o texto do pop-up; vazio = qualquer serviço.
+    servicoNome: planoServ.servicosDoPlano(a.plano).map((s) => s.nome).filter(Boolean).join(', ') || null,
     ilimitado: a.usosRestantes === null,
     usosRestantes: a.usosRestantes,
   }));
@@ -845,9 +846,9 @@ async function criarManual(req, res) {
     clienteId = cliente.id;
   }
 
-  // Plano cobre 1 serviço (o `cobertoId`) -> ele sai 0; os demais somam normal.
-  const cobertoId = cobertura ? cobertura.cobertoId : null;
-  const valorTotal = servicos.reduce((soma, s) => soma + (s.id === cobertoId ? 0 : s.valor), 0);
+  // Os serviços que o plano cobre (`cobertosIds`) saem 0; os demais somam normal.
+  const cobertos = new Set(cobertura ? cobertura.cobertosIds : []);
+  const valorTotal = servicos.reduce((soma, s) => soma + (cobertos.has(s.id) ? 0 : s.valor), 0);
   await prisma.agendamento.create({
     data: {
       barbeariaId: b,
@@ -862,7 +863,7 @@ async function criarManual(req, res) {
       valorTotal,
       origem: 'barbeiro', // criado manualmente no painel pela equipe
       clientePlanoId: cobertura ? cobertura.assinatura.id : null,
-      itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: s.id === cobertoId ? 0 : s.valor, quantidade: 1 })) },
+      itens: { create: servicos.map((s) => ({ servicoId: s.id, valorUnitario: cobertos.has(s.id) ? 0 : s.valor, quantidade: 1 })) },
     },
   });
   // Consome 1 uso do plano (limitado; ilimitado não muda) — igual à secretária.

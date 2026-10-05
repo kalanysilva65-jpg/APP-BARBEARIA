@@ -711,3 +711,16 @@
 }
 .pg-sv .sv-pf-avisos-sec:active { opacity: 0.6; }
 .pg-sv .sv-pf-avisos-sec:disabled { opacity: 0.5; cursor: default; }
+
+/* Dias do plano: VERDE = funciona, VERMELHO = não funciona (pedido do dono,
+   2026-10-05: "fica mais fácil pro barbeiro"). Vale nos cartões e nas pílulas
+   dos formulários. */
+.pg-sv .sv-pl-dia { background: #fde8e8; color: #b91c1c; border-color: transparent; }
+.pg-sv .sv-pl-dia.on { background: #dcf5e4; color: #15803d; }
+.pg-sv [id^="dias-group-"] .pill-opcao { background: #fde8e8; color: #b91c1c; border-color: #f5b5b5; }
+.pg-sv [id^="dias-group-"] .pill-opcao.ativo { background: #16a34a; color: #fff; border-color: #16a34a; }
+.pg-sv .sv-pl-legenda { font-size: 11px; font-weight: 500; color: var(--sv-muted, #777); margin-left: 6px; }
+.pg-sv .sv-pl-legenda .verde { color: #15803d; }
+.pg-sv .sv-pl-legenda .vermelho { color: #b91c1c; }
+.sv-pl-check { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 15px; }
+.sv-pl-check input { width: 18px; height: 18px; accent-color: #16a34a; }

@@ -79,7 +79,7 @@ async function carregarAssinatura(idStr, barbeariaId) {
   if (!id) return null;
   const a = await prisma.clientePlano.findFirst({
     where: { id, barbeariaId },
-    include: { plano: { include: { servico: true } }, cliente: true },
+    include: { plano: { include: { servicos: { include: { servico: true } } } }, cliente: true },
   });
   if (!a || !planoServ.vigente(a)) return null;
   return a;
@@ -132,8 +132,10 @@ function parseIds(str) {
 // Passo 1 — escolher o serviço
 async function passoServico(req, res) {
   const assinatura = await carregarAssinatura(req.query.assinatura, req.barbeariaId);
+  // Plano com serviços escolhidos: só eles aparecem na escolha.
+  const idsDoPlano = assinatura ? assinatura.plano.servicos.map((x) => x.servicoId) : [];
   const servicos = await prisma.servico.findMany({
-    where: { barbeariaId: req.barbeariaId, ativo: true, ehProduto: false },
+    where: { barbeariaId: req.barbeariaId, ativo: true, ehProduto: false, ...(idsDoPlano.length ? { id: { in: idsDoPlano } } : {}) },
     include: { categoria: true },
     orderBy: { nome: 'asc' },
   });
@@ -410,8 +412,12 @@ async function confirmar(req, res) {
   const b = req.barbeariaId;
   const assinatura = await carregarAssinatura(req.body.assinatura, b);
   let servicoIds = parseIds(req.body.servicoIds || req.body.servicoId);
-  // Se o plano cobre um serviço específico, apenas esse serviço vale (segurança).
-  if (assinatura && assinatura.plano.servicoId) servicoIds = [assinatura.plano.servicoId];
+  // Se o plano cobre serviços específicos, só valem os serviços da lista do plano (segurança).
+  const idsDoPlano = assinatura ? assinatura.plano.servicos.map((x) => x.servicoId) : [];
+  if (assinatura && idsDoPlano.length) {
+    const dentro = servicoIds.filter((id) => idsDoPlano.includes(id));
+    servicoIds = dentro.length ? dentro : [idsDoPlano[0]];
+  }
   const ehQualquer = req.body.barbeiroId === 'any';
   const data = req.body.data;
   const hora = req.body.hora;

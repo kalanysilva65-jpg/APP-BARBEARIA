@@ -28,14 +28,12 @@
     </div>
 
     <div class="sv-campo">
-      <label class="sv-campo-rot" for="servicoId">Serviço incluso</label>
-      <select class="sv-campo-input sv-pl-select" id="servicoId" name="servicoId">
-        <option value="">Qualquer serviço</option>
-        <% servicos.forEach(function (s) { %>
-          <option value="<%= s.id %>" <%= plano && plano.servicoId === s.id ? 'selected' : '' %>><%= s.nome %></option>
-        <% }) %>
-      </select>
-      <div class="sv-pl-ajuda">É o serviço que o cliente agenda usando o plano.</div>
+      <span class="sv-campo-rot">Serviços inclusos</span>
+      <% var marcados = plano && plano.servicos ? plano.servicos.map(function (x) { return x.servicoId; }) : []; %>
+      <% servicos.forEach(function (s) { %>
+        <label class="sv-pl-check"><input type="checkbox" name="servicoIds" value="<%= s.id %>" <%= marcados.indexOf(s.id) !== -1 ? 'checked' : '' %> /> <%= s.nome %></label>
+      <% }) %>
+      <div class="sv-pl-ajuda">Marque um ou mais. Sem nenhum marcado, o plano vale para qualquer serviço.</div>
     </div>
 
     <div class="sv-pl-dupla">

@@ -193,6 +193,7 @@ model Servico {
   planos    Plano[]
   insumos   ServicoInsumo[]
   precosBarbeiro ServicoPrecoBarbeiro[]
+  planosIncluidos PlanoServico[]
 
   @@map("servicos")
 }
@@ -370,15 +371,30 @@ model Plano {
   validadeDias Int      @default(30) @map("validade_dias") // validade em dias a partir da aquisição
   valor        Int      @default(0) // centavos; entra no caixa quando o cliente adquire
   ativo        Boolean  @default(true)
-  servicoId    Int?     @map("servico_id") // serviço coberto pelo plano (null = qualquer)
+  servicoId    Int?     @map("servico_id") // LEGADO (um serviço só) — substituído por `servicos` (vários); não é mais usado
+
   diasSemana   String   @default("0,1,2,3,4,5,6") @map("dias_semana")
   criadoEm     DateTime @default(now()) @map("criado_em")
 
   barbearia   Barbearia      @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   servico     Servico?       @relation(fields: [servicoId], references: [id], onDelete: SetNull)
   assinaturas ClientePlano[]
+  servicos    PlanoServico[] // serviços cobertos pelo plano (vazio = qualquer serviço)
 
   @@map("planos")
+}
+
+/// Serviços cobertos por um plano (um plano pode cobrir vários; sem nenhum = qualquer).
+model PlanoServico {
+  id        Int @id @default(autoincrement())
+  planoId   Int @map("plano_id")
+  servicoId Int @map("servico_id")
+
+  plano   Plano   @relation(fields: [planoId], references: [id], onDelete: Cascade)
+  servico Servico @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+
+  @@unique([planoId, servicoId])
+  @@map("plano_servicos")
 }
 
 /// Assinatura: vincula um plano a um cliente, com validade e usos restantes.

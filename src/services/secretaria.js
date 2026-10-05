@@ -225,7 +225,7 @@ async function toolMeusPlanos(ctx) {
   // mesmo que exista cadastro duplicado, o plano é encontrado onde ele estiver.
   const clientes = await prisma.cliente.findMany({
     where: { barbeariaId: ctx.barbeariaId, telefone: { in: variantesTelefone(telNorm) } },
-    include: { planos: { include: { plano: { include: { servico: true } } }, orderBy: { dataFim: 'desc' } } },
+    include: { planos: { include: { plano: { include: { servicos: { include: { servico: true } } } } }, orderBy: { dataFim: 'desc' } } },
   });
   if (!clientes.length) return { planos_ativos: [] };
   const vigentes = clientes.flatMap((c) => c.planos).filter((a) => plano.vigente(a));
@@ -235,8 +235,9 @@ async function toolMeusPlanos(ctx) {
       plano: a.plano.nome,
       usos_restantes: a.usosRestantes === null ? 'ilimitado' : a.usosRestantes,
       valido_ate: ymdLocal(new Date(a.dataFim)),
-      cobre: a.plano.servico ? a.plano.servico.nome : 'qualquer serviço',
-      cobre_servico_id: a.plano.servicoId || null, // null = cobre qualquer serviço
+      cobre: a.plano.servicos.length ? a.plano.servicos.map((x) => x.servico.nome).join(' + ') : 'qualquer serviço',
+      cobre_servicos_ids: a.plano.servicos.map((x) => x.servicoId), // vazio = cobre qualquer serviço
+      cobre_servico_id: a.plano.servicos.length === 1 ? a.plano.servicos[0].servicoId : null, // (legado) só quando é um serviço
       dias_permitidos: diasDoPlano(a.plano.diasSemana),
     })),
   };

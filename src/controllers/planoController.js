@@ -27,9 +27,20 @@ function lerForm(body) {
   const usos = tipo === 'limitado' ? Math.max(1, parseInt(body.usos, 10) || 1) : null;
   const validadeDias = Math.max(1, parseInt(body.validadeDias, 10) || 30);
   const valor = reaisParaCentavos(body.valor);
-  const servicoId = body.servicoId ? Number(body.servicoId) : null; // null = qualquer serviço
   const diasSemana = lerDiasSemana(body.diasSemana);
-  return { nome, tipo, usos, validadeDias, valor, servicoId, diasSemana };
+  // Vários serviços ("12,15" ou lista); vazio = qualquer serviço. O campo antigo
+  // (servicoId, um só) fica zerado: quem manda agora é a lista.
+  return { nome, tipo, usos, validadeDias, valor, diasSemana, servicoId: null };
+}
+
+// Ids de serviço marcados no formulário ("12,15" ou array). Só os da barbearia.
+async function lerServicoIds(body, barbeariaId) {
+  const bruto = body.servicoIds !== undefined ? body.servicoIds : body.servicoId;
+  const lista = Array.isArray(bruto) ? bruto : String(bruto || '').split(',');
+  const ids = Array.from(new Set(lista.map(Number).filter((n) => Number.isInteger(n) && n > 0)));
+  if (!ids.length) return [];
+  const validos = await prisma.servico.findMany({ where: { id: { in: ids }, barbeariaId }, select: { id: true } });
+  return validos.map((s) => s.id);
 }
 
 // Serviços ativos (da barbearia) para o select do formulário.
@@ -41,7 +52,7 @@ function listarServicos(barbeariaId) {
 async function listar(req, res) {
   const planos = await prisma.plano.findMany({
     where: { barbeariaId: req.barbeariaId },
-    include: { servico: true },
+    include: { servicos: { include: { servico: true } } },
     orderBy: [{ ativo: 'desc' }, { nome: 'asc' }],
   });
 
@@ -92,14 +103,15 @@ async function criar(req, res) {
     req.session.flash = { tipo: 'erro', texto: 'Informe o nome do plano.' };
     return res.redirect('/painel/planos/novo');
   }
-  await prisma.plano.create({ data: { ...dados, barbeariaId: req.barbeariaId } });
+  const servicoIds = await lerServicoIds(req.body, req.barbeariaId);
+  await prisma.plano.create({ data: { ...dados, barbeariaId: req.barbeariaId, servicos: { create: servicoIds.map((servicoId) => ({ servicoId })) } } });
   req.session.flash = { tipo: 'sucesso', texto: 'Plano criado.' };
   res.redirect('/painel/planos');
 }
 
 // GET /painel/planos/:id/editar
 async function formEditar(req, res) {
-  const plano = await prisma.plano.findFirst({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } });
+  const plano = await prisma.plano.findFirst({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId }, include: { servicos: true } });
   if (!plano) return res.redirect('/painel/planos');
   res.render('painel/plano-form', { titulo: 'Editar plano', plano, servicos: await listarServicos(req.barbeariaId) });
 }
@@ -115,7 +127,11 @@ async function atualizar(req, res) {
     req.session.flash = { tipo: 'erro', texto: 'Informe o nome do plano.' };
     return res.redirect('/painel/planos/' + id + '/editar');
   }
-  await prisma.plano.update({ where: { id }, data: dados });
+  const servicoIds = await lerServicoIds(req.body, req.barbeariaId);
+  await prisma.plano.update({
+    where: { id },
+    data: { ...dados, servicos: { deleteMany: {}, create: servicoIds.map((servicoId) => ({ servicoId })) } },
+  });
   req.session.flash = { tipo: 'sucesso', texto: 'Plano atualizado.' };
   res.redirect('/painel/planos');
 }
