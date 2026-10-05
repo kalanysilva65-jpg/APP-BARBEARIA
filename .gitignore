@@ -58,3 +58,6 @@ deploy/_migracao-dados.json
 data/wa-midia/
 data/backups/
 .playwright-mcp/
+
+# Dados de clientes migrados de outros apps (nunca versionar)
+andrade-historico*.json
