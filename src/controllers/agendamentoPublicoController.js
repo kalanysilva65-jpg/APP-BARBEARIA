@@ -133,7 +133,10 @@ function parseIds(str) {
 async function passoServico(req, res) {
   const assinatura = await carregarAssinatura(req.query.assinatura, req.barbeariaId);
   // Plano com serviços escolhidos: só eles aparecem na escolha.
-  const idsDoPlano = assinatura ? assinatura.plano.servicos.map((x) => x.servicoId) : [];
+  let idsDoPlano = assinatura ? assinatura.plano.servicos.map((x) => x.servicoId) : [];
+  // Com cota por serviço, somem os serviços cujos usos acabaram.
+  const saldoPl = assinatura ? planoServ.servicosComSaldo(assinatura) : null;
+  if (saldoPl) idsDoPlano = idsDoPlano.filter((id) => saldoPl.includes(id));
   const servicos = await prisma.servico.findMany({
     where: { barbeariaId: req.barbeariaId, ativo: true, ehProduto: false, ...(idsDoPlano.length ? { id: { in: idsDoPlano } } : {}) },
     include: { categoria: true },
@@ -413,7 +416,9 @@ async function confirmar(req, res) {
   const assinatura = await carregarAssinatura(req.body.assinatura, b);
   let servicoIds = parseIds(req.body.servicoIds || req.body.servicoId);
   // Se o plano cobre serviços específicos, só valem os serviços da lista do plano (segurança).
-  const idsDoPlano = assinatura ? assinatura.plano.servicos.map((x) => x.servicoId) : [];
+  let idsDoPlano = assinatura ? assinatura.plano.servicos.map((x) => x.servicoId) : [];
+  const saldoPl = assinatura ? planoServ.servicosComSaldo(assinatura) : null;
+  if (saldoPl) idsDoPlano = idsDoPlano.filter((id) => saldoPl.includes(id));
   if (assinatura && idsDoPlano.length) {
     const dentro = servicoIds.filter((id) => idsDoPlano.includes(id));
     servicoIds = dentro.length ? dentro : [idsDoPlano[0]];
@@ -596,7 +601,7 @@ async function confirmar(req, res) {
 
   // Consome 1 uso do plano (limitado; ilimitado não desconta). Fora da transação
   // de propósito: não faz parte da corrida pelo horário.
-  if (usaPlano) await planoServ.ajustarUso(assinatura.id, -1);
+  if (usaPlano) await planoServ.ajustarUso(assinatura.id, -1, servicoIds);
 
   // Avisa o barbeiro no aparelho dele. Sem `await`: o cliente não pode esperar
   // (nem levar erro) por causa de um push — o agendamento já está criado, e o

@@ -41,7 +41,7 @@
               <span>
                 <span class="sv-ag6-item-nome"><%= a.plano.nome %></span>
                 <span class="sv-ag6-item-sub">
-                  <%= a.plano.tipo === 'ilimitado' ? 'Ilimitado · ' + _diasPlanoLabel(a.plano.diasSemana) : a.usosRestantes + ' uso(s) restante(s)' %>
+                  <%= a.plano.tipo === 'ilimitado' ? 'Ilimitado · ' + _diasPlanoLabel(a.plano.diasSemana) : (a.usosPorServico ? (function(){ try { var m = JSON.parse(a.usosPorServico); return a.plano.servicos.filter(function(x){ return x.servicoId in m; }).map(function(x){ return x.servico.nome + ': ' + m[x.servicoId]; }).join(' · '); } catch (e) { return a.usosRestantes + ' uso(s) restante(s)'; } })() : a.usosRestantes + ' uso(s) restante(s)') %>
                   · até <%= fmtData(a.dataFim) %><%= a.plano.servicos.length ? ' · ' + a.plano.servicos.map(function (x) { return x.servico.nome; }).join(' + ') : '' %>
                 </span>
               </span>

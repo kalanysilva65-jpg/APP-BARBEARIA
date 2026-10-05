@@ -234,6 +234,7 @@ async function toolMeusPlanos(ctx) {
       id: a.id, // use este id em criar_agendamento (cliente_plano_id) para usar o plano
       plano: a.plano.nome,
       usos_restantes: a.usosRestantes === null ? 'ilimitado' : a.usosRestantes,
+      usos_por_servico: plano.usosPorServicoLista(a).map((x) => ({ servico_id: x.id, servico: x.nome, restantes: x.restantes })), // vazio = só vale o total
       valido_ate: ymdLocal(new Date(a.dataFim)),
       cobre: a.plano.servicos.length ? a.plano.servicos.map((x) => x.servico.nome).join(' + ') : 'qualquer serviço',
       cobre_servicos_ids: a.plano.servicos.map((x) => x.servicoId), // vazio = cobre qualquer serviço

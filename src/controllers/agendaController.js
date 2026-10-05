@@ -592,8 +592,9 @@ async function mudarStatus(req, res) {
     if (agendamento.clientePlanoId) {
       const eraAtivo = agendamento.status !== 'cancelado';
       const ficaAtivo = novo !== 'cancelado';
-      if (eraAtivo && !ficaAtivo) await planoServ.ajustarUso(agendamento.clientePlanoId, +1);
-      else if (!eraAtivo && ficaAtivo) await planoServ.ajustarUso(agendamento.clientePlanoId, -1);
+      const cobertos = await planoServ.servicosCobertosDe(agendamento.id);
+      if (eraAtivo && !ficaAtivo) await planoServ.ajustarUso(agendamento.clientePlanoId, +1, cobertos);
+      else if (!eraAtivo && ficaAtivo) await planoServ.ajustarUso(agendamento.clientePlanoId, -1, cobertos);
     }
   }
   responderOk(req, res);
@@ -674,7 +675,7 @@ async function excluir(req, res) {
   await caixaServ.removerEntradaAgendamento(agendamento.id);
   // Devolve o uso do plano se o agendamento ainda estava ativo (não cancelado).
   if (agendamento.clientePlanoId && agendamento.status !== 'cancelado') {
-    await planoServ.ajustarUso(agendamento.clientePlanoId, +1);
+    await planoServ.ajustarUso(agendamento.clientePlanoId, +1, await planoServ.servicosCobertosDe(agendamento.id));
   }
   // Exclui o agendamento (os itens caem em cascata pelo schema).
   await prisma.agendamento.delete({ where: { id: agendamento.id } });
@@ -742,6 +743,7 @@ async function planosJson(req, res) {
     servicoNome: planoServ.servicosDoPlano(a.plano).map((s) => s.nome).filter(Boolean).join(', ') || null,
     ilimitado: a.usosRestantes === null,
     usosRestantes: a.usosRestantes,
+    usosPorServico: planoServ.usosPorServicoTexto(a), // "Corte: 1 · Barba: 3" ou null
   }));
   res.json({ planos });
 }
@@ -867,7 +869,7 @@ async function criarManual(req, res) {
     },
   });
   // Consome 1 uso do plano (limitado; ilimitado não muda) — igual à secretária.
-  if (cobertura) await planoServ.ajustarUso(cobertura.assinatura.id, -1);
+  if (cobertura) await planoServ.ajustarUso(cobertura.assinatura.id, -1, cobertura.cobertosIds);
 
   req.session.flash = { tipo: 'sucesso', texto: 'Agendamento criado.' };
   res.redirect('/painel/agenda?data=' + data + (ehAdmin ? '&barbeiro=' + usuarioId : ''));

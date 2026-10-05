@@ -724,3 +724,10 @@
 .pg-sv .sv-pl-legenda .vermelho { color: #b91c1c; }
 .sv-pl-check { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 15px; }
 .sv-pl-check input { width: 18px; height: 18px; accent-color: #16a34a; }
+
+/* Usos por serviço dentro do plano (ex.: Corte 2x, Barba 4x por mês) */
+.pg-sv .sv-pl-qtds { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.pg-sv .sv-pl-qtd { display: flex; align-items: center; gap: 10px; }
+.pg-sv .sv-pl-qtd > span { flex: 1; font-size: 14px; font-weight: 600; }
+.pg-sv .sv-pl-qtd .sv-campo-input { width: 76px; text-align: center; margin: 0; }
+.pg-sv .sv-pl-qtd small { color: var(--sv-muted, #777); font-size: 12px; }

@@ -623,7 +623,7 @@
           if (!planos.length) { esconder(); return; }
           planoAtual = planos[0];
           var cobre = planoAtual.servicoNome ? ('cobre ' + planoAtual.servicoNome) : 'cobre 1 serviço';
-          var usos = planoAtual.ilimitado ? 'ilimitado' : (planoAtual.usosRestantes + ' uso(s)');
+          var usos = planoAtual.ilimitado ? 'ilimitado' : (planoAtual.usosPorServico || (planoAtual.usosRestantes + ' uso(s)'));
           label.textContent = 'Marcar pelo plano ' + planoAtual.nome + ' (' + cobre + ' · ' + usos + ')';
           area.style.display = '';
         })

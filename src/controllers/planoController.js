@@ -33,6 +33,18 @@ function lerForm(body) {
   return { nome, tipo, usos, validadeDias, valor, diasSemana, servicoId: null };
 }
 
+// Cota por serviço (campo `usosServ_<id>`, só plano limitado): { servicoId: usos }.
+// O total vira o `usos` do plano.
+function lerUsosPorServico(body, servicoIds) {
+  const m = {};
+  if (body.tipo === 'ilimitado') return m;
+  for (const id of servicoIds) {
+    const n = parseInt(body['usosServ_' + id], 10);
+    m[id] = Number.isInteger(n) && n > 0 ? Math.min(n, 999) : 1;
+  }
+  return m;
+}
+
 // Ids de serviço marcados no formulário ("12,15" ou array). Só os da barbearia.
 async function lerServicoIds(body, barbeariaId) {
   const bruto = body.servicoIds !== undefined ? body.servicoIds : body.servicoId;
@@ -104,7 +116,9 @@ async function criar(req, res) {
     return res.redirect('/painel/planos/novo');
   }
   const servicoIds = await lerServicoIds(req.body, req.barbeariaId);
-  await prisma.plano.create({ data: { ...dados, barbeariaId: req.barbeariaId, servicos: { create: servicoIds.map((servicoId) => ({ servicoId })) } } });
+  const cota = lerUsosPorServico(req.body, servicoIds);
+  if (servicoIds.length && dados.tipo === 'limitado') dados.usos = servicoIds.reduce((s, id) => s + cota[id], 0);
+  await prisma.plano.create({ data: { ...dados, barbeariaId: req.barbeariaId, servicos: { create: servicoIds.map((servicoId) => ({ servicoId, usos: dados.tipo === 'limitado' ? cota[servicoId] : null })) } } });
   req.session.flash = { tipo: 'sucesso', texto: 'Plano criado.' };
   res.redirect('/painel/planos');
 }
@@ -128,9 +142,11 @@ async function atualizar(req, res) {
     return res.redirect('/painel/planos/' + id + '/editar');
   }
   const servicoIds = await lerServicoIds(req.body, req.barbeariaId);
+  const cota = lerUsosPorServico(req.body, servicoIds);
+  if (servicoIds.length && dados.tipo === 'limitado') dados.usos = servicoIds.reduce((s, id) => s + cota[id], 0);
   await prisma.plano.update({
     where: { id },
-    data: { ...dados, servicos: { deleteMany: {}, create: servicoIds.map((servicoId) => ({ servicoId })) } },
+    data: { ...dados, servicos: { deleteMany: {}, create: servicoIds.map((servicoId) => ({ servicoId, usos: dados.tipo === 'limitado' ? cota[servicoId] : null })) } },
   });
   req.session.flash = { tipo: 'sucesso', texto: 'Plano atualizado.' };
   res.redirect('/painel/planos');

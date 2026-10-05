@@ -68,8 +68,9 @@
           var ilimitado = p.tipo === 'ilimitado';
           var diasAtivos = _diasArr(p.diasSemana);
           var tipoRot = ilimitado ? 'Ilimitado' : 'Limitado';
+          var comCota = !ilimitado && (p.servicos || []).some(function (x) { return x.usos; });
           var usosRot = ilimitado ? 'usos livres' : (p.usos || 0) + 'x por mês';
-          var nomesServ = (p.servicos || []).map(function (x) { return x.servico.nome; });
+          var nomesServ = (p.servicos || []).map(function (x) { return (comCota && x.usos ? x.usos + 'x ' : '') + x.servico.nome; });
           var descricao = (nomesServ.length ? nomesServ.join(' + ') : 'Qualquer serviço') + ' · validade de ' + p.validadeDias + ' dias';
         %>
         <%/* Só o admin edita, então só para ele o cartão é <button> (abre a
@@ -162,7 +163,16 @@
               <button type="button" class="pill-opcao" data-serv="<%= s.id %>" onclick="svPlServ(this,'novo')"><%= s.nome %></button>
             <% }) %>
           </div>
-          <div class="sv-pl-ajuda">Toque para marcar um ou mais serviços do plano. Sem nenhum marcado, o plano vale para qualquer serviço.</div>
+          <div class="sv-pl-qtds" id="servs-qtds-novo">
+            <% servicos.forEach(function (s) { %>
+              <label class="sv-pl-qtd" data-serv-qtd="<%= s.id %>" style="display:none">
+                <span><%= s.nome %></span>
+                <input class="sv-campo-input" type="number" min="1" max="999" name="usosServ_<%= s.id %>" value="1" aria-label="Usos de <%= s.nome %> por mês" />
+                <small>por mês</small>
+              </label>
+            <% }) %>
+          </div>
+          <div class="sv-pl-ajuda">Toque para marcar um ou mais serviços. Em plano <b>limitado</b>, defina quantos usos de cada serviço por mês (ex.: 2 cortes e 4 barbas). Sem nenhum marcado, o plano vale para qualquer serviço.</div>
         </div>
 
         <div class="sv-campo">
@@ -227,7 +237,18 @@
                 <button type="button" class="pill-opcao <%= servIdsEdit.indexOf(s.id) !== -1 ? 'ativo' : '' %>" data-serv="<%= s.id %>" onclick="svPlServ(this,'<%= p.id %>')"><%= s.nome %></button>
               <% }) %>
             </div>
-            <div class="sv-pl-ajuda">Sem nenhum marcado, o plano vale para qualquer serviço.</div>
+            <div class="sv-pl-qtds" id="servs-qtds-<%= p.id %>">
+              <% servicos.forEach(function (s) {
+                   var ps = (p.servicos || []).filter(function (x) { return x.servicoId === s.id; })[0];
+                   var marcado = servIdsEdit.indexOf(s.id) !== -1; %>
+                <label class="sv-pl-qtd" data-serv-qtd="<%= s.id %>" style="display:<%= marcado && p.tipo === 'limitado' ? '' : 'none' %>">
+                  <span><%= s.nome %></span>
+                  <input class="sv-campo-input" type="number" min="1" max="999" name="usosServ_<%= s.id %>" value="<%= ps && ps.usos ? ps.usos : 1 %>" aria-label="Usos de <%= s.nome %> por mês" />
+                  <small>por mês</small>
+                </label>
+              <% }) %>
+            </div>
+            <div class="sv-pl-ajuda">Em plano <b>limitado</b>, defina quantos usos de cada serviço por mês. Sem nenhum marcado, o plano vale para qualquer serviço.</div>
           </div>
 
           <div class="sv-campo">
@@ -276,6 +297,22 @@
       }
     });
     // Tipo de uso: seleção única (Limitado/Ilimitado) — mostra/esconde "Usos/mês".
+    // Linhas de quantidade por serviço: só aparecem p/ serviço marcado em plano
+    // limitado; com serviço marcado o total "Usos/mês" some (é a soma).
+    function svPlQtds(id) {
+      var tipo = document.getElementById('tipo-' + id).value;
+      var grupo = document.getElementById('servs-group-' + id);
+      var marcados = {};
+      Array.prototype.forEach.call(grupo.querySelectorAll('.pill-opcao.ativo'), function (b) { marcados[b.getAttribute('data-serv')] = true; });
+      var algum = false;
+      Array.prototype.forEach.call(document.querySelectorAll('#servs-qtds-' + id + ' [data-serv-qtd]'), function (l) {
+        var on = tipo === 'limitado' && marcados[l.getAttribute('data-serv-qtd')];
+        if (on) algum = true;
+        l.style.display = on ? '' : 'none';
+      });
+      var campoUsos = document.getElementById('campo-usos-' + id);
+      if (campoUsos) campoUsos.style.display = (tipo === 'ilimitado' || algum) ? 'none' : '';
+    }
     function svPlTipo(btn, id) {
       var grupo = btn.parentElement;
       Array.prototype.forEach.call(grupo.querySelectorAll('.pill-opcao'), function (b) { b.classList.remove('ativo'); });
@@ -283,6 +320,7 @@
       document.getElementById('tipo-' + id).value = btn.getAttribute('data-valor');
       var campoUsos = document.getElementById('campo-usos-' + id);
       if (campoUsos) campoUsos.style.display = btn.getAttribute('data-valor') === 'ilimitado' ? 'none' : '';
+      svPlQtds(id);
     }
     // Serviços inclusos: seleção múltipla (alterna cada serviço). Vazio = qualquer.
     function svPlServ(btn, id) {
@@ -292,6 +330,7 @@
         return b.classList.contains('ativo');
       }).map(function (b) { return b.getAttribute('data-serv'); });
       document.getElementById('servs-' + id).value = ids.join(',');
+      svPlQtds(id);
     }
     // Dias disponíveis: seleção múltipla (alterna cada dia).
     function svPlDia(btn, id) {

@@ -389,6 +389,7 @@ model PlanoServico {
   id        Int @id @default(autoincrement())
   planoId   Int @map("plano_id")
   servicoId Int @map("servico_id")
+  usos      Int? // usos/mês DESTE serviço no plano (null = sem cota própria)
 
   plano   Plano   @relation(fields: [planoId], references: [id], onDelete: Cascade)
   servico Servico @relation(fields: [servicoId], references: [id], onDelete: Cascade)
@@ -406,6 +407,7 @@ model ClientePlano {
   dataInicio    DateTime @map("data_inicio")
   dataFim       DateTime @map("data_fim")
   usosRestantes Int?     @map("usos_restantes") // null = ilimitado
+  usosPorServico String? @map("usos_por_servico") // JSON {"servicoId": restantes}; null = plano sem cota por serviço
   ativo         Boolean  @default(true)
   criadoEm      DateTime @default(now()) @map("criado_em")
 

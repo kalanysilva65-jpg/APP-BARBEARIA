@@ -119,7 +119,7 @@ async function criarAgendamento(barbeariaId, dados) {
     });
     // Consome 1 uso (limitado; ilimitado não desconta). Fora da transação de
     // propósito, igual ao painel — não faz parte da corrida pelo horário.
-    if (usaPlano) await planoServ.ajustarUso(assinatura.id, -1);
+    if (usaPlano) await planoServ.ajustarUso(assinatura.id, -1, cobertosIds);
     return {
       ok: true,
       agendamentoId: ag.id,
@@ -132,7 +132,7 @@ async function criarAgendamento(barbeariaId, dados) {
       valorCentavos: valorTotal,
       usouPlano: usaPlano,
       plano: usaPlano ? assinatura.plano.nome : null,
-      usosRestantes: usaPlano ? (assinatura.usosRestantes === null ? 'ilimitado' : Math.max(0, assinatura.usosRestantes - 1)) : null,
+      usosRestantes: usaPlano ? (assinatura.usosRestantes === null ? 'ilimitado' : Math.max(0, assinatura.usosRestantes - (planoServ.mapaUsos(assinatura) ? cobertosIds.length : 1))) : null,
     };
   } catch (e) {
     if (e.conflito) return { erro: 'conflito', mensagem: 'Esse horário acabou de ser ocupado. Ofereça outro.' };
@@ -214,7 +214,7 @@ async function cancelarAgendamento(barbeariaId, dados) {
   await prisma.agendamento.update({ where: { id: ag.id }, data: { status: 'cancelado' } });
   // Se foi agendado por PLANO, devolve 1 uso (limitado; ilimitado não muda) —
   // mesma regra do cancelamento pelo painel.
-  if (ag.clientePlanoId) await planoServ.ajustarUso(ag.clientePlanoId, +1);
+  if (ag.clientePlanoId) await planoServ.ajustarUso(ag.clientePlanoId, +1, await planoServ.servicosCobertosDe(ag.id));
   return { ok: true, agendamentoId: ag.id, clienteNome: ag.clienteNome, usoDevolvido: !!ag.clientePlanoId };
 }
 

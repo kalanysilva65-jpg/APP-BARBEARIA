@@ -31,7 +31,8 @@
       <span class="sv-campo-rot">Serviços inclusos</span>
       <% var marcados = plano && plano.servicos ? plano.servicos.map(function (x) { return x.servicoId; }) : []; %>
       <% servicos.forEach(function (s) { %>
-        <label class="sv-pl-check"><input type="checkbox" name="servicoIds" value="<%= s.id %>" <%= marcados.indexOf(s.id) !== -1 ? 'checked' : '' %> /> <%= s.nome %></label>
+        <% var psOld = plano && plano.servicos ? plano.servicos.filter(function (x) { return x.servicoId === s.id; })[0] : null; %>
+        <label class="sv-pl-check"><input type="checkbox" name="servicoIds" value="<%= s.id %>" <%= marcados.indexOf(s.id) !== -1 ? 'checked' : '' %> /> <%= s.nome %> <input type="number" min="1" max="999" name="usosServ_<%= s.id %>" value="<%= psOld && psOld.usos ? psOld.usos : 1 %>" style="width:64px;margin-left:auto" aria-label="Usos por mês" /></label>
       <% }) %>
       <div class="sv-pl-ajuda">Marque um ou mais. Sem nenhum marcado, o plano vale para qualquer serviço.</div>
     </div>

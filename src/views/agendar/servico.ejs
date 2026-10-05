@@ -16,7 +16,7 @@
 <div class="sv-ag6-rolagem">
   <% if (assinatura) { %>
     <div class="sv-ag6-aviso">
-      Usando o plano <strong><%= assinatura.plano.nome %></strong><%= assinatura.usosRestantes !== null ? ' · ' + assinatura.usosRestantes + ' uso(s) restante(s)' : ' · ilimitado (' + _diasPlanoLabelServico(assinatura.plano.diasSemana) + ')' %>.
+      Usando o plano <strong><%= assinatura.plano.nome %></strong><%= assinatura.usosRestantes !== null ? ' · ' + (assinatura.usosPorServico ? (function(){ try { var m = JSON.parse(assinatura.usosPorServico); return assinatura.plano.servicos.filter(function(x){ return x.servicoId in m; }).map(function(x){ return x.servico.nome + ': ' + m[x.servicoId]; }).join(' · '); } catch (e) { return assinatura.usosRestantes + ' uso(s) restante(s)'; } })() : assinatura.usosRestantes + ' uso(s) restante(s)') : ' · ilimitado (' + _diasPlanoLabelServico(assinatura.plano.diasSemana) + ')' %>.
       <a href="/agendar">Agendar sem plano</a>
     </div>
   <% } else { %>

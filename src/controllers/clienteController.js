@@ -3,13 +3,16 @@
 // Regra principal: telefone único por barbearia, comparado de forma NORMALIZADA (só dígitos).
 const prisma = require('../config/db');
 const { normalizarTelefone } = require('../utils/telefone');
+const planoServ = require('../services/plano');
 const { DIAS_SEMANA } = require('../config/constantes');
 
 const DIAS_SUMIDO = 30; // mesmo limite usado no HTML original (lastVisitDays >= 30)
 
 // Rótulos amigáveis do plano pra folha do cliente (usos, validade, dias).
 function usosLabelPlano(a) {
-  return a.usosRestantes === null ? 'ilimitado' : `${a.usosRestantes} uso(s) restante(s)`;
+  if (a.usosRestantes === null) return 'ilimitado';
+  const porServ = planoServ.usosPorServicoTexto(a);
+  return porServ || `${a.usosRestantes} uso(s) restante(s)`;
 }
 function diasLabelPlano(diasSemana) {
   const todos = '0,1,2,3,4,5,6';
@@ -94,7 +97,7 @@ async function listar(req, res) {
     orderBy: { nome: 'asc' },
     include: {
       agendamentos: { include: { usuario: true, itens: { include: { servico: true } } }, orderBy: [{ data: 'desc' }, { horaInicio: 'desc' }] },
-      planos: { include: { plano: true }, orderBy: { criadoEm: 'desc' } },
+      planos: { include: { plano: { include: { servicos: { include: { servico: true } } } } }, orderBy: { criadoEm: 'desc' } },
     },
   });
 
@@ -193,7 +196,7 @@ async function adicionarPlano(req, res) {
   const cliente = await prisma.cliente.findFirst({ where: { id: clienteId, barbeariaId: b } });
   if (!cliente) return res.redirect('/painel/clientes');
 
-  const plano = await prisma.plano.findFirst({ where: { id: Number(req.body.planoId), barbeariaId: b, ativo: true } });
+  const plano = await prisma.plano.findFirst({ where: { id: Number(req.body.planoId), barbeariaId: b, ativo: true }, include: { servicos: true } });
   if (!plano) {
     req.session.flash = { tipo: 'erro', texto: 'Selecione um plano válido.' };
     return res.redirect('/painel/clientes');
@@ -202,10 +205,12 @@ async function adicionarPlano(req, res) {
   const dataInicio = req.body.dataInicio ? new Date(req.body.dataInicio + 'T12:00:00') : new Date();
   const dataFim = new Date(dataInicio);
   dataFim.setDate(dataFim.getDate() + plano.validadeDias);
-  const usosRestantes = plano.tipo === 'limitado' ? plano.usos : null;
+  // Plano com cota por serviço: guarda o saldo de cada um; o total é a soma.
+  const mapa = planoServ.mapaInicial(plano);
+  const usosRestantes = mapa ? Object.values(mapa).reduce((s, n) => s + n, 0) : (plano.tipo === 'limitado' ? plano.usos : null);
 
   await prisma.clientePlano.create({
-    data: { barbeariaId: b, clienteId, planoId: plano.id, dataInicio, dataFim, usosRestantes, ativo: true },
+    data: { barbeariaId: b, clienteId, planoId: plano.id, dataInicio, dataFim, usosRestantes, usosPorServico: mapa ? JSON.stringify(mapa) : null, ativo: true },
   });
 
   if (plano.valor > 0) {
