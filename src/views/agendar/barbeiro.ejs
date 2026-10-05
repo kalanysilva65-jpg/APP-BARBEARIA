@@ -6,14 +6,6 @@
   function _primeiroNome(nome) {
     return String(nome || '').trim().split(/\s+/)[0];
   }
-  // "Barbeiro-chefe" para quem é dono/admin da barbearia; o resto é barbeiro.
-  function _papel(u) {
-    return u.papel === 'funcionario' ? 'Barbeiro' : 'Barbeiro-chefe';
-  }
-  // No ladrilho de 104px o papel completo vira reticências — lá vai a versão curta.
-  function _papelCurto(u) {
-    return u.papel === 'funcionario' ? 'barbeiro' : 'chefe';
-  }
   function _duracao(min) {
     if (min < 60) return min + ' min';
     var h = Math.floor(min / 60);
@@ -65,10 +57,6 @@
             <div class="sv-ag6-bc-scrim"></div>
             <div class="sv-ag6-bc-topo">
               <div class="sv-ag6-bc-nome"><%= b.nome %></div>
-              <div class="sv-ag6-bc-papel">
-                <svg class="sv-ag6-bc-tesoura" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12" /></svg>
-                <%= _papel(b) %>
-              </div>
               <% if (b.descricao) { %><div class="sv-ag6-bc-desc"><%= b.descricao %></div><% } %>
             </div>
           </div>
