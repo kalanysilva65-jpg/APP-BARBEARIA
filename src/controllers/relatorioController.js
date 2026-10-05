@@ -140,9 +140,11 @@ async function ver(req, res) {
   const gastosPorCategoria = new Map();
   for (const l of lancamentos) {
     if (l.tipo !== 'saida') continue;
-    const nome = l.categoria ? l.categoria.nome : 'Sem categoria';
-    if (!gastosPorCategoria.has(nome)) gastosPorCategoria.set(nome, { nome, valor: 0, itens: [] });
-    const g = gastosPorCategoria.get(nome);
+    // Sem categoria (todos os lançamentos novos): agrupa pela DESCRIÇÃO (ex.: "Aluguel").
+    const nome = l.categoria ? l.categoria.nome : String(l.descricao || '').trim() || 'Sem descrição';
+    const chave = nome.toLowerCase();
+    if (!gastosPorCategoria.has(chave)) gastosPorCategoria.set(chave, { nome, valor: 0, itens: [] });
+    const g = gastosPorCategoria.get(chave);
     g.valor += l.valor;
     g.itens.push({ label: l.descricao, valor: l.valor, data: l.data });
   }

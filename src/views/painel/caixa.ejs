@@ -152,13 +152,6 @@
         <%/* O toggle "entrada automática" foi removido (2026-09-02): concluir um
              atendimento SEMPRE entra no caixa agora, então não há mais o que
              ligar/desligar. */%>
-        <button type="button" class="sv-linha" onclick="cxFolha('categorias', true)">
-          <span class="sv-linha-corpo">
-            <span class="sv-linha-titulo">Categorias</span>
-            <span class="sv-linha-sub"><%= categorias.length %> categoria<%= categorias.length === 1 ? '' : 's' %> de entrada e saída</span>
-          </span>
-          <svg class="sv-linha-seta" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-        </button>
       </div>
     </div>
 
@@ -166,63 +159,49 @@
   </div>
 </div>
 
-<%/* FOLHA: novo lançamento. Entrada/Saída no topo é FILTRO das categorias —
-     no app o tipo do lançamento vem da categoria, então dois campos separados
-     poderiam se contradizer. */%>
+<%/* FOLHA: novo lançamento. Entrada/Saída é escolhida AQUI, direto no
+     lançamento (pedido do dono, 2026-10-05: as categorias saíram do Caixa). */%>
 <div class="sv-folha-fundo" id="cx-folha-novo" hidden>
   <div class="sv-folha">
     <div class="sv-folha-puxador"></div>
     <div class="sv-folha-titulo">Novo lançamento</div>
-    <% if (categorias.length === 0) { %>
-      <div class="sv-vazio">Cadastre uma categoria pra poder lançar.</div>
-    <% } else { %>
-      <form method="POST" action="/painel/caixa">
-        <input type="hidden" name="inicio" value="<%= inicioStr %>" />
-        <input type="hidden" name="fim" value="<%= fimStr %>" />
+    <form method="POST" action="/painel/caixa">
+      <input type="hidden" name="inicio" value="<%= inicioStr %>" />
+      <input type="hidden" name="fim" value="<%= fimStr %>" />
+      <input type="hidden" name="tipo" id="tipo-novo" value="entrada" />
 
-        <div class="sv-cx-tipo">
-          <button type="button" class="sv-cx-tipo-btn ativo" data-tipo="entrada" onclick="cxFiltrarCategorias('entrada')">Entrada</button>
-          <button type="button" class="sv-cx-tipo-btn" data-tipo="saida" onclick="cxFiltrarCategorias('saida')">Saída</button>
+      <div class="sv-cx-tipo">
+        <button type="button" class="sv-cx-tipo-btn ativo" data-tipo="entrada" onclick="cxTipo('entrada')">Entrada</button>
+        <button type="button" class="sv-cx-tipo-btn" data-tipo="saida" onclick="cxTipo('saida')">Saída</button>
+      </div>
+
+      <div class="sv-campo">
+        <label class="sv-campo-rot" for="valor-novo">Valor</label>
+        <input class="sv-campo-input sv-cx-campo-valor" id="valor-novo" name="valor" type="number" step="0.01" min="0" placeholder="0,00" required />
+      </div>
+
+      <div class="sv-campo">
+        <label class="sv-campo-rot" for="descricao-novo">Descrição</label>
+        <input class="sv-campo-input" id="descricao-novo" name="descricao" placeholder="Ex.: aluguel, luz, corte do João" maxlength="120" required />
+      </div>
+
+      <div class="sv-campo">
+        <span class="sv-campo-rot">Forma de pagamento (opcional)</span>
+        <input type="hidden" name="formaPagamento" id="formaPagamento-novo" />
+        <div class="pill-group">
+          <% formasPagamentoOpcoes.forEach(function (f) { %>
+            <button type="button" class="pill-opcao" data-valor="<%= f.valor %>" onclick="selecionarPill(this,'formaPagamento-novo')"><%= f.curto %></button>
+          <% }) %>
         </div>
+      </div>
 
-        <div class="sv-campo">
-          <label class="sv-campo-rot" for="valor-novo">Valor</label>
-          <input class="sv-campo-input sv-cx-campo-valor" id="valor-novo" name="valor" type="number" step="0.01" min="0" placeholder="0,00" required />
-        </div>
+      <div class="sv-campo">
+        <label class="sv-campo-rot" for="data-novo">Data</label>
+        <input class="sv-campo-input" id="data-novo" name="data" type="date" value="<%= hojeIso %>" />
+      </div>
 
-        <div class="sv-campo">
-          <label class="sv-campo-rot" for="descricao-novo">Descrição</label>
-          <input class="sv-campo-input" id="descricao-novo" name="descricao" placeholder="Ex.: corte do João" />
-        </div>
-
-        <div class="sv-campo">
-          <span class="sv-campo-rot">Categoria</span>
-          <input type="hidden" name="categoriaId" id="categoriaId-novo" required />
-          <div class="pill-group" id="cx-pills-categoria">
-            <% categorias.forEach(function (c) { %>
-              <button type="button" class="pill-opcao" data-tipo="<%= c.tipo %>" data-valor="<%= c.id %>" onclick="selecionarPill(this,'categoriaId-novo')"><%= c.nome %></button>
-            <% }) %>
-          </div>
-        </div>
-
-        <div class="sv-campo">
-          <span class="sv-campo-rot">Forma de pagamento (opcional)</span>
-          <input type="hidden" name="formaPagamento" id="formaPagamento-novo" />
-          <div class="pill-group">
-            <% formasPagamentoOpcoes.forEach(function (f) { %>
-              <button type="button" class="pill-opcao" data-valor="<%= f.valor %>" onclick="selecionarPill(this,'formaPagamento-novo')"><%= f.curto %></button>
-            <% }) %>
-          </div>
-        </div>
-
-        <div class="sv-campo">
-          <label class="sv-campo-rot" for="data-novo">Data</label>
-          <input class="sv-campo-input" id="data-novo" name="data" type="date" value="<%= hojeIso %>" />
-        </div>
-
-        <button class="sv-cx-enviar" type="submit">Lançar</button>
-      </form>
-    <% } %>
+      <button class="sv-cx-enviar" type="submit">Lançar</button>
+    </form>
   </div>
 </div>
 
@@ -244,48 +223,6 @@
         <% }) %>
       </div>
     <% } %>
-  </div>
-</div>
-
-<%/* FOLHA: categorias de caixa + entrada automática */%>
-<div class="sv-folha-fundo" id="cx-folha-categorias" hidden>
-  <div class="sv-folha">
-    <div class="sv-folha-puxador"></div>
-    <div class="sv-folha-titulo">Categorias de caixa</div>
-    <div class="sv-cx-folha-sub">Cada categoria é de entrada ou saída. Remover não apaga lançamentos.</div>
-
-    <form method="POST" action="/painel/caixa/categorias" class="sv-cx-cat-nova">
-      <input class="sv-cx-inp" name="nome" placeholder="Nova categoria" required />
-      <select class="sv-cx-sel" name="tipo">
-        <option value="entrada">Entrada</option>
-        <option value="saida">Saída</option>
-      </select>
-      <button class="sv-cx-mini" type="submit">Adicionar</button>
-    </form>
-
-    <ul class="sv-cx-cat-lista">
-      <% categorias.forEach(function (c) { %>
-        <li class="sv-cx-cat-item">
-          <form class="sv-cx-cat-form" method="POST" action="/painel/caixa/categorias/<%= c.id %>">
-            <input class="sv-cx-inp" name="nome" value="<%= c.nome %>" />
-            <select class="sv-cx-sel" name="tipo">
-              <option value="entrada" <%= c.tipo === 'entrada' ? 'selected' : '' %>>Entrada</option>
-              <option value="saida" <%= c.tipo === 'saida' ? 'selected' : '' %>>Saída</option>
-            </select>
-            <span class="sv-cx-cat-n" title="Lançamentos nesta categoria"><%= c._count.lancamentos %></span>
-            <button class="sv-cx-mini sv-cx-mini--claro" type="submit">Salvar</button>
-          </form>
-          <form method="POST" action="/painel/caixa/categorias/<%= c.id %>/remover"
-                onsubmit="return confirm('Remover esta categoria?')">
-            <button class="sv-cx-cat-x" title="Remover categoria" aria-label="Remover categoria">×</button>
-          </form>
-        </li>
-      <% }) %>
-      <% if (categorias.length === 0) { %>
-        <li class="sv-vazio">Nenhuma categoria.</li>
-      <% } %>
-    </ul>
-
   </div>
 </div>
 
@@ -328,20 +265,14 @@
     document.getElementById('cx-fim').value = fim;
   }
 
-  // Entrada/Saída no "Novo lançamento" só mostra as categorias daquele tipo;
-  // trocar de lado limpa a escolha para não enviar uma categoria escondida.
-  function cxFiltrarCategorias(tipo) {
+  // Entrada/Saída do "Novo lançamento" (vai no campo escondido "tipo").
+  function cxTipo(tipo) {
     document.querySelectorAll('.sv-cx-tipo-btn').forEach(function (b) {
       b.classList.toggle('ativo', b.dataset.tipo === tipo);
     });
-    var hidden = document.getElementById('categoriaId-novo');
-    if (hidden) hidden.value = '';
-    document.querySelectorAll('#cx-pills-categoria .pill-opcao').forEach(function (p) {
-      p.hidden = p.dataset.tipo !== tipo;
-      p.classList.remove('ativo');
-    });
+    var campo = document.getElementById('tipo-novo');
+    if (campo) campo.value = tipo;
   }
-  cxFiltrarCategorias('entrada');
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') cxFecharFolhas();

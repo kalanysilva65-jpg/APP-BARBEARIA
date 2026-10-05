@@ -133,11 +133,8 @@ async function ver(req, res) {
   });
   const resumoMesAtual = somar(lancMesAtual);
 
-  const categorias = await prisma.categoriaCaixa.findMany({
-    where: { barbeariaId: b },
-    orderBy: [{ tipo: 'asc' }, { nome: 'asc' }],
-    include: { _count: { select: { lancamentos: true } } },
-  });
+  // (As categorias de caixa saíram da tela em 2026-10-05; lançamentos antigos
+  // que tinham categoria continuam mostrando o nome dela na lista.)
   // Ganhos por semana DENTRO do período selecionado — para o gráfico de barras.
   const barrasPeriodo = [];
   let cursor = new Date(inicio);
@@ -258,7 +255,6 @@ async function ver(req, res) {
     resumoHoje,
     resumoMesAtual,
     incluiHoje,
-    categorias,
     barrasPeriodo,
     maxBarraPeriodo,
     nomePeriodoSel,
@@ -291,21 +287,17 @@ async function criar(req, res) {
   const b = req.barbeariaId;
   const descricao = (req.body.descricao || '').trim();
   const valor = reaisParaCentavos(req.body.valor);
-  const categoriaId = req.body.categoriaId ? Number(req.body.categoriaId) : null;
+  // O tipo (entrada/saída) vem DIRETO do lançamento (as categorias saíram da tela).
+  const tipo = req.body.tipo === 'saida' ? 'saida' : 'entrada';
   const formaPagamento = FORMAS_PAGAMENTO.some((f) => f.valor === req.body.formaPagamento) ? req.body.formaPagamento : null;
-
-  const categoria = categoriaId
-    ? await prisma.categoriaCaixa.findFirst({ where: { id: categoriaId, barbeariaId: b } })
-    : null;
 
   const qs = new URLSearchParams();
   if (req.body.inicio) qs.set('inicio', req.body.inicio);
   if (req.body.fim) qs.set('fim', req.body.fim);
   const destino = '/painel/caixa' + (qs.toString() ? '?' + qs.toString() : '');
 
-  // O tipo (entrada/saída) vem da categoria.
-  if (!categoria || valor === null) {
-    req.session.flash = { tipo: 'erro', texto: 'Selecione uma categoria e informe um valor válido.' };
+  if (valor === null || valor <= 0) {
+    req.session.flash = { tipo: 'erro', texto: 'Informe um valor válido.' };
     return res.redirect(destino);
   }
 
@@ -315,11 +307,11 @@ async function criar(req, res) {
   await prisma.caixa.create({
     data: {
       barbeariaId: b,
-      descricao: descricao || categoria.nome,
+      descricao: (descricao || (tipo === 'saida' ? 'Saída' : 'Entrada')).slice(0, 120),
       valor,
-      tipo: categoria.tipo,
+      tipo,
       data,
-      categoriaId: categoria.id,
+      categoriaId: null,
       formaPagamento,
     },
   });
@@ -339,38 +331,8 @@ async function remover(req, res) {
   res.redirect('/painel/caixa' + (qs.toString() ? '?' + qs.toString() : ''));
 }
 
-// --- Categorias de caixa --------------------------------------------------
-async function criarCategoria(req, res) {
-  const nome = (req.body.nome || '').trim();
-  const tipo = req.body.tipo === 'saida' ? 'saida' : 'entrada';
-  if (nome) await prisma.categoriaCaixa.create({ data: { barbeariaId: req.barbeariaId, nome, tipo } });
-  res.redirect('/painel/caixa');
-}
-
-async function atualizarCategoria(req, res) {
-  const nome = (req.body.nome || '').trim();
-  const tipo = req.body.tipo === 'saida' ? 'saida' : 'entrada';
-  const data = { tipo };
-  if (nome) data.nome = nome;
-  await prisma.categoriaCaixa
-    .updateMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId }, data })
-    .catch(() => {});
-  res.redirect('/painel/caixa');
-}
-
-async function removerCategoria(req, res) {
-  // Lançamentos da categoria não são apagados: ficam "sem categoria" (SetNull).
-  await prisma.categoriaCaixa
-    .deleteMany({ where: { id: Number(req.params.id), barbeariaId: req.barbeariaId } })
-    .catch(() => {});
-  res.redirect('/painel/caixa');
-}
-
 module.exports = {
   ver,
   criar,
   remover,
-  criarCategoria,
-  atualizarCategoria,
-  removerCategoria,
 };
