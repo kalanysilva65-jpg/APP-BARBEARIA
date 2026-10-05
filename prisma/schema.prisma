@@ -74,6 +74,7 @@ model Usuario {
   senhaHash   String   @map("senha_hash")
   fotoUrl     String?  @map("foto_url") // foto do barbeiro (em /uploads)
   fotoPos     String?  @map("foto_pos") // enquadramento da foto no card público (object-position, ex.: "50% 30%")
+  nomePublico String? @map("nome_publico") // como o nome aparece no agendamento público (null = usa `nome`); o dono da barbearia escolhe
   descricao   String? // texto curto do profissional no agendamento público (ex.: "Especialista em degradê")
   papel       String // "dono" | "admin" | "funcionario"
   ativo       Boolean  @default(true)

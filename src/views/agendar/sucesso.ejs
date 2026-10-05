@@ -15,7 +15,7 @@
 
     <div class="sv-ag6-pronto-cartao">
       <div class="sv-ag6-pronto-quando"><%= dataExtenso %> · <%= agendamento.horaInicio %></div>
-      <div class="sv-ag6-pronto-oque"><%= nomesServicos %> · com <%= agendamento.usuario.nome %></div>
+      <div class="sv-ag6-pronto-oque"><%= nomesServicos %> · com <%= agendamento.usuario.nomePublico || agendamento.usuario.nome %></div>
 
       <div class="sv-ag6-pronto-linhas">
         <div class="sv-ag6-pronto-linha">

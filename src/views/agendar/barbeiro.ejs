@@ -48,7 +48,7 @@
         <button type="button" class="sv-ag6-bc <%= i === 0 ? 'ativo' : '' %>" data-href="/agendar/horario?<%= qsBase %>&barbeiroId=<%= b.id %>" data-total="<%= assinatura ? 'Incluso' : fmtT6(totalB) %>" style="animation-delay:<%= (0.06 + i * 0.06).toFixed(2) %>s">
           <div class="sv-ag6-bc-foto">
             <% if (b.fotoUrl) { %>
-              <img src="<%= b.fotoUrl %>" alt="<%= b.nome %>"<% if (b.fotoPos) { %> style="object-position: <%= b.fotoPos %>"<% } %> />
+              <img src="<%= b.fotoUrl %>" alt="<%= b.nomePublico || b.nome %>"<% if (b.fotoPos) { %> style="object-position: <%= b.fotoPos %>"<% } %> />
             <% } else { %>
               <span class="sv-ag6-bc-silhueta" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M4 21a8 8 0 0 1 16 0" /><circle cx="12" cy="8" r="4.2" /></svg>
@@ -56,7 +56,7 @@
             <% } %>
             <div class="sv-ag6-bc-scrim"></div>
             <div class="sv-ag6-bc-topo">
-              <div class="sv-ag6-bc-nome"><%= b.nome %></div>
+              <div class="sv-ag6-bc-nome"><%= b.nomePublico || b.nome %></div>
               <% if (b.descricao) { %><div class="sv-ag6-bc-desc"><%= b.descricao %></div><% } %>
             </div>
           </div>

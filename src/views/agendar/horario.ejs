@@ -22,7 +22,7 @@
 <div class="sv-ag6-rolagem">
   <div class="sv-ag6-cartao" style="margin-top:6px">
     <div class="sv-ag6-cartao-tit"><%= nomesServicos %></div>
-    <div class="sv-ag6-cartao-sub"><%= servicos.length %> serviço<%= servicos.length > 1 ? 's' : '' %> · <%= _duracao(duracaoTotal) %> · com <%= barbeiro.nome %></div>
+    <div class="sv-ag6-cartao-sub"><%= servicos.length %> serviço<%= servicos.length > 1 ? 's' : '' %> · <%= _duracao(duracaoTotal) %> · com <%= barbeiro.nomePublico || barbeiro.nome %></div>
   </div>
 
   <% if (diasPlanoLabel) { %>

@@ -247,6 +247,10 @@ async function atualizar(req, res) {
   const data = { nome, comissaoPercentual };
   // Descrição curta do profissional no agendamento público (ex.: "Especialista
   // em degradê"). Só mexe quando o formulário envia o campo; vazio = remove.
+  // Nome que o CLIENTE vê no agendamento público (vazio = usa o nome do cadastro).
+  if (req.body.nomePublico !== undefined) {
+    data.nomePublico = String(req.body.nomePublico).trim().slice(0, 40) || null;
+  }
   if (req.body.descricao !== undefined) {
     data.descricao = String(req.body.descricao).trim().slice(0, 120) || null;
   }

@@ -135,6 +135,12 @@
         </div>
 
         <div class="sv-cartao sv-eq-bloco">
+          <label class="sv-eq-bloco-tit" for="eq-np-<%= m.id %>">Nome no agendamento público</label>
+          <input class="sv-campo-input" id="eq-np-<%= m.id %>" name="nomePublico" maxlength="40" value="<%= m.nomePublico || '' %>" placeholder="<%= m.nome %>" autocomplete="off" />
+          <div class="sv-eq-desc-dica">Como o cliente vê o nome deste profissional ao agendar (ex.: "Davi", "Mestre Bruno"). Em branco, usa o nome do cadastro.</div>
+        </div>
+
+        <div class="sv-cartao sv-eq-bloco">
           <label class="sv-eq-bloco-tit" for="eq-desc-<%= m.id %>">Descrição no agendamento</label>
           <textarea class="sv-campo-input sv-eq-desc" id="eq-desc-<%= m.id %>" name="descricao" rows="2" maxlength="120"
                     placeholder="Ex.: Especialista em degradê e barba desenhada"><%= m.descricao || '' %></textarea>
